@@ -40,19 +40,19 @@ const (
 // header, and a binary file in a companion file.
 type Meta struct {
 	// Role is one of the aicodingsession.SpecRole* constants, or empty.
-	Role string `yaml:"role"`
+	Role string
 	// Title is a short name for the source, or empty.
-	Title string `yaml:"title"`
+	Title string
 	// Description says what the source holds, or is empty.
-	Description string `yaml:"description"`
+	Description string
 }
 
-// frontmatter is the header a spec document carries. It is decoded into a typed
-// struct rather than a map so an unexpected key cannot reach the evidence.
+// frontmatter is the header a spec document carries. parseHeader fills only
+// these fields, so an unexpected key cannot reach the evidence.
 type frontmatter struct {
-	Kind string `yaml:"kind"`
-	URI  string `yaml:"uri"`
-	Meta `yaml:",inline"`
+	Kind string
+	URI  string
+	Meta
 }
 
 // Capture is one spec document as read from the session folder: what the agent
@@ -109,8 +109,8 @@ func verbatimCapture(name string, doc []byte, modTime time.Time, image bool) Cap
 //
 //   - No frontmatter, or an unterminated block: the whole document is content,
 //     with kind "text" and no URI.
-//   - Frontmatter that is not valid YAML: the body after the block is content,
-//     again with kind "text" and no URI.
+//   - A header line that is not a known key: skipped. The other lines keep
+//     their values.
 //   - A kind outside the vocabulary: normalised to "text".
 //   - A role outside the vocabulary: no role.
 //   - A title or a description over its limit: cut to the limit.
@@ -121,15 +121,7 @@ func verbatimCapture(name string, doc []byte, modTime time.Time, image bool) Cap
 func Parse(doc []byte, capturedAt time.Time) *Capture {
 	header, body := split(string(doc))
 
-	var meta frontmatter
-	if header != "" {
-		// A header we cannot read costs the metadata, never the body. The
-		// decoder can fill some fields before it fails, so a failure clears
-		// what it filled.
-		if err := yaml.Unmarshal([]byte(header), &meta); err != nil {
-			meta = frontmatter{}
-		}
-	}
+	meta := parseHeader(header)
 
 	if strings.TrimSpace(body) == "" {
 		return nil
@@ -143,15 +135,123 @@ func Parse(doc []byte, capturedAt time.Time) *Capture {
 	}
 }
 
-// ParseMeta reads the companion file of a binary file. It never fails: a file
-// that is not valid YAML gives no values, and costs the binary file nothing.
+// ParseMeta reads the companion file of a binary file. It never fails: a line
+// it cannot read gives no value, and costs the binary file nothing.
 func ParseMeta(doc []byte) Meta {
-	var meta Meta
-	if err := yaml.Unmarshal(doc, &meta); err != nil {
-		return Meta{}
+	return parseHeader(string(doc)).normalize()
+}
+
+// parseHeader reads the known keys of a header line by line. It is not a YAML
+// decoder: agents write values unquoted, and YAML cuts a value at " #" and
+// rejects one that holds ": " or starts with "[". Here the value is the rest of
+// the line after the first colon, kept as written. A value in quotes is
+// unquoted, and a "|" or ">" block scalar is decoded, as YAML does. A blank
+// line, a comment, an unknown key or a line with no colon is skipped. When a
+// key repeats, the last value wins.
+func parseHeader(header string) frontmatter {
+	var meta frontmatter
+	fields := map[string]*string{
+		"kind":        &meta.Kind,
+		"uri":         &meta.URI,
+		"role":        &meta.Role,
+		"title":       &meta.Title,
+		"description": &meta.Description,
 	}
 
-	return meta.normalize()
+	lines := strings.Split(header, "\n")
+	for i := 0; i < len(lines); i++ {
+		line := strings.TrimRight(lines[i], "\r\t ")
+		// An indented line here has no key above it to continue.
+		if line == "" || isIndented(line) || line[0] == '#' || isDocumentMarker(line) {
+			continue
+		}
+
+		key, value, found := strings.Cut(line, ":")
+		if !found {
+			continue
+		}
+
+		// The key takes its continuation lines even when it is unknown, so
+		// that they cannot be read as keys of their own.
+		var continuation []string
+		for i+1 < len(lines) && continues(lines[i+1:]) {
+			i++
+			continuation = append(continuation, strings.TrimRight(lines[i], "\r"))
+		}
+
+		field, known := fields[strings.TrimSpace(key)]
+		if !known {
+			continue
+		}
+
+		*field = decodeValue(strings.TrimSpace(value), continuation)
+	}
+
+	return meta
+}
+
+// decodeValue gives the value of one key from the rest of its line and the
+// indented lines that follow it.
+func decodeValue(value string, continuation []string) string {
+	if strings.HasPrefix(value, "|") || strings.HasPrefix(value, ">") {
+		if decoded, ok := decodeScalar(value + "\n" + strings.Join(continuation, "\n") + "\n"); ok {
+			return decoded
+		}
+	}
+
+	// A quoted value with more text after its closing quote is not a YAML
+	// string, so it fails to decode and is kept as written.
+	if strings.HasPrefix(value, `"`) || strings.HasPrefix(value, "'") {
+		if decoded, ok := decodeScalar(strings.Join(append([]string{value}, continuation...), "\n")); ok {
+			return decoded
+		}
+	}
+
+	// A plain value that runs on over indented lines is folded into one line.
+	// An indented line that starts with "#" is a YAML comment, not part of it.
+	parts := []string{value}
+	for _, line := range continuation {
+		if line = strings.TrimSpace(line); line != "" && !strings.HasPrefix(line, "#") {
+			parts = append(parts, line)
+		}
+	}
+
+	return strings.TrimSpace(strings.Join(parts, " "))
+}
+
+// decodeScalar decodes one YAML scalar. It reports false when YAML cannot read
+// the scalar as a string, so that the caller keeps the value as written.
+func decodeScalar(scalar string) (string, bool) {
+	var decoded string
+	if err := yaml.Unmarshal([]byte(scalar), &decoded); err != nil {
+		return "", false
+	}
+
+	return decoded, true
+}
+
+// continues reports whether the first of lines belongs to the key above it: an
+// indented line, or a blank line that an indented line follows, as in a block
+// scalar with more than one paragraph.
+func continues(lines []string) bool {
+	for _, line := range lines {
+		line = strings.TrimRight(line, "\r\t ")
+		if line != "" {
+			return isIndented(line)
+		}
+	}
+
+	return false
+}
+
+func isIndented(line string) bool {
+	return line != "" && (line[0] == ' ' || line[0] == '\t')
+}
+
+// isDocumentMarker reports a YAML document start or end line. A companion file
+// can carry one.
+func isDocumentMarker(line string) bool {
+	return line == delimiter || line == "..."
 }
 
 // normalize drops a role outside the vocabulary, trims the title and the

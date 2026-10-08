@@ -80,20 +80,118 @@ func TestParse(t *testing.T) {
 			wantContent: specBody,
 		},
 		{
-			// Frontmatter is used precisely because it degrades. A broken
-			// header costs the metadata, never the spec.
-			name:        "frontmatter that is not valid YAML",
+			// Frontmatter is used precisely because it degrades. A value
+			// that is not a kind costs the kind, never the spec.
+			name:        "a kind that is not valid YAML",
 			doc:         "---\nkind: [unclosed\n---\n" + specBody,
 			wantKind:    aicodingsession.SpecKindText,
 			wantContent: specBody,
 		},
 		{
-			// A decoder can fill some fields before it fails on a later
-			// line. The broken header must cost all of its metadata, not
-			// leave half of it behind.
-			name:        "a header that breaks after a valid kind",
+			// A line that YAML rejects must not cost the other lines.
+			name:        "a value that is not valid YAML after a valid kind",
 			doc:         "---\nkind: ticket\nuri: [unclosed\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantURI:     "[unclosed",
+			wantContent: specBody,
+		},
+		{
+			// YAML reads " #" as the start of a comment and cuts the value.
+			name:        "a description that holds a hash",
+			doc:         "---\nkind: document\ndescription: The merged design spec (PR #3544) that defines R-001\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindDocument,
+			wantDesc:    "The merged design spec (PR #3544) that defines R-001",
+			wantContent: specBody,
+		},
+		{
+			// YAML rejects ": " in a plain value, which used to cost every key.
+			name:        "an unquoted title that holds colons",
+			doc:         "---\nkind: ticket\nuri: https://linear.app/chainloop/issue/PFM-1\nrole: task\ntitle: PFM-1: fix: the thing\ndescription: The ticket for the fix.\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantURI:     "https://linear.app/chainloop/issue/PFM-1",
+			wantRole:    aicodingsession.SpecRoleTask,
+			wantTitle:   "PFM-1: fix: the thing",
+			wantDesc:    "The ticket for the fix.",
+			wantContent: specBody,
+		},
+		{
+			// YAML reads a leading "[" as the start of a sequence.
+			name:        "an unquoted title that starts with a bracket",
+			doc:         "---\nkind: ticket\nuri: https://linear.app/chainloop/issue/PFM-2\nrole: task\ntitle: [WIP] something\ndescription: Work in progress.\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantURI:     "https://linear.app/chainloop/issue/PFM-2",
+			wantRole:    aicodingsession.SpecRoleTask,
+			wantTitle:   "[WIP] something",
+			wantDesc:    "Work in progress.",
+			wantContent: specBody,
+		},
+		{
+			name:        "a description with backticks around a colon",
+			doc:         "---\nkind: document\ndescription: uses `foo: bar` inline\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindDocument,
+			wantDesc:    "uses `foo: bar` inline",
+			wantContent: specBody,
+		},
+		{
+			// A header that is already quoted gives the same values as before.
+			name:        "quoted values with escapes",
+			doc:         "---\nkind: \"ticket\"\nuri: 'https://example.com/a'\nrole: \"spec\"\ntitle: 'it''s: quoted'\ndescription: \"line one\\nPR \\\"#1\\\"\"\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantURI:     "https://example.com/a",
+			wantRole:    aicodingsession.SpecRoleSpec,
+			wantTitle:   "it's: quoted",
+			wantDesc:    "line one\nPR \"#1\"",
+			wantContent: specBody,
+		},
+		{
+			// Text after the closing quote makes it a plain value.
+			name:        "a value that only starts with a quote",
+			doc:         "---\ntitle: \"Export\" button: v2\n---\n" + specBody,
 			wantKind:    aicodingsession.SpecKindText,
+			wantTitle:   "\"Export\" button: v2",
+			wantContent: specBody,
+		},
+		{
+			name:        "comment lines, unknown keys and stray lines",
+			doc:         "---\n# a comment\nkind: ticket\nowner: someone\n\nnot a key\n  stray: indented\nrole: task\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantRole:    aicodingsession.SpecRoleTask,
+			wantContent: specBody,
+		},
+		{
+			// The lines of an unknown key must not be read as known keys.
+			name:        "an unknown key with indented lines",
+			doc:         "---\ntags:\n  title: not a title\nkind: ticket\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantContent: specBody,
+		},
+		{
+			name:        "a literal block scalar",
+			doc:         "---\nkind: document\ndescription: |\n  first: line\n\n  second #2\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindDocument,
+			wantDesc:    "first: line\n\nsecond #2",
+			wantContent: specBody,
+		},
+		{
+			name:        "a plain value over more than one line",
+			doc:         "---\ndescription: The ticket that\n  the session implements.\nkind: ticket\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantDesc:    "The ticket that the session implements.",
+			wantContent: specBody,
+		},
+		{
+			// An indented line that starts with "#" is a YAML comment.
+			name:        "an indented comment line after a plain value",
+			doc:         "---\ntitle: Foo\n  # note\ndescription: Bar #1\n  continued\n  # another note\nkind: ticket\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantTitle:   "Foo",
+			wantDesc:    "Bar #1 continued",
+			wantContent: specBody,
+		},
+		{
+			name:        "a repeated key keeps the last value",
+			doc:         "---\nkind: text\nkind: ticket\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
 			wantContent: specBody,
 		},
 		{
@@ -209,8 +307,19 @@ func TestParseMeta(t *testing.T) {
 		},
 		{name: "a role outside the vocabulary", doc: "role: mockup\ntitle: x\n", want: Meta{Title: "x"}},
 		{name: "a title over the limit is cut", doc: "title: " + strings.Repeat("a", MaxTitleLen+1), want: Meta{Title: strings.Repeat("a", MaxTitleLen)}},
-		// A file we cannot read costs its values, and nothing else.
-		{name: "not valid YAML", doc: "role: plan\ntitle: [unclosed\n", want: Meta{}},
+		// A line that YAML rejects keeps its value, and costs the other lines nothing.
+		{name: "not valid YAML", doc: "role: plan\ntitle: [unclosed\n", want: Meta{Role: aicodingsession.SpecRolePlan, Title: "[unclosed"}},
+		{
+			name: "unquoted values with colons, a bracket and a hash",
+			doc:  "role: reference\ntitle: PFM-2: [WIP] fix #12\ndescription: The merged design spec (PR #3544) that defines R-001\n",
+			want: Meta{Role: aicodingsession.SpecRoleReference, Title: "PFM-2: [WIP] fix #12", Description: "The merged design spec (PR #3544) that defines R-001"},
+		},
+		{
+			name: "quoted values, a comment and a document marker",
+			doc:  "---\n# the mockup\nrole: \"reference\"\ntitle: 'Export: mockup'\ndescription: \"Where the button goes.\"\n",
+			want: Meta{Role: aicodingsession.SpecRoleReference, Title: "Export: mockup", Description: "Where the button goes."},
+		},
+		{name: "keys a companion file does not hold", doc: "kind: ticket\nuri: https://example.com\ntitle: x\n", want: Meta{Title: "x"}},
 		{name: "an empty file", doc: "", want: Meta{}},
 	}
 
