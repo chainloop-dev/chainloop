@@ -28,6 +28,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/panicguard"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
@@ -122,30 +123,15 @@ func (d *FanOutDispatcher) Run(ctx context.Context, opts *RunOpts) error {
 		return fmt.Errorf("workflowRun not found")
 	}
 
-	workflowMetadata := &sdk.ChainloopMetadata{
-		Workflow: &sdk.ChainloopMetadataWorkflow{
-			ID:      opts.WorkflowID,
-			Name:    wf.Name,
-			Project: wf.Project,
-			Team:    wf.Team,
-		},
-		WorkflowRun: &sdk.ChainloopMetadataWorkflowRun{
-			ID:                opts.WorkflowRunID,
-			State:             wfRun.State,
-			StartedAt:         *wfRun.CreatedAt,
-			FinishedAt:        *wfRun.FinishedAt,
-			RunnerType:        wfRun.RunnerType,
-			RunURL:            wfRun.RunURL,
-			AttestationDigest: wfRun.Attestation.Digest,
-		},
-	}
+	workflowMetadata := newWorkflowMetadata(opts, wf, wfRun)
 
 	// Dispatch the integrations
 	for _, item := range queue {
 		req := generateRequest(item, workflowMetadata)
-		go func(p sdk.FanOut, r *sdk.ExecutionRequest) {
-			_ = dispatch(ctx, p, req, d.log)
-		}(item.plugin, req)
+		plugin := item.plugin
+		panicguard.Go(d.log, "fanout-dispatch", func() {
+			_ = dispatch(ctx, plugin, req, d.log)
+		})
 	}
 
 	return nil
@@ -324,6 +310,38 @@ func dispatch(ctx context.Context, plugin sdk.FanOut, opts *sdk.ExecutionRequest
 			logger.Warnf("error executing integration %s, will retry in %s - %s", plugin.String(), delay, err)
 		},
 	)
+}
+
+// newWorkflowMetadata builds the dispatch metadata for a run. CreatedAt,
+// FinishedAt and Attestation are nil until the run is finalized, so a dispatch
+// for an unfinished or attestation-less run must not dereference them.
+func newWorkflowMetadata(opts *RunOpts, wf *biz.Workflow, wfRun *biz.WorkflowRun) *sdk.ChainloopMetadata {
+	runMetadata := &sdk.ChainloopMetadataWorkflowRun{
+		ID:         opts.WorkflowRunID,
+		State:      wfRun.State,
+		RunnerType: wfRun.RunnerType,
+		RunURL:     wfRun.RunURL,
+	}
+
+	if wfRun.CreatedAt != nil {
+		runMetadata.StartedAt = *wfRun.CreatedAt
+	}
+	if wfRun.FinishedAt != nil {
+		runMetadata.FinishedAt = *wfRun.FinishedAt
+	}
+	if wfRun.Attestation != nil {
+		runMetadata.AttestationDigest = wfRun.Attestation.Digest
+	}
+
+	return &sdk.ChainloopMetadata{
+		Workflow: &sdk.ChainloopMetadataWorkflow{
+			ID:      opts.WorkflowID,
+			Name:    wf.Name,
+			Project: wf.Project,
+			Team:    wf.Team,
+		},
+		WorkflowRun: runMetadata,
+	}
 }
 
 func generateRequest(in *dispatchItem, metadata *sdk.ChainloopMetadata) *sdk.ExecutionRequest {

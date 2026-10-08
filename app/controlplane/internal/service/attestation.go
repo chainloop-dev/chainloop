@@ -28,6 +28,7 @@ import (
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
+	"github.com/chainloop-dev/chainloop/app/controlplane/internal/panicguard"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext/attjwtmiddleware"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -360,11 +361,12 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 
 		if !casBackend.Inline {
 			// Detach from the request context so the upload survives request completion.
-			go func(digest v1.Hash) {
-				if err := s.uploadAttestationToCASWithRetry(context.Background(), bundle, casBackend, workflowRunID, digest); err != nil {
+			dgst := *digest
+			panicguard.Go(s.log, "attestation-cas-upload", func() {
+				if err := s.uploadAttestationToCASWithRetry(context.Background(), bundle, casBackend, workflowRunID, dgst); err != nil {
 					_ = handleUseCaseErr(err, s.log)
 				}
-			}(*digest)
+			})
 		}
 	}
 
@@ -394,7 +396,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 	secretName := casBackend.SecretName
 
 	// Run integrations dispatcher
-	go func() {
+	panicguard.Go(s.log, "integration-dispatcher", func() {
 		if err := s.integrationDispatcher.Run(context.TODO(), &dispatcher.RunOpts{
 			Envelope: dsseEnv, OrgID: robotAccount.OrgID, WorkflowID: wf.ID.String(),
 			DownloadBackendType: string(casBackend.Provider),
@@ -403,7 +405,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 		}); err != nil {
 			_ = handleUseCaseErr(err, s.log)
 		}
-	}()
+	})
 
 	// promote release if the workflowRun is successful
 	if markAsReleased != nil && *markAsReleased {
