@@ -821,9 +821,9 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
 		policies.WithProjectContext(projectName, projectVersion),
 	)
-	// crafted.Content is what a crafter that did not store the artifact verbatim
-	// stored in its place (an AI coding session with secrets redacted out of it),
-	// and it is what the policies must see. Reading the file at value instead would
+	// crafted.Content is what a crafter that transformed the artifact scanned and
+	// stored (an AI coding session, with any secrets redacted out of it), and it
+	// is what the policies must see. Reading the file at value instead would
 	// feed user-authored Rego the very secrets redaction removed. nil for every
 	// other material, which resolves its content the usual way.
 	policyGroupResults, err := pgv.VerifyMaterial(ctx, mt, value, crafted.Content)

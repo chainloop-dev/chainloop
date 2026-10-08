@@ -238,13 +238,14 @@ func TestEvaluateSimplifiedPolicies(t *testing.T) {
 const fixtureGitHubPAT = "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf"
 
 // writeSessionFixture materialises an AI coding session fixture with its
-// credential placeholder resolved, so that the crafter sees a real secret on disk.
-func writeSessionFixture(t *testing.T) string {
+// credential placeholder resolved to token: fixtureGitHubPAT for the crafter to
+// see a real secret on disk, anything else for a clean session.
+func writeSessionFixture(t *testing.T, token string) string {
 	t.Helper()
 
 	content, err := os.ReadFile("testdata/ai-coding-session-with-secret.json")
 	require.NoError(t, err)
-	content = bytes.ReplaceAll(content, []byte("__GITHUB_PAT__"), []byte(fixtureGitHubPAT))
+	content = bytes.ReplaceAll(content, []byte("__GITHUB_PAT__"), []byte(token))
 
 	path := filepath.Join(t.TempDir(), "ai-coding-session.json")
 	require.NoError(t, os.WriteFile(path, content, 0600))
@@ -279,7 +280,7 @@ func TestEvaluateReadsRedactedMaterial(t *testing.T) {
 			opts := &EvalOptions{
 				PolicyPath:   "testdata/ai-coding-session-no-secrets-policy.yaml",
 				MaterialKind: "CHAINLOOP_AI_CODING_SESSION",
-				MaterialPath: writeSessionFixture(t),
+				MaterialPath: writeSessionFixture(t, fixtureGitHubPAT),
 				Annotations:  tc.annotations,
 				// Debug surfaces the exact bytes handed to the engine, which is
 				// what the strongest assertion below inspects.
@@ -304,6 +305,35 @@ func TestEvaluateReadsRedactedMaterial(t *testing.T) {
 				assert.Contains(t, string(input), "[CHAINLOOP_TRACE_REDACTED:")
 			}
 		})
+	}
+}
+
+// A session the scan found nothing in is still marked redacted, as `attestation
+// add` marks it, and the marker must not make evaluation fail closed: the policy
+// is evaluated against the scanned content.
+func TestEvaluateCleanScannedMaterial(t *testing.T) {
+	const token = "not-a-credential"
+
+	opts := &EvalOptions{
+		PolicyPath:   "testdata/ai-coding-session-no-secrets-policy.yaml",
+		MaterialKind: "CHAINLOOP_AI_CODING_SESSION",
+		MaterialPath: writeSessionFixture(t, token),
+		Debug:        true,
+	}
+
+	result, err := Evaluate(opts, zerolog.New(os.Stderr))
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	assert.False(t, result.Result.Skipped)
+	assert.Empty(t, result.Result.Violations)
+
+	require.NotNil(t, result.DebugInfo)
+	require.NotEmpty(t, result.DebugInfo.Inputs)
+	for _, input := range result.DebugInfo.Inputs {
+		assert.Contains(t, string(input), token)
+		assert.Contains(t, string(input), `"chainloop.material.redacted":"true"`)
+		assert.Contains(t, string(input), `"chainloop.material.redaction.count":"0"`)
 	}
 }
 

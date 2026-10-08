@@ -355,17 +355,17 @@ type Craftable interface {
 // CraftResult is what crafting an artifact yields.
 type CraftResult struct {
 	Material *api.Attestation_Material
-	// Content is what the crafter stored in place of the artifact, when it did
-	// not store it verbatim — today, an AI coding session with secrets redacted
-	// out of it. For such a material the file on disk is no longer the stored
-	// content, so anything that needs to read the artifact back has to be given
-	// these bytes instead; what they are then used for is the caller's business,
-	// and today they feed policy evaluation, which must not see the data the
-	// transformation removed.
+	// Content is what the crafter scanned and stored, when it ran the artifact
+	// through a transformation before storing it — today, an AI coding session
+	// scanned for secrets, with any found redacted out of it. For such a material
+	// the file on disk may no longer be the stored content, so anything that
+	// needs to read the artifact back has to be given these bytes instead; what
+	// they are then used for is the caller's business, and today they feed policy
+	// evaluation, which must not see the data the transformation removed.
 	//
-	// nil for every crafter that stores the artifact as it found it, which is all
-	// but one: their content resolves from the material or the file as usual and
-	// nothing extra is held in memory.
+	// nil when the crafter did not transform the artifact (every crafter but the
+	// AI coding session, and that one when redaction is skipped): the content
+	// resolves from the material or the file as usual.
 	Content []byte
 }
 

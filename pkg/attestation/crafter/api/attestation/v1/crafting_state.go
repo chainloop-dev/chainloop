@@ -59,14 +59,16 @@ var (
 	AnnotationsSBOMMainComponentType    = CreateAnnotation("material.sbom.main_component.type")
 	AnnotationsSBOMMainComponentVersion = CreateAnnotation("material.sbom.main_component.version")
 
-	// AnnotationMaterialRedacted marks a material whose stored content was
-	// transformed by its crafter before upload, to strip secrets out of it. Two
-	// things follow from it: the recorded digest describes the redacted artifact
-	// rather than the file on disk, and policy evaluation must be handed that
-	// sanitized copy explicitly, because the file on disk still holds the secrets
-	// (see GetEvaluableContent, which fails closed without it).
+	// AnnotationMaterialRedacted marks a material whose content went through
+	// secret redaction before upload, whether or not anything was found. When
+	// something was replaced (AnnotationMaterialRedactionCount above zero) the
+	// recorded digest describes the redacted artifact rather than the file on
+	// disk, which still holds the secrets. Either way policy evaluation must be
+	// handed the scanned copy explicitly (see GetEvaluableContent, which fails
+	// closed without it).
 	AnnotationMaterialRedacted = CreateAnnotation("material.redacted")
-	// AnnotationMaterialRedactionCount is how many secrets were replaced.
+	// AnnotationMaterialRedactionCount is how many secrets were replaced, zero
+	// for a scan that found nothing.
 	AnnotationMaterialRedactionCount = CreateAnnotation("material.redaction.count")
 	// AnnotationMaterialRedactionRules lists the detection rules that matched,
 	// so a policy can act on the kind of credential that was present.

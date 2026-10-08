@@ -79,7 +79,7 @@ func NewChainloopAICodingSessionCrafter(schema *schemaapi.CraftingSchema_Materia
 // material definition.
 //
 // The file on disk is left untouched, so it is no longer the stored content once
-// anything was redacted. The sanitized copy is returned as CraftResult.Content
+// anything was redacted. The scanned copy is returned as CraftResult.Content
 // for whoever needs to read the artifact back — today policy evaluation, which
 // must not be handed the credentials the session captured.
 func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPath string) (*CraftResult, error) {
@@ -115,7 +115,7 @@ func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPat
 		return nil, fmt.Errorf("AI coding session validation failed: %w", err)
 	}
 
-	redacted, report, err := c.redact(ctx, f)
+	scanned, report, err := c.redact(ctx, f)
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +123,8 @@ func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPat
 	// Substituting the stored content only when something was actually replaced
 	// keeps a clean session's digest reproducible from its source file.
 	var craftOpts []uploadAndCraftOption
-	if redacted != nil {
-		craftOpts = append(craftOpts, withContentOverride(redacted))
+	if report.Changed() {
+		craftOpts = append(craftOpts, withContentOverride(scanned))
 	}
 
 	material, err := uploadAndCraft(ctx, c.input, c.backend, artifactPath, c.logger, craftOpts...)
@@ -147,12 +147,12 @@ func (c *ChainloopAICodingSessionCrafter) Craft(ctx context.Context, artifactPat
 	// Surface how the session was run
 	material.Annotations[annotationAICodingSessionMode] = aicodingsession.ResolveMode(data.Session.Mode)
 
-	return &CraftResult{Material: material, Content: redacted}, nil
+	return &CraftResult{Material: material, Content: scanned}, nil
 }
 
-// redact strips secrets out of the session content, returning the sanitized copy
-// to store in place of the file on disk, or nil when nothing was replaced and the
-// file itself is what gets stored.
+// redact strips secrets out of the session content and returns the scanned
+// copy: the sanitized bytes when something was replaced, the content itself when
+// the scan found nothing, nil when redaction is skipped.
 //
 // Redaction fails closed: if the content cannot be scanned or the result no
 // longer matches the schema, the material is not crafted at all rather than
@@ -170,7 +170,7 @@ func (c *ChainloopAICodingSessionCrafter) redact(ctx context.Context, content []
 	}
 
 	if !report.Changed() {
-		return nil, report, nil
+		return content, report, nil
 	}
 
 	return redacted, report, nil
@@ -178,6 +178,8 @@ func (c *ChainloopAICodingSessionCrafter) redact(ctx context.Context, content []
 
 // annotateRedaction records what redaction did, so that it is visible in the
 // attestation and actionable by policies rather than an invisible rewrite.
+// The material is marked redacted whenever the scan ran, even when it found
+// nothing (see api.AnnotationMaterialRedacted).
 func (c *ChainloopAICodingSessionCrafter) annotateRedaction(material *api.Attestation_Material, report *redaction.Report) {
 	if c.skipRedaction {
 		material.Annotations[api.AnnotationMaterialRedactionSkipped] = api.AnnotationValueTrue
@@ -196,13 +198,14 @@ func (c *ChainloopAICodingSessionCrafter) annotateRedaction(material *api.Attest
 			Msg("some detected secrets could not be redacted")
 	}
 
+	material.Annotations[api.AnnotationMaterialRedacted] = api.AnnotationValueTrue
+	material.Annotations[api.AnnotationMaterialRedactionCount] = strconv.Itoa(report.Replacements)
+
 	if !report.Changed() {
 		return
 	}
 
 	rules := report.RuleIDs()
-	material.Annotations[api.AnnotationMaterialRedacted] = api.AnnotationValueTrue
-	material.Annotations[api.AnnotationMaterialRedactionCount] = strconv.Itoa(report.Replacements)
 	material.Annotations[api.AnnotationMaterialRedactionRules] = strings.Join(rules, ",")
 
 	c.logger.Info().Int("count", report.Replacements).Strs("rules", rules).
