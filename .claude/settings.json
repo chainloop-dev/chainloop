@@ -20,6 +20,17 @@
         "matcher": "Edit|Write|MultiEdit|Bash"
       }
     ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "command": "chainloop trace hook claude post-tool-use",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write|MultiEdit|Bash"
+      }
+    ],
     "PreToolUse": [
       {
         "hooks": [
@@ -46,6 +57,16 @@
         "hooks": [
           {
             "command": "chainloop trace hook claude session-start",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "chainloop trace hook claude user-prompt-submit",
             "type": "command"
           }
         ]

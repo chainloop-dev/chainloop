@@ -343,8 +343,16 @@ type Attestations struct {
 	// control plane defaults to 1 minute.
 	// In YAML configuration, use seconds with an "s" suffix, for example "60s".
 	WorkflowRunExpirationCheckInterval *durationpb.Duration `protobuf:"bytes,4,opt,name=workflow_run_expiration_check_interval,json=workflowRunExpirationCheckInterval,proto3" json:"workflow_run_expiration_check_interval,omitempty"`
-	unknownFields                      protoimpl.UnknownFields
-	sizeCache                          protoimpl.SizeCache
+	// Require every pushed attestation to be verified with keyless signing.
+	// It only applies when keyless signing is configured (certificate_authorities).
+	// When enabled, an attestation must be signed with a certificate issued by one
+	// of the configured certificate authorities to the organization that owns the
+	// workflow run, and other signing methods are rejected. Set it to false to
+	// also accept attestations signed with other methods, for example cosign keys
+	// or KMS. When unset, it defaults to true.
+	ForceVerification *bool `protobuf:"varint,5,opt,name=force_verification,json=forceVerification,proto3,oneof" json:"force_verification,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *Attestations) Reset() {
@@ -403,6 +411,13 @@ func (x *Attestations) GetWorkflowRunExpirationCheckInterval() *durationpb.Durat
 		return x.WorkflowRunExpirationCheckInterval
 	}
 	return nil
+}
+
+func (x *Attestations) GetForceVerification() bool {
+	if x != nil && x.ForceVerification != nil {
+		return *x.ForceVerification
+	}
+	return false
 }
 
 type OperationAuthorizationProvider struct {
@@ -1525,7 +1540,7 @@ type Data_Database struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Driver string                 `protobuf:"bytes,1,opt,name=driver,proto3" json:"driver,omitempty"`
 	Source string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
-	// default 0
+	//  default 0
 	MinOpenConns int32 `protobuf:"varint,3,opt,name=min_open_conns,json=minOpenConns,proto3" json:"min_open_conns,omitempty"`
 	// default max(4, runtime.NumCPU())
 	MaxOpenConns int32 `protobuf:"varint,4,opt,name=max_open_conns,json=maxOpenConns,proto3" json:"max_open_conns,omitempty"`
@@ -1881,12 +1896,14 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\breplicas\x18\x03 \x01(\x05R\breplicasB\x10\n" +
 	"\x0eauthenticationJ\x04\b\b\x10\tR\x15referrer_shared_index\"J\n" +
 	"\x14PluginsNetworkPolicy\x122\n" +
-	"\x15block_private_targets\x18\x01 \x01(\bR\x13blockPrivateTargets\"\xe7\x02\n" +
+	"\x15block_private_targets\x18\x01 \x01(\bR\x13blockPrivateTargets\"\xb2\x03\n" +
 	"\fAttestations\x12&\n" +
 	"\x0fskip_db_storage\x18\x01 \x01(\bR\rskipDbStorage\x12L\n" +
 	"#policy_evaluations_max_inline_bytes\x18\x02 \x01(\x03R\x1fpolicyEvaluationsMaxInlineBytes\x12h\n" +
 	"\x1eworkflow_run_expiration_window\x18\x03 \x01(\v2\x19.google.protobuf.DurationB\b\xbaH\x05\xaa\x01\x02*\x00R\x1bworkflowRunExpirationWindow\x12w\n" +
-	"&workflow_run_expiration_check_interval\x18\x04 \x01(\v2\x19.google.protobuf.DurationB\b\xbaH\x05\xaa\x01\x02*\x00R\"workflowRunExpirationCheckInterval\"v\n" +
+	"&workflow_run_expiration_check_interval\x18\x04 \x01(\v2\x19.google.protobuf.DurationB\b\xbaH\x05\xaa\x01\x02*\x00R\"workflowRunExpirationCheckInterval\x122\n" +
+	"\x12force_verification\x18\x05 \x01(\bH\x00R\x11forceVerification\x88\x01\x01B\x15\n" +
+	"\x13_force_verification\"v\n" +
 	"\x1eOperationAuthorizationProvider\x12\x1a\n" +
 	"\x03url\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x88\x01\x01R\x03url\x12\x18\n" +
 	"\aenabled\x18\x02 \x01(\bR\aenabled\x12\x1e\n" +
@@ -2058,6 +2075,7 @@ func file_controlplane_config_v1_conf_proto_init() {
 	if File_controlplane_config_v1_conf_proto != nil {
 		return
 	}
+	file_controlplane_config_v1_conf_proto_msgTypes[2].OneofWrappers = []any{}
 	file_controlplane_config_v1_conf_proto_msgTypes[10].OneofWrappers = []any{
 		(*CA_FileCa)(nil),
 		(*CA_EjbcaCa)(nil),

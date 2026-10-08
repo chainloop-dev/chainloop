@@ -461,7 +461,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 	if headCommit != nil {
 		// Attempt platform verification
 		if opts.Runner != nil {
-			headCommit.PlatformVerification = verifyCommitWithPlatform(headCommit, opts.Runner)
+			headCommit.PlatformVerification = verifyCommitWithPlatform(headCommit, opts.Runner, opts.Logger)
 		}
 
 		headCommitP = &api.Commit{
@@ -1189,7 +1189,7 @@ func (c *Crafter) requireStateLoaded() error {
 
 // verifyCommitWithPlatform attempts to verify commit signature using platform APIs
 // Returns nil if verification is not available or not applicable
-func verifyCommitWithPlatform(commit *HeadCommit, runner SupportedRunner) *api.Commit_CommitVerification {
+func verifyCommitWithPlatform(commit *HeadCommit, runner SupportedRunner, logger *zerolog.Logger) *api.Commit_CommitVerification {
 	// Create context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -1198,6 +1198,11 @@ func verifyCommitWithPlatform(commit *HeadCommit, runner SupportedRunner) *api.C
 	verification := runner.VerifyCommitSignature(ctx, commit.Hash)
 	if verification == nil {
 		return nil
+	}
+
+	// The reason is not part of the attestation, so show it to explain the unavailable status
+	if verification.Status == commitverification.VerificationStatusUnavailable && logger != nil {
+		logger.Warn().Str("platform", verification.Platform).Str("reason", verification.Reason).Msg("commit signature verification unavailable")
 	}
 
 	// Convert from commitverification type to protobuf type

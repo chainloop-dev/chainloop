@@ -102,19 +102,49 @@ func Execute(rootCmd *cobra.Command) error {
 	// every command, including the ones that fail and so skip cobra's post-run hooks.
 	executed, err := rootCmd.ExecuteC()
 	reportCommand(executed, time.Since(processStart), err)
+	err = applyPrePushPolicy(executed, err)
 
 	if err != nil {
-		// The local file is pointing to the wrong organization, we remove it
-		if v1.IsUserNotMemberOfOrgErrorNotInOrg(err) {
-			if err := setLocalOrganization(""); err != nil {
-				logger.Debug().Err(err).Msg("failed to remove organization from config")
-			}
-		}
-
-		return err
+		return handleOrganizationExecutionError(executed, err)
 	}
 
 	return nil
+}
+
+// RepositoryOrganizationError preserves the repository source through the
+// CLI's final error formatting while retaining the control-plane cause.
+type RepositoryOrganizationError struct {
+	Organization string
+	Path         string
+	Err          error
+}
+
+func (e *RepositoryOrganizationError) Error() string {
+	return fmt.Sprintf("organization %q from %s does not exist or you are not part of it; update the file or run \"chainloop auth login\"", e.Organization, e.Path)
+}
+
+func (e *RepositoryOrganizationError) Unwrap() error {
+	return e.Err
+}
+
+func handleOrganizationExecutionError(executed *cobra.Command, err error) error {
+	if !v1.IsUserNotMemberOfOrgErrorNotInOrg(err) {
+		return err
+	}
+
+	// A repository organization is run-local and must not clear the saved default.
+	if organization, path := attestationOrganization(executed); path != "" {
+		return &RepositoryOrganizationError{Organization: organization, Path: path, Err: err}
+	}
+	// Flags and environment variables are run-local overrides. A failed
+	// override must not erase the saved default used by later commands.
+	if organizationExplicitlySelected(executed) {
+		return err
+	}
+	if configErr := setLocalOrganization(""); configErr != nil {
+		logger.Debug().Err(configErr).Msg("failed to remove organization from config")
+	}
+	return err
 }
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
@@ -191,8 +221,8 @@ Command reference: ` + cliReferenceURL,
 
 			controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
 
-			// If no organization is set in local configuration, we load it from server and save it
-			orgName := viper.GetString(confOptions.organization.viperKey)
+			// If no organization is selected, load it from the server and save it.
+			orgName := effectiveOrganization(cmd)
 			if orgName == "" {
 				conn, err := grpcconn.New(controlplaneURL, authToken, opts...)
 				if err != nil {
@@ -207,8 +237,8 @@ Command reference: ` + cliReferenceURL,
 				}
 			}
 
-			// reload the connection now that we have the org name
-			orgName = viper.GetString(confOptions.organization.viperKey)
+			// Reload the connection now that we have the organization name.
+			orgName = effectiveOrganization(cmd)
 			if orgName != "" {
 				opts = append(opts, grpcconn.WithOrgName(orgName))
 			}
@@ -282,6 +312,7 @@ Command reference: ` + cliReferenceURL,
 
 	rootCmd.PersistentFlags().StringP(confOptions.organization.flagName, "n", "", "organization name")
 	cobra.CheckErr(viper.BindPFlag(confOptions.organization.viperKey, rootCmd.PersistentFlags().Lookup(confOptions.organization.flagName)))
+	cobra.CheckErr(viper.BindEnv(confOptions.organization.viperKey, CalculateEnvVarName(confOptions.organization.viperKey)))
 
 	// Do not ask for confirmation
 	rootCmd.PersistentFlags().BoolVarP(&flagYes, "yes", "y", false, "Skip confirmation")
@@ -501,6 +532,13 @@ func apiInsecure() bool {
 // the CLI's outbound connections, in bytes. 0 means "use grpcconn's default".
 func apiMaxRecvMsgSize() int {
 	return viper.GetInt(confOptions.maxRecvMsgSize.viperKey)
+}
+
+func effectiveOrganization(cmd *cobra.Command) string {
+	if organization, _ := attestationOrganization(cmd); organization != "" {
+		return organization
+	}
+	return viper.GetString(confOptions.organization.viperKey)
 }
 
 // setLocalOrganization updates the local organization configuration

@@ -64,12 +64,13 @@ func TestInstallHooks(t *testing.T) {
 		preEntry := preEntries[0].(map[string]any)
 		assert.Equal(t, "Edit|Write|MultiEdit|Bash", preEntry["matcher"])
 
-		// PostToolUse should have matcher
+		// PostToolUse also matches Skill, to copy the folder of a loaded skill
 		postEntries := hooks["PostToolUse"].([]any)
 		postEntry := postEntries[0].(map[string]any)
-		assert.Equal(t, "Edit|Write|MultiEdit|Bash", postEntry["matcher"])
+		assert.Equal(t, "Edit|Write|MultiEdit|Bash|Skill", postEntry["matcher"])
 
-		// PostToolUseFailure should have the same matcher
+		// PostToolUseFailure keeps the edit matcher: a failed Skill call loads
+		// no skill
 		failureEntries := hooks["PostToolUseFailure"].([]any)
 		failureEntry := failureEntries[0].(map[string]any)
 		assert.Equal(t, "Edit|Write|MultiEdit|Bash", failureEntry["matcher"])
@@ -373,6 +374,48 @@ func TestInstallHooksOnNullSettings(t *testing.T) {
 
 	require.NoError(t, New().InstallHooks(repoRoot))
 	assert.Contains(t, readSettings(t, repoRoot), "hooks")
+}
+
+func TestHooksInstalled(t *testing.T) {
+	testCases := []struct {
+		name     string
+		settings string
+		want     bool
+		wantErr  bool
+	}{
+		{
+			name:     "only user hooks",
+			settings: `{"hooks":{"PostToolUse":[{"hooks":[{"type":"command","command":"format.sh"}]}]}}`,
+			want:     false,
+		},
+		{
+			name:     "a chainloop hook next to user hooks",
+			settings: `{"hooks":{"SessionStart":[{"hooks":[{"type":"command","command":"format.sh"},{"type":"command","command":"chainloop trace hook claude session-start"}]}]}}`,
+			want:     true,
+		},
+		{
+			name:     "malformed settings",
+			settings: `{not json`,
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(repoRoot, ".claude"), 0755))
+			require.NoError(t, os.WriteFile(filepath.Join(repoRoot, settingsFile), []byte(tc.settings), 0600))
+
+			got, err := New().HooksInstalled(repoRoot)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
 }
 
 func readSettings(t *testing.T, repoRoot string) map[string]any {

@@ -239,6 +239,65 @@ func TestRedact(t *testing.T) {
 	}
 }
 
+// TestRedactSkipsMedia follows R-005 of spec issue-3556: base64 media in the
+// transcript is not scanned, so a pasted image whose base64 text matches a
+// secret pattern is kept byte for byte, while the same secret in text is
+// still redacted.
+func TestRedactSkipsMedia(t *testing.T) {
+	media := "iVBORw0KGgo" + fixtureGitHubPAT + "AAAA"
+
+	testCases := []struct {
+		name  string
+		entry string
+		// wantMedia is true when the media must stay as it is.
+		wantMedia bool
+	}{
+		{
+			name:      "pasted image",
+			entry:     `{"type":"user","message":{"role":"user","content":[{"type":"image","source":{"type":"base64","media_type":"image/png","data":"` + media + `"}}]}}`,
+			wantMedia: true,
+		},
+		{
+			name:      "image read with its metadata copy",
+			entry:     `{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"t1","content":[{"type":"image","source":{"type":"base64","media_type":"image/png","data":"` + media + `"}}]}]},"toolUseResult":{"type":"image","file":{"base64":"` + media + `","type":"image/png"}}}`,
+			wantMedia: true,
+		},
+		{
+			name:  "text field named data is still scanned",
+			entry: `{"type":"user","message":{"role":"user","content":[{"type":"text","data":"` + media + `"}]}}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var evidence Evidence
+			require.NoError(t, json.Unmarshal(readFixture(t, "../testdata/ai-coding-session-minimal.json"), &evidence))
+			evidence.Data.RawSession = map[string][]json.RawMessage{"main": {
+				json.RawMessage(tc.entry),
+				json.RawMessage(`{"type":"user","message":{"role":"user","content":"the token is ` + fixtureGitHubPAT + `"}}`),
+			}}
+			doc, err := json.Marshal(evidence)
+			require.NoError(t, err)
+
+			got, report, err := Redact(context.Background(), doc)
+			require.NoError(t, err)
+			assert.True(t, report.Changed(), "the secret in text is redacted")
+
+			var out Evidence
+			require.NoError(t, json.Unmarshal(got, &out))
+			lines := out.Data.RawSession["main"]
+			require.Len(t, lines, 2)
+			assert.NotContains(t, string(lines[1]), fixtureGitHubPAT)
+
+			if tc.wantMedia {
+				assert.Equal(t, strings.Count(tc.entry, media), strings.Count(string(lines[0]), media), "each media copy is kept byte for byte")
+			} else {
+				assert.NotContains(t, string(lines[0]), fixtureGitHubPAT)
+			}
+		})
+	}
+}
+
 func TestRedactIsIdempotent(t *testing.T) {
 	in := readFixture(t, "testdata/session-with-secrets.json")
 

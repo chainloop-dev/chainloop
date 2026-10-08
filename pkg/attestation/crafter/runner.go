@@ -16,9 +16,11 @@
 package crafter
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -117,18 +119,44 @@ func NewRunner(t schemaapi.CraftingSchema_Runner_RunnerType, authToken string, l
 
 // DiscoverRunner the runner environment
 // This method does a simple check to see which runner is available in the environment
-// by iterating over the different runners and performing duck-typing checks.
+// by iterating over the different runners in discovery order and performing duck-typing checks.
 // It returns the first matching runner immediately to avoid unnecessary CheckEnv()
 // calls from remaining runners.
 func DiscoverRunner(authToken string, logger zerolog.Logger) SupportedRunner {
-	for _, factory := range RunnerFactories {
-		r := factory(authToken, &logger)
+	for _, runnerType := range runnerDiscoveryOrder() {
+		r := RunnerFactories[runnerType](authToken, &logger)
 		if r.CheckEnv() {
 			return r
 		}
 	}
 
 	return runners.NewGeneric()
+}
+
+// runnerDiscoveryOrder returns the runner types in the order DiscoverRunner checks them.
+// The order must not depend on map iteration, because more than one runner can match the
+// same environment. The Dagger runner goes first: the Chainloop Dagger module also passes
+// the parent CI context (for example GITLAB_CI and CI_JOB_URL) to the CLI container, so
+// the parent CI runner matches too. The other runners follow in enum order.
+func runnerDiscoveryOrder() []schemaapi.CraftingSchema_Runner_RunnerType {
+	order := make([]schemaapi.CraftingSchema_Runner_RunnerType, 0, len(RunnerFactories))
+	for runnerType := range RunnerFactories {
+		order = append(order, runnerType)
+	}
+
+	slices.SortFunc(order, func(a, b schemaapi.CraftingSchema_Runner_RunnerType) int {
+		const first = schemaapi.CraftingSchema_Runner_DAGGER_PIPELINE
+		switch {
+		case a == first:
+			return -1
+		case b == first:
+			return 1
+		default:
+			return cmp.Compare(a, b)
+		}
+	})
+
+	return order
 }
 
 func DiscoverAndEnforceRunner(enforcedRunnerType schemaapi.CraftingSchema_Runner_RunnerType, dryRun bool, authToken string, logger zerolog.Logger) (SupportedRunner, error) {

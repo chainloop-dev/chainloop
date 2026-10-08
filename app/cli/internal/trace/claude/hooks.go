@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -57,6 +58,10 @@ var commandTools = []string{"Bash"}
 // kind fired.
 var hookToolMatcher = strings.Join(append(append([]string{}, fileWritingTools...), commandTools...), "|")
 
+// postHookToolMatcher also covers the Skill tool. The skill is loaded only
+// after the call, so the post hook is the first one that can copy its folder.
+var postHookToolMatcher = hookToolMatcher + "|" + skillTool
+
 type hookEvent struct {
 	event   string
 	command string
@@ -67,7 +72,7 @@ var hookEvents = []hookEvent{
 	{eventSessionStart, "chainloop trace hook claude session-start", ""},
 	{eventUserPromptSubmit, "chainloop trace hook claude user-prompt-submit", ""},
 	{eventPreToolUse, "chainloop trace hook claude pre-tool-use", hookToolMatcher},
-	{eventPostToolUse, "chainloop trace hook claude post-tool-use", hookToolMatcher},
+	{eventPostToolUse, "chainloop trace hook claude post-tool-use", postHookToolMatcher},
 	{eventPostToolUseFailure, "chainloop trace hook claude post-tool-use", hookToolMatcher},
 	{eventSessionEnd, "chainloop trace hook claude session-end", ""},
 }
@@ -161,6 +166,25 @@ func (p *Provider) UninstallHooks(repoRoot string) error {
 	}
 
 	return writeJSONFile(settingsPath, settings)
+}
+
+// HooksInstalled reports whether .claude/settings.json holds any Chainloop
+// hook. User-authored hooks are ignored.
+func (p *Provider) HooksInstalled(repoRoot string) (bool, error) {
+	settings, err := readJSONFile(filepath.Join(repoRoot, settingsFile))
+	if err != nil {
+		return false, err
+	}
+
+	hooks, _ := settings["hooks"].(map[string]any)
+	for _, h := range hookEvents {
+		entries, _ := hooks[h.event].([]any)
+		if slices.ContainsFunc(entries, entryContainsChainloopHook) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 // maxHookPayloadBytes caps hook payload reads to defend against runaway or

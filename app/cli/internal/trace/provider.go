@@ -17,9 +17,13 @@ package trace
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
+	"sort"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/skill"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
@@ -108,6 +112,11 @@ type Provider interface {
 	// UninstallHooks removes the agent's hooks from the repo.
 	UninstallHooks(repoRoot string) error
 
+	// HooksInstalled reports whether the repo already carries the agent's
+	// Chainloop hooks, so `trace init` can offer the harnesses a repository
+	// is set up for when it runs again. Hooks the user wrote do not count.
+	HooksInstalled(repoRoot string) (bool, error)
+
 	// ReadHookInput reads hook invocation input from the given reader.
 	ReadHookInput(r io.Reader) (*HookInput, error)
 
@@ -158,6 +167,106 @@ type Provider interface {
 	AnnounceToUser(msg string) error
 }
 
+// SkillTracker is implemented by a provider that records the skills that a
+// session used. A provider without it records no skills, and for its sessions
+// no skill entry means "not recorded", not "no skill used".
+type SkillTracker interface {
+	// NewSkillLoads returns the folders of the skills that the session loaded
+	// since the last call for the session, as far as the hook can tell. The
+	// caller copies each folder. It never fails: a hook that cannot tell
+	// returns nothing, and the push copies the folder later.
+	NewSkillLoads(store *state.Store, input *HookInput) []string
+
+	// SessionSkills returns the skills that the session used, from the
+	// session data under opts.SessionDir, in the order of their first use.
+	// The warnings are for uses that could not be read.
+	SessionSkills(opts *ParseOpts) ([]SkillUse, []string, error)
+
+	// SkillRoots returns the folders that tell where a skill came from, for a
+	// session in repoRoot.
+	SkillRoots(repoRoot string) skill.Roots
+}
+
+// SpecCopyReplacer is implemented by a provider that can find the copies of
+// spec sources in its transcript (spec issue-3556). For the sessions of a
+// provider without it, the transcript keeps its copies.
+type SpecCopyReplacer interface {
+	// ReplaceSpecCopies replaces, in each stream of the raw session, each
+	// exact copy of a source with a pointer to its material, and reports the
+	// result per finder. It updates the lines in place and never fails: a
+	// copy that does not match stays inline.
+	ReplaceSpecCopies(raw map[string][]json.RawMessage, sources pointer.Sources) pointer.Report
+}
+
+// SkillUse is one skill that a session used, with the counts of its uses.
+type SkillUse struct {
+	// Name is the name that the agent used for the skill.
+	Name string
+	// Dir is the folder that the agent loaded the skill from, or "" when the
+	// skill has no folder (a skill built into the agent) or the session data
+	// does not tell. A use with no folder is not recorded.
+	Dir string
+	// FirstUsedAt is the time of the first use, RFC3339.
+	FirstUsedAt string
+	// ByModel counts the uses that the model started with a tool call.
+	ByModel int
+	// ByUser counts the uses that the user started with a slash command.
+	ByUser int
+	// InSubagents counts the uses, of either start, that came from subagents.
+	InSubagents int
+}
+
+// Record adds one use at time at, RFC3339, to the counts. The first use is
+// the earliest time recorded, whatever the order of the calls.
+func (u *SkillUse) Record(at string, byModel, subagent bool) {
+	u.noteTime(at)
+	if byModel {
+		u.ByModel++
+	} else {
+		u.ByUser++
+	}
+	if subagent {
+		u.InSubagents++
+	}
+}
+
+// Merge adds the uses of other, of the same skill, to u.
+func (u *SkillUse) Merge(other SkillUse) {
+	u.noteTime(other.FirstUsedAt)
+	u.ByModel += other.ByModel
+	u.ByUser += other.ByUser
+	u.InSubagents += other.InSubagents
+	if u.Dir == "" {
+		u.Dir = other.Dir
+	}
+}
+
+func (u *SkillUse) noteTime(at string) {
+	if at != "" && (u.FirstUsedAt == "" || at < u.FirstUsedAt) {
+		u.FirstUsedAt = at
+	}
+}
+
+// SortedSkillUses returns the uses in the order of their first use. The name
+// breaks ties, so that the same session data always gives the same order:
+// the limit on skill entries keeps the first ones.
+func SortedSkillUses(uses map[string]*SkillUse) []SkillUse {
+	out := make([]SkillUse, 0, len(uses))
+	for _, use := range uses {
+		out = append(out, *use)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].FirstUsedAt != out[j].FirstUsedAt {
+			return out[i].FirstUsedAt < out[j].FirstUsedAt
+		}
+
+		return out[i].Name < out[j].Name
+	})
+
+	return out
+}
+
 // HookInput represents parsed hook invocation data from an AI agent.
 type HookInput struct {
 	// SessionID is the agent-assigned identifier for the session.
@@ -199,6 +308,9 @@ type HookInput struct {
 	// only emit post-edit events (e.g., Cursor's afterFileEdit) populate it so
 	// consumers can reconstruct the "before" content via reverse application.
 	Edits []HookEdit `json:"-"`
+	// SkillDir is the folder of the skill that the tool call loaded, when the
+	// hook payload gives it. Empty otherwise.
+	SkillDir string `json:"-"`
 	// ToolFailed reports that the hook fires after a tool call that failed
 	// (Claude's PostToolUseFailure). The tool can still have changed files,
 	// so its changes are recorded. But the agent expects a different hook

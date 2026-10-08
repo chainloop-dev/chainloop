@@ -340,6 +340,63 @@ func TestRedactFiltersOnlyMatchingLeaves(t *testing.T) {
 	assert.Equal(t, []string{"/b/c"}, consulted)
 }
 
+// recordingScanner reports the findings whose secret is in the scanned text,
+// and keeps each text it scanned.
+type recordingScanner struct {
+	fakeScanner
+	texts []string
+}
+
+func (r *recordingScanner) Scan(ctx context.Context, text string) ([]Finding, error) {
+	r.texts = append(r.texts, text)
+	return r.fakeScanner.Scan(ctx, text)
+}
+
+func TestRedactOpaqueLeaves(t *testing.T) {
+	// The media data is opaque: it is neither scanned nor rewritten.
+	opaque := func(_ string, obj map[string]any, key string) bool {
+		return key == "data" && obj["type"] == "base64"
+	}
+
+	testCases := []struct {
+		name string
+		doc  string
+		want string
+		// dataScanned is true when the data is not opaque, so the scanner sees it.
+		dataScanned bool
+	}{
+		{
+			name: "secret in opaque data and in text",
+			doc:  `{"img":{"type":"base64","data":"aaSECaa"},"t":"y SEC y"}`,
+			want: `{"img":{"data":"aaSECaa","type":"base64"},"t":"y [REDACTED:r1] y"}`,
+		},
+		{
+			name: "secret only in opaque data",
+			doc:  `{"img":{"type":"base64","data":"aaSECaa"},"t":"plain"}`,
+			want: `{"img":{"type":"base64","data":"aaSECaa"},"t":"plain"}`,
+		},
+		{
+			name:        "data that is not opaque is still redacted",
+			doc:         `{"img":{"type":"url","data":"aaSECaa"}}`,
+			want:        `{"img":{"data":"aa[REDACTED:r1]aa","type":"url"}}`,
+			dataScanned: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scanner := &recordingScanner{fakeScanner: fakeScanner{findings: []Finding{{RuleID: "r1", Secret: "SEC"}}, requirePresent: true}}
+
+			got, _, err := New(scanner, WithOpaque(opaque)).Redact(context.Background(), []byte(tc.doc))
+			require.NoError(t, err)
+			assert.JSONEq(t, tc.want, string(got))
+
+			scanned := strings.Contains(strings.Join(scanner.texts, "\n"), "aaSECaa")
+			assert.Equal(t, tc.dataScanned, scanned)
+		})
+	}
+}
+
 func TestRedactIsIdempotent(t *testing.T) {
 	docs := []string{
 		`{"data":{"raw_session":{"main":[{"content":"FAKE-AWS-KEY-NOT-A-REAL-PATTERN"}]}}}`,

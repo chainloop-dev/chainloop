@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -69,15 +70,17 @@ type specMaterialAdder interface {
 // attestation would point nowhere.
 //
 // It also returns the names of the files it stored, in order, so that a
-// later push of the session keeps them first.
-func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, names *materials.NameAllocator, sessionID string, captures []spec.Capture, log zerolog.Logger) (entries []aicodingsession.SpecEntry, warnings, stored []string) {
+// later push of the session keeps them first, and the sources that the
+// transcript can hold copies of: the digest of each stored file as the agent
+// wrote it, mapped to the digest of its material.
+func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, names *materials.NameAllocator, sessionID string, captures []spec.Capture, log zerolog.Logger) (entries []aicodingsession.SpecEntry, warnings, stored []string, sources pointer.Sources) {
 	if len(captures) == 0 {
-		return nil, nil, nil
+		return nil, nil, nil, nil
 	}
 
 	tmpDir, err := os.MkdirTemp("", "chainloop-trace-spec-*")
 	if err != nil {
-		return nil, []string{fmt.Sprintf("%d spec entries were not recorded: %v", len(captures), err)}, nil
+		return nil, []string{fmt.Sprintf("%d spec entries were not recorded: %v", len(captures), err)}, nil, nil
 	}
 	defer func() { _ = os.RemoveAll(tmpDir) }()
 
@@ -96,9 +99,13 @@ func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRed
 
 		entries = append(entries, entry)
 		stored = append(stored, c.FileName)
+		if sources == nil {
+			sources = make(pointer.Sources)
+		}
+		sources[pointer.Digest(c.Raw)] = entry.Digest
 	}
 
-	return entries, warnings, stored
+	return entries, warnings, stored, sources
 }
 
 // storeCapture redacts one capture, adds it to the attestation, and returns
@@ -261,18 +268,30 @@ func (r *specRedactor) Redact(ctx context.Context, doc []byte) ([]byte, error) {
 // ID>-<file name>. The allocator sanitizes it into a valid material name and
 // makes it unique within the attestation.
 func specMaterialName(sessionID, fileName string) string {
+	return specMaterialPrefix(sessionID) + materialStem(strings.TrimSuffix(fileName, filepath.Ext(fileName)), "source")
+}
+
+// specMaterialPrefix is the start of the name of each spec material of a
+// session: spec-<first 6 characters of the session ID>-.
+func specMaterialPrefix(sessionID string) string {
 	short := sessionID
 	if len(short) > 6 {
 		short = short[:6]
 	}
 
-	stem := materials.SanitizeMaterialName(strings.TrimSuffix(fileName, filepath.Ext(fileName)))
+	return "spec-" + short + "-"
+}
+
+// materialStem sanitizes name into the part of a material name taken from it,
+// cut to maxSpecSlugLen, or returns fallback when nothing is left.
+func materialStem(name, fallback string) string {
+	stem := materials.SanitizeMaterialName(name)
 	if len(stem) > maxSpecSlugLen {
 		stem = strings.TrimRight(stem[:maxSpecSlugLen], "-")
 	}
 	if stem == "" {
-		stem = "source"
+		return fallback
 	}
 
-	return "spec-" + short + "-" + stem
+	return stem
 }

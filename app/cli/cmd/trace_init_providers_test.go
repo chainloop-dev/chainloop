@@ -16,6 +16,8 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
@@ -34,11 +36,15 @@ func TestResolveTraceProviders(t *testing.T) {
 		name        string
 		flags       traceProviderFlags
 		interactive bool
+		// configured are the harnesses whose hooks the repository already has
+		configured []string
 		// answer is what the user ticks in the multi-select
 		answer []string
 		want   []string
 		// wantPrompted is whether the multi-select should have been shown
 		wantPrompted bool
+		// wantDefaults is what the multi-select comes up with ticked
+		wantDefaults []string
 		wantErr      string
 	}{
 		{
@@ -64,6 +70,32 @@ func TestResolveTraceProviders(t *testing.T) {
 			answer:       []string{"cursor", "opencode"},
 			want:         []string{"cursor", "opencode"},
 			wantPrompted: true,
+			wantDefaults: []string{providers.DefaultProvider},
+		},
+		{
+			name:         "a re-run comes up with the configured harnesses ticked",
+			interactive:  true,
+			configured:   []string{providerClaudeCode, "cursor", "opencode"},
+			answer:       []string{providerClaudeCode, "cursor", "opencode"},
+			want:         []string{providerClaudeCode, "cursor", "opencode"},
+			wantPrompted: true,
+			wantDefaults: []string{providerClaudeCode, "cursor", "opencode"},
+		},
+		{
+			name:         "a re-run without the default ticks only what is configured",
+			interactive:  true,
+			configured:   []string{"cursor"},
+			answer:       []string{"cursor"},
+			want:         []string{"cursor"},
+			wantPrompted: true,
+			wantDefaults: []string{"cursor"},
+		},
+		{
+			name:        "flags still win over the configured harnesses",
+			flags:       traceProviderFlags{opencode: true},
+			interactive: true,
+			configured:  []string{"cursor"},
+			want:        []string{"opencode"},
 		},
 		{
 			name:         "picking nothing is refused",
@@ -78,7 +110,13 @@ func TestResolveTraceProviders(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &fakePrompter{multiSelectAnswer: tc.answer}
 
-			got, err := resolveTraceProviders(p, tc.flags, tc.interactive)
+			var readConfigured bool
+			configured := func() []string {
+				readConfigured = true
+				return tc.configured
+			}
+
+			got, err := resolveTraceProviders(p, tc.flags, tc.interactive, configured)
 
 			if tc.wantErr != "" {
 				require.Error(t, err)
@@ -91,20 +129,68 @@ func TestResolveTraceProviders(t *testing.T) {
 
 			if !tc.wantPrompted {
 				assert.Empty(t, p.multiSelects, "no question should have been asked")
+				assert.False(t, readConfigured, "the repository is only read to preselect the question")
 				return
 			}
 
 			require.Len(t, p.multiSelects, 1)
-			// Every registered provider is offered, with the default ticked.
+			// Every registered provider is offered.
 			assert.Equal(t, traceProviderNames(), p.multiSelects[0].options)
-			assert.Equal(t, []string{providers.DefaultProvider}, p.multiSelects[0].defaults)
+			assert.Equal(t, tc.wantDefaults, p.multiSelects[0].defaults)
 		})
 	}
 }
 
 func TestResolveTraceProvidersPromptError(t *testing.T) {
-	_, err := resolveTraceProviders(&fakePrompter{multiSelectErr: errAborted}, traceProviderFlags{}, true)
+	_, err := resolveTraceProviders(&fakePrompter{multiSelectErr: errAborted}, traceProviderFlags{}, true, func() []string { return nil })
 	require.ErrorIs(t, err, errAborted)
+}
+
+// TestConfiguredTraceProviders reads the harnesses back from hooks the real
+// providers wrote, which is what a re-run of trace init finds (PFM-7633).
+func TestConfiguredTraceProviders(t *testing.T) {
+	testCases := []struct {
+		name      string
+		installed []string
+		want      []string
+	}{
+		{
+			name: "a repository never set up",
+			want: []string{},
+		},
+		{
+			name:      "some harnesses set up",
+			installed: []string{"opencode", "cursor"},
+			// In the registry's order, the same order the prompt lists them in.
+			want: []string{"cursor", "opencode"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			for _, p := range providers.ByNames(tc.installed) {
+				require.NoError(t, p.InstallHooks(repoRoot))
+			}
+
+			assert.Equal(t, tc.want, configuredTraceProviders(repoRoot))
+		})
+	}
+}
+
+// TestConfiguredTraceProvidersSkipsUnreadableSettings keeps a broken harness
+// configuration from stopping init, which would otherwise be the way to repair it.
+func TestConfiguredTraceProvidersSkipsUnreadableSettings(t *testing.T) {
+	repoRoot := t.TempDir()
+
+	cursor := providers.ByName("cursor")
+	require.NoError(t, cursor.InstallHooks(repoRoot))
+
+	claudeSettings := providers.ByName(providerClaudeCode).SettingsFile(repoRoot)
+	require.NoError(t, os.MkdirAll(filepath.Dir(claudeSettings), 0o755))
+	require.NoError(t, os.WriteFile(claudeSettings, []byte("{not json"), 0o600))
+
+	assert.Equal(t, []string{"cursor"}, configuredTraceProviders(repoRoot))
 }
 
 func TestTraceProviderFlags(t *testing.T) {

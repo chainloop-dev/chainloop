@@ -36,10 +36,24 @@ const (
 	partTool = "tool"
 )
 
+// toolStatusCompleted is the status of a tool call that ran to the end.
+const toolStatusCompleted = "completed"
+
 // parseExport reads and parses the opencode export JSON at path into
 // structured evidence. It reads both the OpenCode 1.x and the OpenCode 2
 // export format. Unknown fields are ignored.
 func parseExport(path string) (*aicodingsession.Evidence, error) {
+	export, err := readExport(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildEvidence(export), nil
+}
+
+// readExport reads an export file in either format, in the OpenCode 1.x
+// shape.
+func readExport(path string) (*exportData, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read export file: %w", err)
@@ -51,7 +65,7 @@ func parseExport(path string) (*aicodingsession.Evidence, error) {
 			return nil, fmt.Errorf("parse export JSON: %w", err)
 		}
 
-		return buildEvidence(export.toExportData()), nil
+		return export.toExportData(), nil
 	}
 
 	var export exportData
@@ -59,7 +73,7 @@ func parseExport(path string) (*aicodingsession.Evidence, error) {
 		return nil, fmt.Errorf("parse export JSON: %w", err)
 	}
 
-	return buildEvidence(&export), nil
+	return &export, nil
 }
 
 // isExportV2 reports whether data is an OpenCode 2 export. Only the OpenCode 2
@@ -166,7 +180,7 @@ func buildEvidence(export *exportData) *aicodingsession.Evidence {
 
 		// Count completed tool invocations from tool parts.
 		for _, part := range msg.Parts {
-			if part.Type == partTool && part.State != nil && part.State.Status == "completed" {
+			if part.Type == partTool && part.State != nil && part.State.Status == toolStatusCompleted {
 				name := part.Tool
 				if name == "" {
 					name = unknownValue
@@ -309,7 +323,7 @@ func buildRawSessionEntries(messages []messageEntry) []json.RawMessage {
 					blocks = append(blocks, trace.RawSessionTextBlock{Type: partText, Text: p.Text})
 				}
 			case partTool:
-				if p.State == nil || p.State.Status != "completed" {
+				if p.State == nil || p.State.Status != toolStatusCompleted {
 					continue
 				}
 				toolName := p.Tool

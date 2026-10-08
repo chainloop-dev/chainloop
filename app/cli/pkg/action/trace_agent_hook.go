@@ -65,6 +65,10 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 		log.Debug().Err(err).Msg("copy session data failed")
 	}
 
+	// The last turn can have used a skill that no hook saw yet. The copies
+	// stay after the session end, for a push that comes later.
+	captureSkillLoads(provider, store, input, log)
+
 	setSessionActive(store, sessionID, false, log)
 
 	// The spec stays on disk for the whole session, so that every push of it
@@ -218,11 +222,15 @@ func HandleAgentPromptSubmit(provider trace.Provider, log zerolog.Logger) error 
 
 	log.Debug().Str("session_id", input.SessionID).Msg("prompt-submit hook invoked")
 
-	_, repoRoot, err := state.Locate()
+	store, repoRoot, err := state.Locate()
 	if err != nil {
 		log.Debug().Err(err).Msg("prompt-submit: no trace state located")
 		return nil
 	}
+
+	// A skill that the user started with a slash command fires no tool hook.
+	// This is the first hook after it when the skill calls no tool.
+	captureSkillLoads(provider, store, input, log)
 
 	reminder := sessionSpecReminder(repoRoot, input.SessionID, log)
 	if err := provider.AnnouncePromptSubmit(reminder); err != nil {
@@ -270,6 +278,7 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 	}
 
 	ensureSessionTracked(provider, store, repoRoot, input, log)
+	captureSkillLoads(provider, store, input, log)
 
 	switch {
 	case provider.IsCommandTool(input.ToolName):
@@ -573,6 +582,12 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 	isCommand := provider.IsCommandTool(input.ToolName)
 	isFileWriting := provider.IsFileWritingTool(input.ToolName)
 	if !isCommand && !isFileWriting {
+		// The hook fires for the skill tool too, whose skill is loaded only
+		// after the call. The skill is the one thing to record for it.
+		if store, _, err := state.Locate(); err == nil {
+			captureSkillLoads(provider, store, input, log)
+		}
+
 		log.Debug().Str("tool", input.ToolName).Msg("post-tool-use: not a tracked tool, skipping")
 		return nil
 	}

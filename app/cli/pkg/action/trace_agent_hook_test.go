@@ -198,7 +198,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 	})
 }
 
-// TestHandleAgentPromptSubmit covers R-002 of Spec 003: the reminder comes at
+// TestHandleAgentPromptSubmit covers R-002 of Spec issue-3515: the reminder comes at
 // each user prompt, also in a resumed session whose folder holds files.
 func TestHandleAgentPromptSubmit(t *testing.T) {
 	const sessionID = "abc-123"

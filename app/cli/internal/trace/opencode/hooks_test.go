@@ -228,10 +228,56 @@ func TestPluginSendsShellCallID(t *testing.T) {
 	assert.Contains(t, content, "{ ...payload, tool_use_id: callID }")
 	// OpenCode 1.x.
 	assert.Contains(t, content, `toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, input.callID, output.args)`)
-	assert.Contains(t, content, `toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args)`)
+	assert.Contains(t, content, `toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args, input.tool === skillTool ? skillDirFrom(output) : "")`)
 	// OpenCode 2.
 	assert.Contains(t, content, `toolEvent(directory, "pre-tool-use", "tool.execute.before", event.sessionID, event.tool, event.id, event.input)`)
-	assert.Contains(t, content, `toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input)`)
+	assert.Contains(t, content, `toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input, event.tool === skillTool ? skillDirFrom(event.output, event.result, event) : "")`)
+}
+
+// TestPluginSendsSkillDir pins that the plugin sends the folder of a loaded
+// skill to the post hook of the skill tool, and fires no hook for the skill
+// tool otherwise.
+func TestPluginSendsSkillDir(t *testing.T) {
+	repoRoot := t.TempDir()
+	require.NoError(t, New().InstallHooks(repoRoot))
+
+	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+	require.NoError(t, err)
+	content := string(data)
+
+	assert.Contains(t, content, `const skillTool = "skill"`)
+	assert.Contains(t, content, "if (skillDir) await fire(directory, hook, { ...payload, skill_dir: skillDir })")
+}
+
+func TestReadHookInputParsesSkillDir(t *testing.T) {
+	testCases := []struct {
+		name    string
+		payload string
+		want    string
+	}{
+		{
+			name:    "a path from the tool metadata",
+			payload: `{"session_id":"ses_1","hook_event_name":"tool.execute.after","tool_name":"skill","skill_dir":"/home/me/.config/opencode/skills/git-release"}`,
+			want:    "/home/me/.config/opencode/skills/git-release",
+		},
+		{
+			name:    "a file URL from the tool output",
+			payload: `{"session_id":"ses_1","hook_event_name":"tool.execute.after","tool_name":"skill","skill_dir":"file:///home/me/repo/.opencode/skills/git-release"}`,
+			want:    "/home/me/repo/.opencode/skills/git-release",
+		},
+		{
+			name:    "a relative folder is dropped",
+			payload: `{"session_id":"ses_1","hook_event_name":"tool.execute.after","tool_name":"skill","skill_dir":"skills/git-release"}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			input, err := New().ReadHookInput(bytes.NewBufferString(tc.payload))
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, input.SkillDir)
+		})
+	}
 }
 
 // The plugin sends opencode's callID as tool_use_id on shell hooks, so that

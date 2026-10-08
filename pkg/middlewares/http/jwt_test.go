@@ -46,25 +46,36 @@ func genericClaimsFunc() ClaimsFunc {
 	}
 }
 
-func TestAuthFromQueryParam(t *testing.T) {
+func TestAuthFromHeaderOrQueryParam(t *testing.T) {
 	validToken := generateValidToken()
+	wantClaims := map[string]interface{}{"foo": "bar"}
 
 	tests := []struct {
 		name       string
-		token      string
+		header     string
+		query      string
 		wantStatus int
 		wantClaims map[string]interface{}
 	}{
-		{"Valid Token", validToken, http.StatusOK, map[string]interface{}{"foo": "bar"}},
-		{"Missing Token", "", http.StatusUnauthorized, nil},
-		{"Invalid Token", "invalidtoken", http.StatusUnauthorized, nil},
+		{"valid query token", "", validToken, http.StatusOK, wantClaims},
+		{"valid header token", bearerWord + " " + validToken, "", http.StatusOK, wantClaims},
+		{"lowercase bearer keyword", "bearer " + validToken, "", http.StatusOK, wantClaims},
+		{"header wins over an invalid query token", bearerWord + " " + validToken, "invalidtoken", http.StatusOK, wantClaims},
+		{"invalid header token does not fall back to the query", bearerWord + " invalidtoken", validToken, http.StatusUnauthorized, nil},
+		{"malformed header does not fall back to the query", bearerWord, validToken, http.StatusUnauthorized, nil},
+		{"non bearer header does not fall back to the query", "Basic " + validToken, validToken, http.StatusUnauthorized, nil},
+		{"missing token", "", "", http.StatusUnauthorized, nil},
+		{"invalid query token", "", "invalidtoken", http.StatusUnauthorized, nil},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, _ := http.NewRequest("GET", "/?t="+tt.token, nil)
+			req, _ := http.NewRequest("GET", "/?t="+tt.query, nil)
+			if tt.header != "" {
+				req.Header.Set(authorizationKey, tt.header)
+			}
 			rr := httptest.NewRecorder()
-			handler := AuthFromQueryParam(mockKeyFunc, genericClaimsFunc(), mockSigningMethod, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			handler := AuthFromHeaderOrQueryParam(mockKeyFunc, genericClaimsFunc(), mockSigningMethod, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				claims, ok := jwtmiddleware.FromContext(r.Context())
 				mapClaims := claims.(*jwt.MapClaims)
 				if tt.wantClaims != nil {

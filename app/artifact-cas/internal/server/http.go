@@ -56,7 +56,7 @@ func NewHTTPServer(c *conf.Server, authConf *conf.Auth, downloadSvc *service.Dow
 
 	srv := http.NewServer(opts...)
 
-	downloadHandler := middlewares_http.AuthFromQueryParam(loadPublicKey(publicKey), claimsFunc(), casJWT.SigningMethod, downloadSvc)
+	downloadHandler := middlewares_http.AuthFromHeaderOrQueryParam(loadPublicKey(publicKey), claimsFunc(), casJWT.SigningMethod, downloadSvc)
 	srv.Handle(service.DownloadPath, CORSMiddleware(c.GetHttp().GetCors().GetAllowOrigins(), downloadHandler))
 	api.RegisterStatusServiceHTTPServer(srv, service.NewStatusService(Version, providers))
 	return srv, nil

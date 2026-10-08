@@ -180,7 +180,7 @@ func TestSessionSpecReminder(t *testing.T) {
 	})
 }
 
-// TestSessionSpecsAcrossPushes covers R-004 of Spec 003: a file that an
+// TestSessionSpecsAcrossPushes covers R-004 of Spec issue-3515: a file that an
 // earlier push recorded stays in the evidence of later pushes, also when the
 // agent overwrote it and the session went over the limit.
 func TestSessionSpecsAcrossPushes(t *testing.T) {

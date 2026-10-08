@@ -36,14 +36,38 @@ import (
 // addedMaterial is one call recorded by fakeMaterialAdder, with the file read
 // back at call time: the caller is free to delete it once the add returns.
 type addedMaterial struct {
-	name, fileName, kind, content string
-	annotations                   map[string]string
+	name, fileName, kind, content, digest string
+	annotations                           map[string]string
 }
 
 type fakeMaterialAdder struct {
 	added []addedMaterial
 	// failOn names the materials whose add fails.
 	failOn map[string]bool
+	// realDigests returns the SHA-256 digest of the content, as the
+	// attestation does, instead of a digest made from the name.
+	realDigests bool
+}
+
+// byName returns the material added under name.
+func (f *fakeMaterialAdder) byName(name string) addedMaterial {
+	for _, m := range f.added {
+		if m.name == name {
+			return m
+		}
+	}
+
+	return addedMaterial{}
+}
+
+// names returns the names of the added materials, in the order of the adds.
+func (f *fakeMaterialAdder) names() []string {
+	out := make([]string, 0, len(f.added))
+	for _, m := range f.added {
+		out = append(out, m.name)
+	}
+
+	return out
 }
 
 func (f *fakeMaterialAdder) AddMaterial(_ context.Context, name, path, kind string, annotations map[string]string) (string, error) {
@@ -56,11 +80,17 @@ func (f *fakeMaterialAdder) AddMaterial(_ context.Context, name, path, kind stri
 		return "", err
 	}
 
+	digest := "sha256:" + name
+	if f.realDigests {
+		sum := sha256.Sum256(content)
+		digest = "sha256:" + hex.EncodeToString(sum[:])
+	}
+
 	f.added = append(f.added, addedMaterial{
-		name: name, fileName: filepath.Base(path), kind: kind, content: string(content), annotations: annotations,
+		name: name, fileName: filepath.Base(path), kind: kind, content: string(content), digest: digest, annotations: annotations,
 	})
 
-	return "sha256:" + name, nil
+	return digest, nil
 }
 
 // specCapture builds a capture the way the spec folder reader does: parsed from
@@ -93,7 +123,7 @@ func TestAttachSpecs(t *testing.T) {
 	t.Run("each capture becomes an EVIDENCE material and a reference", func(t *testing.T) {
 		adder := &fakeMaterialAdder{}
 
-		entries, warnings, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{ticket, plan}, zerolog.Nop())
+		entries, warnings, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{ticket, plan}, zerolog.Nop())
 
 		assert.Empty(t, warnings)
 		require.Len(t, adder.added, 2)
@@ -133,7 +163,7 @@ func TestAttachSpecs(t *testing.T) {
 			"---\nkind: ticket\nuri: https://tracker.example.com/issue/1?token="+pat+"\n---\nconfigured with the token "+pat+" and still a 401",
 			"2026-09-16T10:12:03Z")
 
-		entries, warnings, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{withSecret}, zerolog.Nop())
+		entries, warnings, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{withSecret}, zerolog.Nop())
 
 		assert.Empty(t, warnings)
 		require.Len(t, adder.added, 1)
@@ -159,7 +189,7 @@ func TestAttachSpecs(t *testing.T) {
 			CapturedAt: "2026-09-16T10:31:40Z", Raw: pngBytes, Verbatim: true,
 		}
 
-		entries, warnings, _ := attachSpecs(context.Background(), adder, redactor, materials.NewNameAllocator(nil), sessionID, []spec.Capture{image}, zerolog.Nop())
+		entries, warnings, _, _ := attachSpecs(context.Background(), adder, redactor, materials.NewNameAllocator(nil), sessionID, []spec.Capture{image}, zerolog.Nop())
 
 		assert.Empty(t, warnings)
 		assert.Zero(t, scans, "a text scanner has nothing to read in an image, and a rewrite would break it")
@@ -178,7 +208,7 @@ func TestAttachSpecs(t *testing.T) {
 			"---\nkind: ticket\nrole: task\ntitle: \"ENG-1234: Add an export button\"\ndescription: The ticket that the session implements.\n---\nthe ticket",
 			"2026-09-16T10:12:03Z")
 
-		entries, warnings, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{described, plan}, zerolog.Nop())
+		entries, warnings, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{described, plan}, zerolog.Nop())
 
 		assert.Empty(t, warnings)
 		require.Len(t, adder.added, 2)
@@ -254,7 +284,7 @@ func TestAttachSpecs(t *testing.T) {
 			"---\nkind: ticket\ntitle: token "+pat+" fails\ndescription: uses "+pat+"\n---\nthe ticket",
 			"2026-09-16T10:12:03Z")
 
-		entries, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{withSecret}, zerolog.Nop())
+		entries, _, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{withSecret}, zerolog.Nop())
 
 		require.Len(t, entries, 1)
 		assert.Equal(t, "token [REDACTED:github-pat] fails", entries[0].Title)
@@ -272,7 +302,7 @@ func TestAttachSpecs(t *testing.T) {
 			MetaRaw: []byte("role: reference\ntitle: mockup for " + pat + "\ndescription: Where the button goes.\n"),
 		}
 
-		entries, warnings, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{image}, zerolog.Nop())
+		entries, warnings, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{image}, zerolog.Nop())
 
 		assert.Empty(t, warnings)
 		require.Len(t, adder.added, 1, "the companion file is no material of its own")
@@ -296,7 +326,7 @@ func TestAttachSpecs(t *testing.T) {
 			MetaRaw: []byte("role: reference\ntitle: Export button mockup\n"),
 		}
 
-		entries, warnings, _ := attachSpecs(context.Background(), adder, redactor, materials.NewNameAllocator(nil), sessionID, []spec.Capture{image}, zerolog.Nop())
+		entries, warnings, _, _ := attachSpecs(context.Background(), adder, redactor, materials.NewNameAllocator(nil), sessionID, []spec.Capture{image}, zerolog.Nop())
 
 		assert.Empty(t, warnings)
 		require.Len(t, entries, 1)
@@ -308,7 +338,7 @@ func TestAttachSpecs(t *testing.T) {
 	t.Run("a failed add drops that entry only, and says so", func(t *testing.T) {
 		adder := &fakeMaterialAdder{failOn: map[string]bool{"spec-7412a0-ticket-pfm-7289": true}}
 
-		entries, warnings, stored := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{ticket, plan}, zerolog.Nop())
+		entries, warnings, stored, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{ticket, plan}, zerolog.Nop())
 
 		// A reference to a material that is not in the attestation would point
 		// nowhere, so the entry goes with it.
@@ -334,7 +364,7 @@ func TestAttachSpecs(t *testing.T) {
 		c := ticket
 		c.FileName = "design-2.md"
 
-		entries, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{a, b, c}, zerolog.Nop())
+		entries, _, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{a, b, c}, zerolog.Nop())
 
 		require.Len(t, entries, 3)
 		names := []string{adder.added[0].name, adder.added[1].name, adder.added[2].name}
@@ -349,8 +379,8 @@ func TestAttachSpecs(t *testing.T) {
 
 		first := specCapture(t, "ticket.md", "the first ticket", "2026-09-16T10:12:03Z")
 		second := specCapture(t, "ticket.md", "the second ticket", "2026-09-16T10:12:04Z")
-		_, _, _ = attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), names, "ses_3AbC9x", []spec.Capture{first}, zerolog.Nop())
-		_, _, _ = attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), names, "ses_3AbZ7y", []spec.Capture{second}, zerolog.Nop())
+		_, _, _, _ = attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), names, "ses_3AbC9x", []spec.Capture{first}, zerolog.Nop())
+		_, _, _, _ = attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), names, "ses_3AbZ7y", []spec.Capture{second}, zerolog.Nop())
 
 		require.Len(t, adder.added, 2)
 		assert.NotEqual(t, adder.added[0].name, adder.added[1].name, "one attestation must never hold two materials under one name")

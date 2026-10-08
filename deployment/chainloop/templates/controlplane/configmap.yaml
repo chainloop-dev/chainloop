@@ -53,6 +53,7 @@ data:
     attestations:
       workflow_run_expiration_window: {{ .Values.controlplane.attestations.workflowRunExpirationWindow | quote }}
       workflow_run_expiration_check_interval: {{ .Values.controlplane.attestations.workflowRunExpirationCheckInterval | quote }}
+      force_verification: {{ ne .Values.controlplane.keylessSigning.forceVerification false }}
     restrict_org_creation: {{ .Values.controlplane.restrictOrgCreation }}
     {{- if .Values.controlplane.uiDashboardURL }}
     ui_dashboard_url: {{ .Values.controlplane.uiDashboardURL | quote }}

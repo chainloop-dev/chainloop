@@ -115,6 +115,14 @@ type toolState struct {
 	Status string          `json:"status"`
 	Input  json.RawMessage `json:"input,omitempty"`
 	Output json.RawMessage `json:"output,omitempty"`
+	// Metadata is read for the skill tool only, which puts the skill folder
+	// in it.
+	Metadata *toolMetadata `json:"metadata,omitempty"`
+}
+
+// toolMetadata holds the fields of the tool metadata that the provider reads.
+type toolMetadata struct {
+	Dir string `json:"dir,omitempty"`
 }
 
 // exportDataV2 is the top-level shape of `opencode session export`, the

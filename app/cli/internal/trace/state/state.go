@@ -136,35 +136,42 @@ func (s *Store) SetRecordedSpecFiles(sessionID string, names []string) error {
 		return removeIfExists(path)
 	}
 
-	data, err := json.Marshal(names)
-	if err != nil {
-		return fmt.Errorf("encode recorded spec files: %w", err)
-	}
-
-	dir := s.SpecRedactionDir(sessionID)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return fmt.Errorf("create spec redaction directory: %w", err)
-	}
-
-	tmp, err := os.CreateTemp(dir, "."+recordedSpecFilesName+"-*")
-	if err != nil {
+	if err := writeJSONAtomic(path, names); err != nil {
 		return fmt.Errorf("write recorded spec files: %w", err)
+	}
+
+	return nil
+}
+
+// writeJSONAtomic writes v as JSON to path, creating its directory. The data
+// goes to a temporary file that is then renamed over path, so a reader never
+// sees half of it.
+func writeJSONAtomic(path string, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return err
+	}
+
+	tmp, err := os.CreateTemp(dir, "."+filepath.Base(path)+"-*")
+	if err != nil {
+		return err
 	}
 	defer func() { _ = os.Remove(tmp.Name()) }()
 
 	if _, err := tmp.Write(data); err != nil {
 		_ = tmp.Close()
-		return fmt.Errorf("write recorded spec files: %w", err)
+		return err
 	}
 	if err := tmp.Close(); err != nil {
-		return fmt.Errorf("write recorded spec files: %w", err)
+		return err
 	}
 
-	if err := os.Rename(tmp.Name(), path); err != nil {
-		return fmt.Errorf("write recorded spec files: %w", err)
-	}
-
-	return nil
+	return os.Rename(tmp.Name(), path)
 }
 
 func (s *Store) recordedSpecFilesPath(sessionID string) string {
@@ -283,7 +290,8 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 			_ = os.RemoveAll(filepath.Join(redactionsDir, entry.Name()))
 		}
 	}
-	return nil
+
+	return s.gcSkillCopies()
 }
 
 // staleSessionIDs returns the sanitized IDs of session records older than

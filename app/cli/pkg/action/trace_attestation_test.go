@@ -18,12 +18,13 @@ package action
 import (
 	"testing"
 
+	internaltoken "github.com/chainloop-dev/chainloop/app/cli/internal/token"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestCheckTokenOrganization(t *testing.T) {
+func TestMismatchedTokenOrganization(t *testing.T) {
 	apiToken := func(t *testing.T, org string) string {
 		t.Helper()
 		claims := jwt.MapClaims{"aud": "api-token-auth.chainloop", "jti": "some-id"}
@@ -36,22 +37,19 @@ func TestCheckTokenOrganization(t *testing.T) {
 		return s
 	}
 
-	t.Run("API token from another org is rejected", func(t *testing.T) {
-		err := checkTokenOrganization(apiToken(t, "foo"), "bar")
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "foo")
-		assert.Contains(t, err.Error(), "bar")
+	t.Run("API token from another org is identified", func(t *testing.T) {
+		assert.Equal(t, "foo", internaltoken.MismatchedOrganization(apiToken(t, "foo"), "bar"))
 	})
 
 	t.Run("API token from the pinned org passes", func(t *testing.T) {
-		assert.NoError(t, checkTokenOrganization(apiToken(t, "bar"), "bar"))
-		assert.NoError(t, checkTokenOrganization(apiToken(t, "BAR"), "bar"))
+		assert.Empty(t, internaltoken.MismatchedOrganization(apiToken(t, "bar"), "bar"))
+		assert.Empty(t, internaltoken.MismatchedOrganization(apiToken(t, "BAR"), "bar"))
 	})
 
 	t.Run("tokens without an org claim pass", func(t *testing.T) {
 		// User and federated tokens: the org header is honored server-side.
-		assert.NoError(t, checkTokenOrganization(apiToken(t, ""), "bar"))
-		assert.NoError(t, checkTokenOrganization("", "bar"))
-		assert.NoError(t, checkTokenOrganization("not-a-jwt", "bar"))
+		assert.Empty(t, internaltoken.MismatchedOrganization(apiToken(t, ""), "bar"))
+		assert.Empty(t, internaltoken.MismatchedOrganization("", "bar"))
+		assert.Empty(t, internaltoken.MismatchedOrganization("not-a-jwt", "bar"))
 	})
 }

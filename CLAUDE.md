@@ -303,3 +303,4 @@ See [AI_POLICY.md](AI_POLICY.md) for the full AI contribution policy.
 - if you modify a schema, remember to run `make migration_sync`
 - after changing Helm chart source code (`deployment/chainloop/`), bump the **patch** version (not minor, not major) in the chart's `Chart.yaml`
 - when asked to create a GitHub issue, create it in the `chainloop-dev/chainloop` repository
+- when you add or change a Chainloop Trace agent provider (`app/cli/internal/trace/claude`, `cursor`, `opencode`, or a new one), or add or change a Trace feature, update the feature table and the compatibility matrix in `app/cli/internal/trace/README.md` in the same PR

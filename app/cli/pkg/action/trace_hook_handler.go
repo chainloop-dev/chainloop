@@ -526,19 +526,28 @@ type RunTracePushOpts struct {
 	CLIVersion string
 }
 
-// HandlePrePushHook handles the pre-push git hook.
-// When requireTrace is true, errors from the attestation push are
-// propagated so that the git push is blocked. When false, errors are
-// logged but never returned.
-func HandlePrePushHook(ctx context.Context, requireTrace bool, log zerolog.Logger, opts RunTracePushOpts) error {
+// HandlePrePushHook handles the pre-push git hook. The caller passes a
+// returned error through PrePushFailure.
+func HandlePrePushHook(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts) error {
 	drainPushStdin()
 
-	if err := RunTracePush(ctx, log, opts); err != nil {
-		if requireTrace {
-			return fmt.Errorf("attestation failed (--require-trace is enabled): %w", err)
-		}
+	return RunTracePush(ctx, log, opts)
+}
 
-		log.Debug().Err(err).Msg("pre-push hook failed")
+// PrePushFailure decides what a failed pre-push hook does. The managed
+// pre-push script propagates the hook's exit status to git. When
+// requireTrace is true, it returns the error so that the git push is
+// blocked. When false, it logs a warning, so the user knows why the session
+// is missing, and returns nil so the push continues.
+func PrePushFailure(err error, requireTrace bool, log zerolog.Logger) error {
+	if requireTrace {
+		return fmt.Errorf("attestation failed (--require-trace is enabled): %w", err)
+	}
+
+	if msg, ok := AuthErrorMessage(err); ok {
+		log.Warn().Msgf("AI coding session not uploaded: %s", msg)
+	} else {
+		log.Warn().Err(err).Msg("AI coding session not uploaded")
 	}
 
 	return nil
@@ -639,115 +648,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	log.Debug().Int("session_count", len(sessionCommits)).Msg("grouped commits by session")
 
-	// Collect repo-level context once (same for all sessions)
-	rawDir := store.RawSessionDir()
-
-	gitCtx, gitCtxErr := gitClient.Context(repoRoot)
-	if gitCtxErr != nil {
-		log.Debug().Err(gitCtxErr).Msg("could not collect git context")
-	}
-
-	isGenerated := gitClient.GeneratedMatcher(repoRoot)
-
-	// Build evidence for each session. It is written out only once the
-	// attestation exists, because it records the digests of the spec materials
-	// added to it first.
-	type sessionEvidence struct {
-		sessionID string
-		evidence  *aicodingsession.Evidence
-		specs     []spec.Capture
-	}
-	var sessions []sessionEvidence
-
-	for sessionID, commits := range sessionCommits {
-		log.Debug().Str("session", sessionID).Int("commits", len(commits)).Msg("processing session")
-
-		provider := providerForSession(sessionRecords, sessionID)
-		if provider == nil {
-			log.Debug().Str("session", sessionID).Msg("no provider registered for session, skipping")
-			continue
-		}
-
-		parseOpts := &trace.ParseOpts{
-			SessionDir: rawDir,
-			SessionID:  sessionID,
-		}
-		var sessionCwd, transcriptPath string
-		if rec, ok := sessionRecords[sessionID]; ok && rec != nil {
-			parseOpts.AgentVersion = rec.AgentVersion
-			parseOpts.Model = rec.Model
-			sessionCwd = rec.Cwd
-			transcriptPath = rec.TranscriptPath
-		}
-
-		// Fresh copy of session data before parsing — the session-start copy
-		// may be stale if more conversation happened between start and push.
-		copyErr := provider.CopySessionData(store, sessionLocation(sessionID, sessionCwd, transcriptPath, repoRoot))
-		if copyErr != nil {
-			log.Debug().Err(copyErr).Str("session", sessionID).Msg("could not refresh session data")
-		}
-
-		result, err := provider.ParseSession(ctx, parseOpts)
-		if err != nil {
-			// Warn, not debug: commits carry this session in their trailer,
-			// so a missing attestation fails the checks on the pull request,
-			// and this is the only place that says why.
-			log.Warn().Err(err).AnErr("copy_error", copyErr).Str("session", sessionID).
-				Msg("could not read the transcript of an AI session named in the pushed commits; no evidence is sent for it")
-			continue
-		}
-
-		// Set by the caller rather than the provider: the mode is about how the
-		// session was driven, not about which agent produced it.
-		result.Data.Session.Mode = sessionMode
-
-		// The sources the agent captured in the directory the session-start
-		// hook handed it. A spec left out of the evidence is recorded as a
-		// warning, so that the missing spec is visible to whoever reads the
-		// session.
-		captures, specWarnings := readSessionSpecs(store, repoRoot, sessionID, log)
-		result.Data.Warnings = append(result.Data.Warnings, specWarnings...)
-
-		// Apply repo-wide context with per-session commit overrides
-		if gitCtxErr == nil {
-			sessionCtx := *gitCtx
-			sessionCtx.Commits = commitDescriptions(commits)
-			sessionCtx.CommitCount = len(commits)
-			if len(commits) > 0 {
-				sessionCtx.CommitStart = commits[0].SHA
-				sessionCtx.CommitEnd = commits[len(commits)-1].SHA
-			}
-			result.Data.GitContext = &sessionCtx
-		}
-
-		// Collect code changes scoped to this session's commits. Use a SET-based
-		// API rather than a SHA range: when the session's commits are non-
-		// contiguous on the branch (e.g. interleaved with another session or
-		// human commits), a range diff would over-count by including the gap.
-		if len(commits) > 0 {
-			shas := make([]string, 0, len(commits))
-			for _, c := range commits {
-				shas = append(shas, c.SHA)
-			}
-			codeChanges, err := gitClient.CodeChangesForCommits(repoRoot, shas)
-			if err != nil {
-				log.Debug().Err(err).Msg("could not collect code changes")
-			} else {
-				attr := store.LoadAILineAttribution(sessionID)
-				attribution.FilterGenerated(codeChanges, isGenerated)
-				attribution.Enrich(sessionID, attr.Files, codeChanges)
-				result.Data.CodeChanges = codeChanges
-			}
-		}
-
-		log.Debug().Str("session", sessionID).Msg("generated evidence")
-
-		sessions = append(sessions, sessionEvidence{
-			sessionID: sessionID,
-			evidence:  result,
-			specs:     captures,
-		})
-	}
+	sessions := buildSessionEvidence(ctx, store, repoRoot, gitClient, sessionCommits, sessionRecords, sessionMode, log)
 
 	if len(sessions) == 0 {
 		log.Debug().Msg("no session evidence could be generated")
@@ -795,28 +696,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	// Add evidence for each session: its spec materials first, so that the
 	// session material can record their digests, then the session itself.
-	attestedSessions := make([]string, 0, len(sessions))
-	attestedSpecs := make(map[string][]string, len(sessions))
-	// One allocator for the whole attestation: names taken from the start of
-	// a session ID can repeat across sessions, and a repeated name would
-	// replace an earlier material.
-	names := materials.NewNameAllocator(nil)
-	for _, se := range sessions {
-		entries, warnings, stored := attachSpecs(ctx, executor, newSpecRedactor(store.SpecRedactionDir(se.sessionID)), names, se.sessionID, se.specs, log)
-		se.evidence.Data.Spec = entries
-		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
-
-		name := evidenceName(se.sessionID)
-		if err := addSessionEvidence(ctx, executor, name, se.evidence); err != nil {
-			// Warn, not debug: the session is left out of the attestation,
-			// and this is the only place that says why.
-			log.Warn().Err(err).Str("session", se.sessionID).Msg("could not add the evidence of an AI session; it is left out of the attestation")
-			continue
-		}
-		attestedSessions = append(attestedSessions, se.sessionID)
-		attestedSpecs[se.sessionID] = stored
-		log.Debug().Str("session", se.sessionID).Str("name", name).Int("spec_entries", len(entries)).Msg("evidence added")
-	}
+	attestedSessions, attestedSpecs := attachSessionEvidence(ctx, executor, store, sessions, log)
 
 	if len(attestedSessions) == 0 {
 		log.Debug().Msg("no evidence successfully added, resetting attestation")
@@ -887,6 +767,174 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	return nil
 }
 
+// sessionEvidence is the evidence of one session before it is added to the
+// attestation. It is written out only once the attestation exists, because it
+// records the digests of the spec and skill materials added to it first.
+type sessionEvidence struct {
+	sessionID string
+	provider  trace.Provider
+	evidence  *aicodingsession.Evidence
+	specs     []spec.Capture
+	skills    []sessionSkill
+}
+
+// buildSessionEvidence parses each session of the push into its evidence,
+// with the specs and the skills that go into the attestation next to it. A
+// session that cannot be read is left out, with a warning in the log.
+func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot string, gitClient tracegit.Client, sessionCommits map[string][]*state.CommitRecord, sessionRecords map[string]*state.SessionRecord, sessionMode string, log zerolog.Logger) []sessionEvidence {
+	// Collect repo-level context once (same for all sessions)
+	rawDir := store.RawSessionDir()
+
+	gitCtx, gitCtxErr := gitClient.Context(repoRoot)
+	if gitCtxErr != nil {
+		log.Debug().Err(gitCtxErr).Msg("could not collect git context")
+	}
+
+	isGenerated := gitClient.GeneratedMatcher(repoRoot)
+
+	var sessions []sessionEvidence
+
+	for sessionID, commits := range sessionCommits {
+		log.Debug().Str("session", sessionID).Int("commits", len(commits)).Msg("processing session")
+
+		provider := providerForSession(sessionRecords, sessionID)
+		if provider == nil {
+			log.Debug().Str("session", sessionID).Msg("no provider registered for session, skipping")
+			continue
+		}
+
+		parseOpts := &trace.ParseOpts{
+			SessionDir: rawDir,
+			SessionID:  sessionID,
+		}
+		var sessionCwd, transcriptPath string
+		if rec, ok := sessionRecords[sessionID]; ok && rec != nil {
+			parseOpts.AgentVersion = rec.AgentVersion
+			parseOpts.Model = rec.Model
+			sessionCwd = rec.Cwd
+			transcriptPath = rec.TranscriptPath
+		}
+
+		// Fresh copy of session data before parsing — the session-start copy
+		// may be stale if more conversation happened between start and push.
+		copyErr := provider.CopySessionData(store, sessionLocation(sessionID, sessionCwd, transcriptPath, repoRoot))
+		if copyErr != nil {
+			log.Debug().Err(copyErr).Str("session", sessionID).Msg("could not refresh session data")
+		}
+
+		result, err := provider.ParseSession(ctx, parseOpts)
+		if err != nil {
+			// Warn, not debug: commits carry this session in their trailer,
+			// so a missing attestation fails the checks on the pull request,
+			// and this is the only place that says why.
+			log.Warn().Err(err).AnErr("copy_error", copyErr).Str("session", sessionID).
+				Msg("could not read the transcript of an AI session named in the pushed commits; no evidence is sent for it")
+			continue
+		}
+
+		// Set by the caller rather than the provider: the mode is about how the
+		// session was driven, not about which agent produced it.
+		result.Data.Session.Mode = sessionMode
+
+		// The sources the agent captured in the directory the session-start
+		// hook handed it. A spec left out of the evidence is recorded as a
+		// warning, so that the missing spec is visible to whoever reads the
+		// session.
+		captures, specWarnings := readSessionSpecs(store, repoRoot, sessionID, log)
+		result.Data.Warnings = append(result.Data.Warnings, specWarnings...)
+
+		// The skills that the session used, each with the copy of its folder
+		// that a hook made when the session used it.
+		skills, skillWarnings := readSessionSkills(provider, store, parseOpts, repoRoot, log)
+		result.Data.Warnings = append(result.Data.Warnings, skillWarnings...)
+
+		// Apply repo-wide context with per-session commit overrides
+		if gitCtxErr == nil {
+			sessionCtx := *gitCtx
+			sessionCtx.Commits = commitDescriptions(commits)
+			sessionCtx.CommitCount = len(commits)
+			if len(commits) > 0 {
+				sessionCtx.CommitStart = commits[0].SHA
+				sessionCtx.CommitEnd = commits[len(commits)-1].SHA
+			}
+			result.Data.GitContext = &sessionCtx
+		}
+
+		// Collect code changes scoped to this session's commits. Use a SET-based
+		// API rather than a SHA range: when the session's commits are non-
+		// contiguous on the branch (e.g. interleaved with another session or
+		// human commits), a range diff would over-count by including the gap.
+		if len(commits) > 0 {
+			shas := make([]string, 0, len(commits))
+			for _, c := range commits {
+				shas = append(shas, c.SHA)
+			}
+			codeChanges, err := gitClient.CodeChangesForCommits(repoRoot, shas)
+			if err != nil {
+				log.Debug().Err(err).Msg("could not collect code changes")
+			} else {
+				attr := store.LoadAILineAttribution(sessionID)
+				attribution.FilterGenerated(codeChanges, isGenerated)
+				attribution.Enrich(sessionID, attr.Files, codeChanges)
+				result.Data.CodeChanges = codeChanges
+			}
+		}
+
+		log.Debug().Str("session", sessionID).Msg("generated evidence")
+
+		sessions = append(sessions, sessionEvidence{
+			sessionID: sessionID,
+			provider:  provider,
+			evidence:  result,
+			specs:     captures,
+			skills:    skills,
+		})
+	}
+
+	return sessions
+}
+
+// attachSessionEvidence adds the materials of each session to the attestation:
+// its spec and skill materials first, so that the session material can record
+// their digests, then the session itself. It returns the sessions that were
+// added, and the spec files that each of them stored.
+func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *state.Store, sessions []sessionEvidence, log zerolog.Logger) (attestedSessions []string, attestedSpecs map[string][]string) {
+	attestedSessions = make([]string, 0, len(sessions))
+	attestedSpecs = make(map[string][]string, len(sessions))
+	// One allocator for the whole attestation: names taken from the start of
+	// a session ID can repeat across sessions, and a repeated name would
+	// replace an earlier material.
+	names := materials.NewNameAllocator(nil)
+	for _, se := range sessions {
+		redactor := newSpecRedactor(store.SpecRedactionDir(se.sessionID))
+		entries, warnings, stored, sources := attachSpecs(ctx, adder, redactor, names, se.sessionID, se.specs, log)
+		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
+
+		// The transcript keeps a pointer in place of each copy of a stored
+		// spec file, before the session material is redacted.
+		replaceSpecCopies(se.provider, se.evidence, sources, se.sessionID, log)
+
+		// The skill entries come after the sources that the agent wrote.
+		skillEntries, skillWarnings := attachSkills(ctx, adder, redactor, names, se.sessionID, se.skills, log)
+		entries = append(entries, skillEntries...)
+		se.evidence.Data.Spec = entries
+		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, skillWarnings...)
+
+		name := evidenceName(se.sessionID)
+		if err := addSessionEvidence(ctx, adder, name, se.evidence); err != nil {
+			// Warn, not debug: the session is left out of the attestation,
+			// and this is the only place that says why.
+			log.Warn().Err(err).Str("session", se.sessionID).Msg("could not add the evidence of an AI session; it is left out of the attestation")
+			continue
+		}
+		attestedSessions = append(attestedSessions, se.sessionID)
+		attestedSpecs[se.sessionID] = stored
+		log.Debug().Str("session", se.sessionID).Str("name", name).Int("spec_entries", len(entries)).Msg("evidence added")
+	}
+
+	return attestedSessions, attestedSpecs
+}
+
 // logAttestedSessions reports one line per attested session. When the
 // deployment has a UI dashboard configured the line points at the session's
 // page, with the link inline so it reads as a sentence and stays clickable in
@@ -918,7 +966,7 @@ func sessionLinkMessage(url string) string {
 
 // addSessionEvidence writes one session's evidence to a temporary file and adds
 // it to the attestation.
-func addSessionEvidence(ctx context.Context, executor *AttestationExecutor, name string, evidence *aicodingsession.Evidence) error {
+func addSessionEvidence(ctx context.Context, adder specMaterialAdder, name string, evidence *aicodingsession.Evidence) error {
 	tmpFile, err := os.CreateTemp("", "chainloop-trace-*.json")
 	if err != nil {
 		return fmt.Errorf("create temp file: %w", err)
@@ -936,7 +984,7 @@ func addSessionEvidence(ctx context.Context, executor *AttestationExecutor, name
 		return fmt.Errorf("write evidence: %w", err)
 	}
 
-	_, err = executor.AddMaterial(ctx, name, tmpFile.Name(), "CHAINLOOP_AI_CODING_SESSION", nil)
+	_, err = adder.AddMaterial(ctx, name, tmpFile.Name(), "CHAINLOOP_AI_CODING_SESSION", nil)
 
 	return err
 }

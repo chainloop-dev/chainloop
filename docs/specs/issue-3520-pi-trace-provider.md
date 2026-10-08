@@ -4,7 +4,7 @@ ticket: https://github.com/chainloop-dev/chainloop/issues/3520
 prd:
 ---
 
-# Spec 005: Pi coding agent support in Chainloop Trace
+# Spec issue-3520: Pi coding agent support in Chainloop Trace
 
 ## Summary
 
@@ -98,7 +98,7 @@ Invalid negative, non-finite, or overflowing usage values MUST be ignored with a
 
 The Pi extension MUST deliver the full session-start instruction to the model once for each persisted Pi session ID. On the first `before_agent_start`, it MUST return a hidden persistent `custom_message` whose marker includes the current session-header ID. On reload or resume, it MUST scan all session entries for a marker matching the current ID and MUST keep an in-memory guard against duplicate full-instruction injection. A fork or clone has a new header ID, so a marker copied from its parent MUST NOT suppress the new session's instruction.
 
-As required by Spec 003, every `before_agent_start` MUST also add the short per-turn spec-capture reminder, including after resume and after the full instruction has already been recorded. The first turn MAY combine the full instruction and reminder into one hidden message.
+As required by Spec issue-3515, every `before_agent_start` MUST also add the short per-turn spec-capture reminder, including after resume and after the full instruction has already been recorded. The first turn MAY combine the full instruction and reminder into one hidden message.
 
 When `ctx.hasUI` is true, the extension MUST show the existing Trace banner and all pending post-push session links through Pi's UI. Without UI, it MUST write all pending post-push session links to stderr, never stdout. JSON mode MUST remain valid JSONL, and neither JSON nor print mode may receive extension diagnostics on stdout.
 
@@ -162,7 +162,7 @@ sequenceDiagram
 
 **Transcript parsing.** The parser reads the v3 header and tree entries as typed structures while retaining raw valid unknown entries. The last persisted entry is the terminal leaf because each `/tree` event immediately appends a marker to the selected branch. Following parents excludes abandoned branches. Aggregation uses selected assistant and user messages; malformed selected structure skips only that session, never the push.
 
-**User and model messages.** Session-start returns one JSON response. Before the first agent turn, the extension returns the full instruction and Spec 003 reminder as hidden model context; later turns receive only the reminder. The extension shows the start banner and all pending post-push links through Pi UI when available, and sends the links to stderr in headless modes.
+**User and model messages.** Session-start returns one JSON response. Before the first agent turn, the extension returns the full instruction and Spec issue-3515 reminder as hidden model context; later turns receive only the reminder. The extension shows the start banner and all pending post-push links through Pi UI when available, and sends the links to stderr in headless modes.
 
 ## Decision Record
 
@@ -175,7 +175,7 @@ sequenceDiagram
 | D-005 | Attribution scope | Built-in `write`, `edit`, and `bash` | They have documented payloads and map to existing snapshot paths. Custom tools have no common mutation contract. | Pi extension docs |
 | D-006 | Transcript source | Copied Pi JSONL v3 | It is authoritative for provider, model, usage, tool, and conversation data. Rejected: a duplicate extension transcript. | Pi session format |
 | D-007 | Branch selection | Append a plain custom marker on `session_tree`, then parse from the last persisted entry | The marker makes `/tree` durable before later work and naturally becomes an ancestor of later entries. Rejected: treating the marker's parent as the terminal leaf, which drops later work; and a new Trace-store active-leaf protocol. | Pi session manager |
-| D-008 | Model communication | Full hidden instruction once per session ID, short Spec 003 reminder every turn | The marker avoids duplicate full instructions across reload while forks receive their own. The per-turn reminder preserves the behavior required for all agents with a prompt-submit channel. | Pi extension docs; Spec 003 |
+| D-008 | Model communication | Full hidden instruction once per session ID, short Spec issue-3515 reminder every turn | The marker avoids duplicate full instructions across reload while forks receive their own. The per-turn reminder preserves the behavior required for all agents with a prompt-submit channel. | Pi extension docs; Spec issue-3515 |
 | D-009 | Headless behavior | Hooks run; UI-only banners are omitted and pending links use stderr | JSON stdout stays valid JSONL, print stdout receives no extension diagnostics, and links still reach the user. | Pi mode docs |
 | D-010 | Evidence schema | Existing AI coding-session material | Provider differences fit the existing model. | Chainloop provider architecture |
 | D-011 | Sessions whose hooks never ran | Do not discover them at pre-push; add only temporary interface stubs if #3536 has not removed them | Pre-push starts from recorded sessions and has no provider identity for an untracked session. Production does not call the current discovery methods through `Provider`. Rejected: implementing unused discovery logic or scanning every provider and guessing which session belongs to a push. | Chainloop hook architecture; #3536 |
