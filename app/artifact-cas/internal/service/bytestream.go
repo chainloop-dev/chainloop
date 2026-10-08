@@ -79,34 +79,33 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return kerrors.BadRequest("resource name", err.Error())
 	}
 
-	storageBackend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
-	if err != nil && kerrors.IsNotFound(err) {
-		return err
-	} else if err != nil {
-		return sl.LogAndMaskErr(err, s.log)
+	// A blob cached as present skips the secrets manager and the backend. The
+	// key is namespaced by the organization and backend of the signed token.
+	existenceKey := s.existenceKey(info, req.resource.Digest)
+	if entry, ok := s.lookupExistence(ctx, existenceKey); ok {
+		s.log.Infow("msg", "artifact already exists (cached)", "digest", req.resource.Digest)
+		s.dispatchSkippedUpload(info, req.resource, entry.Size)
+		return stream.SendAndClose(&bytestream.WriteResponse{})
 	}
 
 	// We check if the file already exists even before we wait for the whole buffer to be filled
-	if exists, err := storageBackend.Exists(ctx, req.resource.Digest); err != nil {
-		return sl.LogAndMaskErr(err, s.log)
-	} else if exists {
+	storageBackend, exists, err := s.backendExists(ctx, info, req.resource.Digest)
+	if err != nil {
+		return err
+	}
+
+	if exists {
 		s.log.Infow("msg", "artifact already exists", "digest", req.resource.Digest)
-		if s.audit.shouldEmit(info) {
-			// the stored size is not known at the dedup point, look it up best-effort
+		if existenceKey != "" || s.audit.shouldEmit(info) {
+			// the stored size is not known at the dedup point, look it up best-effort.
+			// Only a known size is cached, so cached hits keep complete audit events.
 			var size int64
 			if r, err := storageBackend.Describe(ctx, req.resource.Digest); err == nil {
 				size = r.Size
+				s.storeExistence(ctx, existenceKey, size)
 			}
 
-			s.audit.Dispatch(&events.CASArtifactUploaded{
-				CASArtifactBase: &events.CASArtifactBase{
-					Digest:      req.resource.Digest,
-					SizeBytes:   size,
-					FileName:    req.resource.FileName,
-					BackendType: info.BackendType,
-				},
-				Skipped: true,
-			}, info)
+			s.dispatchSkippedUpload(info, req.resource, size)
 		}
 		return stream.SendAndClose(&bytestream.WriteResponse{})
 	}
@@ -137,6 +136,8 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
 		if backendErr, ok := errors.AsType[*backendUploadError](err); ok {
+			// the reused client may hold stale credentials
+			s.dropUploadBackend(info)
 			return sl.LogAndMaskErr(backendErr.err, s.log)
 		}
 		if isClientDisconnect(err) {
@@ -150,6 +151,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 	}
 
 	s.log.Infow("msg", "upload finished", "name", req.resource.FileName, "digest", req.resource.Digest, "size", committedSize)
+	s.storeExistence(ctx, existenceKey, committedSize)
 	s.audit.Dispatch(&events.CASArtifactUploaded{
 		CASArtifactBase: &events.CASArtifactBase{
 			Digest:      req.resource.Digest,
@@ -160,6 +162,46 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 	}, info)
 
 	return stream.SendAndClose(&bytestream.WriteResponse{CommittedSize: committedSize})
+}
+
+// backendExists loads the backend of the token and checks if digest exists in
+// it. A reused client that fails is dropped and loaded again one time, since
+// its credentials may have been rotated. Returned errors are ready to be sent
+// to the client.
+func (s *ByteStreamService) backendExists(ctx context.Context, info *casJWT.Claims, digest string) (backend.UploaderDownloader, bool, error) {
+	for attempt := 0; ; attempt++ {
+		storageBackend, cached, err := s.loadUploadBackend(ctx, info)
+		if err != nil && kerrors.IsNotFound(err) {
+			return nil, false, err
+		} else if err != nil {
+			return nil, false, sl.LogAndMaskErr(err, s.log)
+		}
+
+		exists, err := storageBackend.Exists(ctx, digest)
+		if err == nil {
+			return storageBackend, exists, nil
+		}
+
+		s.dropUploadBackend(info)
+		if !cached || attempt > 0 {
+			return nil, false, sl.LogAndMaskErr(err, s.log)
+		}
+		s.log.Warnw("msg", "reused backend client failed, loading it again", "digest", digest, "error", err)
+	}
+}
+
+// dispatchSkippedUpload emits the audit event of an upload skipped because the
+// blob already exists
+func (s *ByteStreamService) dispatchSkippedUpload(info *casJWT.Claims, resource *v1.CASResource, size int64) {
+	s.audit.Dispatch(&events.CASArtifactUploaded{
+		CASArtifactBase: &events.CASArtifactBase{
+			Digest:      resource.Digest,
+			SizeBytes:   size,
+			FileName:    resource.FileName,
+			BackendType: info.BackendType,
+		},
+		Skipped: true,
+	}, info)
 }
 
 // spillVerifyUpload stages an upload on local disk, verifies its digest, and

@@ -43,6 +43,7 @@ type Logger interface {
 type config struct {
 	ttl         time.Duration
 	maxBytes    int64
+	maxEntries  int
 	replicas    int
 	logger      Logger
 	natsConn    *nats.Conn
@@ -76,6 +77,13 @@ func WithNATS(conn *nats.Conn, bucketName string) Option {
 // When the limit is reached, NATS discards the oldest entries. Ignored for in-memory backend.
 func WithMaxBytes(n int64) Option {
 	return func(c *config) { c.maxBytes = n }
+}
+
+// WithMaxEntries sets the maximum number of entries of the in-memory backend.
+// A value of 0 or less keeps the default of 1000. Ignored for NATS KV backend,
+// which is bounded by WithMaxBytes.
+func WithMaxEntries(n int) Option {
+	return func(c *config) { c.maxEntries = n }
 }
 
 // WithDescription sets the NATS KV bucket description. Ignored for in-memory backend.

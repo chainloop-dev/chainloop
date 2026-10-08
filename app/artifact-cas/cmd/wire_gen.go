@@ -7,14 +7,17 @@
 package main
 
 import (
+	"context"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server"
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/loader"
+	"github.com/chainloop-dev/chainloop/pkg/cache/casexistence"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
+	"time"
 )
 
 import (
@@ -37,37 +40,48 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 		return nil, nil, err
 	}
 	auditDispatcher := service.NewAuditDispatcher(auditLogPublisher, logger)
-	v := serviceOpts(logger, auditDispatcher, bootstrap)
+	cache, cleanup2, err := newExistenceCache(reloadableConnection, logger)
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	v := serviceOpts(logger, auditDispatcher, bootstrap, cache)
 	byteStreamService := service.NewByteStreamService(providers, v...)
 	resourceService := service.NewResourceService(providers, v...)
 	validator, err := newProtoValidator()
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	grpcServer, err := server.NewGRPCServer(confServer, auth, byteStreamService, resourceService, providers, validator, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	downloadService := service.NewDownloadService(providers, v...)
 	httpServer, err := server.NewHTTPServer(confServer, auth, downloadService, providers, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	httpMetricsServer, err := server.NewHTTPMetricsServer(confServer)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	tracerProvider, cleanup2, err := server.NewTracerProvider(bootstrap, logger)
+	tracerProvider, cleanup3, err := server.NewTracerProvider(bootstrap, logger)
 	if err != nil {
+		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
 	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, providers, tracerProvider)
 	return mainApp, func() {
+		cleanup3()
 		cleanup2()
 		cleanup()
 	}, nil
@@ -75,8 +89,24 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 
 // wire.go:
 
-func serviceOpts(l log.Logger, audit *service.AuditDispatcher, bc *conf.Bootstrap) []service.NewOpt {
-	return []service.NewOpt{service.WithLogger(l), service.WithAuditDispatcher(audit), service.WithStagingDir(bc.GetStagingDir())}
+// backendClientTTL is how long a loaded backend client, and its credentials, is reused for uploads
+const backendClientTTL = 5 * time.Minute
+
+func serviceOpts(l log.Logger, audit *service.AuditDispatcher, bc *conf.Bootstrap, existence *casexistence.Cache) []service.NewOpt {
+	return []service.NewOpt{service.WithLogger(l), service.WithAuditDispatcher(audit), service.WithStagingDir(bc.GetStagingDir()), service.WithBackendClientCache(backendClientTTL), service.WithExistenceCache(existence)}
+}
+
+// newExistenceCache returns the cache of blobs known to exist in a backend.
+// It is shared through NATS KV when the connection is set, in memory otherwise.
+func newExistenceCache(rc *natsconn.ReloadableConnection, logger log.Logger) (*casexistence.Cache, func(), error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	c, err := casexistence.New(ctx, rc, logger)
+	if err != nil {
+		cancel()
+		return nil, nil, err
+	}
+
+	return c, cancel, nil
 }
 
 // newNatsConfig converts the proto config to a plain natsconn.Config, nil when unset

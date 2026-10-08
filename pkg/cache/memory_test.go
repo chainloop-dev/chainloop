@@ -17,6 +17,7 @@ package cache
 
 import (
 	"context"
+	"strconv"
 	"testing"
 	"time"
 
@@ -104,4 +105,26 @@ func TestNew_DefaultsToMemory(t *testing.T) {
 func TestNew_RequiresTTL(t *testing.T) {
 	_, err := New[string]()
 	require.Error(t, err)
+}
+
+func TestNew_MaxEntries(t *testing.T) {
+	tests := []struct {
+		name       string
+		opts       []Option
+		wantStored int
+	}{
+		{name: "default", wantStored: defaultMaxSize},
+		{name: "custom", opts: []Option{WithMaxEntries(2)}, wantStored: 2},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, err := New[int](append(tt.opts, WithTTL(time.Minute))...)
+			require.NoError(t, err)
+			for i := range defaultMaxSize + 1 {
+				require.NoError(t, c.Set(context.Background(), strconv.Itoa(i), i))
+			}
+			assert.Equal(t, tt.wantStored, c.(*memoryCache[int]).lru.Len())
+		})
+	}
 }
