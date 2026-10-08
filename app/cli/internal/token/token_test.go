@@ -19,7 +19,9 @@ import (
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParse(t *testing.T) {
@@ -90,6 +92,28 @@ func TestParse(t *testing.T) {
 			assert.Equal(t, tt.want.ID, got.ID)
 			assert.Equal(t, tt.want.TokenType, got.TokenType)
 			assert.Equal(t, tt.want.OrgID, got.OrgID)
+			assert.Equal(t, tt.want.OrgName, got.OrgName)
 		})
 	}
+}
+
+func TestMismatchedOrganization(t *testing.T) {
+	apiToken := func(t *testing.T, org string) string {
+		t.Helper()
+		claims := jwt.MapClaims{"aud": APIAudience, "jti": "some-id", "org_name": org}
+		raw, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("secret"))
+		require.NoError(t, err)
+		return raw
+	}
+
+	t.Run("returns API token organization when it differs", func(t *testing.T) {
+		assert.Equal(t, "org-a", MismatchedOrganization(apiToken(t, "org-a"), "org-b"))
+	})
+
+	t.Run("returns empty for matching and unbound tokens", func(t *testing.T) {
+		assert.Empty(t, MismatchedOrganization(apiToken(t, "ORG-B"), "org-b"))
+		assert.Empty(t, MismatchedOrganization(apiToken(t, ""), "org-b"))
+		assert.Empty(t, MismatchedOrganization("not-a-jwt", "org-b"))
+		assert.Empty(t, MismatchedOrganization("", "org-b"))
+	})
 }

@@ -21,10 +21,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
+	internaltoken "github.com/chainloop-dev/chainloop/app/cli/internal/token"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/rs/zerolog"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -98,8 +97,8 @@ func WithForcedOrganization(orgName string) ExecutorOption {
 			return nil
 		}
 
-		if err := checkTokenOrganization(e.actionOpts.AuthTokenRaw, orgName); err != nil {
-			return err
+		if tokenOrg := internaltoken.MismatchedOrganization(e.actionOpts.AuthTokenRaw, orgName); tokenOrg != "" {
+			return fmt.Errorf("credentials belong to organization %q but %q is configured: API tokens are bound to their own organization, so mint a token for %q instead", tokenOrg, orgName, orgName)
 		}
 
 		conn, err := newControlPlaneConnection(e.actionOpts.AuthTokenRaw, orgName)
@@ -114,36 +113,6 @@ func WithForcedOrganization(orgName string) ExecutorOption {
 
 		return nil
 	}
-}
-
-// checkTokenOrganization fails when the credentials in use are an API token
-// minted for an organization other than the pinned one. Org-scoped API tokens
-// are the only credentials for which the control plane ignores the
-// Chainloop-Organization header (it derives the org from the token instead),
-// so without this check the attestation silently lands in the token's org
-// rather than the one configured in .chainloop.yml.
-//
-// Only those tokens carry the org_name claim. User, federated, and
-// instance-admin tokens don't, and for all of them the header is honored
-// server-side — a user token pinned to an org the user isn't a member of is
-// rejected outright — so a missing claim means there is nothing to check.
-func checkTokenOrganization(authToken, orgName string) error {
-	if authToken == "" {
-		return nil
-	}
-
-	claims := jwt.MapClaims{}
-	if _, _, err := jwt.NewParser().ParseUnverified(authToken, claims); err != nil {
-		// ponytail: rejecting a malformed token is the control plane's job, not ours
-		return nil
-	}
-
-	tokenOrg, _ := claims["org_name"].(string)
-	if tokenOrg == "" || strings.EqualFold(tokenOrg, orgName) {
-		return nil
-	}
-
-	return fmt.Errorf("credentials belong to organization %q but %q is configured: API tokens are bound to their own organization, so mint a token for %q instead", tokenOrg, orgName, orgName)
 }
 
 // Close releases resources owned by the executor, currently any control-plane

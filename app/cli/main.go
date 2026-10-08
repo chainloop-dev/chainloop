@@ -100,6 +100,7 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 
 	var gateErr *cmd.GateError
 	var subprocessErr *action.SubprocessExitError
+	var repositoryOrganizationErr *cmd.RepositoryOrganizationError
 
 	// The same helper the commands that only log a credential failure use, so
 	// the CLI says the same thing wherever one surfaces.
@@ -116,6 +117,8 @@ func errorInfo(err error, logger zerolog.Logger) (string, int) {
 		msg = "you need to enable a CAS backend first. Refer to `chainloop cas-backend` command or contact your administrator."
 	case v1.IsCasBackendErrorReasonInvalid(err):
 		msg = "the CAS backend you provided is invalid. Refer to `chainloop cas-backend update` command or contact your administrator."
+	case errors.As(err, &repositoryOrganizationErr):
+		msg = repositoryOrganizationErr.Error()
 	case v1.IsUserNotMemberOfOrgErrorNotInOrg(err):
 		msg = "the organization you are trying to access does not exist or you are not part of it, please run \"chainloop auth login\""
 	case v1.IsUserWithNoMembershipErrorNotInOrg(err):
