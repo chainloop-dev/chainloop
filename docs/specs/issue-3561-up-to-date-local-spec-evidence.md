@@ -34,7 +34,7 @@ In this spec, the scope is sources that are local files. The push reads each loc
 ## Requirements
 
 ### R-001: Local source read at push
-A capture file has a header and a body. The header holds the kind, the source, the role, the title, and the description. The body is the text below the header. The header of a text capture can name a local file as its source. Then the push MUST use the content of that file at push time as the body. It MUST keep the header that the agent wrote. If the agent wrote a body, the push MUST replace it. A local file is one of these:
+A capture file has a header and a body. The header holds the kind, the source, the role, the title, and the description. The body is the text below the header. The header of a capture whose file is text can name a local file as its source. This applies to each kind, for example `document` and `text`. Then the push MUST use the content of that file at push time as the body. It MUST keep the header that the agent wrote. If the agent wrote a body, the push MUST replace it. A local file is one of these:
 - an absolute path,
 - a path that starts with `~/`,
 - a `file://` URI,
@@ -85,7 +85,7 @@ description: The spec that this session implements.
 
 The placeholder is a fixed line that the CLI recognizes exactly. A person who looks at the spec folder sees that the push has not filled the capture yet. An older CLI records the placeholder line as the text. That is wrong, but the error is visible. An older CLI drops a capture with an empty body with no message.
 
-At push time, the CLI reads the spec folder as today. For each text capture whose source is a local file, it reads that file. When the read succeeds, and the file is text and under the limit, the CLI replaces the body with the file content. It keeps the header that the agent wrote, and sets the capture time to the modification time of the file. The push stores this result:
+At push time, the CLI reads the spec folder as today. For each capture whose file is text and whose source is a local file, it reads that file. When the read succeeds, and the file is text and under the limit, the CLI replaces the body with the file content. It keeps the header that the agent wrote, and sets the capture time to the modification time of the file. The push stores this result:
 
 ```markdown
 ---
@@ -141,7 +141,7 @@ sequenceDiagram
 | D-005 | Copies of a local source in the transcript | Register the digest of the file content as a source for the pointers of Spec issue-3556 | The content is in the spec material, so a full copy in the transcript is a duplicate. The match stays exact, so no other content leaves the transcript. Rejected: keep the copies inline (the evidence holds the spec two or three times). | owner request |
 | D-006 | Size limit for a local file | 1 MiB. Over the limit, the agent's body stays | A spec is text and small. A large file in the evidence is more likely an error. | drafting |
 | D-007 | Instruction wording | State the stakes, drop "no need to mention", same-turn update and check before push for remote sources | The agent read the captures as bookkeeping. These rules still apply to remote sources, which the push cannot read. | drafting |
-| D-008 | Scope | Local files only. Remote sources, for example Notion pages and Linear tickets, in a later spec | The push can read a local file with no credentials and no connector. A remote source needs a fetch, and Spec issue-3495 keeps the CLI free of connectors (D-001 of that spec). The problem is the same for remote sources, so a later spec looks into them. | owner request |
+| D-008 | Scope | Local files only. Remote sources, for example Notion pages and Linear tickets, in a later spec | The push can read a local file with no credentials and no connector. A remote source needs a fetch. Spec issue-3495 keeps the CLI free of connectors. Its non-goal says that the CLI makes no calls to issue trackers or document tools. The problem is the same for remote sources, so a later spec looks into them. | owner request |
 | D-009 | When the push does the work again | Compare by digest at push time, and reuse the stored redacted copy when the digest is the same | The push already keeps a redacted copy for each digest. Rejected: a hook that copies each changed source into the spec folder at each turn. It computes a digest at each turn, and the push must read the files anyway. | owner request |
 | D-010 | Body that the agent writes for a local file | A fixed placeholder line. The push also accepts no body | The placeholder shows that the agent left the body to the push on purpose, and that the push has not filled it yet. An older CLI records the placeholder as visible wrong text, and does not drop the capture with no message. The push never records the placeholder as content. Rejected: header only (an empty body looks the same as a capture that the agent forgot to fill). | owner request |
 
