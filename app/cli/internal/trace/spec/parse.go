@@ -16,6 +16,7 @@
 package spec
 
 import (
+	"bytes"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -319,10 +320,11 @@ func isDelimiter(line string) bool {
 	return strings.TrimRight(line, "\r\t ") == delimiter
 }
 
-// isText reports whether a file is text that a spec can hold: valid UTF-8,
-// and not an image.
+// isText reports whether a file is text that a spec can hold: valid UTF-8
+// with no NUL byte, and not an image. NUL is valid UTF-8, but no text file
+// holds it.
 func isText(name string, doc []byte) bool {
-	return utf8.Valid(doc) && !isImage(name, doc)
+	return utf8.Valid(doc) && bytes.IndexByte(doc, 0) < 0 && !isImage(name, doc)
 }
 
 // isImage reports whether a spec file is an image. Content sniffing finds the

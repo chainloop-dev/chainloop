@@ -186,6 +186,15 @@ func TestReadAllLocalSource(t *testing.T) {
 			wantWarning:   true,
 		},
 		{
+			// NUL is valid UTF-8, but no text file holds it.
+			name:          "a valid UTF-8 file with a NUL byte",
+			uri:           uri("blob.dat"),
+			source:        "blob.dat",
+			sourceContent: "header\x00binary payload",
+			body:          Placeholder,
+			wantWarning:   true,
+		},
+		{
 			name:        "a directory is not a source",
 			uri:         uri("docs"),
 			source:      "docs",
