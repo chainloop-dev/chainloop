@@ -76,11 +76,20 @@ type TraceRunOpts struct {
 	ContractRequired bool
 
 	// ActionOpts is the root command's initialized options, used to build
-	// the attestation executor. Required.
+	// the attestation executor. Required, except in export mode, which talks
+	// to no control plane.
 	ActionOpts *ActionsOpts
 	// CLIVersion is the bare CLI version recorded in the attestation
 	// predicate.
 	CLIVersion string
+
+	// ExportDir, when set, runs the session in export mode: once the wrapped
+	// command exits, the evidence is written to this directory instead of
+	// being pushed as an attestation. No control plane, no credentials, no
+	// network. The identity fields above are then ignored.
+	ExportDir string
+	// NoRedact disables secret redaction in export mode. Ignored otherwise.
+	NoRedact bool
 }
 
 // TraceRun wraps a single-shot agent invocation: it cleans any prior
@@ -98,20 +107,25 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		return fmt.Errorf("no trace providers selected")
 	}
 
-	var authExecOpts []ExecutorOption
-	if opts.Organization != "" {
-		authExecOpts = append(authExecOpts, WithForcedOrganization(opts.Organization))
-	}
-	executor, err := NewAttestationExecutor(opts.ActionOpts, opts.CLIVersion, authExecOpts...)
-	if err != nil {
-		return err
-	}
-	prepErr := prepareTraceRunWorkflow(ctx, log, executor, opts)
-	if err := executor.Close(); err != nil {
-		log.Debug().Err(err).Msg("closing auth-check executor")
-	}
-	if prepErr != nil {
-		return prepErr
+	// Export mode talks to no control plane, so it skips the credential check
+	// and the up-front workflow creation: the session is recorded and written
+	// to disk either way.
+	if opts.ExportDir == "" {
+		var authExecOpts []ExecutorOption
+		if opts.Organization != "" {
+			authExecOpts = append(authExecOpts, WithForcedOrganization(opts.Organization))
+		}
+		executor, err := NewAttestationExecutor(opts.ActionOpts, opts.CLIVersion, authExecOpts...)
+		if err != nil {
+			return err
+		}
+		prepErr := prepareTraceRunWorkflow(ctx, log, executor, opts)
+		if err := executor.Close(); err != nil {
+			log.Debug().Err(err).Msg("closing auth-check executor")
+		}
+		if prepErr != nil {
+			return prepErr
+		}
 	}
 
 	// Snapshot the agent settings files before we touch anything else
@@ -186,6 +200,20 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		}
 
 		return fmt.Errorf("run %s: %w", opts.Command[0], err)
+	}
+
+	if opts.ExportDir != "" {
+		log.Debug().Msg("wrapped command completed; exporting session evidence to disk")
+
+		if _, err := RunTraceExport(ctx, log, RunTraceExportOpts{
+			OutDir:   opts.ExportDir,
+			NoRedact: opts.NoRedact,
+			Mode:     aicodingsession.ModeGeneric,
+		}); err != nil {
+			return fmt.Errorf("export session evidence: %w", err)
+		}
+
+		return nil
 	}
 
 	log.Debug().Msg("wrapped command completed; attesting session")

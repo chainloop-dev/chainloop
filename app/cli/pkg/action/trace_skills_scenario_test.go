@@ -156,7 +156,7 @@ func TestSkillScenario(t *testing.T) {
 	require.Len(t, sessions, 1)
 
 	adder := &fakeMaterialAdder{realDigests: true}
-	attested, _ := attachSessionEvidence(ctx, adder, store, sessions, zerolog.Nop())
+	attested, _ := attachSessionEvidence(ctx, adder, store, sessions, zerolog.Nop(), false)
 	require.Equal(t, []string{sessionID}, attested)
 
 	// Each skill gives its definition and its package, then the session

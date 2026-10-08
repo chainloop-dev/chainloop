@@ -126,7 +126,7 @@ func TestAttachSessionEvidencePastedImages(t *testing.T) {
 			provider:  claude.New(),
 			evidence:  evidence,
 			specs:     captures,
-		}}, zerolog.Nop())
+		}}, zerolog.Nop(), false)
 		require.Equal(t, []string{sessionID}, attested)
 
 		var got aicodingsession.Evidence
@@ -233,7 +233,7 @@ func TestPastedImagesNeedAFinder(t *testing.T) {
 	adder := &fakeMaterialAdder{realDigests: true}
 	attachSessionEvidence(context.Background(), adder, state.NewGitStore(t.TempDir()), []sessionEvidence{{
 		sessionID: "c0ffee-session", provider: cursor.New(), evidence: evidence,
-	}}, zerolog.Nop())
+	}}, zerolog.Nop(), false)
 
 	assert.Equal(t, []string{"ai-coding-session-c0ffee"}, adder.names())
 	assert.Contains(t, adder.byName("ai-coding-session-c0ffee").content, strconv.Quote(base64.StdEncoding.EncodeToString(img)))
