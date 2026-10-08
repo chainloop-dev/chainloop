@@ -204,6 +204,50 @@ func TestAttachSpecs(t *testing.T) {
 		assert.Empty(t, entries[1].Description)
 	})
 
+	t.Run("unquoted values with a hash, colons or a bracket are kept whole", func(t *testing.T) {
+		adder := &fakeMaterialAdder{}
+		hash := specCapture(t, "design.md",
+			"---\nkind: document\nrole: spec\ndescription: The merged design spec (PR #3544) that defines R-001\n---\nthe spec",
+			"2026-09-16T10:12:03Z")
+		colons := specCapture(t, "ticket.md",
+			"---\nkind: ticket\nuri: "+ticketURI+"\nrole: task\ntitle: PFM-1: fix: the thing\ndescription: uses `foo: bar` inline\n---\nthe ticket",
+			"2026-09-16T10:12:03Z")
+		image := spec.Capture{
+			FileName: "mockup.png", Kind: aicodingsession.SpecKindImage,
+			CapturedAt: "2026-09-16T10:31:40Z", Raw: []byte("\x89PNG\r\n\x1a\n"), Verbatim: true,
+			MetaRaw: []byte("role: reference\ntitle: PFM-2: [WIP] fix #12\n"),
+		}
+
+		entries, warnings, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{hash, colons, image}, zerolog.Nop())
+
+		assert.Empty(t, warnings)
+		require.Len(t, adder.added, 3)
+		assert.Equal(t, map[string]string{
+			"chainloop.spec.session_id":  sessionID,
+			"chainloop.spec.kind":        aicodingsession.SpecKindDocument,
+			"chainloop.spec.role":        aicodingsession.SpecRoleSpec,
+			"chainloop.spec.description": "The merged design spec (PR #3544) that defines R-001",
+		}, adder.added[0].annotations)
+		assert.Equal(t, map[string]string{
+			"chainloop.spec.session_id":  sessionID,
+			"chainloop.spec.kind":        aicodingsession.SpecKindTicket,
+			"chainloop.spec.uri":         ticketURI,
+			"chainloop.spec.role":        aicodingsession.SpecRoleTask,
+			"chainloop.spec.title":       "PFM-1: fix: the thing",
+			"chainloop.spec.description": "uses `foo: bar` inline",
+		}, adder.added[1].annotations)
+		assert.Equal(t, "PFM-2: [WIP] fix #12", adder.added[2].annotations[specAnnotationTitle])
+
+		require.Len(t, entries, 3)
+		assert.Equal(t, "The merged design spec (PR #3544) that defines R-001", entries[0].Description)
+		assert.Equal(t, aicodingsession.SpecKindTicket, entries[1].Kind)
+		assert.Equal(t, ticketURI, entries[1].URI)
+		assert.Equal(t, aicodingsession.SpecRoleTask, entries[1].Role)
+		assert.Equal(t, "PFM-1: fix: the thing", entries[1].Title)
+		assert.Equal(t, "uses `foo: bar` inline", entries[1].Description)
+		assert.Equal(t, "PFM-2: [WIP] fix #12", entries[2].Title)
+	})
+
 	t.Run("secrets are removed from the title and the description", func(t *testing.T) {
 		adder := &fakeMaterialAdder{}
 		withSecret := specCapture(t, "ticket.md",
