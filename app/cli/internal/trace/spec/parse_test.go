@@ -180,6 +180,15 @@ func TestParse(t *testing.T) {
 			wantContent: specBody,
 		},
 		{
+			// An indented line that starts with "#" is a YAML comment.
+			name:        "an indented comment line after a plain value",
+			doc:         "---\ntitle: Foo\n  # note\ndescription: Bar #1\n  continued\n  # another note\nkind: ticket\n---\n" + specBody,
+			wantKind:    aicodingsession.SpecKindTicket,
+			wantTitle:   "Foo",
+			wantDesc:    "Bar #1 continued",
+			wantContent: specBody,
+		},
+		{
 			name:        "a repeated key keeps the last value",
 			doc:         "---\nkind: text\nkind: ticket\n---\n" + specBody,
 			wantKind:    aicodingsession.SpecKindTicket,

@@ -248,7 +248,7 @@ func TestAttachSpecs(t *testing.T) {
 			MetaRaw: []byte("role: reference\ntitle: PFM-2: [WIP] fix #12\n"),
 		}
 
-		entries, warnings, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{hash, colons, image}, zerolog.Nop())
+		entries, warnings, _, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{hash, colons, image}, zerolog.Nop())
 
 		assert.Empty(t, warnings)
 		require.Len(t, adder.added, 3)

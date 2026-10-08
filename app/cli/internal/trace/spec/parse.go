@@ -208,9 +208,10 @@ func decodeValue(value string, continuation []string) string {
 	}
 
 	// A plain value that runs on over indented lines is folded into one line.
+	// An indented line that starts with "#" is a YAML comment, not part of it.
 	parts := []string{value}
 	for _, line := range continuation {
-		if line = strings.TrimSpace(line); line != "" {
+		if line = strings.TrimSpace(line); line != "" && !strings.HasPrefix(line, "#") {
 			parts = append(parts, line)
 		}
 	}
