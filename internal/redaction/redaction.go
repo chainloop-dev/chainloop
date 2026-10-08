@@ -88,6 +88,12 @@ type documentBinder interface {
 // keys and array indices separated by slashes.
 type PathFilter func(path string) bool
 
+// OpaqueFilter reports whether the string at obj[key] is opaque data, for
+// example base64 media, that is neither scanned nor rewritten. path is the
+// path of obj. Scanning such data is slow, its matches are false, and a
+// rewrite breaks it.
+type OpaqueFilter func(path string, obj map[string]any, key string) bool
+
 // Report summarises a Redact call. It never contains secret material, so it is
 // safe to log and to surface as material annotations.
 type Report struct {
@@ -126,6 +132,7 @@ func (r *Report) RuleIDs() []string {
 type Redactor struct {
 	scanner       Scanner
 	pathFilter    PathFilter
+	opaque        OpaqueFilter
 	maxPasses     int
 	placeholder   func(ruleID string) string
 	isPlaceholder func(string) bool
@@ -141,6 +148,14 @@ func WithPathFilter(f PathFilter) Option {
 		if f != nil {
 			r.pathFilter = f
 		}
+	}
+}
+
+// WithOpaque leaves out of the scan, and out of the rewrite, the string leaves
+// that f reports as opaque data. The default has none.
+func WithOpaque(f OpaqueFilter) Option {
+	return func(r *Redactor) {
+		r.opaque = f
 	}
 }
 
@@ -251,6 +266,13 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 		return nil, nil, err
 	}
 
+	// The opaque leaves are taken out of the tree for the scan and the
+	// rewrite, and put back before the document is encoded again.
+	var detached []opaqueLeaf
+	if r.opaque != nil {
+		detachOpaque(root, "", r.opaque, &detached)
+	}
+
 	report := &Report{ByRule: map[string]int{}, Unlocated: map[string]int{}}
 	// Secrets no eligible leaf contains, so that the loop stops chasing them.
 	skip := make(map[string]struct{})
@@ -323,11 +345,44 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 		return doc, report, nil
 	}
 
+	for _, d := range detached {
+		d.obj[d.key] = d.value
+	}
+
 	out, err := encode(root, false)
 	if err != nil {
 		return nil, nil, fmt.Errorf("re-encoding redacted document: %w", err)
 	}
 	return []byte(out), report, nil
+}
+
+// opaqueLeaf is a string leaf taken out of the tree, and where it goes back.
+type opaqueLeaf struct {
+	obj   map[string]any
+	key   string
+	value string
+}
+
+// detachOpaque replaces each opaque string leaf under node with an empty
+// string, which nothing matches, and adds the leaves it took out to out.
+func detachOpaque(node any, path string, opaque OpaqueFilter, out *[]opaqueLeaf) {
+	switch v := node.(type) {
+	case map[string]any:
+		for k, child := range v {
+			if s, ok := child.(string); ok {
+				if s != "" && opaque(path, v, k) {
+					*out = append(*out, opaqueLeaf{obj: v, key: k, value: s})
+					v[k] = ""
+				}
+				continue
+			}
+			detachOpaque(child, path+"/"+k, opaque, out)
+		}
+	case []any:
+		for i, child := range v {
+			detachOpaque(child, path+"/"+strconv.Itoa(i), opaque, out)
+		}
+	}
 }
 
 // secretRule pairs a secret with the rule that matched it.

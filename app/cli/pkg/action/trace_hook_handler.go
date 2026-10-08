@@ -772,6 +772,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 // records the digests of the spec and skill materials added to it first.
 type sessionEvidence struct {
 	sessionID string
+	provider  trace.Provider
 	evidence  *aicodingsession.Evidence
 	specs     []spec.Capture
 	skills    []sessionSkill
@@ -883,6 +884,7 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 
 		sessions = append(sessions, sessionEvidence{
 			sessionID: sessionID,
+			provider:  provider,
 			evidence:  result,
 			specs:     captures,
 			skills:    skills,
@@ -905,8 +907,12 @@ func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *
 	names := materials.NewNameAllocator(nil)
 	for _, se := range sessions {
 		redactor := newSpecRedactor(store.SpecRedactionDir(se.sessionID))
-		entries, warnings, stored := attachSpecs(ctx, adder, redactor, names, se.sessionID, se.specs, log)
+		entries, warnings, stored, sources := attachSpecs(ctx, adder, redactor, names, se.sessionID, se.specs, log)
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
+
+		// The transcript keeps a pointer in place of each copy of a stored
+		// spec file, before the session material is redacted.
+		replaceSpecCopies(se.provider, se.evidence, sources, se.sessionID, log)
 
 		// The skill entries come after the sources that the agent wrote.
 		skillEntries, skillWarnings := attachSkills(ctx, adder, redactor, names, se.sessionID, se.skills, log)
