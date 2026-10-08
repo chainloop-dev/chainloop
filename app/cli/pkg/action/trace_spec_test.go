@@ -75,7 +75,16 @@ func TestSpecCaptureInstruction(t *testing.T) {
 		{name: "a pasted spec still counts", want: "Spec text that the user pastes", why: "a ticket or design document pasted into the chat is still a spec"},
 		{name: "a changed spec", want: "overwrite its file with the current content", why: "the push records what is on disk, so the final version replaces its drafts"},
 		{name: "a spec the session writes", want: "a design note outside the repository", why: "a plan the session keeps outside the working tree is a spec that changes"},
-		{name: "each push", want: "each time it is pushed", why: "the files stay for the whole session, and every push records them"},
+		{name: "each push", want: "Each push of this session records them", why: "the files stay for the whole session, and every push records them"},
+		{name: "the stakes", want: "attested evidence", why: "an agent that reads the captures as bookkeeping skips the update after an edit (spec issue-3561, R-006)"},
+		{name: "a wrong capture is false", want: "is a false record", why: "a partial or outdated capture is not a harmless shortcut"},
+		{name: "a local file has the placeholder", want: spec.Placeholder, why: "the push fills the body of a local file, so the agent writes the placeholder only (R-002)"},
+		{name: "a local file has its path", want: "set uri to its path", why: "the push reads the file at that path"},
+		{name: "no text of a local file", want: "not the text of the file", why: "a copy of a local file is a duplicate that the push discards"},
+		{name: "a local file is read at each push", want: "Each push reads the file", why: "a later edit of the file needs no new capture"},
+		{name: "a remote source in full", want: "write its full text", why: "the push cannot read a remote source"},
+		{name: "a remote change in the same turn", want: "in the same turn as the change", why: "an edit can be many turns before the push"},
+		{name: "a check before a push", want: "Before you push", why: "nothing else checks a remote capture"},
 		{name: "the way out", want: "write nothing at all", why: "without it a model invents a spec for a typo fix"},
 		// A real session was lost exactly here: the agent resolved both sources
 		// correctly and then wrote them with `mkdir -p X && cat > Y <<EOF`,
@@ -108,6 +117,9 @@ func TestSpecCaptureInstruction(t *testing.T) {
 	assert.NotContains(t, got, "a written prompt")
 	// A description of a pasted image is no longer asked for.
 	assert.NotContains(t, got, "write a description of it")
+	// The captures are evidence, not bookkeeping to keep quiet about
+	// (spec issue-3561, R-006).
+	assert.NotContains(t, got, "no need to mention")
 }
 
 // TestSpecCaptureReminder pins the reminder given at each user prompt. It goes
@@ -128,8 +140,11 @@ func TestSpecCaptureReminder(t *testing.T) {
 		{name: "an image file", want: "image as a file path or a URL", why: "an image the agent can reach is copied as it is"},
 		{name: "an approved plan", want: "approved a plan", why: "the plan is what the work ran against"},
 		{name: "kind text for a plan", want: "kind text", why: "an approved plan has no other kind"},
-		{name: "a changed spec", want: "overwrite its file with the current content", why: "the push records what is on disk"},
-		{name: "a local path as the source", want: "its path as uri", why: "a local document has its path as the source address"},
+		{name: "a changed spec", want: "overwrite its file with the current full text in the same turn", why: "the push cannot read a remote source, so the agent updates it at the change"},
+		{name: "a local path as the source", want: "set uri to its path", why: "the push reads a local file from its path"},
+		{name: "the placeholder", want: spec.Placeholder, why: "the push fills the body of a local file"},
+		{name: "the stakes", want: "attested evidence", why: "a capture read as bookkeeping gets skipped (spec issue-3561, R-006)"},
+		{name: "a check before a push", want: "before a push", why: "nothing else checks a remote capture"},
 		{name: "no request prompt", want: "Do not capture the user's request prompt", why: "the transcript already holds it"},
 		{name: "the way out", want: "do nothing", why: "most turns have nothing to capture"},
 		{name: "the tool to use", want: "file-writing tool", why: "a shell heredoc is refused in a worktree-isolated session"},

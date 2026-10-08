@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -155,6 +156,24 @@ func TestAttachSpecs(t *testing.T) {
 				CapturedAt: "2026-09-16T10:38:37Z",
 			},
 		}, entries)
+	})
+
+	t.Run("the content of a local source is a source for the pointers", func(t *testing.T) {
+		// Spec issue-3561, R-005: the push read the body from a local file,
+		// so a full copy of that file in the transcript is a copy of the
+		// material, as is the capture as recorded.
+		const fileContent = "# Spec foo\n\nThe last edit.\n"
+		local := specCapture(t, "spec-foo.md", "---\nkind: document\nuri: docs/specs/foo.md\n---\n"+fileContent, "2026-10-02T15:30:00Z")
+		local.SourceDigest = pointer.Digest([]byte(fileContent))
+
+		_, warnings, _, sources := attachSpecs(context.Background(), &fakeMaterialAdder{}, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), sessionID, []spec.Capture{local, ticket}, zerolog.Nop())
+
+		assert.Empty(t, warnings)
+		assert.Equal(t, pointer.Sources{
+			pointer.Digest(local.Raw):           "sha256:spec-7412a0-spec-foo",
+			pointer.Digest([]byte(fileContent)): "sha256:spec-7412a0-spec-foo",
+			pointer.Digest(ticket.Raw):          "sha256:spec-7412a0-ticket-pfm-7289",
+		}, sources)
 	})
 
 	t.Run("secrets are removed from the text and the source address before upload", func(t *testing.T) {

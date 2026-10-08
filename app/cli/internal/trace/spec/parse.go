@@ -16,10 +16,12 @@
 package spec
 
 import (
+	"bytes"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"gopkg.in/yaml.v3"
@@ -80,6 +82,11 @@ type Capture struct {
 	// MetaRaw is the companion file of a verbatim file as the agent wrote it,
 	// or nil when there is none. It is redacted before ParseMeta reads it.
 	MetaRaw []byte
+	// SourceDigest is the digest of the local file that the push read the
+	// body from, in the form of pointer.Digest, or empty when the body is
+	// what the agent wrote. A full copy of that file in the transcript is a
+	// copy of this source.
+	SourceDigest string
 }
 
 // verbatimCapture describes a file that is stored as it is. Its kind comes
@@ -123,7 +130,9 @@ func Parse(doc []byte, capturedAt time.Time) *Capture {
 
 	meta := parseHeader(header)
 
-	if strings.TrimSpace(body) == "" {
+	// The placeholder only asks the push to fill the body from a local file.
+	// It is never content.
+	if strings.TrimSpace(body) == "" || isPlaceholder(body) {
 		return nil
 	}
 
@@ -277,6 +286,7 @@ func truncate(s string, limit int) string {
 // split separates a leading frontmatter block from the body. A document with no
 // well-formed block is all body, so that a missing or unterminated header
 // cannot swallow the text it was supposed to introduce.
+// The body is always a suffix of doc.
 func split(doc string) (header, body string) {
 	rest := strings.TrimLeft(doc, "\r\n\t ")
 	if !strings.HasPrefix(rest, delimiter) {
@@ -299,10 +309,22 @@ func split(doc string) (header, body string) {
 	return "", doc
 }
 
+// isPlaceholder reports whether a body holds only the placeholder line.
+func isPlaceholder(body string) bool {
+	return strings.TrimSpace(body) == Placeholder
+}
+
 // isDelimiter reports whether a line is a frontmatter fence, tolerating the
 // carriage return a CRLF document leaves behind and any trailing whitespace.
 func isDelimiter(line string) bool {
 	return strings.TrimRight(line, "\r\t ") == delimiter
+}
+
+// isText reports whether a file is text that a spec can hold: valid UTF-8
+// with no NUL byte, and not an image. NUL is valid UTF-8, but no text file
+// holds it.
+func isText(name string, doc []byte) bool {
+	return utf8.Valid(doc) && bytes.IndexByte(doc, 0) < 0 && !isImage(name, doc)
 }
 
 // isImage reports whether a spec file is an image. Content sniffing finds the

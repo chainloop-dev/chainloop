@@ -268,6 +268,10 @@ func TestParse(t *testing.T) {
 		{name: "frontmatter with no body", doc: "---\nkind: ticket\n---\n", wantNil: true},
 		{name: "a whitespace-only body", doc: "---\nkind: ticket\n---\n   \n\n\t\n", wantNil: true},
 		{name: "a document of only whitespace", doc: "  \n\n ", wantNil: true},
+		// The push fills the placeholder from a local file. It is never
+		// recorded as content (spec issue-3561, R-002).
+		{name: "only the placeholder", doc: "---\nkind: document\nuri: docs/foo.md\n---\n" + Placeholder + "\n", wantNil: true},
+		{name: "the placeholder with padding", doc: "---\nkind: document\n---\n\n  " + Placeholder + "  \n\n", wantNil: true},
 	}
 
 	for _, tc := range testCases {
