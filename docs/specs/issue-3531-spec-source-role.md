@@ -4,6 +4,18 @@ ticket: https://github.com/chainloop-dev/chainloop/issues/3531
 prd:
 ---
 
+<!--
+AGENT INSTRUCTIONS. Keep this comment. Read it before you change this file.
+
+This spec records a design that humans reviewed and approved. Do not change it as part of other work. Find the status of the parent ticket (the `ticket:` field) before you change anything. If you cannot find the status, or you are not sure which case below applies, do not change the spec. Ask the human first.
+
+- Ticket in design, and the spec PR is open: change the spec only through the br:eng-spec skill (`--revise`). Never renumber or reuse an R-xxx or D-xxx ID.
+- Ticket in progress: do not rewrite the requirements, the Proposal, or existing Decision Record rows. Record a changed decision as a new Decision Record row. The owner records the differences with the shipped work through br:eng-spec (`--done`).
+- Ticket done or canceled: the spec is frozen. Do not change, delete, or strike through any text. The only allowed edits are typo fixes, broken links, and the "Superseded by" line under the title. For a design change, write a new spec with br:eng-spec that supersedes this one.
+
+When your code goes against this spec, say so in your PR. Do not edit the spec to match the code.
+-->
+
 # Spec issue-3531: Role, title, and description of each spec source
 
 ## Summary
