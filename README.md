@@ -96,9 +96,9 @@ has_errors if {
 Full policy: [sarif-errors.yaml](./docs/examples/policies/sarif-errors.yaml). Rules in the repo today: [sbom-present](./docs/examples/policies/sbom/sbom-present.yaml), [cyclonedx-banned-licenses](./docs/examples/policies/sbom/cyclonedx-banned-licenses.yaml), [sbom-freshness](./docs/examples/policies/sbom-freshness), [github-actions-security](./docs/examples/policies/github-actions-security), [trivy-vulns](./docs/examples/policies/trivy-vulns.yaml), [chainloop-commit](./docs/examples/policies/chainloop-commit.yaml). Write and test your own locally:
 
 ```bash
-chainloop policy develop init --name sbom-licenses   # scaffold policy.yaml and policy.rego
-chainloop policy develop lint                        # schema check plus Regal lint for the Rego
-chainloop policy develop eval --policy policy.yaml --material sbom.json --kind SBOM_CYCLONEDX_JSON
+chainloop policy develop init --name sbom-licenses   # creates sbom-licenses.yaml and sbom-licenses.rego
+chainloop policy develop lint --policy sbom-licenses.yaml
+chainloop policy develop eval --policy sbom-licenses.yaml --material sbom.json --kind SBOM_CYCLONEDX_JSON
 ```
 
 **Why it holds up**
