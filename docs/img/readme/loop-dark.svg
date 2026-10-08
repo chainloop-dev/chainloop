@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="500" viewBox="0 0 1280 500" role="img" aria-label="The Chainloop loop: define guardrails, collect signals, enforce continuously, and findings go back to the agent">
+<title>The Chainloop loop: define guardrails, collect signals, enforce continuously, and findings go back to the agent</title>
+<defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1.1" fill="#1F2630"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#A0A8B3"/></marker></defs>
+<rect width="1280" height="500" fill="#0D1117"/>
+<rect width="1280" height="500" fill="url(#dots)" opacity="0.6"/>
+<rect x="40.0" y="40" width="360" height="330" rx="16" fill="#151B23" stroke="#3D4450" stroke-width="1.2"/>
+<rect x="41.0" y="41" width="358" height="178" rx="15" fill="#10151C"/>
+<path d="M40.0 220 H400.0" stroke="#2A313C"/>
+<svg x="80.0" y="66" width="280" height="128" viewBox="0 0 171 147" preserveAspectRatio="xMidYMid meet" opacity="1.0" fill="none">
+<path d="M163.4 145.744H55.4628C53.8725 145.744 52.3472 145.108 51.2226 143.977C50.0981 142.846 49.4663 141.312 49.4663 139.713V7.03098C49.4663 5.43147 50.0981 3.89746 51.2226 2.76644C52.3472 1.63541 53.8725 1 55.4628 1H126.663L169.397 42.3553V139.713C169.397 141.312 168.765 142.846 167.64 143.977C166.516 145.108 164.991 145.744 163.4 145.744Z" fill="#151B23" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M126.664 1V37.3553C126.664 40.1167 128.902 42.3553 131.664 42.3553H169.397" fill="#2A313C"/>
+<path d="M126.664 1V37.3553C126.664 40.1167 128.902 42.3553 131.664 42.3553H169.397L126.664 1Z" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M84.7335 21.8495V14.7744C84.7335 14.5063 84.627 14.2493 84.4375 14.0597C84.2479 13.8702 83.9909 13.7637 83.7228 13.7637H63.5083C63.2402 13.7637 62.9831 13.8702 62.7936 14.0597C62.604 14.2493 62.4976 14.5063 62.4976 14.7744V21.8495C62.4976 33.9782 73.6155 37.0104 73.6155 37.0104C73.6155 37.0104 84.7335 33.9782 84.7335 21.8495Z" fill="#2A313C" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M68.2993 24.7584L71.1502 27.9881C71.5515 28.4428 72.2619 28.4385 72.6577 27.9789L79.9026 19.5654" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M111.231 123.37H154.164" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M111.231 133.278C111.231 133.278 135.075 93.6479 122.359 93.6479C112.897 93.6479 112.796 133.507 132.698 108.548C132.698 108.548 134.371 116.689 138.318 116.765C139.911 116.796 141.878 115.463 144.256 111.812C144.256 111.812 144.256 116.765 154.164 116.765" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M49.7336 9.12207H31.3667C28.053 9.12207 25.3667 11.8084 25.3667 15.1221V129.018C25.3667 132.331 28.053 135.018 31.3667 135.018H49.7336" stroke="#F0F3F6" stroke-width="1.5" stroke-dasharray="4 4"/>
+<path d="M25.3669 19.5654H7.00001C3.6863 19.5654 1 22.2517 1 25.5654V114.514C1 117.828 3.68629 120.514 7 120.514H25.3669" stroke="#F0F3F6" stroke-width="1.5" stroke-dasharray="4 4"/>
+</svg>
+<text x="68.0" y="262" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#6E7681" text-anchor="start">01</text>
+<text x="102.0" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="21" font-weight="700" fill="#F0F3F6" text-anchor="start" letter-spacing="-0.3">Define guardrails</text>
+<text x="68.0" y="296" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#A0A8B3" text-anchor="start">Decide what good and bad look like.</text>
+<text x="68.0" y="320" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#A0A8B3" text-anchor="start">Contracts and policies, as code, in git.</text>
+<path d="M408.0 140 H450.0" stroke="#A0A8B3" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<rect x="460.0" y="40" width="360" height="330" rx="16" fill="#151B23" stroke="#3D4450" stroke-width="1.2"/>
+<rect x="461.0" y="41" width="358" height="178" rx="15" fill="#10151C"/>
+<path d="M460.0 220 H820.0" stroke="#2A313C"/>
+<svg x="500.0" y="66" width="280" height="128" viewBox="0 0 307 141" preserveAspectRatio="xMidYMid meet" opacity="1.0" fill="none">
+<path d="M300.96 132.872H207.937C206.567 132.872 205.252 132.324 204.283 131.35C203.314 130.375 202.769 129.053 202.769 127.674V13.3261C202.769 11.9476 203.314 10.6255 204.283 9.65078C205.252 8.67603 206.567 8.12842 207.937 8.12842H269.299L306.128 43.7694V127.674C306.128 129.053 305.584 130.375 304.615 131.35C303.645 132.324 302.331 132.872 300.96 132.872Z" fill="#151B23" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M268.111 102.393L261.414 109.09C260.633 109.871 260.633 111.138 261.414 111.919L268.111 118.616" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M286.137 118.615L292.834 111.918C293.615 111.137 293.615 109.871 292.834 109.09L286.137 102.392" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M273.519 118.616L280.729 102.393" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M269.299 8.12842V38.7694C269.299 41.5309 271.538 43.7694 274.299 43.7694H306.128" fill="#2A313C"/>
+<path d="M269.299 8.12842V38.7694C269.299 41.5309 271.538 43.7694 274.299 43.7694H306.128L269.299 8.12842Z" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M203 16H188C184.686 16 182 18.6863 182 22V118.5C182 121.814 184.686 124.5 188 124.5H203" stroke="#F0F3F6" stroke-width="1.5" stroke-dasharray="4 4"/>
+<path d="M92.282 70V44" stroke="#F0F3F6" stroke-width="1.5" stroke-dasharray="4 4"/>
+<path d="M182 70H44" stroke="#F0F3F6" stroke-width="1.5" stroke-dasharray="4 4"/>
+<path d="M125 70L125 97" stroke="#F0F3F6" stroke-width="1.5" stroke-dasharray="4 4"/>
+<circle cx="92.3846" cy="22.3846" r="21.3846" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4 4"/>
+<path d="M98.6604 20.3947C98.6604 16.6596 95.6326 13.6318 91.8976 13.6318C88.1625 13.6318 85.1347 16.6596 85.1347 20.3947V24.9033C85.1347 28.6383 88.1625 31.6662 91.8976 31.6662C95.6326 31.6662 98.6604 28.6383 98.6604 24.9033V20.3947Z" fill="#2A313C"/>
+<path d="M98.6604 23.4004H100.915M82.8804 23.4004H85.1347M82.8804 26.4061H85.3019M82.8804 20.3947C89.9232 20.3947 100.915 20.3947 100.915 20.3947M98.4932 26.4061H100.915M98.6604 12.8804L96.2887 15.2521M85.1347 12.8804L87.5064 15.2521M91.8976 13.6318C95.6326 13.6318 98.6604 16.6596 98.6604 20.3947V24.9033C98.6604 28.6383 95.6326 31.6662 91.8976 31.6662C88.1625 31.6662 85.1347 28.6383 85.1347 24.9033V20.3947C85.1347 16.6596 88.1625 13.6318 91.8976 13.6318Z" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="124.556" cy="118.616" r="21.3846" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4 4"/>
+<path d="M134.215 117.268V111.17C134.215 110.939 134.123 110.718 133.959 110.554C133.796 110.391 133.574 110.299 133.343 110.299H115.922C115.691 110.299 115.47 110.391 115.306 110.554C115.143 110.718 115.051 110.939 115.051 111.17V117.268C115.051 127.721 124.633 130.334 124.633 130.334C124.633 130.334 134.215 127.721 134.215 117.268Z" fill="#2A313C" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="22.3846" cy="69.9061" r="21.3846" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="4 4"/>
+<path d="M21.9388 74.169C24.3681 74.169 26.3374 72.1997 26.3374 69.7705C26.3374 67.3412 24.3681 65.3719 21.9388 65.3719C19.5095 65.3719 17.5402 67.3412 17.5402 69.7705C17.5402 72.1997 19.5095 74.169 21.9388 74.169Z" fill="#2A313C"/>
+<path d="M22.1642 78.3598C22.0169 78.3598 21.8684 78.3598 21.7244 78.3598L18.2 80.3271C16.828 79.8656 15.5554 79.1492 14.4491 78.2157L14.4359 74.257C14.3578 74.1339 14.2842 74.0096 14.216 73.882L10.7114 71.8862C10.4354 70.4899 10.4354 69.0532 10.7114 67.6569L14.2127 65.6666C14.2842 65.5401 14.3578 65.4148 14.4326 65.2916L14.4502 61.3329C15.5555 60.3967 16.8278 59.6777 18.2 59.2139L21.7189 61.1811C21.8662 61.1811 22.0147 61.1811 22.1587 61.1811L25.6776 59.2139C27.0496 59.6754 28.3222 60.3917 29.4285 61.3252L29.4417 65.2839C29.5198 65.4071 29.5934 65.5313 29.6616 65.6589L33.164 67.6536C33.44 69.0499 33.44 70.4866 33.164 71.8829L29.6627 73.8732C29.5912 73.9997 29.5176 74.1251 29.4428 74.2482L29.4252 78.2069C28.3206 79.1433 27.0491 79.8626 25.6776 80.3271L22.1642 78.3598Z" fill="#2A313C"/>
+<path d="M21.9388 74.169C24.3681 74.169 26.3374 72.1997 26.3374 69.7705C26.3374 67.3412 24.3681 65.3719 21.9388 65.3719C19.5095 65.3719 17.5402 67.3412 17.5402 69.7705C17.5402 72.1997 19.5095 74.169 21.9388 74.169Z" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M22.1642 78.3598C22.0169 78.3598 21.8684 78.3598 21.7244 78.3598L18.2 80.3271C16.828 79.8656 15.5554 79.1492 14.4491 78.2157L14.4359 74.257C14.3578 74.1339 14.2842 74.0096 14.216 73.882L10.7114 71.8862C10.4354 70.4899 10.4354 69.0532 10.7114 67.6569L14.2127 65.6666C14.2842 65.5401 14.3578 65.4148 14.4326 65.2916L14.4502 61.3329C15.5555 60.3967 16.8278 59.6777 18.2 59.2139L21.7189 61.1811C21.8662 61.1811 22.0147 61.1811 22.1587 61.1811L25.6776 59.2139C27.0496 59.6754 28.3222 60.3917 29.4285 61.3252L29.4417 65.2839C29.5198 65.4071 29.5934 65.5313 29.6616 65.6589L33.164 67.6536C33.44 69.0499 33.44 70.4866 33.164 71.8829L29.6627 73.8732C29.5912 73.9997 29.5176 74.1251 29.4428 74.2482L29.4252 78.2069C28.3206 79.1433 27.0491 79.8626 25.6776 80.3271L22.1642 78.3598Z" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+<text x="488.0" y="262" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#6E7681" text-anchor="start">02</text>
+<text x="522.0" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="21" font-weight="700" fill="#F0F3F6" text-anchor="start" letter-spacing="-0.3">Collect signals</text>
+<text x="488.0" y="296" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#A0A8B3" text-anchor="start">Sessions, PRs, skills, artifacts,</text>
+<text x="488.0" y="320" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#A0A8B3" text-anchor="start">reports. Signed, in your store.</text>
+<path d="M828.0 140 H870.0" stroke="#A0A8B3" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<rect x="880.0" y="40" width="360" height="330" rx="16" fill="#151B23" stroke="#3D4450" stroke-width="1.2"/>
+<rect x="881.0" y="41" width="358" height="178" rx="15" fill="#10151C"/>
+<path d="M880.0 220 H1240.0" stroke="#2A313C"/>
+<svg x="920.0" y="66" width="280" height="128" viewBox="0 0 64 45" preserveAspectRatio="xMidYMid meet" opacity="1.0" fill="none">
+<path d="M61.744 17.3884L62.8223 5.26129C62.8223 4.80182 62.6415 4.36116 62.3198 4.03627C61.9981 3.71137 61.5618 3.52885 61.1068 3.52885L43.9519 1.375L26.7974 3.52885C26.3424 3.52885 25.9061 3.71137 25.5843 4.03627C25.2626 4.36116 25.0819 4.80182 25.0819 5.26129L24.0036 17.3884C21.847 38.1777 39.6389 43.375 39.6389 43.375C39.6389 43.375 59.5874 38.1777 61.744 17.3884Z" fill="#F0F3F6" fill-opacity="0.08" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M34.8223 21.2321L39.6223 26.375L50.8223 14.375" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M6.82227 4.375L18.8223 4.375" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M0.822266 15.375H16.8223" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round"/>
+<path d="M5.82227 27.375L17.8223 27.375" stroke="#F0F3F6" stroke-width="1.5" stroke-linecap="round"/>
+</svg>
+<text x="908.0" y="262" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="13" font-weight="700" fill="#6E7681" text-anchor="start">03</text>
+<text x="942.0" y="262" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="21" font-weight="700" fill="#F0F3F6" text-anchor="start" letter-spacing="-0.3">Enforce continuously</text>
+<text x="908.0" y="296" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#A0A8B3" text-anchor="start">Good work ships. Bad work is</text>
+<text x="908.0" y="320" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#A0A8B3" text-anchor="start">blocked before merge or release.</text>
+<path d="M1060.0 370 V430 H220.0 V378" fill="none" stroke="#A0A8B3" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<rect x="430.0" y="408" width="420" height="44" rx="22" fill="#151B23" stroke="#3D4450"/>
+<text x="640.0" y="436" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#F0F3F6" text-anchor="middle">Findings go back to the agent. Then it loops.</text>
+</svg>

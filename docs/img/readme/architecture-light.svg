@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-label="How Chainloop works: inputs, the Chainloop OSS core, outputs, and the feedback loop">
+<title>How Chainloop works: inputs, the Chainloop OSS core, outputs, and the feedback loop</title>
+<defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r="1.1" fill="#E8E8E8"/></pattern><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5F5F5F"/></marker></defs>
+<rect width="1280" height="820" fill="#FFFFFF"/>
+<rect width="1280" height="820" fill="url(#dots)" opacity="0.6"/>
+<rect x="32" y="40" width="300" height="600" rx="12" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="1"/>
+<text x="182.0" y="74" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#5F5F5F" text-anchor="middle" letter-spacing="1.5">INPUTS</text>
+<g transform="translate(56 110) scale(1.1666666666666667)" fill="none" stroke="#0A0A0A" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l1.9 5.6 5.6 1.9-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.9z"/><path d="M18.5 15.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/></g>
+<text x="100" y="122" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="650" fill="#0A0A0A" text-anchor="start">AI coding sessions</text>
+<text x="100" y="144" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Claude Code, OpenCode, Cursor</text>
+<path d="M332 124 H354 V340" fill="none" stroke="#D4D4D4" stroke-width="1.2"/>
+<g transform="translate(56 214) scale(1.1666666666666667)" fill="none" stroke="#0A0A0A" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="9" height="6" rx="3"/><path d="M6.5 9v4a3 3 0 0 0 3 3h5"/><circle cx="17" cy="16" r="2.5"/><path d="M17 18.5V21"/></g>
+<text x="100" y="226" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="650" fill="#0A0A0A" text-anchor="start">CI/CD pipelines</text>
+<text x="100" y="248" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">GitHub, GitLab, Jenkins, Azure, more</text>
+<path d="M332 228 H354 V340" fill="none" stroke="#D4D4D4" stroke-width="1.2"/>
+<g transform="translate(56 318) scale(1.1666666666666667)" fill="none" stroke="#0A0A0A" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></g>
+<text x="100" y="330" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="650" fill="#0A0A0A" text-anchor="start">Scanners</text>
+<text x="100" y="352" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">SAST, SCA, DAST, secrets, IaC</text>
+<path d="M332 332 H354 V340" fill="none" stroke="#D4D4D4" stroke-width="1.2"/>
+<g transform="translate(56 422) scale(1.1666666666666667)" fill="none" stroke="#0A0A0A" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5h8l4.5 4.5V21a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5z"/><path d="M14 2.5V7h4.5M8.5 11h7M8.5 14.5h7M8.5 18h4"/></g>
+<text x="100" y="434" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="650" fill="#0A0A0A" text-anchor="start">SBOM and build tools</text>
+<text x="100" y="456" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">CycloneDX, SPDX, Syft, Maven</text>
+<path d="M332 436 H354 V340" fill="none" stroke="#D4D4D4" stroke-width="1.2"/>
+<g transform="translate(56 526) scale(1.1666666666666667)" fill="none" stroke="#0A0A0A" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="m7.5 12.3 3 3 6-6.3"/></g>
+<text x="100" y="538" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="650" fill="#0A0A0A" text-anchor="start">Tests</text>
+<text x="100" y="560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Unit, integration, E2E, coverage</text>
+<path d="M332 540 H354 V340" fill="none" stroke="#D4D4D4" stroke-width="1.2"/>
+<path d="M354 340 H382" stroke="#5F5F5F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="388" y="60" width="504" height="560" rx="16" fill="#FFFFFF" stroke="#D4D4D4" stroke-width="1.5"/>
+<rect x="530.0" y="42" width="220" height="36" rx="10" fill="#0A0A0A"/>
+<text x="640.0" y="66" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle" letter-spacing="1.5">CHAINLOOP OSS</text>
+<rect x="404" y="100" width="228" height="238" rx="12" fill="#F7F7F7" stroke="#E5E5E5" stroke-width="1"/>
+<g transform="translate(426 126) scale(1.25)" fill="none" stroke="#0A0A0A" stroke-width="1.20" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5h8l4.5 4.5V21a.5.5 0 0 1-.5.5H6a.5.5 0 0 1-.5-.5V3a.5.5 0 0 1 .5-.5z"/><path d="M14 2.5V7h4.5M8.5 11h7M8.5 14.5h4"/><path d="m11 18.5 1.5 1.5 3-3"/></g>
+<text x="426" y="192" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0A0A0A" text-anchor="start" letter-spacing="1.2">CONTRACTS</text>
+<text x="426" y="222" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">Say what evidence and</text>
+<text x="426" y="245" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">rules each job needs.</text>
+<text x="426" y="268" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">Versioned, reusable.</text>
+<rect x="648" y="100" width="228" height="238" rx="12" fill="#F7F7F7" stroke="#E5E5E5" stroke-width="1"/>
+<g transform="translate(670 126) scale(1.25)" fill="none" stroke="#0A0A0A" stroke-width="1.20" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5.5" rx="7.5" ry="3"/><path d="M4.5 5.5v13c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-13"/><path d="M4.5 12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3"/></g>
+<text x="670" y="192" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0A0A0A" text-anchor="start" letter-spacing="1.2">EVIDENCE STORE</text>
+<text x="670" y="222" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">Signed sessions, SBOMs,</text>
+<text x="670" y="245" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">scans, tests. In your</text>
+<text x="670" y="268" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">own bucket.</text>
+<rect x="404" y="354" width="228" height="238" rx="12" fill="#F7F7F7" stroke="#E5E5E5" stroke-width="1"/>
+<g transform="translate(426 380) scale(1.25)" fill="none" stroke="#0A0A0A" stroke-width="1.20" stroke-linecap="round" stroke-linejoin="round"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4.5l-3 15"/></g>
+<text x="426" y="446" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0A0A0A" text-anchor="start" letter-spacing="1.2">POLICY ENGINE</text>
+<text x="426" y="476" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">Rego and WASM</text>
+<text x="426" y="499" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">policies as code,</text>
+<text x="426" y="522" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">run on every record.</text>
+<rect x="648" y="354" width="228" height="238" rx="12" fill="#F7F7F7" stroke="#E5E5E5" stroke-width="1"/>
+<g transform="translate(670 380) scale(1.25)" fill="none" stroke="#0A0A0A" stroke-width="1.20" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5 4 5.5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10v-6z"/><path d="m8.5 12 2.5 2.5 4.5-4.5"/></g>
+<text x="670" y="446" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#0A0A0A" text-anchor="start" letter-spacing="1.2">DECISION</text>
+<text x="670" y="476" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">Pass, fail, or advisory.</text>
+<text x="670" y="499" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">Findings go back</text>
+<text x="670" y="522" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="14" font-weight="400" fill="#5F5F5F" text-anchor="start">to the agent.</text>
+<path d="M892 340 H944" stroke="#5F5F5F" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="948" y="40" width="300" height="600" rx="12" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="1"/>
+<text x="1098.0" y="74" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#5F5F5F" text-anchor="middle" letter-spacing="1.5">OUTPUTS</text>
+<g transform="translate(972 116) scale(1.1666666666666667)" fill="none" stroke="#0A0A0A" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2.5h8l5.5 5.5v8L16 21.5H8L2.5 16V8z"/><path d="M8.5 8.5v7l4-3.5zM15.5 8.5v7"/></g>
+<text x="1016" y="128" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="650" fill="#0A0A0A" text-anchor="start">Release gates</text>
+<text x="1016" y="150" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Block or allow, automatically</text>
+<g transform="translate(972 244) scale(1.1666666666666667)" fill="none" stroke="#0A0A0A" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="m7.5 12.3 3 3 6-6.3"/></g>
+<text x="1016" y="256" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="650" fill="#0A0A0A" text-anchor="start">Deploy approvals</text>
+<text x="1016" y="278" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Environment-aware policy</text>
+<g transform="translate(972 372) scale(1.1666666666666667)" fill="none" stroke="#0A0A0A" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2.5h8l4.5 4.5V12"/><path d="M5.5 3v18a.5.5 0 0 0 .5.5h6"/><path d="M14 2.5V7h4.5M8.5 11h6M8.5 14.5h3"/><circle cx="17" cy="17" r="3"/><path d="m19.2 19.2 2.3 2.3"/></g>
+<text x="1016" y="384" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="650" fill="#0A0A0A" text-anchor="start">Audit trail</text>
+<text x="1016" y="406" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Signed, searchable, exportable</text>
+<g transform="translate(972 500) scale(1.1666666666666667)" fill="none" stroke="#0A0A0A" stroke-width="1.29" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx=".5"/><rect x="12" y="8" width="3" height="10" rx=".5"/><rect x="17" y="5" width="3" height="13" rx=".5"/></g>
+<text x="1016" y="512" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="16" font-weight="650" fill="#0A0A0A" text-anchor="start">Dashboards</text>
+<text x="1016" y="534" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Org-wide visibility</text>
+<rect x="1016" y="546" width="74" height="20" rx="10" fill="none" stroke="#D4D4D4" stroke-dasharray="3 2"/>
+<text x="1053" y="560" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="11" font-weight="600" fill="#5F5F5F" text-anchor="middle">Platform</text>
+<path d="M1098.0 640 V690 H182.0 V646" fill="none" stroke="#5F5F5F" stroke-width="1.5" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<rect x="390.0" y="675" width="500" height="30" rx="15" fill="#FFFFFF"/>
+<text x="640.0" y="695" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#0A0A0A" text-anchor="middle" letter-spacing="1.2">FEEDBACK LOOP: FINDINGS GO BACK INTO THE FACTORY</text>
+<rect x="32" y="728" width="1216" height="70" rx="12" fill="#FFFFFF" stroke="#E5E5E5" stroke-width="1"/>
+<g transform="translate(60.0 750) scale(1.0833333333333333)" fill="none" stroke="#0A0A0A" stroke-width="1.38" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/><rect x="8" y="3" width="8" height="8" rx="1.5"/></g>
+<text x="100.0" y="760" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#0A0A0A" text-anchor="start">No scanner lock-in</text>
+<text x="100.0" y="780" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Bring your own tools</text>
+<path d="M336.0 744 V782" stroke="#E5E5E5"/>
+<g transform="translate(364.0 750) scale(1.0833333333333333)" fill="none" stroke="#0A0A0A" stroke-width="1.38" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18.5a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.6 1.6A3.8 3.8 0 0 1 17.5 18.5z"/><path d="M12 13v8M9.5 18.5 12 21l2.5-2.5"/></g>
+<text x="404.0" y="760" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#0A0A0A" text-anchor="start">Runs anywhere</text>
+<text x="404.0" y="780" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Cloud, on-prem, air-gapped</text>
+<path d="M640.0 744 V782" stroke="#E5E5E5"/>
+<g transform="translate(668.0 750) scale(1.0833333333333333)" fill="none" stroke="#0A0A0A" stroke-width="1.38" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="5.5" r="2.5"/><circle cx="6" cy="18.5" r="2.5"/><circle cx="18" cy="8.5" r="2.5"/><path d="M6 8v8M18 11c0 4-6 3-11 6"/></g>
+<text x="708.0" y="760" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#0A0A0A" text-anchor="start">GitOps friendly</text>
+<text x="708.0" y="780" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Declarative and versioned</text>
+<path d="M944.0 744 V782" stroke="#E5E5E5"/>
+<g transform="translate(972.0 750) scale(1.0833333333333333)" fill="none" stroke="#0A0A0A" stroke-width="1.38" stroke-linecap="round" stroke-linejoin="round"><path d="m8 7-5 5 5 5M16 7l5 5-5 5M13.5 4.5l-3 15"/></g>
+<text x="1012.0" y="760" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="15" font-weight="650" fill="#0A0A0A" text-anchor="start">API-first</text>
+<text x="1012.0" y="780" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#5F5F5F" text-anchor="start">Extensible and automatable</text>
+</svg>
