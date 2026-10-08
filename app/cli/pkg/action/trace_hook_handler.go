@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"sort"
 	"strconv"
@@ -32,6 +33,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
@@ -909,6 +911,18 @@ func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *
 		redactor := newSpecRedactor(store.SpecRedactionDir(se.sessionID))
 		entries, warnings, stored, sources := attachSpecs(ctx, adder, redactor, names, se.sessionID, se.specs, log)
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
+
+		// Each image that the user pasted is a source too, after the sources
+		// that the agent wrote (spec issue-3569).
+		pasted, pastedWarnings, _, pastedSources := attachSpecs(ctx, adder, redactor, names, se.sessionID, pastedImageCaptures(se.provider, se.evidence, sources), log)
+		entries = append(entries, pasted...)
+		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, pastedWarnings...)
+		// The pasted images are not files of the spec folder, so their names
+		// are not kept for the next push.
+		if sources == nil {
+			sources = pointer.Sources{}
+		}
+		maps.Copy(sources, pastedSources)
 
 		// The transcript keeps a pointer in place of each copy of a stored
 		// spec file, before the session material is redacted.

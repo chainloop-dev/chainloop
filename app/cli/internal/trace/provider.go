@@ -198,6 +198,36 @@ type SpecCopyReplacer interface {
 	ReplaceSpecCopies(raw map[string][]json.RawMessage, sources pointer.Sources) pointer.Report
 }
 
+// PastedImageFinder is implemented by a provider that can find the images
+// that the user pasted into its transcript (spec issue-3569). The push stores
+// each one as a spec source, and ReplaceSpecCopies of the same provider then
+// replaces it with a pointer. For the sessions of a provider without it, the
+// pasted images stay inline.
+type PastedImageFinder interface {
+	// PastedImages returns each distinct image that the user pasted, in each
+	// stream of the raw session: the main stream first, then the subagent
+	// streams by name. An image pasted many times is returned one time, from
+	// its first paste. An image whose data cannot be decoded is left out.
+	PastedImages(raw map[string][]json.RawMessage) []PastedImage
+}
+
+// PastedImage is one image that the user pasted into a session.
+type PastedImage struct {
+	// Data is the decoded image, as the model got it.
+	Data []byte
+	// Digest is the digest of Data, in the form of pointer.Digest.
+	Digest string
+	// MediaType is the media type of the image, as the agent recorded it.
+	MediaType string
+	// Number is the number of the paste as the agent showed it to the user,
+	// or the position of the image in the session, from 1, when the agent
+	// showed no number.
+	Number int
+	// Timestamp is the time of the transcript entry that holds the image,
+	// RFC3339 in UTC, or empty when the agent recorded none that can be read.
+	Timestamp string
+}
+
 // SkillUse is one skill that a session used, with the counts of its uses.
 type SkillUse struct {
 	// Name is the name that the agent used for the skill.

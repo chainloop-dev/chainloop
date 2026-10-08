@@ -46,12 +46,15 @@ const (
 // transcript with pointers (spec issue-3556). A copy is a full read of a file
 // whose content on disk is a source, or a write of the content of a source.
 // Only the fields that hold a copy are rewritten; a line with nothing to
-// replace keeps its bytes.
+// replace keeps its bytes. An image that the user pasted is a copy too (spec
+// issue-3569).
 func (p *Provider) ReplaceSpecCopies(raw map[string][]json.RawMessage, sources pointer.Sources) pointer.Report {
 	report := pointer.Report{}
 	if len(sources) == 0 {
 		return report
 	}
+
+	replacePastedImages(raw, sources, report)
 
 	r := &specCopies{sources: sources, files: make(map[string]fileDigest), report: report}
 	for _, lines := range raw {
@@ -231,7 +234,7 @@ func (r *specCopies) read(c *toolCall) {
 		// A media block keeps its type, and the pointer becomes its source.
 		n := 0
 		for _, b := range blocks {
-			if b.object("source").str("type") == "base64" {
+			if b.object("source").str("type") == sourceBase64 {
 				removed += len(b["source"])
 				b["source"] = p
 				n++
