@@ -34,6 +34,13 @@ import (
 // single-use content can keep it rather than throw it away unseen.
 var ErrAnnounceUnsupported = errors.New("agent cannot show messages to the user")
 
+// RelayToModelInstruction prefixes a message that reaches the user through the
+// model rather than being shown directly. Agents name that channel differently
+// (Claude Code's additionalContext, the result of an opencode shell command),
+// but the model reads it as context, not as something to pass on, so every
+// provider that uses it has to say so, in the same words.
+const RelayToModelInstruction = "Tell the user the following, including any link verbatim: "
+
 // SessionStartMessage is everything the session-start hook has to say, on the
 // two channels an agent offers: one the user reads, one the model reads.
 //

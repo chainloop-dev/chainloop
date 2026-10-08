@@ -19,6 +19,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -187,7 +188,8 @@ func TestSessionStartChannelGate(t *testing.T) {
 
 			assert.Equal(t, tc.wantSent, p.sysCalls)
 			if tc.wantBanner {
-				assert.Contains(t, p.last.Banner, "Chainloop Trace is recording this session.")
+				assert.True(t, strings.HasPrefix(p.last.Banner, "Chainloop Trace is recording this session."),
+					"the banner goes out unframed: a transcript and a toast frame it in opposite ways, so that is the provider's call")
 			} else {
 				assert.Empty(t, p.last.Banner)
 			}

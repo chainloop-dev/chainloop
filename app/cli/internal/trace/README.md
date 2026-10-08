@@ -47,16 +47,18 @@ What the user sees in the agent.
 
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
-| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No |
-| Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop. | Yes | No | No | No |
+| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | Unknown | Yes |
+| Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop, and the model is told to repeat it in its reply. | Yes | No | Unknown | Yes |
 | Credentials warning | At session start, in control-plane mode, the user is told when the control plane does not accept the CLI credentials (for example, an expired token), so the push will not upload the session. The hook uses the same check as `chainloop trace init`. An unreachable control plane, or a check that takes more than 2 seconds, shows no warning. | Yes | Partial | Partial | Partial |
+
+How OpenCode shows them: the hook writes a JSON response to stdout, and the plugin reads it. OpenCode 1.x shows the welcome message and the link as a TUI toast, and adds the link to the output of the shell command for the model. An OpenCode 2 plugin has no toast. The welcome message is the description of the synthetic message that carries the spec capture instruction, which the TUI shows in the transcript. The link is added to the result of the shell command, which the TUI shows in the command block and the model reads.
 
 Why not Yes:
 
-- **Welcome message, Cursor and OpenCode:** the provider gives the session-start context to the model only. It has no channel that shows a message to the user at session start, so the welcome message is dropped.
+- **Welcome message, Cursor:** the provider gives the session-start context to the model only. It has no channel that shows a message to the user at session start, so the welcome message is dropped.
 - **Credentials warning, Cursor and OpenCode:** the provider has no channel to the user at session start. The model is told to tell the user, so the warning depends on the model.
+- **Welcome message and session link after push, OpenCode 1.x:** implemented with the TUI toast of the 1.x SDK, but not verified in a live 1.x session.
 - **Session link after push, Cursor:** the `postToolUse` hook runs after a shell command, but its response has no field that Cursor shows to the user. The link stays pending until it expires.
-- **Session link after push, OpenCode:** the plugin hook fires after a shell command, but the response that shows a message to the user is not verified yet. The link stays pending until it expires.
 
 ## Specs and skills
 
