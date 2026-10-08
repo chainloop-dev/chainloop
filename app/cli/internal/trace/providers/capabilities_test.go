@@ -54,10 +54,10 @@ func TestSessionStartChannels(t *testing.T) {
 		},
 		{
 			provider:        opencode.Name,
-			wantBanner:      false,
+			wantBanner:      true,
 			wantInstruction: true,
 			wantReminder:    true,
-			why:             "the opencode plugin posts the instruction and the reminder as context-only messages and has no banner",
+			why:             "the opencode plugin posts the instruction and the reminder as context-only messages, and shows the banner as a toast in OpenCode 1.x and as the description of a synthetic message in OpenCode 2",
 		},
 	}
 

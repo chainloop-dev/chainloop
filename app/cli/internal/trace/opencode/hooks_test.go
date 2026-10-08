@@ -101,18 +101,91 @@ func TestPluginPostsSessionStartInstruction(t *testing.T) {
 			assert.Contains(t, content, "noReply: true")
 			// OpenCode 2: a synthetic message, and resume: false stores it
 			// without a model reply.
-			assert.Contains(t, content, "ctx.session.synthetic({ sessionID, text: instruction, resume: false })")
+			assert.Contains(t, content, "ctx.session.synthetic({ sessionID, text: instruction, description, resume: false })")
 			// The handler waits until the message is stored, so a first turn
 			// sent right away cannot reach the model without it. OpenCode 2
 			// delivers events asynchronously, so its prompt hook also waits for
 			// a session start still in flight.
-			assert.Contains(t, content, "await post(sessionID, instruction)")
+			assert.Contains(t, content, "await post(sessionID, instruction, description)")
 			assert.Contains(t, content, `ctx.session.hook("prompt"`)
 			// A child session belongs to a subagent, whose parent already has
 			// the instruction.
 			assert.Contains(t, content, "parentID")
 		})
 	}
+}
+
+// TestPluginShowsTraceMessages pins how the user sees the session-start banner
+// and the session link left by a push. OpenCode 1.x shows both as a TUI toast,
+// and adds the link to the string output of the command for the model. An
+// OpenCode 2 plugin has no toast: the banner is the description of the
+// synthetic message, which the TUI shows, and the link is a content part of
+// the command result, which the TUI shows in the command block and the model
+// reads. A failed or aborted command has no output to add to.
+func TestPluginShowsTraceMessages(t *testing.T) {
+	content := installedPlugin(t)
+
+	testCases := []struct {
+		name            string
+		wantContains    []string
+		wantNotContains []string
+	}{
+		{
+			name: "session-start banner",
+			wantContains: []string{
+				// A subagent's session gets no banner: its parent showed one.
+				"if (parentID || (!res.instruction && !res.banner)) return",
+				"await postInstruction(post, sessionID, res.instruction || res.banner!, res.banner)",
+				// OpenCode 1.x.
+				"if (description) toast(description)",
+			},
+		},
+		{
+			name: "toast is best effort",
+			wantContains: []string{
+				`client.tui.showToast({ body: { message, variant: "info" } })`,
+			},
+			// A slow or absent TUI must not hold back the session or a tool.
+			wantNotContains: []string{"await toast(", "await client.tui.showToast("},
+		},
+		{
+			name: "session link after a shell command",
+			wantContains: []string{
+				"return responseFrom(directory, hook, { ...payload, tool_use_id: callID })",
+				// OpenCode 1.x.
+				"if (res?.message) toast(res.message)",
+				`if (res?.relayToModel && typeof output?.output === "string") {`,
+				// OpenCode 2.
+				"if (res?.relayToModel && Array.isArray(event.result?.content)) {",
+				`event.result.content.push({ type: "text", text: res.relayToModel })`,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, want := range tc.wantContains {
+				assert.Contains(t, content, want)
+			}
+			for _, unwanted := range tc.wantNotContains {
+				assert.NotContains(t, content, unwanted)
+			}
+		})
+	}
+}
+
+// installedPlugin installs the full plugin in a temporary repository and
+// returns its content.
+func installedPlugin(t *testing.T) string {
+	t.Helper()
+
+	repoRoot := t.TempDir()
+	require.NoError(t, New().InstallHooks(repoRoot))
+
+	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+	require.NoError(t, err)
+
+	return string(data)
 }
 
 // TestPluginPostsPromptReminder pins how the model receives the spec capture

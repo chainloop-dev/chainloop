@@ -26,8 +26,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestAnnounceSessionStart pins the session-start response: the Chainloop plugin reads instruction and posts it to the session as a context-only message.
-// There is no channel to the user, so the banner is never emitted.
+// TestAnnounceSessionStart pins the session-start response: the Chainloop
+// plugin posts instruction to the session as a context-only message and shows
+// banner to the user, each OpenCode major on its own channel.
 func TestAnnounceSessionStart(t *testing.T) {
 	const (
 		banner      = "Chainloop Trace is recording this session."
@@ -38,22 +39,22 @@ func TestAnnounceSessionStart(t *testing.T) {
 		name string
 		msg  trace.SessionStartMessage
 		// want is the emitted document, or nil for no output at all.
-		want map[string]any
+		want *hookResponse
 	}{
 		{
-			name: "the instruction is emitted and the banner is not",
+			name: "the instruction and the banner share one document",
 			msg:  trace.SessionStartMessage{Banner: banner, Instruction: instruction},
-			want: map[string]any{"instruction": instruction},
+			want: &hookResponse{Instruction: instruction, Banner: banner},
 		},
 		{
 			name: "an instruction on its own",
 			msg:  trace.SessionStartMessage{Instruction: instruction},
-			want: map[string]any{"instruction": instruction},
+			want: &hookResponse{Instruction: instruction},
 		},
 		{
-			// A banner has nowhere to go, so the hook stays a no-op.
-			name: "a banner alone emits nothing",
+			name: "a banner on its own",
 			msg:  trace.SessionStartMessage{Banner: banner},
+			want: &hookResponse{Banner: banner},
 		},
 		{
 			name: "nothing to say emits nothing",
@@ -72,9 +73,9 @@ func TestAnnounceSessionStart(t *testing.T) {
 				return
 			}
 
-			var got map[string]any
+			var got hookResponse
 			require.NoError(t, json.Unmarshal([]byte(out), &got))
-			assert.Equal(t, tc.want, got)
+			assert.Equal(t, *tc.want, got)
 		})
 	}
 }
@@ -88,9 +89,9 @@ func TestAnnouncePromptSubmit(t *testing.T) {
 	testCases := []struct {
 		name     string
 		reminder string
-		want     map[string]any
+		want     *hookResponse
 	}{
-		{name: "a reminder is emitted", reminder: reminder, want: map[string]any{"instruction": reminder}},
+		{name: "a reminder is emitted", reminder: reminder, want: &hookResponse{Instruction: reminder}},
 		{name: "nothing to say emits nothing", reminder: ""},
 	}
 
@@ -105,9 +106,46 @@ func TestAnnouncePromptSubmit(t *testing.T) {
 				return
 			}
 
-			var got map[string]any
+			var got hookResponse
 			require.NoError(t, json.Unmarshal([]byte(out), &got))
-			assert.Equal(t, tc.want, got)
+			assert.Equal(t, *tc.want, got)
+		})
+	}
+}
+
+// TestAnnounceToUser pins the response after a shell command: the plugin
+// shows message to the user and adds relayToModel to the command result, so
+// the model repeats the message in its reply.
+func TestAnnounceToUser(t *testing.T) {
+	const msg = "Coding Session Available at https://app.chainloop.dev/u/acme/sessions/abc-123"
+
+	testCases := []struct {
+		name string
+		msg  string
+		want *hookResponse
+	}{
+		{
+			name: "a message goes out on both channels",
+			msg:  msg,
+			want: &hookResponse{Message: msg, RelayToModel: trace.RelayToModelInstruction + msg},
+		},
+		{name: "nothing to say emits nothing", msg: ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			out := captureStdout(t, func() {
+				require.NoError(t, New().AnnounceToUser(tc.msg))
+			})
+
+			if tc.want == nil {
+				assert.Empty(t, out)
+				return
+			}
+
+			var got hookResponse
+			require.NoError(t, json.Unmarshal([]byte(out), &got))
+			assert.Equal(t, *tc.want, got)
 		})
 	}
 }

@@ -73,41 +73,57 @@ function fire(directory: string, event: string, payload: Record<string, any>): P
   })
 }
 
-// instructionFrom fires a hook that can answer with an instruction for the
-// model, and returns the instruction it wrote to stdout, if Chainloop has one.
-async function instructionFrom(directory: string, event: string, sessionID: string, hookEventName: string): Promise<string> {
-  const out = await fire(directory, event, { session_id: sessionID, hook_event_name: hookEventName })
-  if (!out.trim()) return ""
+// HookResponse is what a chainloop hook writes to stdout when it has something
+// to deliver. It mirrors the Go hookResponse type: the two are one contract
+// and change together. A hook with nothing to say writes nothing.
+type HookResponse = {
+  // instruction is for the model, posted to the session as context.
+  instruction?: string
+  // banner greets the user when the session starts.
+  banner?: string
+  // message is shown to the user after a shell command.
+  message?: string
+  // relayToModel is added to the shell command result, so the model repeats
+  // the message in its reply.
+  relayToModel?: string
+}
+
+// responseFrom fires a hook and returns the response it wrote to stdout.
+async function responseFrom(directory: string, event: string, payload: Record<string, any>): Promise<HookResponse> {
+  const out = await fire(directory, event, payload)
+  if (!out.trim()) return {}
   try {
-    return JSON.parse(out).instruction ?? ""
+    return JSON.parse(out) ?? {}
   } catch (err) {
     console.error("chainloop-trace: could not read the " + event + " response: " + err)
-    return ""
+    return {}
   }
 }
 
 // Post adds an instruction to the session as a context-only message, which
-// the model reads without replying to it. Each OpenCode major has its own API
-// for it.
-type Post = (sessionID: string, instruction: string) => Promise<void>
+// the model reads without replying to it, and shows the user the description,
+// if any. Each OpenCode major has its own API for it.
+type Post = (sessionID: string, instruction: string, description?: string) => Promise<void>
 
 // postInstruction posts the instruction and waits until it is stored, so a
 // turn sent right away still finds it. A failed post costs the instruction
 // only, so it is logged and never fails the caller.
-async function postInstruction(post: Post, sessionID: string, instruction: string) {
+async function postInstruction(post: Post, sessionID: string, instruction: string, description?: string) {
   try {
-    await post(sessionID, instruction)
+    await post(sessionID, instruction, description)
   } catch (err) {
     console.error("chainloop-trace: could not post the session instruction: " + err)
   }
 }
 
 async function sessionCreated(directory: string, sessionID: string, parentID: string | undefined, post: Post) {
-  const instruction = await instructionFrom(directory, "session-start", sessionID, "session.created")
+  const res = await responseFrom(directory, "session-start", { session_id: sessionID, hook_event_name: "session.created" })
   // A child session belongs to a subagent, whose parent already has the
-  // instruction.
-  if (!instruction || parentID) return
-  await postInstruction(post, sessionID, instruction)
+  // instruction and the banner.
+  if (parentID || (!res.instruction && !res.banner)) return
+  // The banner is the description the user sees. A session with a banner and
+  // no instruction gives the model the banner.
+  await postInstruction(post, sessionID, res.instruction || res.banner!, res.banner)
 }
 
 // childSessions holds the OpenCode 1.x sessions of subagents, whose parent
@@ -119,8 +135,8 @@ const childSessions = new Set<string>()
 // answer with a short reminder to capture a new or changed spec, which is
 // posted ahead of the turn.
 async function promptSubmitted(directory: string, sessionID: string, post: Post) {
-  const reminder = await instructionFrom(directory, "user-prompt-submit", sessionID, "chat.message")
-  if (reminder) await postInstruction(post, sessionID, reminder)
+  const res = await responseFrom(directory, "user-prompt-submit", { session_id: sessionID, hook_event_name: "chat.message" })
+  if (res.instruction) await postInstruction(post, sessionID, res.instruction)
 }
 
 async function sessionEvent(directory: string, type: string, sessionID: string, parentID: string | undefined, post: Post) {
@@ -129,7 +145,9 @@ async function sessionEvent(directory: string, type: string, sessionID: string, 
   }
 }
 
-async function toolEvent(directory: string, hook: string, hookEventName: string, sessionID: string, tool: string, callID: string, args: any, skillDir = "") {
+// toolEvent fires the hook of a tool call and returns its response. Only the
+// hook after a shell command can have one: the session link left by a push.
+async function toolEvent(directory: string, hook: string, hookEventName: string, sessionID: string, tool: string, callID: string, args: any, skillDir = ""): Promise<HookResponse | undefined> {
   const payload = { session_id: sessionID, hook_event_name: hookEventName, tool_name: tool }
   if (tool === skillTool) {
     // The skill is loaded after the call, and the result names its folder.
@@ -140,8 +158,7 @@ async function toolEvent(directory: string, hook: string, hookEventName: string,
   if (commandTools.includes(tool)) {
     // The call ID pairs this hook with the other hook of the same call, so
     // overlapping commands keep their own snapshots.
-    await fire(directory, hook, { ...payload, tool_use_id: callID })
-    return
+    return responseFrom(directory, hook, { ...payload, tool_use_id: callID })
   }
   if (!fileWritingTools.includes(tool)) return
   for (const fp of filePathsFromArgs(args)) {
@@ -151,8 +168,18 @@ async function toolEvent(directory: string, hook: string, hookEventName: string,
 
 // server is the OpenCode 1.x entry point.
 async function server({ directory, client }: any) {
-  // noReply stores the message without asking the model for an answer.
-  const post: Post = async (sessionID, instruction) => {
+  // toast shows a message in the TUI. It is not awaited, so a slow TUI never
+  // holds back the session or a tool result, and a run without a TUI only
+  // logs the failure.
+  const toast = (message: string) => {
+    Promise.resolve()
+      .then(() => client.tui.showToast({ body: { message, variant: "info" } }))
+      .catch((err: unknown) => console.error("chainloop-trace: could not show the message: " + err))
+  }
+  // noReply stores the message without asking the model for an answer. The
+  // description is shown as a toast.
+  const post: Post = async (sessionID, instruction, description) => {
+    if (description) toast(description)
     await client.session.prompt({
       path: { id: sessionID },
       body: { noReply: true, parts: [{ type: "text", text: instruction, synthetic: true }] },
@@ -191,7 +218,14 @@ async function server({ directory, client }: any) {
       await toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, input.callID, output.args)
     },
     "tool.execute.after": async (input: any, output: any) => {
-      await toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args, input.tool === skillTool ? skillDirFrom(output) : "")
+      const res = await toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args, input.tool === skillTool ? skillDirFrom(output) : "")
+      // The toast reaches the user now. The tool output reaches the model,
+      // whose reply stays on screen after the toast is gone. An aborted tool
+      // can have no output to add to.
+      if (res?.message) toast(res.message)
+      if (res?.relayToModel && typeof output?.output === "string") {
+        output.output = output.output + "\n\n" + res.relayToModel
+      }
     },
   }
 }
@@ -205,12 +239,20 @@ async function setup(ctx: any) {
     await toolEvent(directory, "pre-tool-use", "tool.execute.before", event.sessionID, event.tool, event.id, event.input)
   })
   await ctx.tool.hook("execute.after", async (event: any) => {
-    await toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input, event.tool === skillTool ? skillDirFrom(event.output, event.result, event) : "")
+    const res = await toolEvent(directory, "post-tool-use", "tool.execute.after", event.sessionID, event.tool, event.id, event.input, event.tool === skillTool ? skillDirFrom(event.output, event.result, event) : "")
+    // The model reads the content parts of the result, and the TUI shows them
+    // in the command block, so one part reaches both the user and the model.
+    // A failed command has no result to add to.
+    if (res?.relayToModel && Array.isArray(event.result?.content)) {
+      event.result.content.push({ type: "text", text: res.relayToModel })
+    }
   })
 
   // resume: false stores the message without asking the model for an answer.
-  const post: Post = async (sessionID, instruction) => {
-    await ctx.session.synthetic({ sessionID, text: instruction, resume: false })
+  // The TUI shows a synthetic message by its description only, and the model
+  // reads its text.
+  const post: Post = async (sessionID, instruction, description) => {
+    await ctx.session.synthetic({ sessionID, text: instruction, description, resume: false })
   }
 
   // A child session belongs to a subagent, whose parent session already gets

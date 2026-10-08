@@ -166,6 +166,15 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 		return nil
 	}
 
+	// The banner costs a control-plane round trip, and an agent that discards
+	// it would make the developer pay the wait for nothing. Start it before
+	// tracking the session rather than after: tracking can shell out to the
+	// agent to copy its transcript, and neither call needs the other's result.
+	var dashboardURL <-chan string
+	if provider.SupportsSessionStartBanner() {
+		dashboardURL = fetchHookDashboardURLAsync(log)
+	}
+
 	ensureSessionTracked(provider, store, repoRoot, input, log)
 
 	// An agent can resume a session after its end hook ran, and the record is
@@ -176,22 +185,21 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	// call intact.
 	setSessionActive(store, input.SessionID, true, log)
 
-	// Each part is composed only for an agent that can receive it. The banner
-	// in particular costs a control-plane round trip, and an agent that
-	// discards it would make the developer pay the wait for nothing.
+	// Each part is composed only for an agent that can receive it.
 	var msg trace.SessionStartMessage
 
 	if provider.SupportsSessionStartInstruction() {
 		msg.Instruction = sessionSpecInstruction(repoRoot, input.SessionID, provider.SupportsPromptReminder(), log)
 	}
 
-	if provider.SupportsSessionStartBanner() {
-		banner := sessionStartBanner(
-			hookDashboardURL(log),
+	if dashboardURL != nil {
+		// The banner goes out unframed: a transcript and a toast frame it in
+		// opposite ways, so that is the provider's call.
+		msg.Banner = sessionStartBanner(
+			<-dashboardURL,
 			config.LoadOrganizationFromYML(repoRoot),
 			repositoryconfig.LoadProjectFromYML(repoRoot),
 		)
-		msg.Banner = "\n\n" + banner + "\n"
 	}
 
 	if msg.Empty() {
@@ -238,6 +246,16 @@ func HandleAgentPromptSubmit(provider trace.Provider, log zerolog.Logger) error 
 	}
 
 	return nil
+}
+
+// fetchHookDashboardURLAsync runs hookDashboardURL on its own goroutine and
+// returns the channel its one result arrives on. The channel is buffered, so
+// the goroutine ends even if nobody reads the result.
+func fetchHookDashboardURLAsync(log zerolog.Logger) <-chan string {
+	ch := make(chan string, 1)
+	go func() { ch <- hookDashboardURL(log) }()
+
+	return ch
 }
 
 // hookDashboardURL asks the control plane where its web dashboard lives, so
