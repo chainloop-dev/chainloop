@@ -80,6 +80,11 @@ type Capture struct {
 	// MetaRaw is the companion file of a verbatim file as the agent wrote it,
 	// or nil when there is none. It is redacted before ParseMeta reads it.
 	MetaRaw []byte
+	// SourceDigest is the digest of the local file that the push read the
+	// body from, in the form of pointer.Digest, or empty when the body is
+	// what the agent wrote. A full copy of that file in the transcript is a
+	// copy of this source.
+	SourceDigest string
 }
 
 // verbatimCapture describes a file that is stored as it is. Its kind comes
@@ -123,7 +128,9 @@ func Parse(doc []byte, capturedAt time.Time) *Capture {
 
 	meta := parseHeader(header)
 
-	if strings.TrimSpace(body) == "" {
+	// The placeholder only asks the push to fill the body from a local file.
+	// It is never content.
+	if strings.TrimSpace(body) == "" || isPlaceholder(body) {
 		return nil
 	}
 
@@ -278,25 +285,40 @@ func truncate(s string, limit int) string {
 // well-formed block is all body, so that a missing or unterminated header
 // cannot swallow the text it was supposed to introduce.
 func split(doc string) (header, body string) {
+	header, end := frontmatterEnd(doc)
+	return header, doc[end:]
+}
+
+// frontmatterEnd returns the header of a leading frontmatter block, and the
+// offset in doc just past the line that closes it. A document with no
+// well-formed block has no header and an offset of zero.
+func frontmatterEnd(doc string) (header string, end int) {
 	rest := strings.TrimLeft(doc, "\r\n\t ")
 	if !strings.HasPrefix(rest, delimiter) {
-		return "", doc
+		return "", 0
 	}
 
 	lines := strings.Split(rest, "\n")
 	if !isDelimiter(lines[0]) {
-		return "", doc
+		return "", 0
 	}
 
 	// The first closing fence wins, so a markdown horizontal rule further down
 	// the body cannot re-split the document.
+	offset := len(doc) - len(rest) + len(lines[0]) + 1
 	for i := 1; i < len(lines); i++ {
 		if isDelimiter(lines[i]) {
-			return strings.Join(lines[1:i], "\n"), strings.Join(lines[i+1:], "\n")
+			return strings.Join(lines[1:i], "\n"), min(offset+len(lines[i])+1, len(doc))
 		}
+		offset += len(lines[i]) + 1
 	}
 
-	return "", doc
+	return "", 0
+}
+
+// isPlaceholder reports whether a body holds only the placeholder line.
+func isPlaceholder(body string) bool {
+	return strings.TrimSpace(body) == Placeholder
 }
 
 // isDelimiter reports whether a line is a frontmatter fence, tolerating the

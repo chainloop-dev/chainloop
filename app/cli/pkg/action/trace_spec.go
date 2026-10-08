@@ -78,8 +78,17 @@ func sessionSpecReminder(repoRoot, sessionID string, log zerolog.Logger) string 
 // transcript already holds it. And it says plainly that some sessions have
 // nothing to capture, because a model handed a mandatory-sounding instruction
 // will otherwise manufacture a spec for a typo fix.
+//
+// It states the stakes, because an agent that reads the captures as
+// bookkeeping skips the update after an edit (spec issue-3561). A local file
+// gets the placeholder instead of its text: each push reads the file, so the
+// evidence follows its edits with no help from the agent. Only a remote
+// source still depends on the agent, so the rules to keep it current are
+// about that one.
 func specCaptureInstruction(specDir string) string {
-	return fmt.Sprintf(`Write the specification this session is working from into %s now, in your next tool call, before you start the work.
+	return fmt.Sprintf(`Write the specification this session is working from into %[1]s now, in your next tool call, before you start the work.
+
+These files are attested evidence of what this session was asked to build, like a commit. Each push of this session records them. A partial, outdated or summarized capture is a false record.
 
 Use your file-writing tool, one call per file — not a shell redirect or heredoc, which a sandboxed or worktree-isolated session refuses. It creates the directory for you.
 
@@ -102,13 +111,19 @@ Set role to the purpose of the source. If a source has more than one purpose, pi
 - reference: supporting material, such as a screenshot or a background document.
 Set title to a short name for the source, such as the ticket title. Set description to one or two sentences that tell what the source holds.
 
+A local text file is the exception to writing text. When the source is a file on disk — a spec in this repository, or a design note outside the repository — set uri to its path (absolute, ~/, or relative to the repository root) and write only this line below the frontmatter, not the text of the file:
+
+%[2]s
+
+Each push reads the file and records its content at that time, so a later edit of the file needs no new capture.
+
 The transcript of this session already holds the conversation, so the user's request prompt is not a spec: do not capture it. Spec text that the user pastes, such as a ticket or a design document, is a spec.
 
-An image is the one exception to writing text. If you can reach the image as a file — on disk, or at a URL you can download — copy the file itself into the folder with a copy or download command (cp, curl -o), keeping its extension and adding no frontmatter. Then write the role, title and description lines in a second file next to it. Give that file the name of the image plus .meta.yaml, for example mockup.png.meta.yaml. Do not capture an image pasted into this conversation: you have no file for it.
+An image is the other exception to writing text. If you can reach the image as a file — on disk, or at a URL you can download — copy the file itself into the folder with a copy or download command (cp, curl -o), keeping its extension and adding no frontmatter. Then write the role, title and description lines in a second file next to it. Give that file the name of the image plus .meta.yaml, for example mockup.png.meta.yaml. Do not capture an image pasted into this conversation: you have no file for it.
 
-If the task changes, or a spec changes — also one that this session writes, such as a design note outside the repository — overwrite its file with the current content, or add another. If there is nothing to capture — a one-line request, a typo fix, a question, a passing remark — write nothing at all.
+For any other source — a ticket, a web page, pasted text, an approved plan — write its full text. If the task changes, or such a source changes, overwrite its file with the current content in the same turn as the change, or add another. Before you push, check that each of these files holds the current full text of its source. If there is nothing to capture — a one-line request, a typo fix, a question, a passing remark — write nothing at all.
 
-These files are recorded as part of this session's evidence each time it is pushed, and removed when the session ends. They are git-ignored and will never appear in a commit. There is no need to mention any of this to the user.`, specDir)
+The files are removed when the session ends. They are git-ignored and will never appear in a commit.`, specDir, spec.Placeholder)
 }
 
 // specCaptureReminder is the one place the wording of the reminder lives.
@@ -117,15 +132,17 @@ These files are recorded as part of this session's evidence each time it is push
 // cases only: a broader rule would capture too much, and a long one would
 // distract the agent from the task. It repeats the folder and the header
 // format, because a resumed session may not hold the full instruction any
-// more.
+// more. Like the instruction, it states the stakes and gives a local file the
+// placeholder instead of its text (spec issue-3561).
 func specCaptureReminder(specDir string) string {
 	return fmt.Sprintf(`Chainloop spec capture. Folder: %s
-Capture only in these cases, one file per source. Write each text file with your file-writing tool, starting with frontmatter (kind: ticket, document, image or text; uri: the source, when there is one). Copy an image file as it is, with no frontmatter:
-- The user pasted or gave a new spec: write its actual text.
+These files are attested evidence: a partial or outdated capture is a false record. Capture only in these cases, one file per source. Write each text file with your file-writing tool, starting with frontmatter (kind: ticket, document, image or text; uri: the source, when there is one). Copy an image file as it is, with no frontmatter:
+- The user pasted or gave a new spec: write its full text.
 - The user gave an image as a file path or a URL: copy the file.
 - The user approved a plan: write it as kind text.
-- A spec changed, also one this session edits: overwrite its file with the current content. A local file has its path as uri.
-Do not capture the user's request prompt or a pasted image. If no case applies, do nothing and say nothing about it.`, specDir)
+- A spec is a local text file, also one this session writes: set uri to its path, and write only this line below the frontmatter: %s Each push reads the file.
+- A spec that is not a local file changed: overwrite its file with the current full text in the same turn. Check these files before a push.
+Do not capture the user's request prompt or a pasted image. If no case applies, do nothing and say nothing about it.`, specDir, spec.Placeholder)
 }
 
 // readSessionSpecs reads the spec files of a session for a push. Most

@@ -240,9 +240,11 @@ func ReadAll(repoRoot, sessionID string, recorded []string) ([]Capture, []string
 			continue
 		}
 
-		if entry := Parse(doc, c.modTime); entry != nil {
-			entry.FileName = c.name
-			entry.Raw = doc
+		entry, warning := readText(repoRoot, c.name, doc, c.modTime)
+		if warning != "" {
+			warnings = append(warnings, warning)
+		}
+		if entry != nil {
 			entries = append(entries, *entry)
 		}
 	}

@@ -71,8 +71,9 @@ type specMaterialAdder interface {
 //
 // It also returns the names of the files it stored, in order, so that a
 // later push of the session keeps them first, and the sources that the
-// transcript can hold copies of: the digest of each stored file as the agent
-// wrote it, mapped to the digest of its material.
+// transcript can hold copies of: the digest of each stored file as the push
+// read it, and of the local file its body came from, mapped to the digest of
+// its material.
 func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRedactor, names *materials.NameAllocator, sessionID string, captures []spec.Capture, log zerolog.Logger) (entries []aicodingsession.SpecEntry, warnings, stored []string, sources pointer.Sources) {
 	if len(captures) == 0 {
 		return nil, nil, nil, nil
@@ -103,6 +104,12 @@ func attachSpecs(ctx context.Context, adder specMaterialAdder, redactor *specRed
 			sources = make(pointer.Sources)
 		}
 		sources[pointer.Digest(c.Raw)] = entry.Digest
+		// A body the push read from a local file is a source too: a full
+		// read or write of that file holds the same content (spec
+		// issue-3561, R-005).
+		if c.SourceDigest != "" {
+			sources[c.SourceDigest] = entry.Digest
+		}
 	}
 
 	return entries, warnings, stored, sources

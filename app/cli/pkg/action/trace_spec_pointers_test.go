@@ -146,6 +146,60 @@ func TestAttachSessionEvidenceSpecPointers(t *testing.T) {
 	assert.JSONEq(t, `{"type":"chainloop.replaced","digest":"`+ticketDigest+`"}`, string(writeResult.ToolUseResult[pointer.Marker]))
 }
 
+// TestAttachSessionEvidenceLocalSourcePointers follows R-005 of spec
+// issue-3561: the agent writes a design note in one full write, reads it in
+// full, and captures it by its path with the placeholder. The push records
+// the note, and both copies in the transcript become pointers to it.
+func TestAttachSessionEvidenceLocalSourcePointers(t *testing.T) {
+	const sessionID = "9a8b7c-session"
+	const note = "# Design note\n\nThe export runs in the background.\n"
+
+	repoRoot := t.TempDir()
+	notePath := filepath.Join(t.TempDir(), "notes", "design.md")
+	require.NoError(t, os.MkdirAll(filepath.Dir(notePath), 0o755))
+	require.NoError(t, os.WriteFile(notePath, []byte(note), 0o600))
+
+	require.NoError(t, os.MkdirAll(spec.SessionDir(repoRoot, sessionID), 0o755))
+	capture := "---\nkind: document\nuri: " + notePath + "\nrole: spec\ntitle: Design note\n---\n" + spec.Placeholder + "\n"
+	require.NoError(t, os.WriteFile(filepath.Join(spec.SessionDir(repoRoot, sessionID), "design-note.md"), []byte(capture), 0o600))
+
+	captures, warnings, err := spec.ReadAll(repoRoot, sessionID, nil)
+	require.NoError(t, err)
+	require.Empty(t, warnings)
+	require.Len(t, captures, 1)
+
+	numLines := strconv.Itoa(strings.Count(note, "\n"))
+	raw := []json.RawMessage{
+		json.RawMessage(`{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_w","name":"Write","input":{"file_path":` + strconv.Quote(notePath) + `,"content":` + strconv.Quote(note) + `}}]}}`),
+		json.RawMessage(`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_w","content":"File created successfully"}]},"toolUseResult":{"type":"create","filePath":` + strconv.Quote(notePath) + `,"content":` + strconv.Quote(note) + `,"structuredPatch":[],"originalFile":null}}`),
+		json.RawMessage(`{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"toolu_r","name":"Read","input":{"file_path":` + strconv.Quote(notePath) + `}}]}}`),
+		json.RawMessage(`{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_r","content":` + strconv.Quote(note) + `}]},"toolUseResult":{"type":"text","file":{"filePath":` + strconv.Quote(notePath) + `,"content":` + strconv.Quote(note) + `,"numLines":` + numLines + `,"startLine":1,"totalLines":` + numLines + `}}}`),
+	}
+
+	evidence := aicodingsession.NewEvidence(aicodingsession.Data{
+		SchemaVersion: "0.1",
+		RawSession:    map[string][]json.RawMessage{mainStream: raw},
+	})
+
+	adder := &fakeMaterialAdder{realDigests: true}
+	attested, _ := attachSessionEvidence(context.Background(), adder, state.NewGitStore(t.TempDir()), []sessionEvidence{{
+		sessionID: sessionID,
+		provider:  claude.New(),
+		evidence:  evidence,
+		specs:     captures,
+	}}, zerolog.Nop())
+	require.Equal(t, []string{sessionID}, attested)
+
+	material := adder.byName("spec-9a8b7c-design-note")
+	assert.Contains(t, material.content, note, "the material holds the note, not the placeholder")
+	assert.NotContains(t, material.content, spec.Placeholder)
+
+	session := adder.byName("ai-coding-session-9a8b7c")
+	assert.NotContains(t, session.content, "The export runs in the background", "no inline copy of the note")
+	// Two copies in the write, two in the read, and the spec entry.
+	assert.Equal(t, 5, strings.Count(session.content, material.digest), "each copy points to the material")
+}
+
 // TestReplaceSpecCopiesNeedsAFinder checks that the transcript of an agent
 // that cannot find copies keeps them.
 func TestReplaceSpecCopiesNeedsAFinder(t *testing.T) {
