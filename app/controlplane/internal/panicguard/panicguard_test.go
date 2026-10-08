@@ -99,6 +99,6 @@ func TestGo_NilLoggerDoesNotPanic(t *testing.T) {
 	select {
 	case <-done:
 	case <-time.After(time.Second):
-		t.Fatal("goroutine did not run")
+		require.Fail(t, "goroutine did not run")
 	}
 }
