@@ -121,9 +121,9 @@ async function sessionCreated(directory: string, sessionID: string, parentID: st
   // A child session belongs to a subagent, whose parent already has the
   // instruction and the banner.
   if (parentID || (!res.instruction && !res.banner)) return
-  // The banner is the description the user sees. A session with a banner and
-  // no instruction gives the model the banner.
-  await postInstruction(post, sessionID, res.instruction || res.banner!, res.banner)
+  // The banner is the description the user sees. It never goes to the model,
+  // so a session with no instruction posts nothing to the model.
+  await postInstruction(post, sessionID, res.instruction ?? "", res.banner)
 }
 
 // childSessions holds the OpenCode 1.x sessions of subagents, whose parent
@@ -180,6 +180,7 @@ async function server({ directory, client }: any) {
   // description is shown as a toast.
   const post: Post = async (sessionID, instruction, description) => {
     if (description) toast(description)
+    if (!instruction) return
     await client.session.prompt({
       path: { id: sessionID },
       body: { noReply: true, parts: [{ type: "text", text: instruction, synthetic: true }] },
@@ -250,7 +251,7 @@ async function setup(ctx: any) {
 
   // resume: false stores the message without asking the model for an answer.
   // The TUI shows a synthetic message by its description only, and the model
-  // reads its text.
+  // reads its text, which is empty when there is only a banner.
   const post: Post = async (sessionID, instruction, description) => {
     await ctx.session.synthetic({ sessionID, text: instruction, description, resume: false })
   }
