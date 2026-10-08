@@ -40,7 +40,7 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 		return nil, nil, err
 	}
 	auditDispatcher := service.NewAuditDispatcher(auditLogPublisher, logger)
-	cache, cleanup2, err := newExistenceCache(bootstrap, reloadableConnection, logger)
+	cache, cleanup2, err := newExistenceCache(reloadableConnection, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -93,25 +93,14 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 const backendClientTTL = 5 * time.Minute
 
 func serviceOpts(l log.Logger, audit *service.AuditDispatcher, bc *conf.Bootstrap, existence *casexistence.Cache) []service.NewOpt {
-	opts := []service.NewOpt{service.WithLogger(l), service.WithAuditDispatcher(audit), service.WithStagingDir(bc.GetStagingDir()), service.WithBackendClientCache(backendClientTTL)}
-
-	if existence != nil {
-		opts = append(opts, service.WithExistenceCache(existence))
-	}
-
-	return opts
+	return []service.NewOpt{service.WithLogger(l), service.WithAuditDispatcher(audit), service.WithStagingDir(bc.GetStagingDir()), service.WithBackendClientCache(backendClientTTL), service.WithExistenceCache(existence)}
 }
 
-// newExistenceCache returns the cache of blobs known to exist in a backend,
-// nil when disabled. It is shared through NATS KV when the connection is set.
-func newExistenceCache(bc *conf.Bootstrap, rc *natsconn.ReloadableConnection, logger log.Logger) (*casexistence.Cache, func(), error) {
-	cfg := bc.GetExistenceCache()
-	if cfg.GetDisabled() {
-		return nil, func() {}, nil
-	}
-
+// newExistenceCache returns the cache of blobs known to exist in a backend.
+// It is shared through NATS KV when the connection is set, in memory otherwise.
+func newExistenceCache(rc *natsconn.ReloadableConnection, logger log.Logger) (*casexistence.Cache, func(), error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	c, err := casexistence.New(ctx, rc, cfg.GetTtl().AsDuration(), logger)
+	c, err := casexistence.New(ctx, rc, logger)
 	if err != nil {
 		cancel()
 		return nil, nil, err

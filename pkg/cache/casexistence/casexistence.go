@@ -30,9 +30,8 @@ import (
 )
 
 const (
-	// DefaultTTL is the lifetime of an entry when none is configured.
-	DefaultTTL = 24 * time.Hour
-
+	// ttl bounds how long an entry outlives a purge of the blob outside Chainloop
+	ttl         = 24 * time.Hour
 	maxBytes    = 64 * 1024 * 1024 // 64 MB
 	maxEntries  = 50_000
 	bucket      = "chainloop-cas-existence"
@@ -50,26 +49,22 @@ type Cache struct {
 }
 
 // New creates an existence cache, backed by NATS KV when rc is set and by an
-// in-memory LRU otherwise. A ttl of 0 uses DefaultTTL. A NATS bucket that can
-// not be set up falls back to memory: the cache only makes uploads faster, so
-// it must not stop its caller from starting.
-func New(ctx context.Context, rc *natsconn.ReloadableConnection, ttl time.Duration, logger log.Logger) (*Cache, error) {
-	if ttl <= 0 {
-		ttl = DefaultTTL
-	}
-
-	c, err := newCache(ctx, rc, ttl, logger)
+// in-memory LRU otherwise. A NATS bucket that can not be set up falls back to
+// memory: the cache only makes uploads faster, so it must not stop its caller
+// from starting.
+func New(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (*Cache, error) {
+	c, err := newCache(ctx, rc, logger)
 	if err != nil && rc != nil {
 		if logger != nil {
 			log.NewHelper(logger).Warnw("msg", "existence cache: NATS KV unavailable, using memory", "error", err)
 		}
-		c, err = newCache(ctx, nil, ttl, logger)
+		c, err = newCache(ctx, nil, logger)
 	}
 
 	return c, err
 }
 
-func newCache(ctx context.Context, rc *natsconn.ReloadableConnection, ttl time.Duration, logger log.Logger) (*Cache, error) {
+func newCache(ctx context.Context, rc *natsconn.ReloadableConnection, logger log.Logger) (*Cache, error) {
 	opts := []cache.Option{
 		cache.WithTTL(ttl),
 		cache.WithMaxBytes(maxBytes),

@@ -19,12 +19,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
-	"github.com/go-kratos/kratos/v2/log"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 // TestPrepareStagingDir: the staging directory is a hard startup requirement.
@@ -86,29 +83,6 @@ func TestPrepareStagingDir(t *testing.T) {
 			entries, err := os.ReadDir(dir)
 			require.NoError(t, err)
 			require.Empty(t, entries, "the probe file must be removed")
-		})
-	}
-}
-
-// TestNewExistenceCache: the existence cache is on by default and an operator
-// can turn it off.
-func TestNewExistenceCache(t *testing.T) {
-	testCases := []struct {
-		name    string
-		cfg     *conf.Bootstrap_ExistenceCache
-		wantNil bool
-	}{
-		{name: "enabled by default"},
-		{name: "custom ttl", cfg: &conf.Bootstrap_ExistenceCache{Ttl: durationpb.New(time.Hour)}},
-		{name: "disabled", cfg: &conf.Bootstrap_ExistenceCache{Disabled: true}, wantNil: true},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			c, cleanup, err := newExistenceCache(&conf.Bootstrap{ExistenceCache: tc.cfg}, nil, log.DefaultLogger)
-			require.NoError(t, err)
-			t.Cleanup(cleanup)
-			require.Equal(t, tc.wantNil, c == nil)
 		})
 	}
 }

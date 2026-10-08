@@ -80,7 +80,8 @@ func WithMaxBytes(n int64) Option {
 }
 
 // WithMaxEntries sets the maximum number of entries of the in-memory backend.
-// Defaults to 1000. Ignored for NATS KV backend, which is bounded by WithMaxBytes.
+// A value of 0 or less keeps the default of 1000. Ignored for NATS KV backend,
+// which is bounded by WithMaxBytes.
 func WithMaxEntries(n int) Option {
 	return func(c *config) { c.maxEntries = n }
 }

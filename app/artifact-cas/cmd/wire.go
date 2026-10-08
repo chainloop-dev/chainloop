@@ -60,30 +60,20 @@ func wireApp(*conf.Bootstrap, *conf.Server, *conf.Auth, credentials.Reader, log.
 const backendClientTTL = 5 * time.Minute
 
 func serviceOpts(l log.Logger, audit *service.AuditDispatcher, bc *conf.Bootstrap, existence *casexistence.Cache) []service.NewOpt {
-	opts := []service.NewOpt{
+	return []service.NewOpt{
 		service.WithLogger(l),
 		service.WithAuditDispatcher(audit),
 		service.WithStagingDir(bc.GetStagingDir()),
 		service.WithBackendClientCache(backendClientTTL),
+		service.WithExistenceCache(existence),
 	}
-
-	if existence != nil {
-		opts = append(opts, service.WithExistenceCache(existence))
-	}
-
-	return opts
 }
 
-// newExistenceCache returns the cache of blobs known to exist in a backend,
-// nil when disabled. It is shared through NATS KV when the connection is set.
-func newExistenceCache(bc *conf.Bootstrap, rc *natsconn.ReloadableConnection, logger log.Logger) (*casexistence.Cache, func(), error) {
-	cfg := bc.GetExistenceCache()
-	if cfg.GetDisabled() {
-		return nil, func() {}, nil
-	}
-
+// newExistenceCache returns the cache of blobs known to exist in a backend.
+// It is shared through NATS KV when the connection is set, in memory otherwise.
+func newExistenceCache(rc *natsconn.ReloadableConnection, logger log.Logger) (*casexistence.Cache, func(), error) {
 	ctx, cancel := context.WithCancel(context.Background())
-	c, err := casexistence.New(ctx, rc, cfg.GetTtl().AsDuration(), logger)
+	c, err := casexistence.New(ctx, rc, logger)
 	if err != nil {
 		cancel()
 		return nil, nil, err
