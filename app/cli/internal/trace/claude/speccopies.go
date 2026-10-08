@@ -442,7 +442,12 @@ type pendingWrite struct {
 
 // decodeEntry decodes a line whose message holds blocks, or returns nil.
 func decodeEntry(line json.RawMessage) *entry {
-	fields := decodeObject(line)
+	return newEntry(decodeObject(line))
+}
+
+// newEntry returns the entry of the decoded fields of a line whose message
+// holds blocks, or nil.
+func newEntry(fields object) *entry {
 	message := fields.object("message")
 	content := message.objects("content")
 	if content == nil {
