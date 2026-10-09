@@ -311,11 +311,19 @@ func TestAttestationRepositoryConfigLookupLogging(t *testing.T) {
 			logger = zerolog.New(&output)
 
 			require.NoError(t, cmd.Parent().PersistentPreRunE(cmd, nil))
+			// init reads .chainloop.yml again for the project metadata. --release
+			// without a version makes PreRunE stop right after that lookup.
+			require.NoError(t, cmd.Flags().Set("workflow", "build"))
+			require.NoError(t, cmd.Flags().Set("release", "true"))
+			require.EqualError(t, cmd.PreRunE(cmd, nil), "project version is required when using --release")
+
 			if tc.wantWarn {
 				assert.Contains(t, output.String(), `"level":"warn"`)
-				assert.NotContains(t, output.String(), `"level":"debug"`)
 			} else {
 				assert.Empty(t, output.String())
+			}
+			if !tc.debug {
+				assert.NotContains(t, output.String(), `"level":"debug"`)
 			}
 
 			wantLevel := zerolog.InfoLevel
