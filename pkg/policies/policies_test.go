@@ -1839,6 +1839,44 @@ func (s *testSuite) TestResolveScriptRef() {
 	}
 }
 
+func (s *testSuite) TestResolveScriptRefSymlinks() {
+	root := s.T().TempDir()
+	specDir := filepath.Join(root, "specs")
+	s.Require().NoError(os.MkdirAll(filepath.Join(specDir, "sub"), 0o755))
+	s.Require().NoError(os.WriteFile(filepath.Join(root, "outside.rego"), []byte("package main"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(specDir, "sub", "inside.rego"), []byte("package main"), 0o600))
+	s.Require().NoError(os.Symlink(filepath.Join(root, "outside.rego"), filepath.Join(specDir, "outside_link.rego")))
+	s.Require().NoError(os.Symlink(root, filepath.Join(specDir, "outside_dir")))
+	s.Require().NoError(os.Symlink(filepath.Join("sub", "inside.rego"), filepath.Join(specDir, "inside_link.rego")))
+
+	basePath := "file://" + filepath.Join(specDir, "policy.yaml")
+
+	cases := []struct {
+		name    string
+		ref     string
+		wantErr bool
+	}{
+		{name: "file inside the policy directory", ref: "sub/inside.rego"},
+		{name: "symlink to a file inside the policy directory", ref: "inside_link.rego"},
+		{name: "rejects symlink to a file outside the policy directory", ref: "outside_link.rego", wantErr: true},
+		{name: "rejects file under a symlinked directory outside the policy directory", ref: "outside_dir/outside.rego", wantErr: true},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			got, err := resolveScriptRef(tc.ref, basePath)
+			if tc.wantErr {
+				s.ErrorIs(err, errInvalidScriptRef)
+				return
+			}
+
+			s.Require().NoError(err)
+			_, err = os.Stat(got)
+			s.NoError(err)
+		})
+	}
+}
+
 func (s *testSuite) TestLoadPolicyScriptsFromSpecRejectsInvalidRefs() {
 	const (
 		envVar = "CHAINLOOP_TEST_SCRIPT_REF"

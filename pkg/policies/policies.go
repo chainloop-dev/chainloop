@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/fs"
 	"maps"
 	"net/url"
 	"path/filepath"
@@ -1168,10 +1169,36 @@ func resolveScriptLocation(ref, basePath string) (string, error) {
 			return "", errors.New("must be a relative path within the policy directory")
 		}
 
-		return filepath.Join(filepath.Dir(baseLoc), ref), nil
+		return confineToDir(filepath.Dir(baseLoc), ref)
 	default:
 		return "", errors.New("relative references are only supported for policies loaded from a file or an https URL")
 	}
+}
+
+// confineToDir joins dir and the local path ref, and checks that the result, after
+// following symlinks, is still inside dir. A path that does not exist is returned
+// as is, so that loading it reports that it was not found.
+func confineToDir(dir, ref string) (string, error) {
+	candidate := filepath.Join(dir, ref)
+
+	target, err := filepath.EvalSymlinks(candidate)
+	if errors.Is(err, fs.ErrNotExist) {
+		return candidate, nil
+	} else if err != nil {
+		return "", err
+	}
+
+	realDir, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return "", err
+	}
+
+	rel, err := filepath.Rel(realDir, target)
+	if err != nil || !filepath.IsLocal(rel) {
+		return "", errors.New("must be a path within the policy directory")
+	}
+
+	return target, nil
 }
 
 // parseHTTPSURL parses raw and checks that it is an absolute https:// URL with a host
