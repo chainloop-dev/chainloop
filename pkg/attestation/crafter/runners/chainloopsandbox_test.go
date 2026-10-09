@@ -16,8 +16,11 @@
 package runners
 
 import (
+	"context"
+	"encoding/json"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -88,6 +91,126 @@ func (s *chainloopSandboxSuite) TestEnvironment() {
 
 func (s *chainloopSandboxSuite) TestRunnerName() {
 	s.Equal("CHAINLOOP_SANDBOX", s.runner.ID().String())
+}
+
+func (s *chainloopSandboxSuite) TestVerifyCommitSignature() {
+	const (
+		commit      = "ea3a974660a030f0314aa1505a64792bf2633b33"
+		otherCommit = "0d7bb4b1e7b3f5d3e5c5f0f37a2c9a1f7f8b9c10"
+		platform    = "gitlab"
+	)
+
+	verified := &commitverification.CommitVerification{
+		Attempted:          true,
+		Status:             commitverification.VerificationStatusVerified,
+		Reason:             "Commit signed and verified",
+		Platform:           platform,
+		KeyID:              "1",
+		SignatureAlgorithm: "PGP",
+	}
+	verifiedJSON := `{"attempted":true,"status":"verified","reason":"Commit signed and verified","platform":"gitlab","key_id":"1","signature_algorithm":"PGP"}`
+
+	invalid := &commitverification.CommitVerification{
+		Attempted: true,
+		Status:    commitverification.VerificationStatusUnavailable,
+		Reason:    "invalid value in CHAINLOOP_SANDBOX_COMMIT_VERIFICATION",
+	}
+
+	testCases := []struct {
+		name   string
+		env    string
+		commit string
+		want   *commitverification.CommitVerification
+	}{
+		{
+			name:   "no verification provided",
+			commit: commit,
+		},
+		{
+			name:   "verification of the attested commit",
+			env:    `{"commit":"` + commit + `","verification":` + verifiedJSON + `}`,
+			commit: commit,
+			want:   verified,
+		},
+		{
+			name:   "commit hash in upper case",
+			env:    `{"commit":"EA3A974660A030F0314AA1505A64792BF2633B33","verification":` + verifiedJSON + `}`,
+			commit: commit,
+			want:   verified,
+		},
+		{
+			name:   "commit not signed",
+			env:    `{"commit":"` + commit + `","verification":{"attempted":true,"status":"not_applicable","reason":"Commit is not signed","platform":"gitlab"}}`,
+			commit: commit,
+			want: &commitverification.CommitVerification{
+				Attempted: true,
+				Status:    commitverification.VerificationStatusNotApplicable,
+				Reason:    "Commit is not signed",
+				Platform:  platform,
+			},
+		},
+		{
+			name:   "verification of another commit",
+			env:    `{"commit":"` + otherCommit + `","verification":` + verifiedJSON + `}`,
+			commit: commit,
+		},
+		{
+			name:   "abbreviated commit hash",
+			env:    `{"commit":"ea3a974","verification":` + verifiedJSON + `}`,
+			commit: commit,
+		},
+		{
+			name:   "no commit to verify",
+			env:    `{"commit":"` + commit + `","verification":` + verifiedJSON + `}`,
+			commit: "",
+		},
+		{
+			name:   "malformed value",
+			env:    `{"commit":`,
+			commit: commit,
+			want:   invalid,
+		},
+		{
+			name:   "value without a verification",
+			env:    `{"commit":"` + commit + `"}`,
+			commit: commit,
+			want:   invalid,
+		},
+		{
+			name:   "unknown status",
+			env:    `{"commit":"` + commit + `","verification":{"attempted":true,"status":"trusted"}}`,
+			commit: commit,
+			want:   invalid,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			t.Setenv(ChainloopSandboxCommitVerificationEnvVar, tc.env)
+
+			got := s.runner.VerifyCommitSignature(context.Background(), tc.commit)
+			s.Equal(tc.want, got)
+		})
+	}
+}
+
+func (s *chainloopSandboxSuite) TestSandboxCommitVerificationRoundTrip() {
+	const commit = "ea3a974660a030f0314aa1505a64792bf2633b33"
+
+	want := &commitverification.CommitVerification{
+		Attempted:          true,
+		Status:             commitverification.VerificationStatusUnverified,
+		Reason:             "Signature not verified: unverified_key",
+		Platform:           "gitlab",
+		KeyID:              "2",
+		SignatureAlgorithm: "PGP",
+	}
+
+	raw, err := json.Marshal(SandboxCommitVerification{Commit: commit, Verification: want})
+	s.Require().NoError(err)
+	s.T().Setenv(ChainloopSandboxCommitVerificationEnvVar, string(raw))
+
+	s.Equal(want, s.runner.VerifyCommitSignature(context.Background(), commit))
 }
 
 func (s *chainloopSandboxSuite) SetupTest() {
