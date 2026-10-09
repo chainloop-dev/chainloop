@@ -233,14 +233,19 @@ func addSpecMaterial(ctx context.Context, adder specMaterialAdder, dir, name, se
 type specRedactor struct {
 	// dir holds one redacted copy per file, named by the SHA-256 of the file
 	// as the agent wrote it. It is dropped when the session ends.
-	dir    string
+	dir string
+	// skip returns each file unchanged, cache and scanner both bypassed: the
+	// opt-out is for a trusted local export, which can then hold secrets
+	// (R-004).
+	skip   bool
 	redact func(ctx context.Context, doc []byte) ([]byte, error)
 }
 
 // newSpecRedactor returns a redactor that uses the secret scanner of the
-// session material and keeps its copies under dir.
-func newSpecRedactor(dir string) *specRedactor {
-	return &specRedactor{dir: dir, redact: func(ctx context.Context, doc []byte) ([]byte, error) {
+// session material and keeps its copies under dir. When skip is set the
+// redactor returns each file unchanged.
+func newSpecRedactor(dir string, skip bool) *specRedactor {
+	return &specRedactor{dir: dir, skip: skip, redact: func(ctx context.Context, doc []byte) ([]byte, error) {
 		redacted, _, err := aicodingsession.RedactSpecText(ctx, string(doc))
 		return []byte(redacted), err
 	}}
@@ -251,6 +256,12 @@ func newSpecRedactor(dir string) *specRedactor {
 // header included, so the source address is redacted like the text. A copy
 // that cannot be stored costs the next push a scan, never this one its spec.
 func (r *specRedactor) Redact(ctx context.Context, doc []byte) ([]byte, error) {
+	// The opt-out bypasses the cache too: a cached copy from an earlier
+	// redacting run would otherwise override it.
+	if r.skip {
+		return doc, nil
+	}
+
 	sum := sha256.Sum256(doc)
 	path := filepath.Join(r.dir, hex.EncodeToString(sum[:]))
 

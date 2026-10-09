@@ -99,6 +99,7 @@ How the sessions are linked to the commits and attested.
 |---------|---------------|-------------|--------|--------------|------------|
 | Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes |
 | Attestation at push | The `pre-push` hook attests the sessions of the pushed commits. | Yes | Yes | Yes | Yes |
+| Evidence export to disk | `chainloop trace run --export <dir>` runs the same assembly a push does — the same redaction, pointers, and spec, skill, and image materials — and writes the result to a local directory, each material under its content digest, with no control plane and no attestation. The exported evidence equals what a push would upload, apart from the signature and the attestation wrapper. `--no-redact` keeps secrets, for a trusted local run. | Yes | Yes | Yes | Yes |
 
 ## How each agent is hooked in
 

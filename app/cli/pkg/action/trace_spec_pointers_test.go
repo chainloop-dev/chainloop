@@ -82,7 +82,7 @@ func TestAttachSessionEvidenceSpecPointers(t *testing.T) {
 		provider:  claude.New(),
 		evidence:  evidence,
 		specs:     []spec.Capture{ticket, screenshot},
-	}}, zerolog.Nop())
+	}}, zerolog.Nop(), false)
 	require.Equal(t, []string{sessionID}, attested)
 
 	ticketDigest := adder.byName("spec-7c1e2d-ticket-eng-1234").digest
@@ -187,7 +187,7 @@ func TestAttachSessionEvidenceLocalSourcePointers(t *testing.T) {
 		provider:  claude.New(),
 		evidence:  evidence,
 		specs:     captures,
-	}}, zerolog.Nop())
+	}}, zerolog.Nop(), false)
 	require.Equal(t, []string{sessionID}, attested)
 
 	material := adder.byName("spec-9a8b7c-design-note")
