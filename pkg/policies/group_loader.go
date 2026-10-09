@@ -18,7 +18,6 @@ package policies
 import (
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -67,7 +66,10 @@ func (l *FileGroupLoader) Load(_ context.Context, attachment *v1.PolicyGroupAtta
 }
 
 // HTTPSGroupLoader loader loads policies from HTTP or HTTPS references
-type HTTPSGroupLoader struct{}
+type HTTPSGroupLoader struct {
+	// Client sends the request. Defaults to http.DefaultClient.
+	Client *http.Client
+}
 
 func (l *HTTPSGroupLoader) Load(_ context.Context, attachment *v1.PolicyGroupAttachment) (*v1.PolicyGroup, *PolicyDescriptor, error) {
 	ref, wantDigest := ExtractDigest(attachment.GetRef())
@@ -77,15 +79,9 @@ func (l *HTTPSGroupLoader) Load(_ context.Context, attachment *v1.PolicyGroupAtt
 		return nil, nil, fmt.Errorf("invalid policy reference %q: %w", ref, err)
 	}
 
-	// #nosec G107
-	resp, err := http.Get(ref)
+	raw, err := fetchRemote(l.Client, ref)
 	if err != nil {
-		return nil, nil, fmt.Errorf("requesting remote policy: %w", err)
-	}
-	defer resp.Body.Close()
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, fmt.Errorf("reading remote policy: %w", err)
+		return nil, nil, err
 	}
 
 	var group v1.PolicyGroup

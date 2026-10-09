@@ -19,12 +19,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
+	"github.com/chainloop-dev/chainloop/pkg/netguard"
 	"github.com/chainloop-dev/chainloop/pkg/templates"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -60,6 +62,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			Client:     pgv.client,
 			Logger:     pgv.logger,
 			GroupCache: pgv.groupCache,
+			HTTPClient: pgv.httpClient,
 		})
 		if err != nil {
 			return nil, NewPolicyError(err)
@@ -150,8 +153,14 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			Client:     pgv.client,
 			Logger:     pgv.logger,
 			GroupCache: pgv.groupCache,
+			HTTPClient: pgv.httpClient,
 		})
 		if err != nil {
+			// A group refused by the network guard is not a schema issue, and
+			// skipping it would let the evaluation pass without the group
+			if errors.Is(err, netguard.ErrBlockedTarget) {
+				return nil, NewPolicyError(err)
+			}
 			// Temporarily skip if policy groups still use old schema
 			// TODO: remove this check in next release
 			pgv.logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", groupAtt.GetRef())
@@ -238,6 +247,9 @@ type LoadPolicyGroupOptions struct {
 	Client     v13.AttestationServiceClient
 	Logger     *zerolog.Logger
 	GroupCache cache.Cache[*groupWithReference]
+	// HTTPClient fetches groups referenced by http(s) URLs. Defaults to
+	// http.DefaultClient.
+	HTTPClient *http.Client
 }
 
 // LoadPolicyGroup loads a group (unmarshalls it) from a group attachment
@@ -281,7 +293,7 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 	case fileScheme:
 		loader = new(FileGroupLoader)
 	case httpsScheme, httpScheme:
-		loader = new(HTTPSGroupLoader)
+		loader = &HTTPSGroupLoader{Client: opts.HTTPClient}
 	default:
 		return nil, fmt.Errorf("policy scheme not supported: %q", scheme)
 	}

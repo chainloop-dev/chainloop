@@ -18,6 +18,7 @@ package policies
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -127,7 +128,10 @@ func (l *FileLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*
 }
 
 // HTTPSLoader loader loads policies from HTTP or HTTPS references
-type HTTPSLoader struct{}
+type HTTPSLoader struct {
+	// Client sends the request. Defaults to http.DefaultClient.
+	Client *http.Client
+}
 
 func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (*v1.Policy, *PolicyDescriptor, error) {
 	ref, wantDigest := ExtractDigest(attachment.GetRef())
@@ -137,15 +141,9 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 		return nil, nil, fmt.Errorf("invalid policy reference %q: %w", ref, err)
 	}
 
-	// #nosec G107
-	resp, err := http.Get(ref)
+	raw, err := fetchRemote(l.Client, ref)
 	if err != nil {
-		return nil, nil, fmt.Errorf("requesting remote policy: %w", err)
-	}
-	defer resp.Body.Close()
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, fmt.Errorf("reading remote policy: %w", err)
+		return nil, nil, err
 	}
 
 	var policy v1.Policy
@@ -155,6 +153,38 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 	}
 
 	return &policy, d, nil
+}
+
+// fetchRemote reads the body of a GET request to ref, sent with client, or
+// http.DefaultClient when it is nil. Responses other than 2xx are refused.
+// Errors leave out ref, which may carry credentials in its query string.
+func fetchRemote(client *http.Client, ref string) ([]byte, error) {
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	// #nosec G107
+	resp, err := client.Get(ref)
+	if err != nil {
+		// url.Error prefixes the full URL to the underlying error
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) {
+			err = urlErr.Err
+		}
+		return nil, fmt.Errorf("requesting remote policy: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("requesting remote policy: server returned HTTP %d", resp.StatusCode)
+	}
+
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading remote policy: %w", err)
+	}
+
+	return raw, nil
 }
 
 // ChainloopLoader loads policies referenced with chainloop://provider/name URLs

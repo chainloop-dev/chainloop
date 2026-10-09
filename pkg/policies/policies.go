@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io/fs"
 	"maps"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"regexp"
@@ -34,6 +35,7 @@ import (
 	"buf.build/go/protovalidate"
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
+	"github.com/chainloop-dev/chainloop/pkg/netguard"
 	"github.com/chainloop-dev/chainloop/pkg/templates"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -109,6 +111,10 @@ type PolicyVerifier struct {
 	projectVersionName string
 	runtimeInputs      *RuntimeInputs
 	executionTimeout   time.Duration
+	publicTargetsOnly  bool
+	// httpClient fetches remote policy specs, groups and scripts. Nil means
+	// http.DefaultClient.
+	httpClient *http.Client
 }
 
 var _ Verifier = (*PolicyVerifier)(nil)
@@ -127,6 +133,7 @@ type PolicyVerifierOptions struct {
 	ProjectVersionName string
 	RuntimeInputs      *RuntimeInputs
 	ExecutionTimeout   time.Duration
+	PublicTargetsOnly  bool
 }
 
 type PolicyVerifierOption func(*PolicyVerifierOptions)
@@ -222,6 +229,18 @@ func WithExecutionTimeout(timeout time.Duration) PolicyVerifierOption {
 	}
 }
 
+// WithPublicTargetsOnly refuses network requests to destinations that are not
+// publicly routable, such as loopback, private and link-local addresses. It
+// covers the HTTP requests rego policies make while being evaluated, and the
+// fetches of policy specs, groups and scripts referenced by http(s) URLs.
+// It is off by default, since policies evaluated in a user's own environment
+// may legitimately reach internal hosts.
+func WithPublicTargetsOnly() PolicyVerifierOption {
+	return func(o *PolicyVerifierOptions) {
+		o.PublicTargetsOnly = true
+	}
+}
+
 const defaultPolicyCacheTTL = 5 * time.Minute
 
 func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClient, logger *zerolog.Logger, opts ...PolicyVerifierOption) *PolicyVerifier {
@@ -248,6 +267,11 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		options.GroupCache, _ = cache.New[*groupWithReference](cache.WithTTL(defaultPolicyCacheTTL))
 	}
 
+	var httpClient *http.Client
+	if options.PublicTargetsOnly {
+		httpClient = netguard.NewHTTPClient(remoteLoaderFetchTimeout)
+	}
+
 	return &PolicyVerifier{
 		policies:           policies,
 		client:             client,
@@ -265,6 +289,8 @@ func NewPolicyVerifier(policies *v1.Policies, client v13.AttestationServiceClien
 		projectVersionName: options.ProjectVersionName,
 		runtimeInputs:      options.RuntimeInputs,
 		executionTimeout:   executionTimeout,
+		publicTargetsOnly:  options.PublicTargetsOnly,
+		httpClient:         httpClient,
 	}
 }
 
@@ -398,7 +424,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	// load the policy scripts (rego)
-	scripts, err := LoadPolicyScriptsFromSpec(policy, opts.kind, policyLocation(attachment.GetRef()))
+	scripts, err := loadPolicyScriptsFromSpec(policy, opts.kind, policyLocation(attachment.GetRef()), pv.httpClient)
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
@@ -682,6 +708,10 @@ func (pv *PolicyVerifier) executeScript(ctx context.Context, script *engine.Poli
 		opts = append(opts, engine.WithProjectContext(pv.projectName, pv.projectVersionName))
 	}
 
+	if pv.publicTargetsOnly {
+		opts = append(opts, engine.WithPublicTargetsOnly())
+	}
+
 	// Bound each policy evaluation regardless of the engine that runs it
 	opts = append(opts, engine.WithExecutionTimeout(pv.executionTimeout))
 
@@ -781,7 +811,7 @@ func (pv *PolicyVerifier) getLoader(attachment *v1.PolicyAttachment) (Loader, er
 	case fileScheme:
 		loader = new(FileLoader)
 	case httpsScheme, httpScheme:
-		loader = new(HTTPSLoader)
+		loader = &HTTPSLoader{Client: pv.httpClient}
 	default:
 		return nil, fmt.Errorf("policy scheme not supported: %s", scheme)
 	}
@@ -1042,10 +1072,16 @@ func getPolicyTypes(p *v1.Policy) []v1.CraftingSchema_Material_MaterialType {
 // * the policy kind is unspecified, meaning that it was forced by name selector
 // * the policy kind is specified, and it's equal to the material type
 func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Material_MaterialType, basePath string) ([]*engine.Policy, error) {
+	return loadPolicyScriptsFromSpec(policy, kind, basePath, nil)
+}
+
+// loadPolicyScriptsFromSpec is LoadPolicyScriptsFromSpec fetching remote scripts
+// with client, or with http.DefaultClient when it is nil.
+func loadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Material_MaterialType, basePath string, client *http.Client) ([]*engine.Policy, error) {
 	scripts := make([]*engine.Policy, 0)
 
 	if policy.GetSpec().GetSource() != nil {
-		script, err := loadLegacyPolicyScript(policy.GetSpec(), basePath)
+		script, err := loadLegacyPolicyScript(policy.GetSpec(), basePath, client)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load policy script: %w", err)
 		}
@@ -1064,7 +1100,7 @@ func LoadPolicyScriptsFromSpec(policy *v1.Policy, kind v1.CraftingSchema_Materia
 		specs := policy.GetSpec().GetPolicies()
 		for _, spec := range specs {
 			if spec.GetKind() == v1.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED || spec.GetKind() == kind {
-				script, err := loadPolicyScript(spec, basePath)
+				script, err := loadPolicyScript(spec, basePath, client)
 				if err != nil {
 					return nil, fmt.Errorf("failed to load policy script: %w", err)
 				}
@@ -1221,14 +1257,20 @@ func ensureHTTPSURL(u *url.URL) error {
 	return nil
 }
 
-// loadScriptContent loads a policy script from a reference declared in the policy spec located at basePath
-func loadScriptContent(ref, basePath string) ([]byte, error) {
+// loadScriptContent loads a policy script from a reference declared in the policy spec located at basePath.
+// Remote scripts are fetched with client, or http.DefaultClient when it is nil.
+func loadScriptContent(ref, basePath string, client *http.Client) ([]byte, error) {
 	scriptPath, err := resolveScriptRef(ref, basePath)
 	if err != nil {
 		return nil, fmt.Errorf("resolving policy reference: %w", err)
 	}
 
-	content, err := blob.LoadFileOrURL(scriptPath)
+	var content []byte
+	if scheme, _ := RefParts(scriptPath); scheme == httpsScheme {
+		content, err = fetchRemote(client, scriptPath)
+	} else {
+		content, err = blob.LoadFileOrURL(scriptPath)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("loading policy content: %w", err)
 	}
@@ -1237,26 +1279,26 @@ func loadScriptContent(ref, basePath string) ([]byte, error) {
 	return decodeIfBase64Wasm(content), nil
 }
 
-func loadPolicyScript(spec *v1.PolicySpecV2, basePath string) ([]byte, error) {
+func loadPolicyScript(spec *v1.PolicySpecV2, basePath string, client *http.Client) ([]byte, error) {
 	switch source := spec.GetSource().(type) {
 	case *v1.PolicySpecV2_Embedded:
 		return decodeIfBase64Wasm([]byte(source.Embedded)), nil
 	case *v1.PolicySpecV2_Ref:
-		return loadScriptContent(source.Ref, basePath)
+		return loadScriptContent(source.Ref, basePath, client)
 	case *v1.PolicySpecV2_Path:
 		// Deprecated: kept for backward compatibility
-		return loadScriptContent(source.Path, basePath)
+		return loadScriptContent(source.Path, basePath, client)
 	default:
 		return nil, fmt.Errorf("policy spec is empty")
 	}
 }
 
-func loadLegacyPolicyScript(spec *v1.PolicySpec, basePath string) ([]byte, error) {
+func loadLegacyPolicyScript(spec *v1.PolicySpec, basePath string, client *http.Client) ([]byte, error) {
 	switch source := spec.GetSource().(type) {
 	case *v1.PolicySpec_Embedded:
 		return decodeIfBase64Wasm([]byte(source.Embedded)), nil
 	case *v1.PolicySpec_Path:
-		return loadScriptContent(source.Path, basePath)
+		return loadScriptContent(source.Path, basePath, client)
 	default:
 		return nil, fmt.Errorf("policy spec is empty")
 	}

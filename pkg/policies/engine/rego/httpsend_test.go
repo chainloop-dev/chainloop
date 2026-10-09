@@ -18,8 +18,12 @@ package rego
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/pkg/netguard"
 	"github.com/chainloop-dev/chainloop/pkg/policies/engine"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -154,4 +158,68 @@ violations contains resp.error.message if {
 	require.Len(t, result.Violations, 1)
 	assert.Contains(t, result.Violations[0].Violation, "/nonexistent/ca.pem")
 	assert.NotContains(t, result.Violations[0].Violation, "is not allowed")
+}
+
+func TestRego_HTTPSendPublicTargetsOnly(t *testing.T) {
+	// httptest listens on the loopback interface, so it stands in for any
+	// destination that is not publicly routable.
+	var requests int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	serverURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	policy := &engine.Policy{
+		Name:   "http-send",
+		Source: fmt.Appendf(nil, httpSendPolicyTemplate, fmt.Sprintf(`{"method": "GET", "url": %q}`, server.URL)),
+	}
+
+	testCases := []struct {
+		name       string
+		mode       EnvironmentMode
+		publicOnly bool
+	}{
+		{name: "restrictive mode reaches a private target by default", mode: EnvironmentModeRestrictive},
+		{name: "restrictive mode blocks a private target", mode: EnvironmentModeRestrictive, publicOnly: true},
+		{name: "permissive mode reaches a private target by default", mode: EnvironmentModePermissive},
+		{name: "permissive mode blocks a private target", mode: EnvironmentModePermissive, publicOnly: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := []engine.Option{
+				engine.WithOperatingMode(int32(tc.mode)),
+				// OPA matches the allowed host without its port
+				engine.WithAllowedHostnames(serverURL.Hostname()),
+			}
+			if tc.publicOnly {
+				opts = append(opts, engine.WithPublicTargetsOnly())
+			}
+			r := NewEngine(opts...)
+
+			requests = 0
+			_, verifyErr := r.Verify(context.TODO(), policy, []byte(`{}`), nil)
+			_, matchErr := r.MatchesParameters(context.TODO(), policy, nil, nil)
+
+			if !tc.publicOnly {
+				require.NoError(t, verifyErr)
+				require.NoError(t, matchErr)
+				assert.Equal(t, 2, requests)
+				return
+			}
+
+			assert.Zero(t, requests, "a private target must not be reached")
+			// Only strict evaluation surfaces http.send errors
+			if tc.mode == EnvironmentModeRestrictive {
+				for _, err := range []error{verifyErr, matchErr} {
+					require.Error(t, err)
+					assert.Contains(t, err.Error(), netguard.ErrBlockedTarget.Error())
+				}
+			}
+		})
+	}
 }

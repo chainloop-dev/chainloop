@@ -46,6 +46,10 @@ type CommonEngineOptions struct {
 	// as optional.
 	ProjectName        string
 	ProjectVersionName string
+	// PublicTargetsOnly refuses rego http.send requests to destinations that
+	// are not publicly routable, even when their host is allowed. See
+	// WithPublicTargetsOnly.
+	PublicTargetsOnly bool
 }
 
 // Option is a unified functional option for configuring policy engines
@@ -129,6 +133,19 @@ func WithProjectContext(name, version string) Option {
 	return func(opts *Options) {
 		opts.ProjectName = name
 		opts.ProjectVersionName = version
+	}
+}
+
+// WithPublicTargetsOnly makes the rego engine refuse http.send requests to
+// destinations that are not publicly routable, such as loopback, private and
+// link-local addresses, and ignore any proxy configured in the environment.
+// The check applies to the address a host name resolves to and to every
+// redirect hop. It is off by default, since policies evaluated in a user's own
+// environment may legitimately reach internal hosts. The WASM engine does not
+// support it yet.
+func WithPublicTargetsOnly() Option {
+	return func(opts *Options) {
+		opts.PublicTargetsOnly = true
 	}
 }
 
