@@ -34,6 +34,11 @@ import (
 // single-use content can keep it rather than throw it away unseen.
 var ErrAnnounceUnsupported = errors.New("agent cannot show messages to the user")
 
+// ErrSessionDataNotFresh marks a failed transcript refresh after which a
+// provider's previous raw copy must not be parsed. Providers that do not wrap
+// this error retain the legacy best-effort fallback to their last copy.
+var ErrSessionDataNotFresh = errors.New("session data is not fresh")
+
 // SessionStartMessage is everything the session-start hook has to say, on the
 // two channels an agent offers: one the user reads, one the model reads.
 //
