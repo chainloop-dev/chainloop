@@ -49,25 +49,20 @@ type boilerplateData struct {
 	NeedsDefaultViolations bool
 }
 
-// parseModule parses a Rego module. On failure, the error holds only the code and
-// location of the first problem, since OPA parse errors can quote the policy source.
-func parseModule(name, source string) (*ast.Module, error) {
-	module, err := ast.ParseModule(name, source)
-	if err == nil {
-		return module, nil
-	}
-
+// sanitizeParseError reduces a Rego parse error to the code and location of its first
+// problem, since OPA parse errors can quote the policy source.
+func sanitizeParseError(err error) error {
 	var astErrs ast.Errors
 	if !errors.As(err, &astErrs) || len(astErrs) == 0 {
-		return nil, errors.New("invalid policy")
+		return errors.New("invalid policy")
 	}
 
 	first := astErrs[0]
 	if first.Location == nil {
-		return nil, errors.New(first.Code)
+		return errors.New(first.Code)
 	}
 
-	return nil, fmt.Errorf("%s at line %d, column %d", first.Code, first.Location.Row, first.Location.Col)
+	return fmt.Errorf("%s at line %d, column %d", first.Code, first.Location.Row, first.Location.Col)
 }
 
 // InjectBoilerplate automatically injects common policy boilerplate if it doesn't exist.
@@ -85,9 +80,9 @@ func InjectBoilerplate(policySource []byte, policyName string) ([]byte, error) {
 	originalPolicy := string(policySource)
 
 	// Parse the policy
-	module, err := parseModule(policyName, originalPolicy)
+	module, err := ast.ParseModule(policyName, originalPolicy)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse policy (must have 'package' and 'import rego.v1'): %w", err)
+		return nil, fmt.Errorf("failed to parse policy (must have 'package' and 'import rego.v1'): %w", sanitizeParseError(err))
 	}
 
 	// Detect which rules already exist using AST

@@ -1758,6 +1758,34 @@ func loadStatement(file string, s *suite.Suite) *intoto.Statement {
 	return &statement
 }
 
+func (s *testSuite) TestSpecBasePath() {
+	const (
+		remoteSpec = "https://example.com/policy.yaml"
+		localSpec  = "file://testdata/policy.yaml"
+	)
+
+	cases := []struct {
+		name string
+		ref  string
+		want string
+	}{
+		{name: "https spec", ref: remoteSpec, want: remoteSpec},
+		{name: "https spec with digest", ref: remoteSpec + "@sha256:1234", want: remoteSpec},
+		{name: "file spec", ref: localSpec, want: localSpec},
+		{name: "file spec with digest", ref: localSpec + "@sha256:1234", want: localSpec},
+		{name: "http spec", ref: "http://example.com/policy.yaml"},
+		{name: "chainloop spec", ref: "chainloop://provider/policy"},
+		{name: "spec without scheme", ref: "policy"},
+		{name: "embedded spec", ref: ""},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			s.Equal(tc.want, specBasePath(tc.ref))
+		})
+	}
+}
+
 func (s *testSuite) TestResolveScriptRef() {
 	const (
 		remoteBase   = "https://example.com/policies/policy.yaml"

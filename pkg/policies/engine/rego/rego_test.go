@@ -31,6 +31,53 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRego_ParseErrorOmitsSource(t *testing.T) {
+	const marker = "unique_marker_value_42"
+
+	r := NewEngine()
+	policy := &engine.Policy{
+		Name:   "invalid",
+		Source: []byte("package main\n\nx := \"" + marker + "\n"),
+	}
+
+	testCases := []struct {
+		name string
+		run  func() error
+	}{
+		{
+			name: "verify",
+			run: func() error {
+				_, err := r.Verify(context.TODO(), policy, []byte("{}"), nil)
+				return err
+			},
+		},
+		{
+			name: "matches parameters",
+			run: func() error {
+				_, err := r.MatchesParameters(context.TODO(), policy, nil, nil)
+				return err
+			},
+		},
+		{
+			name: "matches evaluation",
+			run: func() error {
+				_, err := r.MatchesEvaluation(context.TODO(), policy, nil, nil)
+				return err
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.run()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "failed to parse rego policy")
+			assert.Contains(t, err.Error(), "line 3")
+			assert.NotContains(t, err.Error(), marker)
+		})
+	}
+}
+
 func TestRego_VerifyWithValidPolicy(t *testing.T) {
 	regoContent, err := os.ReadFile("testfiles/check_qa.rego")
 	require.NoError(t, err)
