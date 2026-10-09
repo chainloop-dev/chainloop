@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -106,6 +107,9 @@ type Report struct {
 	// lies in a path the filter protects, or when it spans the JSON punctuation
 	// between two adjacent leaves.
 	Unlocated map[string]int
+	// Allowed counts, per rule id, occurrences left in place because their line
+	// carries an allow marker. Empty unless the Redactor honours markers.
+	Allowed map[string]int
 	// Passes is the number of detection passes performed.
 	Passes int
 }
@@ -136,6 +140,7 @@ type Redactor struct {
 	maxPasses     int
 	placeholder   func(ruleID string) string
 	isPlaceholder func(string) bool
+	allowMarkers  bool
 }
 
 // Option customises a Redactor.
@@ -156,6 +161,19 @@ func WithPathFilter(f PathFilter) Option {
 func WithOpaque(f OpaqueFilter) Option {
 	return func(r *Redactor) {
 		r.opaque = f
+	}
+}
+
+// WithAllowMarkers leaves in place a secret whose line carries an inline
+// "gitleaks:allow" or "betterleaks:allow" marker, as a repository scan with
+// either tool would. The default redacts it.
+//
+// A line is a line of the decoded string, such as one line of a file in a tool
+// result, so the marker only covers the secrets next to it. An occurrence that
+// spans more than one line is always redacted.
+func WithAllowMarkers() Option {
+	return func(r *Redactor) {
+		r.allowMarkers = true
 	}
 }
 
@@ -273,7 +291,7 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 		detachOpaque(root, "", r.opaque, &detached)
 	}
 
-	report := &Report{ByRule: map[string]int{}, Unlocated: map[string]int{}}
+	report := &Report{ByRule: map[string]int{}, Unlocated: map[string]int{}, Allowed: map[string]int{}}
 	// Secrets no eligible leaf contains, so that the loop stops chasing them.
 	skip := make(map[string]struct{})
 	converged := false
@@ -308,22 +326,39 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 		}
 
 		w := &rewriter{
-			pathFilter:  r.pathFilter,
-			placeholder: r.placeholder,
-			secrets:     pending,
-			byRule:      map[string]int{},
-			located:     map[string]struct{}{},
+			pathFilter:   r.pathFilter,
+			placeholder:  r.placeholder,
+			allowMarkers: r.allowMarkers,
+			secrets:      pending,
+			byRule:       map[string]int{},
+			allowed:      map[string]int{},
+			located:      map[string]struct{}{},
+			kept:         map[string]struct{}{},
+			protected:    map[string]struct{}{},
 		}
 		w.rewriteMap(root, "")
 
 		for _, s := range pending {
-			if _, ok := w.located[s.secret]; !ok {
+			_, located := w.located[s.secret]
+			_, kept := w.kept[s.secret]
+			_, protected := w.protected[s.secret]
+			switch {
+			// A copy in a protected leaf stays in the document whatever happened
+			// to the others, so it is reported even when another was kept.
+			case protected || (!located && !kept):
 				skip[s.secret] = struct{}{}
 				report.Unlocated[s.ruleID]++
+			case kept:
+				// It is only left on allowed lines after this pass, so a further
+				// pass would only find it again.
+				skip[s.secret] = struct{}{}
 			}
 		}
 		for rule, n := range w.byRule {
 			report.ByRule[rule] += n
+		}
+		for rule, n := range w.allowed {
+			report.Allowed[rule] += n
 		}
 		report.Replacements += w.count
 
@@ -449,12 +484,20 @@ func trimPartialEscape(secret string) string {
 // rewriter walks a decoded JSON value tree replacing secrets in eligible string
 // leaves.
 type rewriter struct {
-	pathFilter  PathFilter
-	placeholder func(string) string
-	secrets     []secretRule
-	byRule      map[string]int
-	located     map[string]struct{}
-	count       int
+	pathFilter   PathFilter
+	placeholder  func(string) string
+	allowMarkers bool
+	secrets      []secretRule
+	byRule       map[string]int
+	// allowed counts, per rule id, the occurrences kept on allowed lines.
+	allowed map[string]int
+	located map[string]struct{}
+	// kept holds the secrets with an occurrence kept on an allowed line.
+	kept map[string]struct{}
+	// protected holds the secrets with an occurrence in a leaf the path filter
+	// protects, which therefore stays in the document.
+	protected map[string]struct{}
+	count     int
 }
 
 func (w *rewriter) rewriteMap(m map[string]any, path string) {
@@ -488,8 +531,9 @@ func (w *rewriter) rewrite(node any, path string) any {
 // characters `\n`.
 //
 // The path filter is consulted only once the leaf is known to hold a secret, and
-// nothing is recorded for a leaf it protects. Nearly every leaf holds none, and
-// the filter runs for each leaf on every pass otherwise.
+// a leaf it protects is left as it is, with its secrets recorded as protected.
+// Nearly every leaf holds none, and the filter runs for each leaf on every pass
+// otherwise.
 func (w *rewriter) redactLeaf(s, path string) string {
 	body, err := encodeStringBody(s)
 	if err != nil {
@@ -498,15 +542,28 @@ func (w *rewriter) redactLeaf(s, path string) string {
 
 	var (
 		n        int
+		eligible bool
 		lastRule string
+		// Replacing a secret never adds or removes a marker, so this holds for
+		// the whole leaf.
+		marked = w.allowMarkers && hasAllowMarker(body)
 	)
-	for _, sr := range w.secrets {
+	for i, sr := range w.secrets {
 		c := strings.Count(body, sr.secret)
 		if c == 0 {
 			continue
 		}
-		if n == 0 && !w.pathFilter(path) {
-			return s
+		if !eligible {
+			if !w.pathFilter(path) {
+				// The secrets before this one are not in the leaf.
+				for _, rest := range w.secrets[i:] {
+					if strings.Contains(body, rest.secret) {
+						w.protected[rest.secret] = struct{}{}
+					}
+				}
+				return s
+			}
+			eligible = true
 		}
 		// The placeholder goes into the escaped form of the string, so it is
 		// escaped too. A raw quote or backslash in it would otherwise break
@@ -515,9 +572,22 @@ func (w *rewriter) redactLeaf(s, path string) string {
 		if err != nil {
 			return w.placeholder(sr.ruleID)
 		}
-		body = strings.ReplaceAll(body, sr.secret, placeholder)
-		n += c
-		w.byRule[sr.ruleID] += c
+
+		replaced, kept := c, 0
+		if marked {
+			body, replaced, kept = replaceOutsideAllowedLines(body, sr.secret, placeholder)
+		} else {
+			body = strings.ReplaceAll(body, sr.secret, placeholder)
+		}
+		if kept > 0 {
+			w.allowed[sr.ruleID] += kept
+			w.kept[sr.secret] = struct{}{}
+		}
+		if replaced == 0 {
+			continue
+		}
+		n += replaced
+		w.byRule[sr.ruleID] += replaced
 		w.located[sr.secret] = struct{}{}
 		lastRule = sr.ruleID
 	}
@@ -533,6 +603,73 @@ func (w *rewriter) redactLeaf(s, path string) string {
 		return w.placeholder(lastRule)
 	}
 	return out
+}
+
+// allowSignatures are the inline markers that exempt a line from secret
+// scanning in betterleaks and gitleaks.
+var allowSignatures = []string{"betterleaks:allow", "gitleaks:allow"}
+
+// hasAllowMarker reports whether s carries one of allowSignatures.
+func hasAllowMarker(s string) bool {
+	return slices.ContainsFunc(allowSignatures, func(sig string) bool { return strings.Contains(s, sig) })
+}
+
+// replaceOutsideAllowedLines substitutes placeholder for every occurrence of
+// secret in body, the JSON-encoded form of a leaf, except the occurrences that
+// lie within a line carrying an allow marker. It returns the new body and the
+// number of occurrences replaced and kept.
+func replaceOutsideAllowedLines(body, secret, placeholder string) (string, int, int) {
+	allowed := allowedLines(body)
+
+	var (
+		b              strings.Builder
+		replaced, kept int
+		pos            int
+	)
+	for {
+		i := strings.Index(body[pos:], secret)
+		if i < 0 {
+			break
+		}
+		start, end := pos+i, pos+i+len(secret)
+		b.WriteString(body[pos:start])
+		if within(allowed, start, end) {
+			b.WriteString(secret)
+			kept++
+		} else {
+			b.WriteString(placeholder)
+			replaced++
+		}
+		pos = end
+	}
+	b.WriteString(body[pos:])
+	return b.String(), replaced, kept
+}
+
+// allowedLines returns the lines of body, the JSON-encoded form of a string,
+// that carry an allow marker. Lines are those of the decoded string: they end at
+// an escaped line feed or carriage return.
+func allowedLines(body string) []span {
+	var out []span
+	for start := 0; start <= len(body); {
+		line := cutAtEscape(body[start:], "nr")
+		if hasAllowMarker(line) {
+			out = append(out, span{start: start, end: start + len(line)})
+		}
+		// Past the line and the two characters of its line break.
+		start += len(line) + 2
+	}
+	return out
+}
+
+// within reports whether [start, end) lies inside one of spans.
+func within(spans []span, start, end int) bool {
+	for _, s := range spans {
+		if s.start <= start && end <= s.end {
+			return true
+		}
+	}
+	return false
 }
 
 // decodeObject parses doc into a value tree, keeping numbers in their original

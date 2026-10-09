@@ -27,6 +27,7 @@ import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/internal/redaction"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
@@ -285,6 +286,7 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			if tc.skipRedaction {
 				assert.Equal(t, "true", got.Annotations[api.AnnotationMaterialRedactionSkipped])
 				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedacted)
+				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedactionRuleset)
 				assert.Contains(t, string(stored), awsKey)
 				assert.Equal(t, sha256Digest(string(original)), got.GetArtifact().Digest)
 				// Nothing was transformed, so nothing is held in memory for the
@@ -293,6 +295,7 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			} else {
 				// Marked redacted whenever the scan ran, even when it found nothing.
 				assert.Equal(t, "true", got.Annotations[api.AnnotationMaterialRedacted])
+				assert.Equal(t, strconv.Itoa(redaction.RulesetVersion), got.Annotations[api.AnnotationMaterialRedactionRuleset])
 				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedactionSkipped)
 
 				// The scanned copy is what policies must be handed, since a

@@ -79,8 +79,9 @@ func TestDefaultScannerDetects(t *testing.T) {
 			wantRule: "github-pat",
 		},
 		{
-			// A session transcript is attacker-influenceable text, so neither
-			// in-band bypass marker may suppress a finding.
+			// The detector would apply a marker to its whole line, which is a
+			// whole string leaf of the document. Redactor applies it to the
+			// line of each occurrence instead, so the scanner reports it.
 			name:     "gitleaks:allow must not suppress the finding",
 			text:     `"content": "` + awsPair + ` // gitleaks:allow"`,
 			wantRule: "aws-access-token",

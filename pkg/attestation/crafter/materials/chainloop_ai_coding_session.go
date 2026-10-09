@@ -200,6 +200,7 @@ func (c *ChainloopAICodingSessionCrafter) annotateRedaction(material *api.Attest
 
 	material.Annotations[api.AnnotationMaterialRedacted] = api.AnnotationValueTrue
 	material.Annotations[api.AnnotationMaterialRedactionCount] = strconv.Itoa(report.Replacements)
+	material.Annotations[api.AnnotationMaterialRedactionRuleset] = strconv.Itoa(redaction.RulesetVersion)
 
 	if !report.Changed() {
 		return

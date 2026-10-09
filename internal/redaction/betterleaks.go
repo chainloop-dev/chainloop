@@ -18,6 +18,7 @@ package redaction
 import (
 	"context"
 	"crypto/sha256"
+	_ "embed"
 	"fmt"
 	"runtime"
 	"slices"
@@ -25,6 +26,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/betterleaks/betterleaks/config"
 	"github.com/betterleaks/betterleaks/detect"
 	betterleaksregexp "github.com/betterleaks/betterleaks/regexp"
 	"github.com/betterleaks/betterleaks/regexp/re2"
@@ -67,6 +69,18 @@ type betterleaksScanner struct {
 	chunkSize int
 }
 
+// rulesConfig is the betterleaks default ruleset, extended with allowlists for
+// values the generic rules match but which are not credentials.
+//
+//go:embed betterleaks.toml
+var rulesConfig string
+
+// RulesetVersion identifies what the scanner detects. Bump it whenever
+// betterleaks.toml, the betterleaks version, or the handling of findings in
+// this file changes what gets redacted, so that policies can tell placeholders
+// from different rulesets apart. Version 1 is the plain default ruleset.
+const RulesetVersion = 2
+
 var (
 	defaultScanner = sync.OnceValues(newBetterleaksScanner)
 	// useRE2 selects the regex engine. It is process-wide and only affects
@@ -88,21 +102,30 @@ func DefaultScanner() (Scanner, error) {
 }
 
 func newBetterleaksScanner() (*betterleaksScanner, error) {
+	return newScannerWithRules(rulesConfig)
+}
+
+// newScannerWithRules builds a scanner from a betterleaks TOML configuration.
+func newScannerWithRules(rules string) (*betterleaksScanner, error) {
 	// The library defaults to the standard library engine, which is several
 	// times slower on this ruleset; the betterleaks CLI defaults to RE2 for the
 	// same reason.
 	useRE2()
 
-	// Validation stays off, which is what the default constructor gives us:
-	// validating would reach out to third-party APIs to check whether a candidate
-	// credential is live, and crafting a material must not do that.
-	d, err := detect.NewDetectorDefaultConfig()
+	cfg, err := config.ParseTOMLString(rules, "")
 	if err != nil {
-		return nil, fmt.Errorf("loading the default secret scanning rules: %w", err)
+		return nil, fmt.Errorf("loading the secret scanning rules: %w", err)
 	}
 
-	// A session transcript is text the model was free to write, so an in-band
-	// "betterleaks:allow" or "gitleaks:allow" must not switch redaction off.
+	// Validation stays off: validating would reach out to third-party APIs to
+	// check whether a candidate credential is live, and crafting a material
+	// must not do that.
+	d := detect.NewDetectorContext(context.Background(), cfg, detect.ValidationOptions{})
+
+	// The detector checks an allow marker against the whole line of its match.
+	// A string leaf of the scanned document is a single line, so one marker
+	// would suppress every finding in a whole tool result. Redactor checks the
+	// marker against the line of each occurrence instead, when asked to.
 	d.IgnoreGitleaksAllow = true
 	// Findings must carry the verbatim secret: it is what we search for in the
 	// document in order to replace it.
@@ -169,10 +192,12 @@ func (s *betterleaksScanner) scanChunks(ctx context.Context, text string, chunks
 		// and the rule for that component is marked as not independently
 		// reportable — so the primary finding names the harmless public
 		// identifier while the actual credential arrives only as a component.
-		// Both halves have to be redacted.
+		// Both halves have to be redacted. An optional component is context
+		// that only raises the confidence of the finding, such as the username
+		// next to a generic password, and is not a secret.
 		for _, set := range result.Finding.ComponentSets {
 			for _, component := range set.Components {
-				if component == nil {
+				if component == nil || component.Optional {
 					continue
 				}
 				perChunk[chunk] = appendSecret(perChunk[chunk], component.RuleID, component.Secret)
@@ -332,8 +357,11 @@ func byteSpans(text string, ranges []lineSpan) []span {
 // appendSecret records a locatable secret. A finding without one cannot be
 // searched for in the document, so it is dropped rather than reported.
 func appendSecret(dst []Finding, ruleID, secret string) []Finding {
-	if ruleID == jwtRuleID {
+	switch ruleID {
+	case jwtRuleID:
 		secret = cutAtTerminatorEscape(secret)
+	case genericPasswordRuleID:
+		secret = cutAtLineEscape(secret)
 	}
 	if secret == "" {
 		return dst
@@ -341,8 +369,17 @@ func appendSecret(dst []Finding, ruleID, secret string) []Finding {
 	return append(dst, Finding{RuleID: ruleID, Secret: secret})
 }
 
-// jwtRuleID is the default ruleset's rule for JSON Web Tokens.
-const jwtRuleID = "jwt"
+const (
+	// jwtRuleID is the default ruleset's rule for JSON Web Tokens.
+	jwtRuleID = "jwt"
+	// genericPasswordRuleID is the default ruleset's rule for a password
+	// assigned to a password key. Its unquoted value stops at whitespace in
+	// source text, but in JSON-encoded text a line break is the escape `\n`, so
+	// the match runs into the next line. That swallowed, for instance, the line
+	// break after a placeholder the transcript already showed, and reported the
+	// placeholder as a new secret.
+	genericPasswordRuleID = "generic-password"
+)
 
 // cutAtTerminatorEscape removes the text from the first whitespace or quote
 // escape onwards.
@@ -357,12 +394,24 @@ const jwtRuleID = "jwt"
 // Escapes are read as units from the left, so the second backslash of a `\\`
 // escape is never taken as the start of another escape.
 func cutAtTerminatorEscape(secret string) string {
+	return cutAtEscape(secret, `"nrt`)
+}
+
+// cutAtLineEscape removes the text from the first whitespace escape onwards. A
+// password is not cut at a quote escape: its value often starts with one,
+// `password: \"...\"`, which is part of it.
+func cutAtLineEscape(secret string) string {
+	return cutAtEscape(secret, "nrt")
+}
+
+// cutAtEscape removes the text from the first escape of one of the given
+// characters onwards.
+func cutAtEscape(secret, terminators string) string {
 	for i := 0; i+1 < len(secret); i++ {
 		if secret[i] != '\\' {
 			continue
 		}
-		switch secret[i+1] {
-		case '"', 'n', 'r', 't':
+		if strings.IndexByte(terminators, secret[i+1]) >= 0 {
 			return secret[:i]
 		}
 		// Skip the escaped character, so that it is not read as the start of

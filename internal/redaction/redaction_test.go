@@ -470,6 +470,144 @@ func TestRedactText(t *testing.T) {
 	}
 }
 
+// TestRedactAllowMarkers checks that an allow marker keeps only the secrets on
+// its own line, the line of the decoded string, and nothing else.
+func TestRedactAllowMarkers(t *testing.T) {
+	const (
+		secret      = "s3cr3t-value-0123456789"
+		placeholder = "[CHAINLOOP_TRACE_REDACTED:test-token]"
+	)
+
+	testCases := []struct {
+		name string
+		// leaves are the string leaves of the document, in keys a, b, ...
+		leaves      []string
+		opts        []Option
+		want        []string
+		wantByRule  map[string]int
+		wantAllowed map[string]int
+	}{
+		{
+			name:        "marker on the line of the secret keeps it",
+			leaves:      []string{"token := \"" + secret + "\" // gitleaks:allow"},
+			opts:        []Option{WithAllowMarkers()},
+			want:        []string{"token := \"" + secret + "\" // gitleaks:allow"},
+			wantByRule:  map[string]int{},
+			wantAllowed: map[string]int{"test-token": 1},
+		},
+		{
+			name:        "betterleaks marker keeps it too",
+			leaves:      []string{"token: " + secret + " # betterleaks:allow"},
+			opts:        []Option{WithAllowMarkers()},
+			want:        []string{"token: " + secret + " # betterleaks:allow"},
+			wantByRule:  map[string]int{},
+			wantAllowed: map[string]int{"test-token": 1},
+		},
+		{
+			name:        "marker on another line of the same leaf does not",
+			leaves:      []string{"1\ttoken := \"" + secret + "\"\n2\tother := x // gitleaks:allow"},
+			opts:        []Option{WithAllowMarkers()},
+			want:        []string{"1\ttoken := \"" + placeholder + "\"\n2\tother := x // gitleaks:allow"},
+			wantByRule:  map[string]int{"test-token": 1},
+			wantAllowed: map[string]int{},
+		},
+		{
+			name:        "carriage returns end a line too",
+			leaves:      []string{"token := " + secret + "\r\nx // gitleaks:allow"},
+			opts:        []Option{WithAllowMarkers()},
+			want:        []string{"token := " + placeholder + "\r\nx // gitleaks:allow"},
+			wantByRule:  map[string]int{"test-token": 1},
+			wantAllowed: map[string]int{},
+		},
+		{
+			name:        "the same secret without a marker elsewhere in the leaf is replaced",
+			leaves:      []string{"a := \"" + secret + "\" // gitleaks:allow\nexport TOKEN=" + secret},
+			opts:        []Option{WithAllowMarkers()},
+			want:        []string{"a := \"" + secret + "\" // gitleaks:allow\nexport TOKEN=" + placeholder},
+			wantByRule:  map[string]int{"test-token": 1},
+			wantAllowed: map[string]int{"test-token": 1},
+		},
+		{
+			name:        "marker in another leaf does not",
+			leaves:      []string{"export TOKEN=" + secret, "x // gitleaks:allow"},
+			opts:        []Option{WithAllowMarkers()},
+			want:        []string{"export TOKEN=" + placeholder, "x // gitleaks:allow"},
+			wantByRule:  map[string]int{"test-token": 1},
+			wantAllowed: map[string]int{},
+		},
+		{
+			name:        "an escaped backslash before n is not a line break",
+			leaves:      []string{`path C:\new ` + secret + ` // gitleaks:allow`},
+			opts:        []Option{WithAllowMarkers()},
+			want:        []string{`path C:\new ` + secret + ` // gitleaks:allow`},
+			wantByRule:  map[string]int{},
+			wantAllowed: map[string]int{"test-token": 1},
+		},
+		{
+			name:        "markers are ignored unless enabled",
+			leaves:      []string{"token := \"" + secret + "\" // gitleaks:allow"},
+			want:        []string{"token := \"" + placeholder + "\" // gitleaks:allow"},
+			wantByRule:  map[string]int{"test-token": 1},
+			wantAllowed: map[string]int{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scanner := &fakeScanner{findings: []Finding{{RuleID: "test-token", Secret: secret}}, requirePresent: true}
+			doc := map[string]string{}
+			for i, leaf := range tc.leaves {
+				doc[string(rune('a'+i))] = leaf
+			}
+			in, err := json.Marshal(doc)
+			require.NoError(t, err)
+
+			out, report, err := New(scanner, tc.opts...).Redact(context.Background(), in)
+			require.NoError(t, err)
+
+			var got map[string]string
+			require.NoError(t, json.Unmarshal(out, &got))
+			for i, want := range tc.want {
+				assert.Equal(t, want, got[string(rune('a'+i))])
+			}
+			assert.Equal(t, tc.wantByRule, report.ByRule)
+			assert.Equal(t, tc.wantAllowed, report.Allowed)
+			assert.Empty(t, report.Unlocated, "a kept secret is not an unlocated one")
+		})
+	}
+}
+
+// TestRedactAllowMarkerDoesNotHideProtectedCopy checks that a copy of a secret
+// in a protected leaf is still reported when another copy was kept by an allow
+// marker.
+func TestRedactAllowMarkerDoesNotHideProtectedCopy(t *testing.T) {
+	scanner := &fakeScanner{findings: []Finding{{RuleID: "r1", Secret: "SEC-0123456789"}}, requirePresent: true}
+	doc := `{"keepme":"SEC-0123456789","other":"x SEC-0123456789 // gitleaks:allow"}`
+
+	_, report, err := New(scanner, WithAllowMarkers(), WithPathFilter(func(p string) bool { return p != "/keepme" })).
+		Redact(context.Background(), []byte(doc))
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]int{"r1": 1}, report.Allowed)
+	assert.Equal(t, map[string]int{"r1": 1}, report.Unlocated)
+}
+
+// TestRedactTextAllowMarker checks a kept secret next to a replaced one in plain
+// text, the shape of a captured spec.
+func TestRedactTextAllowMarker(t *testing.T) {
+	scanner := &fakeScanner{findings: []Finding{
+		{RuleID: "kept", Secret: "KEPT-0123456789"},
+		{RuleID: "other", Secret: "OTHER-0123456789"},
+	}, requirePresent: true}
+
+	out, report, err := New(scanner, WithAllowMarkers()).
+		RedactText(context.Background(), "a KEPT-0123456789 // gitleaks:allow\nb OTHER-0123456789")
+
+	require.NoError(t, err)
+	assert.Equal(t, "a KEPT-0123456789 // gitleaks:allow\nb [CHAINLOOP_TRACE_REDACTED:other]", out)
+	assert.Equal(t, 1, report.Replacements)
+}
+
 // TestRedactPlaceholderNeedingEscape checks that a placeholder is inserted in
 // its JSON-escaped form. A raw quote or backslash in it would break the string
 // the leaf is rebuilt from, and the whole leaf would then be lost to the
