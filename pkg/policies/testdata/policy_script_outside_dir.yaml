@@ -1,0 +1,8 @@
+apiVersion: chainloop.dev/v1
+kind: Policy
+metadata:
+  name: script-outside-dir
+spec:
+  policies:
+    - kind: ATTESTATION
+      ref: ../testdata/workflow.rego

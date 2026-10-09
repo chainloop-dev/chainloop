@@ -398,7 +398,7 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}
 
 	// load the policy scripts (rego)
-	scripts, err := LoadPolicyScriptsFromSpec(policy, opts.kind, specBasePath(attachment.GetRef()))
+	scripts, err := LoadPolicyScriptsFromSpec(policy, opts.kind, policyLocation(attachment.GetRef()))
 	if err != nil {
 		return nil, NewPolicyError(err)
 	}
@@ -1107,20 +1107,22 @@ func decodeIfBase64Wasm(content []byte) []byte {
 
 var errInvalidScriptRef = errors.New("invalid policy script reference")
 
-// specBasePath returns the location of a policy spec, used to resolve its relative script
-// references. It is only known for file:// and https:// specs, and empty otherwise.
-func specBasePath(specRef string) string {
-	switch scheme, _ := RefParts(specRef); scheme {
+// policyLocation returns the location of the policy spec that a contract or policy group
+// attachment references, used to resolve the relative script references inside that spec.
+// It is only known for file:// and https:// attachments, and empty otherwise.
+func policyLocation(attachmentRef string) string {
+	switch scheme, _ := RefParts(attachmentRef); scheme {
 	case fileScheme, httpsScheme:
-		basePath, _ := ExtractDigest(specRef)
-		return basePath
+		location, _ := ExtractDigest(attachmentRef)
+		return location
 	default:
 		return ""
 	}
 }
 
-// resolveScriptRef resolves a policy script reference against basePath, the location
-// of the policy spec that declares it.
+// resolveScriptRef resolves a script reference declared inside a policy spec (its ref or
+// path fields) against basePath, the location of that policy spec.
+// It does not apply to the reference that loads the policy spec itself.
 // Absolute references must use https://. A relative reference is resolved against the
 // spec URL when the spec is served over https, or confined to the spec directory when the
 // spec is a local file (file:// or a plain path). Any other relative reference is rejected.
