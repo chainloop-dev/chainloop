@@ -129,7 +129,7 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, req.GetProjectName(), req.GetWorkflowName(), "")
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC on the project
@@ -140,7 +140,7 @@ func (s *AttestationService) GetContract(ctx context.Context, req *cpAPI.Attesta
 	// Find contract revision
 	contractVersion, err := s.workflowContractUseCase.Describe(ctx, wf.OrgID.String(), wf.ContractID.String(), int(req.ContractRevision), biz.WithoutReferences())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if contractVersion == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
@@ -167,7 +167,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 
 	org, err := s.orgUseCase.FindByID(ctx, robotAccount.OrgID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	if err := checkAuthRequirements(robotAccount, req.GetWorkflowName()); err != nil {
@@ -176,7 +176,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, req.GetProjectName(), req.GetWorkflowName(), "")
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC on the project
@@ -198,7 +198,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		} else if biz.IsErrValidation(err) {
 			return nil, cpAPI.ErrorCasBackendErrorReasonInvalid("CAS backend is unreachable or misconfigured: %s", err.Error())
 		}
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Create workflowRun
@@ -217,7 +217,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 
 	run, err := s.wrUseCase.Create(ctx, opts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	wRun := bizWorkFlowRunToPb(run)
@@ -261,7 +261,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC on the project
@@ -271,7 +271,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 	wRun, err := s.wrUseCase.GetByIDInOrg(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if wRun == nil {
 		return nil, errors.NotFound("not found", "workflow run not found")
 	}
@@ -282,7 +282,7 @@ func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationSe
 
 	digest, err := s.storeAttestation(ctx, bundle, robotAccount, wf, wRun, req.MarkVersionAsReleased)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &cpAPI.AttestationServiceStoreResponse{
@@ -317,7 +317,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 	// extract structured envelope for integrations
 	dsseEnv, err := attestation.DSSEEnvelopeFromBundleBytes(bundle)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Inline backends have no external CAS to fall back to, so the bundle
@@ -334,7 +334,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 	if skipDB {
 		digestHash, _, hashErr := v1.SHA256(bytes.NewReader(bundle))
 		if hashErr != nil {
-			return nil, handleUseCaseErr(hashErr, s.log)
+			return nil, handleUseCaseErr(ctx, hashErr, s.log)
 		}
 
 		// On this path the bundle reaches CAS before SaveAttestation gets to
@@ -342,21 +342,21 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 		// attestation rejected for violating its contract would still have left
 		// a blob behind in the CAS backend.
 		if err = s.wrUseCase.ValidateAttestationContract(ctx, workflowRunID, bundle); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		if err = s.uploadAttestationToCASWithRetry(ctx, bundle, casBackend, workflowRunID, digestHash); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		digest, err = s.wrUseCase.SaveAttestation(ctx, workflowRunID, bundle, biz.WithSkipBundlePersistence())
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	} else {
 		digest, err = s.wrUseCase.SaveAttestation(ctx, workflowRunID, bundle)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		if !casBackend.Inline {
@@ -364,7 +364,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 			dgst := *digest
 			panicguard.Go(s.log, "attestation-cas-upload", func() {
 				if err := s.uploadAttestationToCASWithRetry(context.Background(), bundle, casBackend, workflowRunID, dgst); err != nil {
-					_ = handleUseCaseErr(err, s.log)
+					_ = handleUseCaseErr(ctx, err, s.log)
 				}
 			})
 		}
@@ -372,14 +372,14 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 
 	// Store the exploded attestation referrer information in the DB
 	if err := s.referrerUseCase.ExtractAndPersist(ctx, dsseEnv, *digest, wf.ID.String()); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	if !casBackend.Inline {
 		// Store the mappings in the DB
 		references, err := s.casMappingUseCase.LookupDigestsInAttestation(dsseEnv, *digest)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		for _, ref := range references {
@@ -388,7 +388,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 				WorkflowRunID: &wfRun.ID,
 				ProjectID:     &wf.ProjectID,
 			}); err != nil {
-				return nil, handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(ctx, err, s.log)
 			}
 		}
 	}
@@ -403,7 +403,7 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 			DownloadSecretName:  secretName,
 			WorkflowRunID:       workflowRunID,
 		}); err != nil {
-			_ = handleUseCaseErr(err, s.log)
+			_ = handleUseCaseErr(ctx, err, s.log)
 		}
 	})
 
@@ -411,12 +411,12 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 	if markAsReleased != nil && *markAsReleased {
 		// Update the project version to mark it as a release
 		if _, err := s.projectVersionUseCase.UpdateReleaseStatus(ctx, wfRun.ProjectVersion.ID.String(), true); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
 
 	if err := s.wrUseCase.MarkAsFinished(ctx, workflowRunID, biz.WorkflowRunSuccess, ""); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Record the attestation in the prometheus registry
@@ -434,7 +434,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 	// This will make sure the provided workflowRunID belongs to the org encoded in the robot account
 	wf, err := s.findWorkflowFromTokenOrNameOrRunID(ctx, robotAccount.OrgID, "", "", req.WorkflowRunId)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC on the project
@@ -458,7 +458,7 @@ func (s *AttestationService) Cancel(ctx context.Context, req *cpAPI.AttestationS
 
 	wRun, err := s.wrUseCase.GetByIDInOrg(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if wRun == nil {
 		return nil, errors.NotFound("not found", "workflow run not found")
 	}
@@ -482,7 +482,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 	// This is the new mode, where the CAS backend ref is stored in the workflow run since initialization
 	wRun, err := s.wrUseCase.GetByIDInOrg(ctx, robotAccount.OrgID, req.WorkflowRunId)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if wRun == nil {
 		return nil, errors.NotFound("not found", "workflow run not found")
 	}
@@ -515,7 +515,7 @@ func (s *AttestationService) GetUploadCreds(ctx context.Context, req *cpAPI.Atte
 		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Uploader, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID}
 		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ref)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		resp.Token = t
@@ -537,7 +537,7 @@ func (s *AttestationService) GetPolicy(ctx context.Context, req *cpAPI.Attestati
 
 	remotePolicy, err := s.workflowContractUseCase.GetPolicy(ctx, req.GetProvider(), req.GetPolicyName(), req.GetOrgName(), org.Name, token.Token)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &cpAPI.AttestationServiceGetPolicyResponse{Policy: remotePolicy.Policy, Reference: &cpAPI.RemotePolicyReference{
@@ -559,7 +559,7 @@ func (s *AttestationService) GetPolicyGroup(ctx context.Context, req *cpAPI.Atte
 
 	remoteGroup, err := s.workflowContractUseCase.GetPolicyGroup(ctx, req.GetProvider(), req.GetGroupName(), req.GetOrgName(), org.Name, token.Token)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &cpAPI.AttestationServiceGetPolicyGroupResponse{Group: remoteGroup.PolicyGroup, Reference: &cpAPI.RemotePolicyReference{
@@ -810,14 +810,14 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	// contract validation
 	if req.GetContractBytes() != nil {
 		if err = s.workflowContractUseCase.ValidateContractPolicies(ctx, req.GetContractBytes(), token, nil, nil); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
 
 	// Check if the workflow already exists, if it does we might just need to update the contract
 	if wf, err := s.workflowUseCase.FindByNameInOrg(ctx, apiToken.OrgID, req.GetProjectName(), req.GetWorkflowName()); err != nil {
 		if !biz.IsNotFound(err) {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	} else if wf != nil {
 		// We might need to update the contract
@@ -825,7 +825,7 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 			if _, err := s.workflowContractUseCase.Update(ctx, apiToken.OrgID, wf.ContractName, &biz.WorkflowContractUpdateOpts{
 				RawSchema: req.GetContractBytes(),
 			}); err != nil {
-				return nil, handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(ctx, err, s.log)
 			}
 			// Check if the contract name the user wants to use is the same as the one in the workflow
 		} else if req.GetContractName() != "" && req.GetContractName() != wf.ContractName {
@@ -838,7 +838,7 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	// Get organization
 	org, err := s.orgUseCase.FindByID(ctx, apiToken.OrgID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// the workflow does not exist, let's create it alongside its project and contract
@@ -857,7 +857,7 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 	if user != nil {
 		userID, err := uuid.Parse(user.ID)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 		createOpts.Owner = &userID
 
@@ -871,7 +871,7 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 			return nil, errors.Forbidden("forbidden", "creating workflows during the attestation process is disabled for this organization. Please create them in advance or contact your administrator")
 		}
 
-		return nil, handleUseCaseErr(fmt.Errorf("failed to initialize the attestation: %w", err), s.log)
+		return nil, handleUseCaseErr(ctx, fmt.Errorf("failed to initialize the attestation: %w", err), s.log)
 	}
 
 	// reset RBAC cache, since we might have created a new project

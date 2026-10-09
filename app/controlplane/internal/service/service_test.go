@@ -68,19 +68,19 @@ func TestHandleUseCaseErr(t *testing.T) {
 		},
 		{
 			name:        "already converted error is propagated unchanged when processed again",
-			err:         handleUseCaseErr(fmt.Errorf("saving attestation digest: %w", biz.NewErrReleasedVersionImmutable("v1.83.2+next")), nil),
+			err:         handleUseCaseErr(context.Background(), fmt.Errorf("saving attestation digest: %w", biz.NewErrReleasedVersionImmutable("v1.83.2+next")), nil),
 			wantCode:    codes.FailedPrecondition,
 			wantMessage: `saving attestation digest: version "v1.83.2+next" is released and immutable: attestations cannot be added`,
 		},
 		{
 			name:        "already converted not found error is propagated unchanged when processed again",
-			err:         handleUseCaseErr(biz.NewErrNotFound("workflow"), nil),
+			err:         handleUseCaseErr(context.Background(), biz.NewErrNotFound("workflow"), nil),
 			wantCode:    codes.NotFound,
 			wantMessage: "workflow not found",
 		},
 		{
 			name:        "already converted already exists error is propagated unchanged when processed again",
-			err:         handleUseCaseErr(biz.NewErrAlreadyExists(errors.New("name taken")), nil),
+			err:         handleUseCaseErr(context.Background(), biz.NewErrAlreadyExists(errors.New("name taken")), nil),
 			wantCode:    codes.AlreadyExists,
 			wantMessage: "duplicated: name taken",
 		},
@@ -139,7 +139,7 @@ func TestHandleUseCaseErr(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := handleUseCaseErr(tc.err, nil)
+			got := handleUseCaseErr(context.Background(), tc.err, nil)
 			require.Error(t, got)
 			assert.Equal(t, tc.wantCode, status.Code(got))
 			assert.Equal(t, tc.wantMessage, kerrors.FromError(got).GetMessage())

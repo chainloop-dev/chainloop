@@ -66,7 +66,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 	// Get organization
 	org, err := s.orgUseCase.FindByID(ctx, currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	if _, err = s.userHasPermissionOnProject(ctx, currentOrg.ID, &pb.IdentityReference{Name: &req.ProjectName}, authz.PolicyWorkflowCreate); err != nil {
@@ -107,7 +107,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 	if user != nil {
 		userID, err := uuid.Parse(user.ID)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 		createOpts.Owner = &userID
 
@@ -117,7 +117,7 @@ func (s *WorkflowService) Create(ctx context.Context, req *pb.WorkflowServiceCre
 
 	p, err := s.useCase.Create(ctx, createOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.WorkflowServiceCreateResponse{Result: bizWorkflowToPb(p)}, nil
@@ -135,14 +135,14 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 
 	wf, err := s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.ProjectName, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	var contractID *string
 	if req.ContractName != nil {
 		c, err := s.contractUC.FindByNameInOrg(ctx, currentOrg.ID, *req.ContractName)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		} else if c == nil {
 			return nil, biz.NewErrNotFound("contract")
 		}
@@ -159,7 +159,7 @@ func (s *WorkflowService) Update(ctx context.Context, req *pb.WorkflowServiceUpd
 
 	p, err := s.useCase.Update(ctx, currentOrg.ID, wf.ID.String(), updateOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.WorkflowServiceUpdateResponse{Result: bizWorkflowToPb(p)}, nil
@@ -182,7 +182,7 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 			int(req.GetPagination().GetPageSize()),
 		)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
 
@@ -245,7 +245,7 @@ func (s *WorkflowService) List(ctx context.Context, req *pb.WorkflowServiceListR
 
 	workflows, count, err := s.useCase.List(ctx, currentOrg.ID, filters, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := make([]*pb.WorkflowItem, 0, len(workflows))
@@ -271,11 +271,11 @@ func (s *WorkflowService) Delete(ctx context.Context, req *pb.WorkflowServiceDel
 
 	wf, err := s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.ProjectName, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	if err := s.useCase.Delete(ctx, currentOrg.ID, wf.ID.String()); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.WorkflowServiceDeleteResponse{}, nil
@@ -296,7 +296,7 @@ func (s *WorkflowService) View(ctx context.Context, req *pb.WorkflowServiceViewR
 
 	wf, err = s.useCase.FindByNameInOrg(ctx, currentOrg.ID, req.ProjectName, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.WorkflowServiceViewResponse{Result: bizWorkflowToPb(wf)}, nil

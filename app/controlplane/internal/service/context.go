@@ -77,14 +77,14 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		// when there is no organization or membership gracefully
 		orgName, err := entities.GetOrganizationNameFromHeader(ctx)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		// It might not be set in the header, so we load it from the DB
 		if orgName == "" {
 			membership, err := s.userUC.CurrentMembership(ctx, currentUser.ID)
 			if err != nil && !biz.IsNotFound(err) {
-				return nil, handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(ctx, err, s.log)
 			} else if membership != nil {
 				orgName = membership.Org.Name
 			}
@@ -93,7 +93,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		if orgName != "" {
 			m, err := s.userUC.MembershipInOrg(ctx, currentUser.ID, orgName)
 			if err != nil && !biz.IsNotFound(err) {
-				return nil, handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(ctx, err, s.log)
 			} else if err != nil {
 				return nil, pb.ErrorUserNotMemberOfOrgErrorNotInOrg("user is not a member of organization %s", orgName)
 			}
@@ -107,7 +107,7 @@ func (s *ContextService) Current(ctx context.Context, _ *pb.ContextServiceCurren
 		// Add cas backend
 		backend, err := s.uc.FindDefaultBackend(ctx, currentOrg.ID)
 		if err != nil && !biz.IsNotFound(err) {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		if backend != nil {

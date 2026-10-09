@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ func (s *CASBackendService) List(ctx context.Context, _ *pb.CASBackendServiceLis
 
 	backends, err := s.uc.List(ctx, currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	res := []*pb.CASBackendItem{}
@@ -98,7 +98,7 @@ func (s *CASBackendService) Create(ctx context.Context, req *pb.CASBackendServic
 	// For now we only support one backend which is set as default
 	res, err := s.uc.Create(ctx, currentOrg.ID, req.Name, req.Location, req.Description, biz.CASBackendProvider(req.Provider), creds, req.Default, req.Fallback, maxBytes)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.CASBackendServiceCreateResponse{Result: bizCASBackendToPb(res)}, nil
@@ -112,7 +112,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 
 	backend, err := s.uc.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// if we are updating credentials we need to validate them
@@ -145,7 +145,7 @@ func (s *CASBackendService) Update(ctx context.Context, req *pb.CASBackendServic
 	// For now we only support one backend which is set as default
 	res, err := s.uc.Update(ctx, currentOrg.ID, backend.ID.String(), req.Description, creds, req.Default, req.Fallback, maxBytes)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.CASBackendServiceUpdateResponse{Result: bizCASBackendToPb(res)}, nil
@@ -160,12 +160,12 @@ func (s *CASBackendService) Delete(ctx context.Context, req *pb.CASBackendServic
 
 	backend, err := s.uc.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// In fact we soft-delete the backend instead
 	if err := s.uc.SoftDelete(ctx, currentOrg.ID, backend.ID.String()); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.CASBackendServiceDeleteResponse{}, nil
@@ -180,7 +180,7 @@ func (s *CASBackendService) Revalidate(ctx context.Context, req *pb.CASBackendSe
 
 	backend, err := s.uc.FindByNameInOrg(ctx, currentOrg.ID, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Only allow revalidation for non-inline backends

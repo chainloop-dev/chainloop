@@ -53,14 +53,14 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 	if err != nil && errors.IsNotFound(err) {
 		return nil, err
 	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, sl.LogAndMaskErr(ctx, err, s.log)
 	}
 
 	res, err := b.Describe(ctx, req.Digest)
 	if err != nil && backend.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, sl.LogAndMaskErr(err, s.log)
+		return nil, sl.LogAndMaskErr(ctx, err, s.log)
 	}
 
 	return &v1.ResourceServiceDescribeResponse{

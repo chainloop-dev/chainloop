@@ -82,11 +82,11 @@ func newOauthResp(code int, err error, showErrToUser bool) *oauthResp {
 
 // ErrorMessage is used to provide by default a generic error message to the user
 // unless showErrToUser is true
-func (e *oauthResp) ErrorMessage(l *log.Helper) string {
+func (e *oauthResp) ErrorMessage(ctx context.Context, l *log.Helper) string {
 	if e.err != nil {
 		// If the error is an internal server error, log it and raise it masked
 		if e.code == http.StatusInternalServerError {
-			return sl.LogAndMaskErr(e.err, l).Error()
+			return sl.LogAndMaskErr(ctx, e.err, l).Error()
 		}
 		// otherwise return the error message to the user
 		// or the default status text
@@ -284,7 +284,7 @@ func (h oauthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, resp.redirectURL.String(), http.StatusTemporaryRedirect)
 			return
 		}
-		http.Error(w, resp.ErrorMessage(h.svc.log), resp.code)
+		http.Error(w, resp.ErrorMessage(r.Context(), h.svc.log), resp.code)
 	}
 }
 
@@ -540,16 +540,18 @@ func (svc *AuthService) setOauthCookie(w http.ResponseWriter, name, value string
 }
 
 func generateAndLogDevUser(userUC *biz.UserUseCase, log *log.Helper, authConfig *conf.Auth) error {
+	// Runs at startup, outside of any request
+	ctx := context.Background()
 	// Create user if needed
-	u, err := userUC.UpsertByEmail(context.Background(), authConfig.DevUser, nil)
+	u, err := userUC.UpsertByEmail(ctx, authConfig.DevUser, nil)
 	if err != nil {
-		return sl.LogAndMaskErr(err, log)
+		return sl.LogAndMaskErr(ctx, err, log)
 	}
 
 	// Generate user token
 	userToken, err := generateUserJWT(u.ID, authConfig.GeneratedJwsHmacSecret, devUserDuration)
 	if err != nil {
-		return sl.LogAndMaskErr(err, log)
+		return sl.LogAndMaskErr(ctx, err, log)
 	}
 
 	log.Info("******************* DEVELOPMENT USER TOKEN *******************")
@@ -566,7 +568,7 @@ func (svc *AuthService) DeleteAccount(ctx context.Context, _ *pb.AuthServiceDele
 	}
 
 	if err := svc.userUseCase.DeleteUser(ctx, user.ID); err != nil {
-		return nil, handleUseCaseErr(err, svc.log)
+		return nil, handleUseCaseErr(ctx, err, svc.log)
 	}
 
 	return &pb.AuthServiceDeleteAccountResponse{}, nil

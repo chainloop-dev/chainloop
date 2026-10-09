@@ -138,7 +138,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		if backendErr, ok := errors.AsType[*backendUploadError](err); ok {
 			// the reused client may hold stale credentials
 			s.dropUploadBackend(info)
-			return sl.LogAndMaskErr(backendErr.err, s.log)
+			return sl.LogAndMaskErr(ctx, backendErr.err, s.log)
 		}
 		if isClientDisconnect(err) {
 			s.log.Infow("msg", "upload canceled", "digest", req.resource.Digest, "name", req.resource.FileName)
@@ -147,7 +147,7 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		if backend.IsUploadSizeExceeded(err) {
 			return status.Error(codes.ResourceExhausted, err.Error())
 		}
-		return sl.LogAndMaskErr(err, s.log)
+		return sl.LogAndMaskErr(ctx, err, s.log)
 	}
 
 	s.log.Infow("msg", "upload finished", "name", req.resource.FileName, "digest", req.resource.Digest, "size", committedSize)
@@ -174,7 +174,7 @@ func (s *ByteStreamService) backendExists(ctx context.Context, info *casJWT.Clai
 		if err != nil && kerrors.IsNotFound(err) {
 			return nil, false, err
 		} else if err != nil {
-			return nil, false, sl.LogAndMaskErr(err, s.log)
+			return nil, false, sl.LogAndMaskErr(ctx, err, s.log)
 		}
 
 		exists, err := storageBackend.Exists(ctx, digest)
@@ -184,7 +184,7 @@ func (s *ByteStreamService) backendExists(ctx context.Context, info *casJWT.Clai
 
 		s.dropUploadBackend(info)
 		if !cached || attempt > 0 {
-			return nil, false, sl.LogAndMaskErr(err, s.log)
+			return nil, false, sl.LogAndMaskErr(ctx, err, s.log)
 		}
 		s.log.Warnw("msg", "reused backend client failed, loading it again", "digest", digest, "error", err)
 	}
@@ -331,7 +331,7 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 	if err != nil && kerrors.IsNotFound(err) {
 		return err
 	} else if err != nil {
-		return sl.LogAndMaskErr(err, s.log)
+		return sl.LogAndMaskErr(ctx, err, s.log)
 	}
 
 	// Stage the backend egress on local disk and verify it against the requested
@@ -340,12 +340,12 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 	// because the artifact lives on disk.
 	f, size, err := s.stageDownload(ctx, backend, req.ResourceName)
 	if err != nil {
-		return s.downloadError(err, req.ResourceName)
+		return s.downloadError(ctx, err, req.ResourceName)
 	}
 	defer s.closeStagingFile(f)
 
 	if err := copyStaged(sendWriter{stream}, f); err != nil {
-		return s.downloadError(err, req.ResourceName)
+		return s.downloadError(ctx, err, req.ResourceName)
 	}
 
 	s.log.Infow("msg", "download finished", "digest", req.ResourceName, "size", size)
@@ -365,7 +365,7 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 // key, corrupt or tampered, so it is reported as DataLoss with both digests
 // rather than blamed on the caller. A client that went away is not an error.
 // Anything else is masked.
-func (s *ByteStreamService) downloadError(err error, digest string) error {
+func (s *ByteStreamService) downloadError(ctx context.Context, err error, digest string) error {
 	if _, ok := errors.AsType[*digestMismatchError](err); ok {
 		return status.Error(codes.DataLoss, err.Error())
 	}
@@ -374,7 +374,7 @@ func (s *ByteStreamService) downloadError(err error, digest string) error {
 		return nil
 	}
 
-	return sl.LogAndMaskErr(err, s.log)
+	return sl.LogAndMaskErr(ctx, err, s.log)
 }
 
 // checkUploadSize returns an ErrUploadSizeExceeded when total exceeds maxSize.

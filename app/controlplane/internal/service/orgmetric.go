@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,17 +52,17 @@ func (s *OrgMetricsService) Totals(ctx context.Context, req *pb.OrgMetricsServic
 	// TODO: Merge it to a single request
 	totals, err := s.uc.RunsTotal(ctx, currentOrg.ID, timeWindow, projectIDs)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	totalsByStatus, err := s.uc.RunsTotalByStatus(ctx, currentOrg.ID, timeWindow, projectIDs)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	totalsByRunnerType, err := s.uc.RunsTotalByRunnerType(ctx, currentOrg.ID, timeWindow, projectIDs)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.OrgMetricsServiceTotalsResponse{Result: &pb.OrgMetricsServiceTotalsResponse_Result{
@@ -85,7 +85,7 @@ func (s *OrgMetricsService) TopWorkflowsByRunsCount(ctx context.Context, req *pb
 
 	res, err := s.uc.TopWorkflowsByRunsCount(ctx, currentOrg.ID, int(req.GetNumWorkflows()), timeWindow, projectIDs)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	var result = []*pb.TopWorkflowsByRunsCountResponse_TotalByStatus{}
@@ -112,7 +112,7 @@ func (s *OrgMetricsService) DailyRunsCount(ctx context.Context, req *pb.DailyRun
 
 	metricsByDay, err := s.uc.DailyRunsCount(ctx, org.ID, req.WorkflowId, timeWindow, projectIDs)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	var res = make([]*pb.DailyRunsCountResponse_TotalByDay, 0, len(metricsByDay))

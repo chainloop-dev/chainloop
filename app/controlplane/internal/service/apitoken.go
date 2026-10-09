@@ -79,7 +79,7 @@ func (s *APITokenService) Create(ctx context.Context, req *pb.APITokenServiceCre
 
 	token, err := s.APITokenUseCase.Create(ctx, req.Name, req.Description, expiresIn, &currentOrg.ID, biz.APITokenWithProject(project))
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.APITokenServiceCreateResponse{
@@ -117,7 +117,7 @@ func (s *APITokenService) List(ctx context.Context, req *pb.APITokenServiceListR
 
 	tokens, err := s.APITokenUseCase.List(ctx, currentOrg.ID, biz.WithAPITokenStatusFilter(mapTokenStatusFilter(req.GetStatusFilter())), biz.WithAPITokenProjectFilter(defaultProjectFilter), biz.WithAPITokenScope(scope))
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := make([]*pb.APITokenItem, 0, len(tokens))
@@ -158,7 +158,7 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 
 	t, err := s.APITokenUseCase.FindByIDInOrg(ctx, currentOrg.ID, req.GetId())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// System tokens are internal and must not be reachable through the public API.
@@ -195,7 +195,7 @@ func (s *APITokenService) Revoke(ctx context.Context, req *pb.APITokenServiceRev
 	}
 
 	if err := s.APITokenUseCase.Revoke(ctx, currentOrg.ID, t.ID.String()); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.APITokenServiceRevokeResponse{}, nil

@@ -84,7 +84,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 
 	// Enforce required role
 	if ok, err := s.authzUC.Enforce(ctx, currentAuthzSubject, policyToCheck); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if !ok {
 		return nil, errors.Forbidden("forbidden", "not allowed to perform this operation")
 	}
@@ -92,7 +92,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	// Get default backend
 	defaultBackend, err := s.casBackendUC.FindDefaultBackend(ctx, currentOrg.ID)
 	if err != nil && !biz.IsNotFound(err) {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if defaultBackend == nil {
 		return nil, errors.NotFound("not found", "main CAS backend not found")
 	}
@@ -112,7 +112,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 			var orgID uuid.UUID
 			orgID, err = uuid.Parse(currentOrg.ID)
 			if err != nil {
-				return nil, handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(ctx, err, s.log)
 			}
 
 			mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, s.rbacScopesForOrg(ctx, orgID))
@@ -120,7 +120,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 				if biz.IsErrValidation(err) {
 					return nil, errors.BadRequest("invalid", err.Error())
 				}
-				return nil, handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(ctx, err, s.log)
 			}
 		}
 
@@ -129,7 +129,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		} else {
 			// fallback to default backend if the user or the token is allowed to
 			if ok, err := s.authzUC.Enforce(ctx, currentAuthzSubject, authz.PolicyDefaultBackendArtifactRead); err != nil {
-				return nil, handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(ctx, err, s.log)
 			} else if ok {
 				backend = defaultBackend
 			}
@@ -151,7 +151,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID, SourceInternal: sourceInternal}
 	t, err := s.casUC.GenerateTemporaryCredentials(ref)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.CASCredentialsServiceGetResponse{

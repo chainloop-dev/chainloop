@@ -56,7 +56,7 @@ func (s *WorkflowContractService) List(ctx context.Context, _ *pb.WorkflowContra
 
 	contracts, err := s.contractUseCase.List(ctx, currentOrg.ID, biz.WithProjectFilter(s.visibleProjects(ctx)))
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := make([]*pb.WorkflowContractItem, 0, len(contracts))
@@ -75,7 +75,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 
 	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetName())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if contract == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
@@ -89,7 +89,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 	// 2 - Get the contract version
 	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, contract.ID.String(), int(req.GetRevision()))
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if contractWithVersion == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
@@ -117,7 +117,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	// Check organization settings for contract creation restriction
 	org, err := s.orgUseCase.FindByID(ctx, currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// If setting is enabled, only org admins can create contracts (org-level or project-level)
@@ -147,7 +147,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 
 	if len(req.RawContract) != 0 {
 		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
 
@@ -165,7 +165,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		ProjectID:   projectID,
 	})
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.WorkflowContractServiceCreateResponse{Result: bizWorkFlowContractToPb(schema)}, nil
@@ -198,7 +198,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, contractName)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if contract == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
@@ -215,7 +215,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 	// Validate the contract policies if the raw contract is provided
 	if len(req.RawContract) != 0 {
 		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
 
@@ -225,7 +225,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 			RawSchema:   req.RawContract,
 		})
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := &pb.WorkflowContractServiceUpdateResponse_Result{
@@ -265,13 +265,13 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 	}
 
 	if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawSchema, token, batchPolicyNames, batchPolicyGroupNames); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Check if the contract already exists
 	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, contractName)
 	if err != nil && !biz.IsNotFound(err) {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	if contract != nil {
@@ -284,7 +284,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		if dryRun {
 			changed, err := s.contractUseCase.RevisionWouldChange(ctx, currentOrg.ID, contract.ID.String(), req.RawSchema)
 			if err != nil {
-				return nil, handleUseCaseErr(err, s.log)
+				return nil, handleUseCaseErr(ctx, err, s.log)
 			}
 
 			status := pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_UNCHANGED
@@ -306,7 +306,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 				RawSchema:   req.RawSchema,
 			})
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		status := pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_UNCHANGED
@@ -326,7 +326,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 	// Check organization settings for contract creation restriction
 	org, err := s.orgUseCase.FindByID(ctx, currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	if org.RestrictContractCreationToOrgAdmins {
@@ -357,7 +357,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		RawSchema:   req.RawSchema,
 	})
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.WorkflowContractServiceApplyResponse{
@@ -376,7 +376,7 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 
 	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetName())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if contract == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
@@ -386,7 +386,7 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	if err := s.contractUseCase.Delete(ctx, currentOrg.ID, contract.ID.String()); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.WorkflowContractServiceDeleteResponse{}, nil

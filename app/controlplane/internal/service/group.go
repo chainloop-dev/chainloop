@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ func (g *GroupService) Create(ctx context.Context, req *pb.GroupServiceCreateReq
 
 	gr, err := g.groupUseCase.Create(ctx, orgUUID, req.Name, req.Description, &userUUID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	return &pb.GroupServiceCreateResponse{
@@ -105,7 +105,7 @@ func (g *GroupService) Get(ctx context.Context, req *pb.GroupServiceGetRequest) 
 
 	gr, err := g.groupUseCase.Get(ctx, orgUUID, opts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	return &pb.GroupServiceGetResponse{
@@ -129,7 +129,7 @@ func (g *GroupService) List(ctx context.Context, req *pb.GroupServiceListRequest
 	// Initialize the pagination options, with default values
 	paginationOpts, err := initializePaginationOpts(req.GetPagination())
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	// Initialize the filters
@@ -149,7 +149,7 @@ func (g *GroupService) List(ctx context.Context, req *pb.GroupServiceListRequest
 
 	grs, count, err := g.groupUseCase.List(ctx, orgUUID, filters, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	// Convert the groups to protobuf messages
@@ -191,7 +191,7 @@ func (g *GroupService) Update(ctx context.Context, req *pb.GroupServiceUpdateReq
 		NewName:        req.NewName,
 	})
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	return &pb.GroupServiceUpdateResponse{
@@ -223,7 +223,7 @@ func (g *GroupService) Delete(ctx context.Context, req *pb.GroupServiceDeleteReq
 
 	err = g.groupUseCase.Delete(ctx, orgUUID, idReference)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	return &pb.GroupServiceDeleteResponse{}, nil
@@ -284,12 +284,12 @@ func (g *GroupService) ListMembers(ctx context.Context, req *pb.GroupServiceList
 	// Initialize the pagination options, with default values
 	paginationOpts, err := initializePaginationOpts(req.GetPagination())
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	grs, count, err := g.groupUseCase.ListMembers(ctx, orgUUID, opts, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	// Convert the group members to protobuf messages
@@ -347,7 +347,7 @@ func (g *GroupService) AddMember(ctx context.Context, req *pb.GroupServiceAddMem
 	// Call the business logic to add the member
 	_, err = g.groupUseCase.AddMemberToGroup(ctx, orgUUID, addOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	return &pb.GroupServiceAddMemberResponse{}, nil
@@ -397,7 +397,7 @@ func (g *GroupService) RemoveMember(ctx context.Context, req *pb.GroupServiceRem
 	// Call the business logic to remove the member
 	err = g.groupUseCase.RemoveMemberFromGroup(ctx, orgUUID, removeOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	return &pb.GroupServiceRemoveMemberResponse{}, nil
@@ -429,13 +429,13 @@ func (g *GroupService) ListPendingInvitations(ctx context.Context, req *pb.Group
 	// Initialize the pagination options, with default values
 	paginationOpts, err := initializePaginationOpts(req.GetPagination())
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	// Call the business logic to list pending invitations
 	invitations, count, err := g.groupUseCase.ListPendingInvitations(ctx, orgUUID, groupID, groupName, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	// Convert business objects to protobuf messages
@@ -502,7 +502,7 @@ func (g *GroupService) UpdateMemberMaintainerStatus(ctx context.Context, req *pb
 	// Call the business logic to update the member's maintainer status
 	err = g.groupUseCase.UpdateMemberMaintainerStatus(ctx, orgUUID, updateOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	return &pb.GroupServiceUpdateMemberMaintainerStatusResponse{}, nil
@@ -540,13 +540,13 @@ func (g *GroupService) ListProjects(ctx context.Context, req *pb.GroupServiceLis
 	// Initialize the pagination options, with default values
 	paginationOpts, err := initializePaginationOpts(req.GetPagination())
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	// Retrieve the list of project info
 	projectInfoList, count, err := g.groupUseCase.ListProjectsByGroup(ctx, orgUUID, groupOpts, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, g.log)
+		return nil, handleUseCaseErr(ctx, err, g.log)
 	}
 
 	// Convert the GroupProjectInfo to protobuf messages
@@ -613,7 +613,7 @@ func (g *GroupService) userHasPermissionOnGroupMembershipsWithPolicy(ctx context
 	// Resolve the group identifier to a valid group ID
 	resolvedGroupID, err := g.groupUseCase.ValidateGroupIdentifier(ctx, orgUUID, groupID, groupName)
 	if err != nil {
-		return handleUseCaseErr(err, g.log)
+		return handleUseCaseErr(ctx, err, g.log)
 	}
 
 	// Check the user's membership in the organization
@@ -622,7 +622,7 @@ func (g *GroupService) userHasPermissionOnGroupMembershipsWithPolicy(ctx context
 		if rm.ResourceType == authz.ResourceTypeGroup && rm.ResourceID == resolvedGroupID {
 			pass, err := g.authz.Enforce(ctx, string(rm.Role), policy)
 			if err != nil {
-				return handleUseCaseErr(err, g.log)
+				return handleUseCaseErr(ctx, err, g.log)
 			}
 			if pass {
 				return nil

@@ -35,7 +35,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
-	"github.com/getsentry/sentry-go"
+	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/go-kratos/kratos/v2/errors"
@@ -187,9 +187,12 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 
 func craftMiddleware(opts *Opts) []middleware.Middleware {
 	middlewares := []middleware.Middleware{
+		// Give each request its own Sentry hub before anything can report to Sentry
+		sentrycontext.NewSentryHub(),
 		recovery.Recovery(
-			recovery.WithHandler(func(_ context.Context, req, err interface{}) error {
-				sentry.CaptureMessage(fmt.Sprintf("%v", err))
+			recovery.WithHandler(func(ctx context.Context, _, err interface{}) error {
+				// The hub is set by NewSentryHub, so the panic carries the scope of its request
+				servicelogger.SentryHub(ctx).CaptureMessage(fmt.Sprintf("%v", err))
 				return errors.InternalServer("internal error", "there was an internal error")
 			}),
 		),

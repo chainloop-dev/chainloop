@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ func (s *SigningService) GenerateSigningCert(ctx context.Context, req *v1.Genera
 
 	certs, err := s.signing.CreateSigningCert(ctx, ra.OrgID, req.GetCertificateSigningRequest())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &v1.GenerateSigningCertResponse{Chain: &v1.CertificateChain{Certificates: certs}}, nil
@@ -57,7 +57,7 @@ func (s *SigningService) GenerateSigningCert(ctx context.Context, req *v1.Genera
 func (s *SigningService) GetTrustedRoot(ctx context.Context, _ *v1.GetTrustedRootRequest) (*v1.GetTrustedRootResponse, error) {
 	tr, err := s.signing.GetTrustedRoot(ctx)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 	resp := &v1.GetTrustedRootResponse{Keys: make(map[string]*v1.CertificateChain), TimestampAuthorities: make(map[string]*v1.CertificateChain)}
 	for k, v := range tr.Keys {

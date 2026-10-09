@@ -65,7 +65,7 @@ func (s *AttestationStateService) Initialized(ctx context.Context, req *cpAPI.At
 
 	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC on the project
@@ -75,7 +75,7 @@ func (s *AttestationStateService) Initialized(ctx context.Context, req *cpAPI.At
 
 	initialized, err := s.attestationStateUseCase.Initialized(ctx, wf.ID.String(), req.WorkflowRunId)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceInitializedResponse{
@@ -92,7 +92,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 
 	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC on the project
@@ -111,7 +111,7 @@ func (s *AttestationStateService) Save(ctx context.Context, req *cpAPI.Attestati
 			return nil, cpAPI.ErrorAttestationStateErrorConflict("saving attestation: %s", err.Error())
 		}
 
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceSaveResponse{Digest: digest}, nil
@@ -125,7 +125,7 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 
 	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC on the project
@@ -140,7 +140,7 @@ func (s *AttestationStateService) Read(ctx context.Context, req *cpAPI.Attestati
 
 	state, err := s.attestationStateUseCase.Read(ctx, wf.ID.String(), req.WorkflowRunId, encryptionPassphrase)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceReadResponse{
@@ -159,7 +159,7 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 
 	wf, err := s.findWorkflowFromTokenOrRunID(ctx, robotAccount.OrgID, robotAccount.WorkflowID, req.GetWorkflowRunId())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC on the project
@@ -168,7 +168,7 @@ func (s *AttestationStateService) Reset(ctx context.Context, req *cpAPI.Attestat
 	}
 
 	if err := s.attestationStateUseCase.Reset(ctx, wf.ID.String(), req.WorkflowRunId); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &cpAPI.AttestationStateServiceResetResponse{}, nil

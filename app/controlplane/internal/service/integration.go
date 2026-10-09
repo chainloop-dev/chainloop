@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ func (s *IntegrationsService) Register(ctx context.Context, req *pb.Integrations
 			return nil, errors.BadRequest("wrong validation", err.Error())
 		}
 
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.IntegrationsServiceRegisterResponse{Result: bizIntegrationToPb(i)}, nil
@@ -114,7 +114,7 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())
 		}
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// lookup the integration
@@ -128,7 +128,7 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 		if biz.IsNotFound(err) {
 			return nil, errors.NotFound("not found", err.Error())
 		}
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC if needed
@@ -149,12 +149,12 @@ func (s *IntegrationsService) Attach(ctx context.Context, req *pb.IntegrationsSe
 			return nil, errors.BadRequest("wrong validation", err.Error())
 		}
 
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result, err := s.bizIntegrationAttachmentToPb(ctx, res, org.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.IntegrationsServiceAttachResponse{Result: result}, nil
@@ -168,7 +168,7 @@ func (s *IntegrationsService) ListRegistrations(ctx context.Context, _ *pb.Integ
 
 	integrations, err := s.integrationUC.List(ctx, org.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := make([]*pb.RegisteredIntegrationItem, 0, len(integrations))
@@ -187,7 +187,7 @@ func (s *IntegrationsService) DescribeRegistration(ctx context.Context, req *pb.
 
 	i, err := s.integrationUC.FindByNameInOrg(ctx, org.ID, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if i == nil {
 		return nil, errors.NotFound("not found", "integration not found")
 	}
@@ -203,7 +203,7 @@ func (s *IntegrationsService) Deregister(ctx context.Context, req *pb.Integratio
 
 	integration, err := s.integrationUC.FindByNameInOrg(ctx, org.ID, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if integration == nil {
 		return nil, errors.NotFound("not found", "integration not found")
 	}
@@ -212,7 +212,7 @@ func (s *IntegrationsService) Deregister(ctx context.Context, req *pb.Integratio
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.IntegrationsServiceDeregisterResponse{}, nil
@@ -232,7 +232,7 @@ func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListA
 			if biz.IsNotFound(err) {
 				return nil, errors.NotFound("not found", err.Error())
 			}
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 		opts.WorkflowID = &wf.ID
 	}
@@ -242,14 +242,14 @@ func (s *IntegrationsService) ListAttachments(ctx context.Context, req *pb.ListA
 
 	integrations, err := s.integrationUC.ListAttachments(ctx, org.ID, opts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := make([]*pb.IntegrationAttachmentItem, 0, len(integrations))
 	for _, i := range integrations {
 		r, err := s.bizIntegrationAttachmentToPb(ctx, i.IntegrationAttachment, org.ID)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 		result = append(result, r)
 	}
@@ -275,17 +275,17 @@ func (s *IntegrationsService) Detach(ctx context.Context, req *pb.IntegrationsSe
 
 	att, err := s.integrationUC.GetAttachment(ctx, orgID, attID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	wf, err := s.workflowUC.FindByIDInOrg(ctx, org.ID, att.WorkflowID.String())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Apply RBAC
 	if err = s.authorizeResource(ctx, authz.PolicyAttachedIntegrationDetach, authz.ResourceTypeProject, wf.ProjectID); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	if err := s.integrationUC.Detach(ctx, org.ID, req.Id); err != nil {
@@ -293,7 +293,7 @@ func (s *IntegrationsService) Detach(ctx context.Context, req *pb.IntegrationsSe
 			return nil, errors.NotFound("not found", err.Error())
 		}
 
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.IntegrationsServiceDetachResponse{}, nil
