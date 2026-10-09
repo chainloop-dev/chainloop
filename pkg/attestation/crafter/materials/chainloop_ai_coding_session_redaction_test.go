@@ -187,6 +187,8 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 	const (
 		withSecrets = "./aicodingsession/testdata/session-with-secrets.json"
 		clean       = "./testdata/ai-coding-session.json"
+		// The rules that match the secrets in withSecrets.
+		withSecretsRules = "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat"
 	)
 
 	testCases := []struct {
@@ -195,16 +197,14 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 		skipRedaction bool
 		inlineBackend bool
 		skipUpload    bool
-		wantRedacted  bool
 		wantCount     string
 		wantRules     string
 	}{
 		{
-			name:         "secrets are stripped before upload",
-			filePath:     withSecrets,
-			wantRedacted: true,
-			wantCount:    "7",
-			wantRules:    "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat",
+			name:      "secrets are stripped before upload",
+			filePath:  withSecrets,
+			wantCount: "7",
+			wantRules: withSecretsRules,
 		},
 		{
 			// An inline backend embeds the content into the attestation itself,
@@ -212,19 +212,17 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			name:          "an inline backend embeds the redacted copy",
 			filePath:      withSecrets,
 			inlineBackend: true,
-			wantRedacted:  true,
 			wantCount:     "7",
-			wantRules:     "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat",
+			wantRules:     withSecretsRules,
 		},
 		{
 			// Neither uploaded nor stored inline, so the sanitized copy exists
 			// nowhere but in what the crafter hands back.
-			name:         "skipping the upload still yields the redacted copy",
-			filePath:     withSecrets,
-			skipUpload:   true,
-			wantRedacted: true,
-			wantCount:    "7",
-			wantRules:    "anthropic-api-key,aws-access-token,aws-secret-access-key,github-pat",
+			name:       "skipping the upload still yields the redacted copy",
+			filePath:   withSecrets,
+			skipUpload: true,
+			wantCount:  "7",
+			wantRules:  withSecretsRules,
 		},
 		{
 			name:          "the opt-out is recorded in the attestation",
@@ -232,8 +230,11 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			skipRedaction: true,
 		},
 		{
-			name:     "a clean session is not marked as redacted",
-			filePath: clean,
+			// The scan ran and found nothing: the material says so, so that a
+			// clean verdict is distinguishable from a session never scanned.
+			name:      "a clean session is marked as scanned with nothing replaced",
+			filePath:  clean,
+			wantCount: "0",
 		},
 	}
 
@@ -281,39 +282,38 @@ func TestChainloopAICodingSessionCrafterRedaction(t *testing.T) {
 			assert.Equal(t, tc.wantCount, got.Annotations[api.AnnotationMaterialRedactionCount])
 			assert.Equal(t, tc.wantRules, got.Annotations[api.AnnotationMaterialRedactionRules])
 
-			switch {
-			case tc.wantRedacted:
-				assert.Equal(t, "true", got.Annotations[api.AnnotationMaterialRedacted])
-				// The digest describes the redacted artifact, not the source file.
-				assert.NotEqual(t, sha256Digest(string(original)), got.GetArtifact().Digest)
-
-				// The sanitized copy is what policies must be handed. Comparing
-				// it against the recorded digest is the strongest available form
-				// of "policies see exactly what was stored": it holds even for
-				// skip-upload, where the stored bytes are kept nowhere else.
-				require.NotNil(t, content, "a redacted session must hand back its sanitized copy")
-				assert.Equal(t, sha256Digest(string(content)), got.GetArtifact().Digest)
-				assert.NotContains(t, string(content), awsKey)
-				assert.Contains(t, string(content), "[CHAINLOOP_TRACE_REDACTED:aws-access-token]")
-
-				if stored != nil {
-					assert.Equal(t, string(stored), string(content))
-					assert.NotContains(t, string(stored), awsKey)
-					assert.Contains(t, string(stored), "[CHAINLOOP_TRACE_REDACTED:aws-access-token]")
-				}
-			case tc.skipRedaction:
+			if tc.skipRedaction {
 				assert.Equal(t, "true", got.Annotations[api.AnnotationMaterialRedactionSkipped])
+				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedacted)
 				assert.Contains(t, string(stored), awsKey)
 				assert.Equal(t, sha256Digest(string(original)), got.GetArtifact().Digest)
 				// Nothing was transformed, so nothing is held in memory for the
 				// policy engine: it reads the file, which is what was stored.
 				assert.Nil(t, content)
-			default:
-				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedacted)
+			} else {
+				// Marked redacted whenever the scan ran, even when it found nothing.
+				assert.Equal(t, "true", got.Annotations[api.AnnotationMaterialRedacted])
 				assert.NotContains(t, got.Annotations, api.AnnotationMaterialRedactionSkipped)
-				// Nothing to redact, so the digest stays reproducible from the file.
-				assert.Equal(t, sha256Digest(string(original)), got.GetArtifact().Digest)
-				assert.Nil(t, content)
+
+				// The scanned copy is what policies must be handed, since a
+				// material marked redacted fails closed without it. Comparing it
+				// against the recorded digest is the strongest available form of
+				// "policies see exactly what was stored": it holds even for
+				// skip-upload, where the stored bytes are kept nowhere else.
+				require.NotNil(t, content, "a scanned session must hand back the scanned copy")
+				assert.Equal(t, sha256Digest(string(content)), got.GetArtifact().Digest)
+				if stored != nil {
+					assert.Equal(t, string(stored), string(content))
+				}
+
+				if tc.wantCount == "0" {
+					// Nothing was replaced, so the stored artifact is the file
+					// itself and the digest stays reproducible from it.
+					assert.Equal(t, string(original), string(content))
+				} else {
+					assert.NotContains(t, string(content), awsKey)
+					assert.Contains(t, string(content), "[CHAINLOOP_TRACE_REDACTED:aws-access-token]")
+				}
 			}
 
 			// Redaction must never touch the source file.

@@ -20,6 +20,8 @@ import (
 	"archive/zip"
 	"compress/gzip"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"maps"
 	"os"
@@ -809,6 +811,42 @@ func (s *crafterSuite) TestAddMaterialRedactedSessionIsWhatPoliciesSee() {
 	onDisk, err := os.ReadFile(sessionPath)
 	require.NoError(s.T(), err)
 	assert.Contains(s.T(), string(onDisk), githubPAT)
+}
+
+// TestAddMaterialCleanSessionIsMarkedScanned covers a session the scan found
+// nothing in. It is marked redacted, so that policies can tell it apart from a
+// session that was never scanned, and that marker must not make evaluation fail
+// closed: the crafter hands the scanned bytes to the policy engine.
+func (s *crafterSuite) TestAddMaterialCleanSessionIsMarkedScanned() {
+	sessionPath := materializeSessionFixture(s.T(), "./materials/testdata/ai-coding-session.json")
+	onDisk, err := os.ReadFile(sessionPath)
+	require.NoError(s.T(), err)
+
+	uploader := mUploader.NewUploader(s.T())
+	uploader.On("Upload", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+		Return(&casclient.UpDownStatus{Digest: "deadbeef", Filename: "ai-coding-session.json"}, nil)
+	backend := &casclient.CASBackend{Uploader: uploader}
+
+	c, err := newInitializedCrafter(s.T(), "testdata/contracts/with_ai_session_policy.yaml",
+		&v1.WorkflowMetadata{}, false, "", runners.NewGeneric())
+	require.NoError(s.T(), err)
+
+	m, err := c.AddMaterialContractFree(context.Background(), "",
+		schemaapi.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION.String(),
+		"ai-session", sessionPath, backend, nil)
+	require.NoError(s.T(), err)
+
+	assert.Equal(s.T(), v1.AnnotationValueTrue, m.Annotations[v1.AnnotationMaterialRedacted])
+	assert.Equal(s.T(), "0", m.Annotations[v1.AnnotationMaterialRedactionCount])
+	assert.NotContains(s.T(), m.Annotations, v1.AnnotationMaterialRedactionSkipped)
+
+	// Nothing was replaced, so the digest is still that of the source file.
+	sum := sha256.Sum256(onDisk)
+	assert.Equal(s.T(), "sha256:"+hex.EncodeToString(sum[:]), m.GetArtifact().GetDigest())
+
+	evaluations := c.CraftingState.Attestation.PolicyEvaluations
+	require.Len(s.T(), evaluations, 1)
+	assert.Empty(s.T(), evaluations[0].Violations)
 }
 
 // materializeSessionFixture writes a copy of an AI coding session fixture with

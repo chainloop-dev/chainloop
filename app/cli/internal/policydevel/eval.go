@@ -100,7 +100,8 @@ func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
 // crafter produced, rather than replacing them.
 //
 // The crafter's annotations carry more than metadata: chainloop.material.redacted
-// is how a policy learns that secrets were found and stripped out, and it is what
+// is how a policy learns that the content was scanned for secrets and any found
+// were stripped out, and it is what
 // makes content resolution fail closed rather than fall back to the un-redacted
 // file on disk. Dropping it would hide the redaction from the policy and re-open
 // the path this exists to close.
