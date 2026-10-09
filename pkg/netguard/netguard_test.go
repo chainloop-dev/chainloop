@@ -17,6 +17,7 @@ package netguard
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"net"
 	"net/http"
@@ -82,6 +83,7 @@ func TestIsPubliclyRoutable(t *testing.T) {
 		// IPv6 transition ranges embed an IPv4 address, so they are rejected
 		// wholesale rather than unwrapped.
 		{name: "NAT64", ip: "64:ff9b::a00:1", want: false},
+		{name: "local-use NAT64", ip: "64:ff9b:1::a00:1", want: false},
 		{name: "Teredo", ip: "2001::1", want: false},
 		{name: "6to4", ip: "2002::1", want: false},
 	}
@@ -213,6 +215,52 @@ func TestPublicOnlyDialContextChangingDNSAnswer(t *testing.T) {
 	require.ErrorIs(t, err, ErrBlockedTarget)
 
 	assert.Equal(t, []string{"8.8.8.8:443"}, dialed)
+}
+
+// A transport may carry its own TLS dialers, which net/http uses for https
+// requests in place of DialContext. A restricted transport must not keep any
+// of them, or https destinations would go unchecked.
+func TestRestrictTransportDropsTLSDialers(t *testing.T) {
+	var requests int
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	// Ignores the address it is given and connects to the test server
+	dialTLS := func(ctx context.Context, network, _ string) (net.Conn, error) {
+		dialer := &tls.Dialer{Config: &tls.Config{InsecureSkipVerify: true}} // #nosec G402 -- test server
+		return dialer.DialContext(ctx, network, server.Listener.Addr().String())
+	}
+
+	testCases := []struct {
+		name      string
+		transport func() *http.Transport
+	}{
+		{name: "DialTLSContext", transport: func() *http.Transport {
+			return &http.Transport{DialTLSContext: dialTLS}
+		}},
+		{name: "DialTLS", transport: func() *http.Transport {
+			return &http.Transport{DialTLS: func(network, addr string) (net.Conn, error) { //nolint:staticcheck // the deprecated field is still honored
+				return dialTLS(context.Background(), network, addr)
+			}}
+		}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Positive control: the custom dialer reaches the server
+			resp, err := (&http.Client{Transport: tc.transport()}).Get(server.URL)
+			require.NoError(t, err)
+			resp.Body.Close()
+
+			requests = 0
+			_, err = (&http.Client{Transport: RestrictTransport(tc.transport())}).Get(server.URL)
+			require.ErrorIs(t, err, ErrBlockedTarget)
+			assert.Zero(t, requests, "a blocked destination must not be reached")
+		})
+	}
 }
 
 func TestRestrictTransport(t *testing.T) {

@@ -165,6 +165,69 @@ func (s *testSuite) TestPublicTargetsOnlyRemoteLoaders() {
 	}
 }
 
+// A group that cannot be fetched because its destination is blocked must fail
+// the evaluation rather than be skipped, so the option fails closed.
+func (s *testSuite) TestPublicTargetsOnlyGroupStatementFailsClosed() {
+	server, requests := s.countingServer(httptest.NewServer, map[string]string{
+		"/group.yaml": s.readTestdata("testdata/policy_group.yaml"),
+	})
+	groups := []*v12.PolicyGroupAttachment{{Ref: server.URL + "/group.yaml"}}
+
+	cases := []struct {
+		name       string
+		publicOnly bool
+	}{
+		{name: "group statement evaluation reaches a private target by default"},
+		{name: "group statement evaluation fails on a blocked target", publicOnly: true},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			var opts []PolicyVerifierOption
+			if tc.publicOnly {
+				opts = append(opts, WithPublicTargetsOnly())
+			}
+			requests.Store(0)
+
+			pgv := NewPolicyGroupVerifier(groups, nil, nil, &s.logger, opts...)
+			_, err := pgv.VerifyStatement(context.TODO(), loadStatement("testdata/statement.json", &s.Suite))
+
+			if tc.publicOnly {
+				s.ErrorIs(err, netguard.ErrBlockedTarget)
+				s.Zero(requests.Load(), "a private target must not be reached")
+				return
+			}
+
+			s.NoError(err)
+			s.Equal(int32(1), requests.Load())
+		})
+	}
+}
+
+// Remote references can carry credentials in their query string, such as
+// signed URLs, so fetch errors must not echo them.
+func (s *testSuite) TestFetchRemoteErrorsOmitURL() {
+	const secret = "s3cr3t-token"
+	server, _ := s.countingServer(httptest.NewServer, nil)
+	ref := server.URL + "/missing.yaml?token=" + secret
+
+	cases := []struct {
+		name   string
+		client *http.Client
+	}{
+		{name: "non-2xx response"},
+		{name: "blocked destination", client: netguard.NewHTTPClient(0)},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			_, err := fetchRemote(tc.client, ref)
+			s.Require().Error(err)
+			s.NotContains(err.Error(), secret)
+		})
+	}
+}
+
 func (s *testSuite) TestPublicTargetsOnlyScriptFetch() {
 	server, requests := s.countingServer(httptest.NewTLSServer, map[string]string{
 		"/policy.rego": "package main",

@@ -18,6 +18,7 @@ package policies
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -156,6 +157,7 @@ func (l *HTTPSLoader) Load(_ context.Context, attachment *v1.PolicyAttachment) (
 
 // fetchRemote reads the body of a GET request to ref, sent with client, or
 // http.DefaultClient when it is nil. Responses other than 2xx are refused.
+// Errors leave out ref, which may carry credentials in its query string.
 func fetchRemote(client *http.Client, ref string) ([]byte, error) {
 	if client == nil {
 		client = http.DefaultClient
@@ -164,12 +166,17 @@ func fetchRemote(client *http.Client, ref string) ([]byte, error) {
 	// #nosec G107
 	resp, err := client.Get(ref)
 	if err != nil {
+		// url.Error prefixes the full URL to the underlying error
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) {
+			err = urlErr.Err
+		}
 		return nil, fmt.Errorf("requesting remote policy: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("requesting remote policy %s: server returned HTTP %d", ref, resp.StatusCode)
+		return nil, fmt.Errorf("requesting remote policy: server returned HTTP %d", resp.StatusCode)
 	}
 
 	raw, err := io.ReadAll(resp.Body)

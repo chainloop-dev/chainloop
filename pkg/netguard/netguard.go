@@ -58,10 +58,13 @@ func RestrictTransport(t *http.Transport) *http.Transport {
 	}
 
 	// The transport's own dialer is replaced rather than wrapped, since it may
-	// ignore the address it is given and connect somewhere else entirely.
+	// ignore the address it is given and connect somewhere else entirely. Its
+	// TLS dialers are dropped too: net/http prefers them over DialContext for
+	// https requests, so they would bypass the check.
 	dialer := &net.Dialer{Timeout: dialTimeout, KeepAlive: dialKeepAlive}
 	t.DialContext = PublicOnlyDialContext(net.DefaultResolver.LookupIPAddr, dialer.DialContext)
 	t.DialTLSContext = nil
+	t.DialTLS = nil //nolint:staticcheck // deprecated, but still honored by net/http
 	t.Proxy = nil
 
 	return t
@@ -139,6 +142,7 @@ var blockedNets = []*net.IPNet{
 	mustParseCIDR("240.0.0.0/4"),     // RFC 1112 reserved
 	mustParseCIDR("::/96"),           // RFC 4291 IPv4-compatible, deprecated
 	mustParseCIDR("64:ff9b::/96"),    // RFC 6052 NAT64
+	mustParseCIDR("64:ff9b:1::/48"),  // RFC 8215 local-use NAT64
 	mustParseCIDR("100::/64"),        // RFC 6666 discard-only
 	mustParseCIDR("2001::/32"),       // RFC 4380 Teredo
 	mustParseCIDR("2001:2::/48"),     // RFC 5180 benchmarking

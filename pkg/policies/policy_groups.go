@@ -26,6 +26,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
+	"github.com/chainloop-dev/chainloop/pkg/netguard"
 	"github.com/chainloop-dev/chainloop/pkg/templates"
 	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
@@ -155,6 +156,11 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			HTTPClient: pgv.httpClient,
 		})
 		if err != nil {
+			// A group refused by the network guard is not a schema issue, and
+			// skipping it would let the evaluation pass without the group
+			if errors.Is(err, netguard.ErrBlockedTarget) {
+				return nil, NewPolicyError(err)
+			}
 			// Temporarily skip if policy groups still use old schema
 			// TODO: remove this check in next release
 			pgv.logger.Warn().Msgf("policy group '%s' skipped since it's not found or it might use an old schema version", groupAtt.GetRef())
