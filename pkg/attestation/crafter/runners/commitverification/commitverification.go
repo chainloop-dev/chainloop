@@ -15,6 +15,8 @@
 
 package commitverification
 
+import "fmt"
+
 // VerificationStatus represents the status of a commit signature verification
 type VerificationStatus int
 
@@ -31,18 +33,60 @@ const (
 	VerificationStatusNotApplicable
 )
 
+// verificationStatusNames are the text forms of the statuses. They are the same
+// as the status names in the attestation.
+var verificationStatusNames = map[VerificationStatus]string{
+	VerificationStatusUnspecified:   "unspecified",
+	VerificationStatusVerified:      "verified",
+	VerificationStatusUnverified:    "unverified",
+	VerificationStatusUnavailable:   "unavailable",
+	VerificationStatusNotApplicable: "not_applicable",
+}
+
+// String returns the text form of the status.
+func (s VerificationStatus) String() string {
+	if name, ok := verificationStatusNames[s]; ok {
+		return name
+	}
+
+	return fmt.Sprintf("VerificationStatus(%d)", int(s))
+}
+
+// MarshalText encodes the status as its text form, so that JSON carries a name
+// and not a number that depends on the order of the constants.
+func (s VerificationStatus) MarshalText() ([]byte, error) {
+	name, ok := verificationStatusNames[s]
+	if !ok {
+		return nil, fmt.Errorf("unknown verification status %d", int(s))
+	}
+
+	return []byte(name), nil
+}
+
+// UnmarshalText decodes the text form of a status.
+func (s *VerificationStatus) UnmarshalText(text []byte) error {
+	for status, name := range verificationStatusNames {
+		if name == string(text) {
+			*s = status
+			return nil
+		}
+	}
+
+	return fmt.Errorf("unknown verification status %q", string(text))
+}
+
 // CommitVerification represents the result of a commit signature verification
 type CommitVerification struct {
 	// Whether verification was attempted
-	Attempted bool
+	Attempted bool `json:"attempted"`
 	// Verification status
-	Status VerificationStatus
+	Status VerificationStatus `json:"status"`
 	// Human-readable reason for the status
-	Reason string
+	Reason string `json:"reason,omitempty"`
 	// Platform that performed the verification (e.g., "github", "gitlab")
-	Platform string
+	Platform string `json:"platform,omitempty"`
 	// Optional: The signing key ID if verified
-	KeyID string
+	KeyID string `json:"key_id,omitempty"`
 	// Optional: The signature algorithm used
-	SignatureAlgorithm string
+	SignatureAlgorithm string `json:"signature_algorithm,omitempty"`
 }
