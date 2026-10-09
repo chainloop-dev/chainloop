@@ -97,7 +97,9 @@ const (
 	SpecRoleTask = "task"
 	// SpecRoleSpec is a document that defines what to build.
 	SpecRoleSpec = "spec"
-	// SpecRolePlan is a plan for the work that the user approved.
+	// SpecRolePlan is a plan for the work from an external source, or one
+	// that the user approved in the plan mode of the agent. An agreement in
+	// the chat is not a plan.
 	SpecRolePlan = "plan"
 	// SpecRoleReference is supporting material: a screenshot, a mockup, an
 	// example, or a background document.

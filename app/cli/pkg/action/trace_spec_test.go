@@ -69,10 +69,16 @@ func TestSpecCaptureInstruction(t *testing.T) {
 		{name: "the text, not a link", want: "Not a link to it, not your summary of it", why: "a link is worthless as evidence once the source moves"},
 		{name: "one file per source", want: "One file per source", why: "several sources become several entries, not one blob"},
 		{name: "an image file is copied", want: "copy the file itself into the folder", why: "an image the agent can reach as a file is stored as the image, not as a description"},
-		{name: "a pasted image is not captured", want: "Do not capture an image pasted into this conversation", why: "the agent cannot copy the bytes of a pasted image, and a description of it is not the image"},
-		{name: "an approved plan", want: "a plan approved in this session", why: "a plan the session wrote and the user approved is what the work ran against"},
+		{name: "a pasted image is not captured", want: "Do not capture an image pasted into this conversation", why: "the transcript holds a pasted image, and a description of it is not the image"},
+		{name: "a pasted image file is still pasted", want: "also when you have a file path for it", why: "some agents save a pasted image to a file and give the agent its path (issue-3580)"},
+		{name: "a plan is defined", want: "plan: a plan for the work that comes from an external source (a ticket, a design document, a spec file) or that the user approved in the plan mode of your agent", why: "an agent left to define a plan took a chat agreement for one (issue-3580)"},
+		{name: "a source exists outside the chat", want: "Capture only a source that exists outside the chat", why: "an agreement in chat is in the transcript, and a copy of it is text the agent wrote (issue-3580)"},
+		{name: "a chat agreement is not a plan", want: "a conversation is not a plan", why: "the user approving a change in chat does not make it a plan"},
+		{name: "a chat follow-up is no change", want: "A reply in the chat does not change a source", why: "rewriting a capture after each follow-up turns it into a log of the chat (issue-3580)"},
+		{name: "the way out when unsure", want: "When you are not sure, capture nothing", why: "the stakes must not push the agent into a capture it doubts"},
+		{name: "the user is told", want: "tell the user in one line", why: "a capture the user finds only in the tool calls looks hidden (issue-3580)"},
 		{name: "no request prompt", want: "the user's request prompt is not a spec", why: "the transcript already holds the prompt, so a copy of it adds nothing"},
-		{name: "a pasted spec still counts", want: "Spec text that the user pastes", why: "a ticket or design document pasted into the chat is still a spec"},
+		{name: "a pasted spec still counts", want: "spec text that the user pastes", why: "a ticket or design document pasted into the chat is still a spec"},
 		{name: "a changed spec", want: "overwrite its file with the current content", why: "the push records what is on disk, so the final version replaces its drafts"},
 		{name: "a spec the session writes", want: "a design note outside the repository", why: "a plan the session keeps outside the working tree is a spec that changes"},
 		{name: "each push", want: "Each push of this session records them", why: "the files stay for the whole session, and every push records them"},
@@ -120,6 +126,8 @@ func TestSpecCaptureInstruction(t *testing.T) {
 	// The captures are evidence, not bookkeeping to keep quiet about
 	// (spec issue-3561, R-006).
 	assert.NotContains(t, got, "no need to mention")
+	// An agreement in chat is not an approved plan (issue-3580).
+	assert.NotContains(t, got, "a plan approved in this session")
 }
 
 // TestSpecCaptureReminder pins the reminder given at each user prompt. It goes
@@ -138,15 +146,19 @@ func TestSpecCaptureReminder(t *testing.T) {
 		{name: "the destination", want: specDir, why: "a resumed session may not hold the session-start instruction any more"},
 		{name: "a new spec", want: "pasted or gave a new spec", why: "a spec given after the start must reach the evidence"},
 		{name: "an image file", want: "image as a file path or a URL", why: "an image the agent can reach is copied as it is"},
-		{name: "an approved plan", want: "approved a plan", why: "the plan is what the work ran against"},
+		{name: "a pasted image file is still pasted", want: "a pasted image, also one saved to a file", why: "some agents save a pasted image to a file and give the agent its path (issue-3580)"},
+		{name: "a plan from plan mode", want: "approved a plan in plan mode", why: "the plan is what the work ran against"},
 		{name: "kind text for a plan", want: "kind text", why: "an approved plan has no other kind"},
+		{name: "a conversation is not a plan", want: "A conversation is not a plan", why: "an agreement in chat is in the transcript already (issue-3580)"},
+		{name: "a chat follow-up is no change", want: "a reply in the chat is not a change", why: "rewriting a capture after each follow-up turns it into a log of the chat (issue-3580)"},
+		{name: "the user is told", want: "tell the user in one line", why: "a capture the user finds only in the tool calls looks hidden (issue-3580)"},
 		{name: "a changed spec", want: "overwrite its file with the current full text in the same turn", why: "the push cannot read a remote source, so the agent updates it at the change"},
 		{name: "a local path as the source", want: "set uri to its path", why: "the push reads a local file from its path"},
 		{name: "the placeholder", want: spec.Placeholder, why: "the push fills the body of a local file"},
 		{name: "the stakes", want: "attested evidence", why: "a capture read as bookkeeping gets skipped (spec issue-3561, R-006)"},
 		{name: "a check before a push", want: "before a push", why: "nothing else checks a remote capture"},
 		{name: "no request prompt", want: "Do not capture the user's request prompt", why: "the transcript already holds it"},
-		{name: "the way out", want: "do nothing", why: "most turns have nothing to capture"},
+		{name: "the way out", want: "If no case applies or you are not sure, capture nothing", why: "most turns have nothing to capture, and the stakes must not push the agent into a capture it doubts"},
 		{name: "the tool to use", want: "file-writing tool", why: "a shell heredoc is refused in a worktree-isolated session"},
 		{name: "an image keeps no header", want: "Copy an image file as it is, with no frontmatter", why: "a header written into an image file breaks the image"},
 	}
@@ -161,6 +173,9 @@ func TestSpecCaptureReminder(t *testing.T) {
 	// the full instruction.
 	assert.Less(t, len(got), len(specCaptureInstruction(specDir))/2, "the reminder must stay short")
 	assert.LessOrEqual(t, strings.Count(got, "\n"), 8, "the reminder must stay a few lines")
+
+	// The capture is not hidden from the user (issue-3580).
+	assert.NotContains(t, got, "say nothing")
 }
 
 func TestSessionSpecReminder(t *testing.T) {
