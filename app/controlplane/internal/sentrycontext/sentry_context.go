@@ -33,29 +33,55 @@ import (
 // defaultTracingHeaders is a list of headers that are used to extract tracing information.
 var defaultTracingHeaders = []string{"X-Request-ID", "X-Correlation-ID", "X-Trace-ID"}
 
+// Sentry tags that identify the organization of the current request
+const (
+	tagOrgID   = "org.id"
+	tagOrgName = "org.name"
+)
+
+// NewSentryHub returns a middleware that gives each request its own Sentry hub on its context,
+// so concurrent requests do not share a scope. Put it before any middleware that reports to Sentry.
+func NewSentryHub() middleware.Middleware {
+	return func(handler middleware.Handler) middleware.Handler {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			return handler(sentry.SetHubOnContext(ctx, sentry.CurrentHub().Clone()), req)
+		}
+	}
+}
+
 // NewSentryContext returns a middleware that adds context to Sentry for the current request
-// that will be sent along with the error if one occurs
+// that will be sent along with the error if one occurs.
+// It sets the scope of the request hub that NewSentryHub added, and adds that hub if it is missing.
 func NewSentryContext() middleware.Middleware {
 	return func(handler middleware.Handler) middleware.Handler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			addSentryContext(ctx, req)
+			hub := sentry.GetHubFromContext(ctx)
+			if hub == nil {
+				hub = sentry.CurrentHub().Clone()
+				ctx = sentry.SetHubOnContext(ctx, hub)
+			}
+
+			configureScope(ctx, hub.Scope(), req)
 			return handler(ctx, req)
 		}
 	}
 }
 
-// addSentryContext adds context to Sentry for the current request
-func addSentryContext(ctx context.Context, req interface{}) {
+// configureScope sets the account and request information of the current request on the scope
+func configureScope(ctx context.Context, scope *sentry.Scope, req interface{}) {
 	org := entities.CurrentOrg(ctx)
 	user := entities.CurrentUser(ctx)
 	apiToken := entities.CurrentAPIToken(ctx)
 	role := usercontext.CurrentAuthzSubject(ctx)
 
-	// ConfigureScope allows to set context that will be sent along with the error if one occurs
-	sentry.ConfigureScope(func(scope *sentry.Scope) {
-		scope.SetContext("Account", buildAuthContext(user, apiToken, org, role))
-		scope.SetContext("Request", buildRequestContext(ctx, req))
-	})
+	scope.SetContext("Account", buildAuthContext(user, apiToken, org, role))
+	scope.SetContext("Request", buildRequestContext(ctx, req))
+
+	// Tags make the organization searchable in Sentry. They do not take part in issue grouping.
+	if org != nil {
+		scope.SetTag(tagOrgID, org.ID)
+		scope.SetTag(tagOrgName, org.Name)
+	}
 }
 
 // buildAuthContext creates a map of the user and membership information

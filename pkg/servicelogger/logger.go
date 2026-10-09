@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package servicelogger
 
 import (
+	"context"
 	"io"
 
 	"go.uber.org/zap"
@@ -51,14 +52,25 @@ func InitZapLogger(env string) (log.Logger, error) {
 }
 
 // LogAndMaskErr records an error but masks it with a generic one
-// to avoid leaking sensitive information
-func LogAndMaskErr(in error, logger *log.Helper) error {
+// to avoid leaking sensitive information.
+// The error is reported on the Sentry hub of ctx when the request has one, so it carries
+// the scope of its own request, and on the global hub otherwise.
+func LogAndMaskErr(ctx context.Context, in error, logger *log.Helper) error {
 	if logger != nil {
 		logger.Error(in)
 	}
 
-	sentry.CaptureException(in)
+	SentryHub(ctx).CaptureException(in)
 	return errors.InternalServer("internal error", "server error")
+}
+
+// SentryHub returns the Sentry hub of the request in ctx, or the global hub when ctx has none
+func SentryHub(ctx context.Context) *sentry.Hub {
+	if hub := sentry.GetHubFromContext(ctx); hub != nil {
+		return hub
+	}
+
+	return sentry.CurrentHub()
 }
 
 // ScopedHelper returns a new helper with information about the current component

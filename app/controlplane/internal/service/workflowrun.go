@@ -243,7 +243,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 	if req.GetWorkflowName() != "" && req.GetProjectName() != "" {
 		wf, err := s.workflowUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetProjectName(), req.GetWorkflowName())
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		} else if wf == nil {
 			return nil, errors.NotFound("not found", "workflow not found")
 		}
@@ -254,7 +254,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 		// by project name only
 		pID, err := s.validateAndGetProjectID(ctx, currentOrg.ID, req.GetProjectName(), visibleProjectIDs)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		// Override the filter to only include this specific project
@@ -273,7 +273,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 
 		pv, err := s.projectVersionUseCase.FindByProjectAndVersion(ctx, projectID.String(), req.GetProjectVersionName())
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		filters.VersionID = &pv.ID
@@ -328,7 +328,7 @@ func (s *WorkflowRunService) List(ctx context.Context, req *pb.WorkflowRunServic
 
 	workflowRuns, nextCursor, err := s.wrUseCase.List(ctx, currentOrg.ID, filters, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := make([]*pb.WorkflowRunItem, 0, len(workflowRuns))
@@ -357,12 +357,12 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	case req.GetId() != "":
 		run, err = s.wrUseCase.GetByIDInOrg(ctx, currentOrg.ID, req.GetId())
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	case req.GetDigest() != "":
 		run, err = s.wrUseCase.GetByDigestInOrg(ctx, currentOrg.ID, req.GetDigest())
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	default:
 		return nil, errors.BadRequest("invalid", "id or digest required")
@@ -378,7 +378,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 		// it might be nil if it doesn't apply
 		vr, err := s.wrUseCase.VerifyRun(ctx, run)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 		verificationResult = bizVerificationToPb(vr)
 	}
@@ -388,7 +388,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 	if run.Attestation != nil && run.Attestation.Envelope != nil {
 		predicate, err = chainloop.ExtractPredicate(run.Attestation.Envelope)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		if resolved := s.resolvePolicyEvaluations(ctx, predicate.GetPolicyEvaluationsRef(), run.Workflow.OrgID); resolved != nil {
@@ -403,7 +403,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 
 	attestation, err := bizAttestationToPb(run.Attestation, predicate)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	if attestation != nil {
@@ -412,7 +412,7 @@ func (s *WorkflowRunService) View(ctx context.Context, req *pb.WorkflowRunServic
 
 	contractAndVersion, err := s.workflowContractUseCase.FindVersionByID(ctx, run.ContractVersionID.String())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	wr := bizWorkFlowRunToPb(run)

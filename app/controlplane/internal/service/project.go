@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,13 +48,13 @@ func (s *ProjectService) List(ctx context.Context, req *pb.ProjectServiceListReq
 
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Initialize the pagination options, with default values
 	paginationOpts, err := initializePaginationOpts(req.GetPagination())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// visibleProjects is nil when RBAC does not apply, which the use case reads as
@@ -65,20 +65,20 @@ func (s *ProjectService) List(ctx context.Context, req *pb.ProjectServiceListReq
 		VisibleProjects: s.visibleProjects(ctx),
 	}, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Resolve, once per listing, which projects the caller may add a workflow to.
 	writable, err := s.projectsAllowing(ctx, authz.PolicyWorkflowCreate, projects)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Whether a new project is an option at all depends on the organization role
 	// rather than on any project, so it is answered once for the listing.
 	canCreateProject, err := s.canCreateProject(ctx)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := make([]*pb.ProjectServiceListResponse_ProjectItem, 0, len(projects))
@@ -111,7 +111,7 @@ func (s *ProjectService) ListMembers(ctx context.Context, req *pb.ProjectService
 	// Convert organization ID from string to UUID
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Create the identity reference for the project
@@ -126,13 +126,13 @@ func (s *ProjectService) ListMembers(ctx context.Context, req *pb.ProjectService
 	// Initialize the pagination options, with default values
 	paginationOpts, err := initializePaginationOpts(req.GetPagination())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Call the business logic to list members
 	members, total, err := s.projectUseCase.ListMembers(ctx, orgUUID, identityRef, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Convert the project members to protobuf messages
@@ -168,12 +168,12 @@ func (s *ProjectService) AddMember(ctx context.Context, req *pb.ProjectServiceAd
 
 	requesterUUID, err := uuid.Parse(currentUser.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Create the identity reference for the project
@@ -188,7 +188,7 @@ func (s *ProjectService) AddMember(ctx context.Context, req *pb.ProjectServiceAd
 	// Extract the user email and group reference from the membership reference field
 	userEmail, groupReference, err := s.extractMembershipReference(req.GetMemberReference())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Convert from protobuf role to internal authorization role
@@ -206,7 +206,7 @@ func (s *ProjectService) AddMember(ctx context.Context, req *pb.ProjectServiceAd
 	// Call the business logic to add the member
 	_, err = s.projectUseCase.AddMemberToProject(ctx, orgUUID, opts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.ProjectServiceAddMemberResponse{}, nil
@@ -233,12 +233,12 @@ func (s *ProjectService) RemoveMember(ctx context.Context, req *pb.ProjectServic
 
 	requesterUUID, err := uuid.Parse(currentUser.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Create the identity reference for the project
@@ -253,7 +253,7 @@ func (s *ProjectService) RemoveMember(ctx context.Context, req *pb.ProjectServic
 	// Extract the user email and group reference from the membership reference field
 	userEmail, groupReference, err := s.extractMembershipReference(req.GetMemberReference())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Prepare options for removing a member
@@ -267,7 +267,7 @@ func (s *ProjectService) RemoveMember(ctx context.Context, req *pb.ProjectServic
 	// Call the business logic to remove the member
 	err = s.projectUseCase.RemoveMemberFromProject(ctx, orgUUID, opts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.ProjectServiceRemoveMemberResponse{}, nil
@@ -294,18 +294,18 @@ func (s *ProjectService) UpdateMemberRole(ctx context.Context, req *pb.ProjectSe
 
 	requesterUUID, err := uuid.Parse(currentUser.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	orgUUID, err := uuid.Parse(currentOrg.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Extract the user email and group reference from the membership reference field
 	userEmail, groupReference, err := s.extractMembershipReference(req.GetMemberReference())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Convert from protobuf role to internal authorization role
@@ -328,7 +328,7 @@ func (s *ProjectService) UpdateMemberRole(ctx context.Context, req *pb.ProjectSe
 
 	// Call the business logic to update the member's role
 	if err := s.projectUseCase.UpdateMemberRole(ctx, orgUUID, opts); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.ProjectServiceUpdateMemberRoleResponse{}, nil
@@ -362,7 +362,7 @@ func (s *ProjectService) ListPendingInvitations(ctx context.Context, req *pb.Pro
 	// Initialize the pagination options, with default values
 	paginationOpts, err := initializePaginationOpts(req.GetPagination())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Call the business logic to list pending invitations
@@ -371,7 +371,7 @@ func (s *ProjectService) ListPendingInvitations(ctx context.Context, req *pb.Pro
 		Name: projectName,
 	}, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Convert business objects to protobuf messages

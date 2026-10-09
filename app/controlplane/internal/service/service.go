@@ -231,7 +231,7 @@ func (s *service) authorizeResource(ctx context.Context, op *authz.Policy, resou
 	for _, rm := range matchingResources {
 		pass, err := s.authz.Enforce(ctx, string(rm.Role), op)
 		if err != nil {
-			return handleUseCaseErr(err, s.log)
+			return handleUseCaseErr(ctx, err, s.log)
 		}
 
 		if pass {
@@ -354,7 +354,7 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 	// Find the project by its reference
 	p, err := s.projectUseCase.FindProjectByReference(ctx, orgID, &biz.IdentityReference{ID: entityID, Name: entityName})
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// if RBAC is not enabled, we return the project
@@ -372,7 +372,7 @@ func (s *service) userHasPermissionOnProject(ctx context.Context, orgID string, 
 func (s *service) userCanCreateProject(ctx context.Context) error {
 	pass, err := s.canCreateProject(ctx)
 	if err != nil {
-		return handleUseCaseErr(err, s.log)
+		return handleUseCaseErr(ctx, err, s.log)
 	}
 
 	if !pass {
@@ -457,7 +457,7 @@ func (s *service) checkPolicy(ctx context.Context, policy *authz.Policy) error {
 	if sub != "" {
 		ok, err := s.authz.Enforce(ctx, sub, policy)
 		if err != nil {
-			return handleUseCaseErr(err, s.log)
+			return handleUseCaseErr(ctx, err, s.log)
 		}
 		if ok {
 			return nil
@@ -472,7 +472,7 @@ func (s *service) checkPolicy(ctx context.Context, policy *authz.Policy) error {
 	for _, rm := range m.Resources {
 		pass, err := s.authz.Enforce(ctx, string(rm.Role), authz.PolicyOrganizationCreate)
 		if err != nil {
-			return handleUseCaseErr(err, s.log)
+			return handleUseCaseErr(ctx, err, s.log)
 		}
 		if pass {
 			return nil
@@ -526,7 +526,7 @@ func rbacEnabled(ctx context.Context) bool {
 // NOTE: some of these http errors get automatically translated to gRPC status codes
 // because they implement the gRPC status error interface
 // so it is safe to return either a gRPC status error or a kratos error
-func handleUseCaseErr(err error, l *log.Helper) error {
+func handleUseCaseErr(ctx context.Context, err error, l *log.Helper) error {
 	switch {
 	case errors.Is(err, context.Canceled):
 		return errors.ClientClosed("client closed", err.Error())
@@ -556,7 +556,7 @@ func handleUseCaseErr(err error, l *log.Helper) error {
 			}
 		}
 
-		return servicelogger.LogAndMaskErr(err, l)
+		return servicelogger.LogAndMaskErr(ctx, err, l)
 	}
 }
 

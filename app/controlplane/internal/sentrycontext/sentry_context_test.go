@@ -21,8 +21,11 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 
+	"github.com/getsentry/sentry-go"
+	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/metadata"
 )
@@ -63,6 +66,100 @@ func TestNewSentryContext(t *testing.T) {
 	middleware := NewSentryContext()
 	_, err := middleware(handler)(context.Background(), "request")
 	assert.NoError(t, err)
+}
+
+// scopeTags returns the tags that the scope of the hub in ctx adds to an event
+func scopeTags(ctx context.Context) map[string]string {
+	hub := sentry.GetHubFromContext(ctx)
+	if hub == nil {
+		return nil
+	}
+
+	return hub.Scope().ApplyToEvent(sentry.NewEvent(), nil, nil).Tags
+}
+
+func TestNewSentryContextOrgTags(t *testing.T) {
+	org := &entities.Org{ID: "org-id", Name: "my-org"}
+	orgTags := map[string]string{tagOrgID: "org-id", tagOrgName: "my-org"}
+
+	testCases := []struct {
+		name        string
+		middlewares []middleware.Middleware
+		org         *entities.Org
+		wantTags    map[string]string
+	}{
+		{
+			name:        "request with an org",
+			middlewares: []middleware.Middleware{NewSentryHub(), NewSentryContext()},
+			org:         org,
+			wantTags:    orgTags,
+		},
+		{
+			name:        "request without an org",
+			middlewares: []middleware.Middleware{NewSentryHub(), NewSentryContext()},
+			wantTags:    map[string]string{},
+		},
+		{
+			name:        "request without a hub from NewSentryHub",
+			middlewares: []middleware.Middleware{NewSentryContext()},
+			org:         org,
+			wantTags:    orgTags,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			if tc.org != nil {
+				ctx = entities.WithCurrentOrg(ctx, tc.org)
+			}
+
+			var gotTags map[string]string
+			handler := func(ctx context.Context, _ interface{}) (interface{}, error) {
+				gotTags = scopeTags(ctx)
+				return nil, nil
+			}
+
+			_, err := middleware.Chain(tc.middlewares...)(handler)(ctx, "request")
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantTags, gotTags)
+			assert.Empty(t, scopeTags(sentry.SetHubOnContext(context.Background(), sentry.CurrentHub())), "the global scope must not change")
+		})
+	}
+}
+
+// Two requests of different orgs overlap: the first one is still running when the second one
+// sets its scope. Each request must keep the tags of its own org.
+func TestNewSentryContextConcurrentRequests(t *testing.T) {
+	chain := middleware.Chain(NewSentryHub(), NewSentryContext())
+	orgA := &entities.Org{ID: "org-a", Name: "org-a-name"}
+	orgB := &entities.Org{ID: "org-b", Name: "org-b-name"}
+
+	started, resume := make(chan struct{}), make(chan struct{})
+	tagsA := make(chan map[string]string, 1)
+	errA := make(chan error, 1)
+	go func() {
+		_, err := chain(func(ctx context.Context, _ interface{}) (interface{}, error) {
+			close(started)
+			<-resume
+			tagsA <- scopeTags(ctx)
+			return nil, nil
+		})(entities.WithCurrentOrg(context.Background(), orgA), "request-a")
+		errA <- err
+	}()
+
+	<-started
+	var tagsB map[string]string
+	_, err := chain(func(ctx context.Context, _ interface{}) (interface{}, error) {
+		tagsB = scopeTags(ctx)
+		return nil, nil
+	})(entities.WithCurrentOrg(context.Background(), orgB), "request-b")
+	require.NoError(t, err)
+	close(resume)
+	require.NoError(t, <-errA)
+
+	assert.Equal(t, map[string]string{tagOrgID: "org-a", tagOrgName: "org-a-name"}, <-tagsA)
+	assert.Equal(t, map[string]string{tagOrgID: "org-b", tagOrgName: "org-b-name"}, tagsB)
 }
 
 func TestBuildAuthContext(t *testing.T) {

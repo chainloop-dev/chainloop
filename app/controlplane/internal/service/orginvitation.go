@@ -55,7 +55,7 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 	if user != nil {
 		userID, err := uuid.Parse(user.ID)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 		opts = append(opts, biz.WithSender(userID))
 	}
@@ -65,7 +65,7 @@ func (s *OrgInvitationService) Create(ctx context.Context, req *pb.OrgInvitation
 	// Validations are done in the biz layer
 	i, err := s.useCase.Create(ctx, org.ID, req.ReceiverEmail, callerRole, opts...)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.OrgInvitationServiceCreateResponse{Result: bizInvitationToPB(i)}, nil
@@ -78,7 +78,7 @@ func (s *OrgInvitationService) Revoke(ctx context.Context, req *pb.OrgInvitation
 	}
 
 	if err := s.useCase.Revoke(ctx, org.ID, req.Id); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.OrgInvitationServiceRevokeResponse{}, nil
@@ -92,7 +92,7 @@ func (s *OrgInvitationService) ListSent(ctx context.Context, _ *pb.OrgInvitation
 
 	invitations, err := s.useCase.ListByOrg(ctx, org.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	res := []*pb.OrgInvitationItem{}

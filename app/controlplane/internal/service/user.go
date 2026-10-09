@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ func (s *UserService) ListMemberships(ctx context.Context, _ *pb.UserServiceList
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := make([]*pb.OrgMembershipItem, 0, len(memberships))
@@ -73,7 +73,7 @@ func (s *UserService) SetCurrentMembership(ctx context.Context, req *pb.SetCurre
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.SetCurrentMembershipResponse{Result: bizMembershipToPb(m)}, nil
@@ -89,7 +89,7 @@ func (s *UserService) DeleteMembership(ctx context.Context, req *pb.DeleteMember
 	if err != nil && biz.IsNotFound(err) {
 		return nil, errors.NotFound("not found", err.Error())
 	} else if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.DeleteMembershipResponse{}, nil

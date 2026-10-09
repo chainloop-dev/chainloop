@@ -63,13 +63,13 @@ func (s *OrganizationService) Create(ctx context.Context, req *pb.OrganizationSe
 	// Create an organization with an associated inline CAS backend
 	org, err := s.orgUC.Create(ctx, req.Name, biz.WithCreateInlineBackend())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// Add membership if invoker is a user
 	if currentUser != nil {
 		if _, err := s.membershipUC.Create(ctx, org.ID, currentUser.ID, biz.WithMembershipRole(authz.RoleOwner), biz.WithCurrentMembership()); err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
 
@@ -126,7 +126,7 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 		SkipRunnerEnvVars:                   req.SkipRunnerEnvVars,
 	})
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.OrganizationServiceUpdateResponse{Result: bizOrgToPb(org)}, nil
@@ -140,12 +140,12 @@ func (s *OrganizationService) Delete(ctx context.Context, req *pb.OrganizationSe
 	// Find the organization to get its UUID for authorization
 	org, err := s.orgUC.FindByName(ctx, req.Name)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	orgUUID, err := uuid.Parse(org.ID)
 	if err != nil {
-		return nil, handleUseCaseErr(biz.NewErrInvalidUUID(err), s.log)
+		return nil, handleUseCaseErr(ctx, biz.NewErrInvalidUUID(err), s.log)
 	}
 
 	// Check if user has permission to delete this specific organization
@@ -155,7 +155,7 @@ func (s *OrganizationService) Delete(ctx context.Context, req *pb.OrganizationSe
 	}
 
 	if err := s.orgUC.Delete(ctx, orgUUID.String()); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.OrganizationServiceDeleteResponse{}, nil
@@ -170,7 +170,7 @@ func (s *OrganizationService) ListMemberships(ctx context.Context, req *pb.Organ
 	// Initialize the pagination options, with default values
 	paginationOpts, err := initializePaginationOpts(req.GetPagination())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	opts := &biz.ListByOrgOpts{
@@ -181,7 +181,7 @@ func (s *OrganizationService) ListMemberships(ctx context.Context, req *pb.Organ
 	if req.MembershipId != nil {
 		membershipUUID, err := uuid.Parse(req.GetMembershipId())
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		opts.MembershipID = &membershipUUID
@@ -194,7 +194,7 @@ func (s *OrganizationService) ListMemberships(ctx context.Context, req *pb.Organ
 
 	memberships, count, err := s.membershipUC.ByOrg(ctx, currentOrg.ID, opts, paginationOpts)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := make([]*pb.OrgMembershipItem, 0, len(memberships))
@@ -221,7 +221,7 @@ func (s *OrganizationService) DeleteMembership(ctx context.Context, req *pb.Orga
 
 	callerRole := authz.Role(usercontext.CurrentAuthzSubject(ctx))
 	if err := s.membershipUC.DeleteOther(ctx, currentOrg.ID, currentUser.ID, req.MembershipId, callerRole); err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.OrganizationServiceDeleteMembershipResponse{}, nil
@@ -241,7 +241,7 @@ func (s *OrganizationService) UpdateMembership(ctx context.Context, req *pb.Orga
 	callerRole := authz.Role(usercontext.CurrentAuthzSubject(ctx))
 	m, err := s.membershipUC.UpdateRole(ctx, currentOrg.ID, currentUser.ID, req.MembershipId, biz.PbRoleToBiz(req.Role), callerRole)
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.OrganizationServiceUpdateMembershipResponse{Result: bizMembershipToPb(m)}, nil

@@ -16,6 +16,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -82,7 +83,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "backend not found", http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
+		http.Error(w, sl.LogAndMaskErr(ctx, err, s.log).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -91,7 +92,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "artifact not found", http.StatusNotFound)
 		return
 	} else if err != nil {
-		http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
+		http.Error(w, sl.LogAndMaskErr(ctx, err, s.log).Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -118,7 +119,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// memory stays bounded because the artifact lives on disk, not in a buffer.
 	f, size, err := s.stageDownload(ctx, b, wantChecksum.Hex)
 	if err != nil {
-		s.writeDownloadError(w, err, wantChecksum.Hex)
+		s.writeDownloadError(ctx, w, err, wantChecksum.Hex)
 		return
 	}
 	defer s.closeStagingFile(f)
@@ -131,7 +132,7 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// A plain io.Copy lets the response writer pull the file with sendfile, so
 	// the verified bytes go kernel-to-kernel without a user-space buffer.
 	if _, err := io.Copy(w, f); err != nil {
-		s.writeDownloadError(w, err, wantChecksum.Hex)
+		s.writeDownloadError(ctx, w, err, wantChecksum.Hex)
 		return
 	}
 
@@ -171,7 +172,7 @@ func etagMatches(ifNoneMatch, etag string) bool {
 // to its key, corrupt or tampered, so it is a 500 carrying both digests rather
 // than blamed on the caller. A client that went away gets nothing. Anything
 // else is masked.
-func (s *DownloadService) writeDownloadError(w http.ResponseWriter, err error, digest string) {
+func (s *DownloadService) writeDownloadError(ctx context.Context, w http.ResponseWriter, err error, digest string) {
 	if _, ok := errors.AsType[*digestMismatchError](err); ok {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -181,5 +182,5 @@ func (s *DownloadService) writeDownloadError(w http.ResponseWriter, err error, d
 		return
 	}
 
-	http.Error(w, sl.LogAndMaskErr(err, s.log).Error(), http.StatusInternalServerError)
+	http.Error(w, sl.LogAndMaskErr(ctx, err, s.log).Error(), http.StatusInternalServerError)
 }

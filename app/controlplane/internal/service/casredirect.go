@@ -86,7 +86,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 		var orgID uuid.UUID
 		orgID, err = uuid.Parse(currentOrg.ID)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 		mapping, err = s.casMappingUC.FindCASMappingForDownloadByOrg(ctx, req.Digest, []uuid.UUID{orgID}, s.rbacScopesForOrg(ctx, orgID))
 	}
@@ -100,7 +100,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 			return nil, kerrors.BadRequest("invalid", err.Error())
 		}
 
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	backend := mapping.CASBackend
@@ -118,7 +118,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 	// Create an URL to download the artifact from the CAS backend
 	downloadBase, err := url.Parse(s.casServerConf.GetDownloadUrl())
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	// 1 - append the digest /download/[digest]
@@ -129,7 +129,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Downloader, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID}
 		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ref)
 		if err != nil {
-			return nil, handleUseCaseErr(err, s.log)
+			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 
 		q := downloadURL.Query()

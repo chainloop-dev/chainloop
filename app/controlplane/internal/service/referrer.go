@@ -87,7 +87,7 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 		referrer, nextCursor, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, orgsProjectsMap, paginationOpts, extraFilters...)
 	}
 	if err != nil {
-		return nil, handleUseCaseErr(err, s.log)
+		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	return &pb.ReferrerServiceDiscoverPrivateResponse{
