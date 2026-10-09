@@ -21,6 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/trace"
@@ -63,6 +64,45 @@ func TestNewSentryContext(t *testing.T) {
 	middleware := NewSentryContext()
 	_, err := middleware(handler)(context.Background(), "request")
 	assert.NoError(t, err)
+}
+
+func TestConfigureScopeOrgTags(t *testing.T) {
+	org := &entities.Org{ID: "org-id", Name: "my-org"}
+	withOrg := entities.WithCurrentOrg(context.Background(), org)
+
+	testCases := []struct {
+		name     string
+		requests []context.Context
+		wantTags map[string]string
+	}{
+		{
+			name:     "request with an org",
+			requests: []context.Context{withOrg},
+			wantTags: map[string]string{"org.id": "org-id", "org.name": "my-org"},
+		},
+		{
+			name:     "request without an org",
+			requests: []context.Context{context.Background()},
+			wantTags: map[string]string{},
+		},
+		{
+			name:     "request without an org clears the tags of a previous request",
+			requests: []context.Context{withOrg, context.Background()},
+			wantTags: map[string]string{},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scope := sentry.NewScope()
+			for _, ctx := range tc.requests {
+				configureScope(ctx, scope, "request")
+			}
+
+			event := scope.ApplyToEvent(sentry.NewEvent(), nil, nil)
+			assert.Equal(t, tc.wantTags, event.Tags)
+		})
+	}
 }
 
 func TestBuildAuthContext(t *testing.T) {

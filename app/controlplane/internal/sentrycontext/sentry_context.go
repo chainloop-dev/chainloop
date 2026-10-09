@@ -33,6 +33,12 @@ import (
 // defaultTracingHeaders is a list of headers that are used to extract tracing information.
 var defaultTracingHeaders = []string{"X-Request-ID", "X-Correlation-ID", "X-Trace-ID"}
 
+// Sentry tags that identify the organization of the current request
+const (
+	tagOrgID   = "org.id"
+	tagOrgName = "org.name"
+)
+
 // NewSentryContext returns a middleware that adds context to Sentry for the current request
 // that will be sent along with the error if one occurs
 func NewSentryContext() middleware.Middleware {
@@ -46,16 +52,31 @@ func NewSentryContext() middleware.Middleware {
 
 // addSentryContext adds context to Sentry for the current request
 func addSentryContext(ctx context.Context, req interface{}) {
+	// ConfigureScope allows to set context that will be sent along with the error if one occurs
+	sentry.ConfigureScope(func(scope *sentry.Scope) {
+		configureScope(ctx, scope, req)
+	})
+}
+
+// configureScope sets the account and request information of the current request on the scope
+func configureScope(ctx context.Context, scope *sentry.Scope, req interface{}) {
 	org := entities.CurrentOrg(ctx)
 	user := entities.CurrentUser(ctx)
 	apiToken := entities.CurrentAPIToken(ctx)
 	role := usercontext.CurrentAuthzSubject(ctx)
 
-	// ConfigureScope allows to set context that will be sent along with the error if one occurs
-	sentry.ConfigureScope(func(scope *sentry.Scope) {
-		scope.SetContext("Account", buildAuthContext(user, apiToken, org, role))
-		scope.SetContext("Request", buildRequestContext(ctx, req))
-	})
+	scope.SetContext("Account", buildAuthContext(user, apiToken, org, role))
+	scope.SetContext("Request", buildRequestContext(ctx, req))
+
+	// Tags make the organization searchable in Sentry. They do not take part in issue grouping.
+	// The scope outlives the request, so remove the tags of a previous request when there is no org.
+	if org != nil {
+		scope.SetTag(tagOrgID, org.ID)
+		scope.SetTag(tagOrgName, org.Name)
+	} else {
+		scope.RemoveTag(tagOrgID)
+		scope.RemoveTag(tagOrgName)
+	}
 }
 
 // buildAuthContext creates a map of the user and membership information
