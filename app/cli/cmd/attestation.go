@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -55,6 +56,14 @@ func newAttestationCmd() *cobra.Command {
 		Short:   "Craft Software Supply Chain Attestations",
 		Example: "Refer to https://docs.chainloop.dev/getting-started/attestation-crafting",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// The organization must be resolved before the root PersistentPreRunE,
+			// which uses it to build the control plane connection. Set the log
+			// level first so that resolving it honors --debug.
+			var err error
+			if logger, err = initLogger(logger); err != nil {
+				return err
+			}
+
 			if err := resolveAttestationOrganization(cmd); err != nil {
 				return err
 			}
@@ -120,8 +129,9 @@ func resolveAttestationOrganization(cmd *cobra.Command) error {
 			}
 			return nil
 		}
-		if err != nil {
-			logger.Debug().Err(err).Msg("failed to load repository organization")
+		// A missing .chainloop.yml is the common case, not a problem.
+		if err != nil && !errors.Is(err, repositoryconfig.ErrChainloopYMLNotFound) {
+			logger.Warn().Err(err).Msg("failed to load repository organization")
 		}
 	}
 

@@ -61,9 +61,11 @@ func newAttestationInitCmd() *cobra.Command {
 			// Load unresolved project metadata from the repository config.
 			if projectName == "" || (projectVersion == "" && !useLatestVersion) {
 				cfg, path, err := repositoryconfig.LoadChainloopYML(".")
-				if err != nil {
+				switch {
+				case errors.Is(err, repositoryconfig.ErrChainloopYMLNotFound):
+				case err != nil:
 					logger.Debug().Msgf("failed to load chainloop config: %s", err)
-				} else {
+				default:
 					logger.Debug().Msgf("loaded project metadata from config file %s", path)
 					if projectName == "" {
 						projectName = cfg.ProjectName

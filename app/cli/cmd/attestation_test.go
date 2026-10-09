@@ -281,6 +281,60 @@ func TestAttestationRepositoryOrganizationNotice(t *testing.T) {
 	assert.Equal(t, "saved-org", viper.GetString(confOptions.organization.viperKey))
 }
 
+func TestAttestationRepositoryConfigLookupLogging(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		config   string
+		debug    bool
+		wantWarn bool
+	}{
+		{name: "missing config"},
+		{name: "missing config with debug", debug: true},
+		{name: "invalid config", config: "organization: [\n", wantWarn: true},
+		{name: "invalid config with debug", config: "organization: [\n", debug: true, wantWarn: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tc.config != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"), []byte(tc.config), 0o600))
+			}
+			t.Chdir(dir)
+
+			_, cmd := newAttestationOrganizationTestCommand(t, "init", "saved-org")
+			previousDebug := flagDebug
+			flagDebug = tc.debug
+			t.Cleanup(func() { flagDebug = previousDebug })
+
+			// Same as the logger seeded in main.go: no level set until the root
+			// PersistentPreRunE runs.
+			var output bytes.Buffer
+			logger = zerolog.New(&output)
+
+			require.NoError(t, cmd.Parent().PersistentPreRunE(cmd, nil))
+			// init reads .chainloop.yml again for the project metadata. --release
+			// without a version makes PreRunE stop right after that lookup.
+			require.NoError(t, cmd.Flags().Set("workflow", "build"))
+			require.NoError(t, cmd.Flags().Set("release", "true"))
+			require.EqualError(t, cmd.PreRunE(cmd, nil), "project version is required when using --release")
+
+			if tc.wantWarn {
+				assert.Contains(t, output.String(), `"level":"warn"`)
+			} else {
+				assert.Empty(t, output.String())
+			}
+			if !tc.debug {
+				assert.NotContains(t, output.String(), `"level":"debug"`)
+			}
+
+			wantLevel := zerolog.InfoLevel
+			if tc.debug {
+				wantLevel = zerolog.DebugLevel
+			}
+			assert.Equal(t, wantLevel, logger.GetLevel())
+		})
+	}
+}
+
 func newAttestationOrganizationTestCommand(t *testing.T, command, savedOrganization string) (*cobra.Command, *cobra.Command) {
 	t.Helper()
 
