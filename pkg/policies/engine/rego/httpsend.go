@@ -18,9 +18,11 @@ package rego
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"slices"
 
+	"github.com/chainloop-dev/chainloop/pkg/netguard"
 	"github.com/open-policy-agent/opa/v1/ast"
 	"github.com/open-policy-agent/opa/v1/topdown"
 )
@@ -55,6 +57,19 @@ func isPermissiveMode(ctx context.Context) bool {
 	return permissive
 }
 
+type publicTargetsOnlyCtxKey struct{}
+
+// withPublicTargetsOnly marks the evaluation context so that http.send only
+// connects to publicly routable destinations.
+func withPublicTargetsOnly(ctx context.Context) context.Context {
+	return context.WithValue(ctx, publicTargetsOnlyCtxKey{}, true)
+}
+
+func isPublicTargetsOnly(ctx context.Context) bool {
+	publicOnly, _ := ctx.Value(publicTargetsOnlyCtxKey{}).(bool)
+	return publicOnly
+}
+
 // OPA resolves built-ins from a global registry, so http.send can only be
 // restricted by replacing its implementation there.
 func init() {
@@ -65,8 +80,21 @@ func init() {
 				return err
 			}
 		}
+		if isPublicTargetsOnly(bctx.Context) {
+			bctx.RoundTripper = publicTargetsOnlyRoundTripper
+		}
 		return httpSend(bctx, operands, iter)
 	})
+}
+
+// publicTargetsOnlyRoundTripper restricts the transport http.send builds for a
+// request to publicly routable destinations. OPA passes a nil transport when
+// the request needs no custom one, which then shares one pooled transport.
+func publicTargetsOnlyRoundTripper(t *http.Transport) http.RoundTripper {
+	if t == nil {
+		return netguard.Transport()
+	}
+	return netguard.RestrictTransport(t)
 }
 
 func validateHTTPSendRequest(operands []*ast.Term) error {

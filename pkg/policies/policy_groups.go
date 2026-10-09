@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 
 	v13 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -60,6 +61,7 @@ func (pgv *PolicyGroupVerifier) VerifyMaterial(ctx context.Context, material *ap
 			Client:     pgv.client,
 			Logger:     pgv.logger,
 			GroupCache: pgv.groupCache,
+			HTTPClient: pgv.httpClient,
 		})
 		if err != nil {
 			return nil, NewPolicyError(err)
@@ -150,6 +152,7 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 			Client:     pgv.client,
 			Logger:     pgv.logger,
 			GroupCache: pgv.groupCache,
+			HTTPClient: pgv.httpClient,
 		})
 		if err != nil {
 			// Temporarily skip if policy groups still use old schema
@@ -238,6 +241,9 @@ type LoadPolicyGroupOptions struct {
 	Client     v13.AttestationServiceClient
 	Logger     *zerolog.Logger
 	GroupCache cache.Cache[*groupWithReference]
+	// HTTPClient fetches groups referenced by http(s) URLs. Defaults to
+	// http.DefaultClient.
+	HTTPClient *http.Client
 }
 
 // LoadPolicyGroup loads a group (unmarshalls it) from a group attachment
@@ -281,7 +287,7 @@ func getGroupLoader(attachment *v1.PolicyGroupAttachment, opts *LoadPolicyGroupO
 	case fileScheme:
 		loader = new(FileGroupLoader)
 	case httpsScheme, httpScheme:
-		loader = new(HTTPSGroupLoader)
+		loader = &HTTPSGroupLoader{Client: opts.HTTPClient}
 	default:
 		return nil, fmt.Errorf("policy scheme not supported: %q", scheme)
 	}

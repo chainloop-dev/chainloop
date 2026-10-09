@@ -454,10 +454,14 @@ func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, v
 }
 
 // evalContext marks the context of permissive engines, which lifts the
-// http.send request option restrictions.
+// http.send request option restrictions, and of engines limited to public
+// network destinations.
 func (r *Engine) evalContext(ctx context.Context) context.Context {
 	if r.operatingMode == EnvironmentModePermissive {
-		return withPermissiveMode(ctx)
+		ctx = withPermissiveMode(ctx)
+	}
+	if r.CommonEngineOptions != nil && r.PublicTargetsOnly {
+		ctx = withPublicTargetsOnly(ctx)
 	}
 	return ctx
 }
