@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package rego
 import (
 	"bytes"
 	_ "embed"
+	"errors"
 	"fmt"
 	"strings"
 	"text/template"
@@ -48,6 +49,22 @@ type boilerplateData struct {
 	NeedsDefaultViolations bool
 }
 
+// sanitizeParseError reduces a Rego parse error to the code and location of its first
+// problem, since OPA parse errors can quote the policy source.
+func sanitizeParseError(err error) error {
+	var astErrs ast.Errors
+	if !errors.As(err, &astErrs) || len(astErrs) == 0 {
+		return errors.New("invalid policy")
+	}
+
+	first := astErrs[0]
+	if first.Location == nil {
+		return errors.New(first.Code)
+	}
+
+	return fmt.Errorf("%s at line %d, column %d", first.Code, first.Location.Row, first.Location.Col)
+}
+
 // InjectBoilerplate automatically injects common policy boilerplate if it doesn't exist.
 // This allows users to write simplified policies with only the violations rules.
 // Requirements: Policy must have package declaration and import rego.v1
@@ -65,7 +82,7 @@ func InjectBoilerplate(policySource []byte, policyName string) ([]byte, error) {
 	// Parse the policy
 	module, err := ast.ParseModule(policyName, originalPolicy)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse policy (must have 'package' and 'import rego.v1'): %w", err)
+		return nil, fmt.Errorf("failed to parse policy (must have 'package' and 'import rego.v1'): %w", sanitizeParseError(err))
 	}
 
 	// Detect which rules already exist using AST

@@ -1758,53 +1758,234 @@ func loadStatement(file string, s *suite.Suite) *intoto.Statement {
 	return &statement
 }
 
-func (s *testSuite) TestIsURLPath() {
+// Policies are loaded in two steps:
+//  1. a contract or policy group attachment references a policy spec (policy.yaml)
+//     through chainloop://, file:// or https://. These tests do not change that step.
+//  2. the policy spec references its Rego or WASM scripts through spec.policies[].ref,
+//     spec.policies[].path or the legacy spec.path. The tests below cover this step.
+//
+// The location of the policy spec from step 1 is the base to resolve relative script
+// references from step 2.
+
+// TestPolicyLocation covers how the location of a policy spec is derived from the
+// attachment ref that loaded it (step 1).
+func (s *testSuite) TestPolicyLocation() {
+	const (
+		remotePolicy = "https://example.com/policy.yaml"
+		localPolicy  = "file://testdata/policy.yaml"
+	)
+
 	cases := []struct {
-		name     string
-		path     string
-		expected bool
+		name          string
+		attachmentRef string
+		want          string
+	}{
+		{name: "policy attached from an https URL", attachmentRef: remotePolicy, want: remotePolicy},
+		{name: "policy attached from an https URL with digest", attachmentRef: remotePolicy + "@sha256:1234", want: remotePolicy},
+		{name: "policy attached from a local file", attachmentRef: localPolicy, want: localPolicy},
+		{name: "policy attached from a local file with digest", attachmentRef: localPolicy + "@sha256:1234", want: localPolicy},
+		{name: "policy attached from an http URL has no location", attachmentRef: "http://example.com/policy.yaml"},
+		{name: "policy attached from a chainloop provider has no location", attachmentRef: "chainloop://provider/policy"},
+		{name: "policy attached by name has no location", attachmentRef: "policy"},
+		{name: "policy embedded in the attachment has no location", attachmentRef: ""},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			s.Equal(tc.want, policyLocation(tc.attachmentRef))
+		})
+	}
+}
+
+// TestResolveScriptRef covers how a script reference inside a policy spec (step 2)
+// is resolved, given the location of that policy spec.
+func (s *testSuite) TestResolveScriptRef() {
+	const (
+		remotePolicy = "https://example.com/policies/policy.yaml"
+		localPolicy  = "file://testdata/policy.yaml"
+		remoteScript = "https://example.com/p.rego"
+		script       = "p.rego"
+	)
+
+	cases := []struct {
+		name           string
+		scriptRef      string
+		policyLocation string
+		want           string
+		wantErr        bool
+	}{
+		// https:// script refs are allowed from any policy spec
+		{name: "https script in a remote policy", scriptRef: "https://other.example.com/p.rego", policyLocation: remotePolicy, want: "https://other.example.com/p.rego"},
+		{name: "https script in a local policy", scriptRef: remoteScript, policyLocation: localPolicy, want: remoteScript},
+		{name: "https script in an embedded policy", scriptRef: remoteScript, want: remoteScript},
+
+		// relative script refs in a remote policy resolve against the URL of the policy
+		{name: "relative script in a remote policy", scriptRef: "rego/p.rego", policyLocation: remotePolicy, want: "https://example.com/policies/rego/p.rego"},
+		{name: "parent script in a remote policy stays on the URL", scriptRef: "../p.rego", policyLocation: remotePolicy, want: remoteScript},
+		{name: "rejects relative script in an http policy", scriptRef: script, policyLocation: "http://example.com/policy.yaml", wantErr: true},
+		{name: "rejects opaque https script in a remote policy", scriptRef: "https:p.rego", policyLocation: remotePolicy, wantErr: true},
+
+		// relative script refs in a local policy stay in the directory of the policy
+		{name: "relative script in a local policy", scriptRef: script, policyLocation: localPolicy, want: filepath.Join("testdata", script)},
+		{name: "relative script in a local policy given as a plain path", scriptRef: "sub/p.rego", policyLocation: "testdata/policy.yaml", want: filepath.Join("testdata", "sub", "p.rego")},
+		{name: "rejects parent script in a local policy", scriptRef: "../p.rego", policyLocation: localPolicy, wantErr: true},
+		{name: "rejects nested parent script in a local policy", scriptRef: "sub/../../p.rego", policyLocation: localPolicy, wantErr: true},
+		{name: "rejects absolute script path in a local policy", scriptRef: "/tmp/p.rego", policyLocation: localPolicy, wantErr: true},
+
+		// relative script refs need a policy location
+		{name: "rejects relative script in an embedded policy", scriptRef: script, wantErr: true},
+		{name: "rejects relative script in a chainloop provider policy", scriptRef: script, policyLocation: "chainloop://provider/policy", wantErr: true},
+
+		// other script schemes are rejected from any policy spec
+		{name: "rejects empty script ref", scriptRef: "", policyLocation: localPolicy, wantErr: true},
+		{name: "rejects env script in a remote policy", scriptRef: "env://SOME_VAR", policyLocation: remotePolicy, wantErr: true},
+		{name: "rejects env script in a local policy", scriptRef: "env://SOME_VAR", policyLocation: localPolicy, wantErr: true},
+		{name: "rejects file script in a remote policy", scriptRef: "file:///tmp/p.rego", policyLocation: remotePolicy, wantErr: true},
+		{name: "rejects file script in a local policy", scriptRef: "file://p.rego", policyLocation: localPolicy, wantErr: true},
+		{name: "rejects http script", scriptRef: "http://example.com/p.rego", policyLocation: remotePolicy, wantErr: true},
+		{name: "rejects chainloop script", scriptRef: "chainloop://provider/p", policyLocation: remotePolicy, wantErr: true},
+		{name: "rejects https script without host", scriptRef: "https:///p.rego", policyLocation: remotePolicy, wantErr: true},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			got, err := resolveScriptRef(tc.scriptRef, tc.policyLocation)
+			if tc.wantErr {
+				s.ErrorIs(err, errInvalidScriptRef)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Equal(tc.want, got)
+		})
+	}
+}
+
+// TestResolveScriptRefSymlinks covers symlinks in the directory of a local policy spec (step 2)
+func (s *testSuite) TestResolveScriptRefSymlinks() {
+	root := s.T().TempDir()
+	policyDir := filepath.Join(root, "policies")
+	s.Require().NoError(os.MkdirAll(filepath.Join(policyDir, "sub"), 0o755))
+	s.Require().NoError(os.WriteFile(filepath.Join(root, "outside.rego"), []byte("package main"), 0o600))
+	s.Require().NoError(os.WriteFile(filepath.Join(policyDir, "sub", "inside.rego"), []byte("package main"), 0o600))
+	s.Require().NoError(os.Symlink(filepath.Join(root, "outside.rego"), filepath.Join(policyDir, "outside_link.rego")))
+	s.Require().NoError(os.Symlink(root, filepath.Join(policyDir, "outside_dir")))
+	s.Require().NoError(os.Symlink(filepath.Join("sub", "inside.rego"), filepath.Join(policyDir, "inside_link.rego")))
+
+	location := "file://" + filepath.Join(policyDir, "policy.yaml")
+
+	cases := []struct {
+		name      string
+		scriptRef string
+		wantErr   bool
+	}{
+		{name: "script inside the policy directory", scriptRef: "sub/inside.rego"},
+		{name: "symlink to a script inside the policy directory", scriptRef: "inside_link.rego"},
+		{name: "rejects symlink to a script outside the policy directory", scriptRef: "outside_link.rego", wantErr: true},
+		{name: "rejects script under a symlinked directory outside the policy directory", scriptRef: "outside_dir/outside.rego", wantErr: true},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			got, err := resolveScriptRef(tc.scriptRef, location)
+			if tc.wantErr {
+				s.ErrorIs(err, errInvalidScriptRef)
+				return
+			}
+
+			s.Require().NoError(err)
+			_, err = os.Stat(got)
+			s.NoError(err)
+		})
+	}
+}
+
+// TestLoadPolicyScriptsFromSpecRejectsInvalidRefs covers each script reference field of a
+// policy spec (step 2): spec.policies[].ref, spec.policies[].path and the legacy spec.path.
+func (s *testSuite) TestLoadPolicyScriptsFromSpecRejectsInvalidRefs() {
+	const (
+		envVar = "CHAINLOOP_TEST_SCRIPT_REF"
+		marker = "unique_marker_value_42"
+	)
+
+	s.T().Setenv(envVar, marker)
+
+	v2 := func(src *v12.PolicySpecV2) *v12.Policy {
+		return &v12.Policy{
+			Metadata: &v12.Metadata{Name: "test"},
+			Spec:     &v12.PolicySpec{Policies: []*v12.PolicySpecV2{src}},
+		}
+	}
+
+	cases := []struct {
+		name           string
+		policy         *v12.Policy
+		policyLocation string
 	}{
 		{
-			name:     "http URL",
-			path:     "http://example.com/policy.rego",
-			expected: true,
+			name:   "env script ref in an embedded policy",
+			policy: v2(&v12.PolicySpecV2{Source: &v12.PolicySpecV2_Ref{Ref: "env://" + envVar}}),
 		},
 		{
-			name:     "https URL",
-			path:     "https://example.com/policy.rego",
-			expected: true,
+			name:           "env script ref in a remote policy",
+			policy:         v2(&v12.PolicySpecV2{Source: &v12.PolicySpecV2_Ref{Ref: "env://" + envVar}}),
+			policyLocation: "https://example.com/policy.yaml",
 		},
 		{
-			name:     "relative file path",
-			path:     "policy.rego",
-			expected: false,
+			name:   "relative script path in an embedded policy",
+			policy: v2(&v12.PolicySpecV2{Source: &v12.PolicySpecV2_Path{Path: "testdata/workflow.rego"}}),
 		},
 		{
-			name:     "absolute file path",
-			path:     "/absolute/path/policy.rego",
-			expected: false,
+			name:           "script path outside the directory of a local policy",
+			policy:         v2(&v12.PolicySpecV2{Source: &v12.PolicySpecV2_Path{Path: "../policies/testdata/workflow.rego"}}),
+			policyLocation: "file://testdata/policy.yaml",
 		},
 		{
-			name:     "file scheme",
-			path:     "file:///path/to/policy.rego",
-			expected: false,
-		},
-		{
-			name:     "chainloop scheme",
-			path:     "chainloop://provider/policy",
-			expected: false,
-		},
-		{
-			name:     "empty path",
-			path:     "",
-			expected: false,
+			name: "legacy script path outside the directory of a local policy",
+			policy: &v12.Policy{
+				Metadata: &v12.Metadata{Name: "test"},
+				Spec:     &v12.PolicySpec{Source: &v12.PolicySpec_Path{Path: "../policies/testdata/workflow.rego"}},
+			},
+			policyLocation: "file://testdata/policy.yaml",
 		},
 	}
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			result := isURLPath(tc.path)
-			s.Equal(tc.expected, result)
+			_, err := LoadPolicyScriptsFromSpec(tc.policy, v12.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED, tc.policyLocation)
+			s.ErrorIs(err, errInvalidScriptRef)
+			s.NotContains(err.Error(), marker)
+		})
+	}
+}
+
+// TestVerifyStatementScriptRefs covers both steps together: the attachment loads a local
+// policy spec (step 1), and the script reference inside it is checked (step 2).
+func (s *testSuite) TestVerifyStatementScriptRefs() {
+	cases := []struct {
+		name          string
+		attachmentRef string
+		wantErr       bool
+	}{
+		{name: "local policy with a script in its directory", attachmentRef: "file://testdata/workflow.yaml"},
+		{name: "rejects local policy with a script outside its directory", attachmentRef: "file://testdata/policy_script_outside_dir.yaml", wantErr: true},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			policies := &v12.Policies{
+				Attestation: []*v12.PolicyAttachment{{Policy: &v12.PolicyAttachment_Ref{Ref: tc.attachmentRef}}},
+			}
+			verifier := NewPolicyVerifier(policies, nil, &s.logger)
+			statement := loadStatement("testdata/statement.json", &s.Suite)
+
+			_, err := verifier.VerifyStatement(context.TODO(), statement)
+			if tc.wantErr {
+				s.ErrorIs(err, errInvalidScriptRef)
+				return
+			}
+
+			s.NoError(err)
 		})
 	}
 }

@@ -149,7 +149,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse rego policy: %w", err)
+		return nil, fmt.Errorf("failed to parse rego policy: %w", sanitizeParseError(err))
 	}
 
 	// Decode input as json
@@ -387,7 +387,7 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
-		return false, fmt.Errorf("failed to parse rego policy: %w", err)
+		return false, fmt.Errorf("failed to parse rego policy: %w", sanitizeParseError(err))
 	}
 
 	// Create input with policy and expected parameters
@@ -423,7 +423,7 @@ func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, v
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
-		return false, fmt.Errorf("failed to parse rego policy: %w", err)
+		return false, fmt.Errorf("failed to parse rego policy: %w", sanitizeParseError(err))
 	}
 
 	// Create input expected parameters and policy violations
