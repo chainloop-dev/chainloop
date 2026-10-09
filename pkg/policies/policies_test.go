@@ -1758,53 +1758,112 @@ func loadStatement(file string, s *suite.Suite) *intoto.Statement {
 	return &statement
 }
 
-func (s *testSuite) TestIsURLPath() {
+func (s *testSuite) TestResolveScriptRef() {
+	const (
+		remoteBase   = "https://example.com/policies/policy.yaml"
+		localBase    = "file://testdata/policy.yaml"
+		remoteScript = "https://example.com/p.rego"
+		script       = "p.rego"
+	)
+
 	cases := []struct {
 		name     string
-		path     string
-		expected bool
+		ref      string
+		basePath string
+		want     string
+		wantErr  bool
+	}{
+		{name: "absolute https from remote spec", ref: "https://other.example.com/p.rego", basePath: remoteBase, want: "https://other.example.com/p.rego"},
+		{name: "absolute https from local spec", ref: remoteScript, basePath: localBase, want: remoteScript},
+		{name: "absolute https from embedded spec", ref: remoteScript, want: remoteScript},
+		{name: "relative ref from remote spec", ref: "rego/p.rego", basePath: remoteBase, want: "https://example.com/policies/rego/p.rego"},
+		{name: "parent ref from remote spec stays on the URL", ref: "../p.rego", basePath: remoteBase, want: remoteScript},
+		{name: "relative ref from local spec", ref: script, basePath: localBase, want: filepath.Join("testdata", script)},
+		{name: "relative ref from local spec without scheme", ref: "sub/p.rego", basePath: "testdata/policy.yaml", want: filepath.Join("testdata", "sub", "p.rego")},
+		{name: "rejects empty ref", ref: "", basePath: localBase, wantErr: true},
+		{name: "rejects env scheme", ref: "env://SOME_VAR", basePath: remoteBase, wantErr: true},
+		{name: "rejects env scheme from local spec", ref: "env://SOME_VAR", basePath: localBase, wantErr: true},
+		{name: "rejects file scheme", ref: "file:///tmp/p.rego", basePath: remoteBase, wantErr: true},
+		{name: "rejects file scheme from local spec", ref: "file://p.rego", basePath: localBase, wantErr: true},
+		{name: "rejects http scheme", ref: "http://example.com/p.rego", basePath: remoteBase, wantErr: true},
+		{name: "rejects relative ref from http spec", ref: script, basePath: "http://example.com/policy.yaml", wantErr: true},
+		{name: "rejects chainloop scheme", ref: "chainloop://provider/p", basePath: remoteBase, wantErr: true},
+		{name: "rejects https without host", ref: "https:///p.rego", basePath: remoteBase, wantErr: true},
+		{name: "rejects opaque https from remote spec", ref: "https:p.rego", basePath: remoteBase, wantErr: true},
+		{name: "rejects relative ref from embedded spec", ref: script, wantErr: true},
+		{name: "rejects relative ref from chainloop spec", ref: script, basePath: "chainloop://provider/policy", wantErr: true},
+		{name: "rejects parent traversal from local spec", ref: "../p.rego", basePath: localBase, wantErr: true},
+		{name: "rejects nested parent traversal from local spec", ref: "sub/../../p.rego", basePath: localBase, wantErr: true},
+		{name: "rejects absolute path from local spec", ref: "/tmp/p.rego", basePath: localBase, wantErr: true},
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.name, func() {
+			got, err := resolveScriptRef(tc.ref, tc.basePath)
+			if tc.wantErr {
+				s.ErrorIs(err, errInvalidScriptRef)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Equal(tc.want, got)
+		})
+	}
+}
+
+func (s *testSuite) TestLoadPolicyScriptsFromSpecRejectsInvalidRefs() {
+	const (
+		envVar = "CHAINLOOP_TEST_SCRIPT_REF"
+		marker = "unique_marker_value_42"
+	)
+
+	s.T().Setenv(envVar, marker)
+
+	v2 := func(src *v12.PolicySpecV2) *v12.Policy {
+		return &v12.Policy{
+			Metadata: &v12.Metadata{Name: "test"},
+			Spec:     &v12.PolicySpec{Policies: []*v12.PolicySpecV2{src}},
+		}
+	}
+
+	cases := []struct {
+		name     string
+		policy   *v12.Policy
+		basePath string
 	}{
 		{
-			name:     "http URL",
-			path:     "http://example.com/policy.rego",
-			expected: true,
+			name:   "ref to env var from embedded spec",
+			policy: v2(&v12.PolicySpecV2{Source: &v12.PolicySpecV2_Ref{Ref: "env://" + envVar}}),
 		},
 		{
-			name:     "https URL",
-			path:     "https://example.com/policy.rego",
-			expected: true,
+			name:     "ref to env var from remote spec",
+			policy:   v2(&v12.PolicySpecV2{Source: &v12.PolicySpecV2_Ref{Ref: "env://" + envVar}}),
+			basePath: "https://example.com/policy.yaml",
 		},
 		{
-			name:     "relative file path",
-			path:     "policy.rego",
-			expected: false,
+			name:   "relative path from embedded spec",
+			policy: v2(&v12.PolicySpecV2{Source: &v12.PolicySpecV2_Path{Path: "testdata/workflow.rego"}}),
 		},
 		{
-			name:     "absolute file path",
-			path:     "/absolute/path/policy.rego",
-			expected: false,
+			name:     "path traversal from local spec",
+			policy:   v2(&v12.PolicySpecV2{Source: &v12.PolicySpecV2_Path{Path: "../policies/testdata/workflow.rego"}}),
+			basePath: "file://testdata/policy.yaml",
 		},
 		{
-			name:     "file scheme",
-			path:     "file:///path/to/policy.rego",
-			expected: false,
-		},
-		{
-			name:     "chainloop scheme",
-			path:     "chainloop://provider/policy",
-			expected: false,
-		},
-		{
-			name:     "empty path",
-			path:     "",
-			expected: false,
+			name: "legacy path traversal from local spec",
+			policy: &v12.Policy{
+				Metadata: &v12.Metadata{Name: "test"},
+				Spec:     &v12.PolicySpec{Source: &v12.PolicySpec_Path{Path: "../policies/testdata/workflow.rego"}},
+			},
+			basePath: "file://testdata/policy.yaml",
 		},
 	}
 
 	for _, tc := range cases {
 		s.Run(tc.name, func() {
-			result := isURLPath(tc.path)
-			s.Equal(tc.expected, result)
+			_, err := LoadPolicyScriptsFromSpec(tc.policy, v12.CraftingSchema_Material_MATERIAL_TYPE_UNSPECIFIED, tc.basePath)
+			s.ErrorIs(err, errInvalidScriptRef)
+			s.NotContains(err.Error(), marker)
 		})
 	}
 }

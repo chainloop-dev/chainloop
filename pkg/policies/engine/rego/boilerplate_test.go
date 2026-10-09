@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -87,6 +87,37 @@ func TestInjectBoilerplate(t *testing.T) {
 			require.NoError(t, err)
 
 			matchesOutput(t, result, tc.outputName)
+		})
+	}
+}
+
+func TestInjectBoilerplateParseErrorOmitsSource(t *testing.T) {
+	const marker = "unique_marker_value_42"
+
+	testCases := []struct {
+		name    string
+		input   string
+		wantErr string
+	}{
+		{
+			name:    "non rego content",
+			input:   "KEY=" + marker + "\n",
+			wantErr: "line 1, column 1",
+		},
+		{
+			name:    "illegal string literal",
+			input:   "package main\n\nimport rego.v1\n\nx := \"" + marker + "\n",
+			wantErr: "line 5",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := InjectBoilerplate([]byte(tc.input), "test-policy")
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "failed to parse policy")
+			assert.Contains(t, err.Error(), tc.wantErr)
+			assert.NotContains(t, err.Error(), marker)
 		})
 	}
 }
