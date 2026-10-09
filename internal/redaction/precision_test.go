@@ -39,6 +39,7 @@ const (
 
 	ruleGenericAPIKey = "generic-api-key"
 	ruleGitHubPAT     = "github-pat"
+	ruleCredentialURI = "generic-credential-uri"
 )
 
 // defaultRulesScanner returns a scanner with the betterleaks default ruleset and
@@ -94,6 +95,41 @@ func TestRulesConfigKeepsNonSecrets(t *testing.T) {
 			wantDefaultRule: genericPasswordRuleID,
 		},
 		{
+			name:            "key word as the value, followed by another line",
+			text:            "host: localhost\nuser: postgres\npassword: password\nport: 5432\n",
+			wantDefaultRule: genericPasswordRuleID,
+		},
+		{
+			name:            "key word as the value in a go string literal",
+			text:            `text: "host: localhost\nuser: postgres\npassword: password\nport: 5432\n",` + "\n",
+			wantDefaultRule: genericPasswordRuleID,
+		},
+		{
+			name:            "minified javascript with a plain identifier operand",
+			text:            "host: localhost\nuser: admin\n!function(e){e.password=e.password||n,e.user=u}\n",
+			wantDefaultRule: genericPasswordRuleID,
+		},
+		{
+			name:            "legacy placeholder shown again",
+			text:            "host: localhost\nuser: admin\npassword: [REDACTED:generic-password]\nport: 5432\n",
+			wantDefaultRule: genericPasswordRuleID,
+		},
+		{
+			name:            "placeholder shown again in a go string literal",
+			text:            `text: "host: localhost\nuser: admin\npassword: [CHAINLOOP_TRACE_REDACTED:generic-password]\nport: 5432\n",` + "\n",
+			wantDefaultRule: genericPasswordRuleID,
+		},
+		{
+			name:            "elided password of a uri in documentation",
+			text:            "the issuer is `http://localhost:…@chainloop.local`\n",
+			wantDefaultRule: ruleCredentialURI,
+		},
+		{
+			name:            "duration of a go test",
+			text:            "=== RUN   TestRedactPassword\n--- PASS: TestRedactPassword: (0.01s)\nPASS\n",
+			wantDefaultRule: genericPasswordRuleID,
+		},
+		{
 			name:            "placeholder token in a curl example of a document",
 			text:            "curl -H 'Authorization: Bearer REPLACE_ME' https://api.example.com\n",
 			wantDefaultRule: "curl-auth-header",
@@ -101,7 +137,7 @@ func TestRulesConfigKeepsNonSecrets(t *testing.T) {
 		{
 			name:            "port read as the password of a uri",
 			text:            "issuer: http://localhost:8000@chainloop.local\n",
-			wantDefaultRule: "generic-credential-uri",
+			wantDefaultRule: ruleCredentialURI,
 		},
 	}
 
@@ -160,10 +196,22 @@ func TestRulesConfigStillRedactsSecrets(t *testing.T) {
 			wantRule: "curl-auth-header",
 		},
 		{
+			name:     "password with a logical operator in it",
+			text:     "host: db.internal\nuser: " + sampleEmail + "\npassword: Xk9m||Q2vL" + "p7wRt4z\n",
+			secret:   "Xk9m||Q2vL" + "p7wRt4z",
+			wantRule: genericPasswordRuleID,
+		},
+		{
+			name:     "numeric password in a connection uri",
+			text:     "dsn: postgres://admin:" + "12345@db.internal:5432/app\n",
+			secret:   "admin:" + "12345@",
+			wantRule: ruleCredentialURI,
+		},
+		{
 			name:     "password in a connection uri",
 			text:     "dsn: postgres://admin:" + samplePassword + "@db.internal:5432/app\n",
 			secret:   samplePassword,
-			wantRule: "generic-credential-uri",
+			wantRule: ruleCredentialURI,
 		},
 	}
 

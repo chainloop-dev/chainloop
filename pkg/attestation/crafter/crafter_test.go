@@ -27,6 +27,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -35,6 +36,7 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	"github.com/chainloop-dev/chainloop/internal/redaction"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
@@ -838,6 +840,7 @@ func (s *crafterSuite) TestAddMaterialCleanSessionIsMarkedScanned() {
 
 	assert.Equal(s.T(), v1.AnnotationValueTrue, m.Annotations[v1.AnnotationMaterialRedacted])
 	assert.Equal(s.T(), "0", m.Annotations[v1.AnnotationMaterialRedactionCount])
+	assert.Equal(s.T(), strconv.Itoa(redaction.RulesetVersion), m.Annotations[v1.AnnotationMaterialRedactionRuleset])
 	assert.NotContains(s.T(), m.Annotations, v1.AnnotationMaterialRedactionSkipped)
 
 	// Nothing was replaced, so the digest is still that of the source file.

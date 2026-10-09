@@ -22,15 +22,26 @@ regexTarget = "match"
 regexes = ['''(?i)\bsha(?:1|224|256|384|512):[0-9a-f]{40,128}\b''']
 
 [[allowlists]]
-description = "Code expressions and the bare key word, which are not password values"
+description = "Code expressions, test durations and the bare key word, which are not password values"
 targetRules = ["generic-password"]
+# The scanned text is JSON-encoded, so a match of this rule can run on through
+# an escaped line break, or through a \n written in source code, which reaches
+# the scanner as \\n. The scanner cuts the secret at the first, but only after
+# these regexes ran, so each one also accepts such a tail.
 regexes = [
-    # An expression such as t.password||n.password in minified JavaScript.
-    '''\|\||&&|\?\?''',
-    # A property access such as e.password or config.db_password.
-    '''^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\.\w*(?i:passw(?:or)?d|pwd)\w*$''',
+    # An expression such as t.password||n.password in minified JavaScript:
+    # property accesses, and only those, joined by logical operators.
+    '''^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+(?:(?:\|\||&&|\?\?)[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+)+(?:\\+[nrt].*)?$''',
+    # A property access such as e.password or config.db_password, alone or
+    # followed by logical operators and identifiers, as in e.password||n.
+    '''^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\.\w*(?i:passw(?:or)?d|pwd)\w*(?:(?:\|\||&&|\?\?)[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*)*(?:\\+[nrt].*)?$''',
+    # A redaction placeholder the transcript shows again, in the current or
+    # the legacy format.
+    '''^\[(?:CHAINLOOP_TRACE_)?REDACTED(?::[^\]\s]*)?\](?:\\+[nrt].*)?$''',
     # Documentation such as (password: `password`).
-    '''(?i)^(?:password|passwd|pwd)$''',
+    '''(?i)^(?:password|passwd|pwd)(?:\\+[nrt].*)?$''',
+    # The duration of a Go test, as in "--- PASS: TestPassword: (0.01s)".
+    '''^\([0-9]+(?:\.[0-9]+)?(?:ns|us|µs|ms|s|m|h)\)(?:\\+[nrt].*)?$''',
 ]
 
 [[allowlists]]
@@ -39,6 +50,15 @@ targetRules = ["curl-auth-header"]
 regexes = ['''^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$''']
 
 [[allowlists]]
-description = "A port number read as the password of a URI, such as http://localhost:8000@example.com"
+description = "A host and port read as the user and password of a URI, such as http://localhost:8000@example.com"
 targetRules = ["generic-credential-uri"]
-regexes = ['''^[0-9]{1,5}$''']
+regexTarget = "match"
+# The "user" must be localhost, an IPv4 address or a dotted host name, so a
+# numeric password next to a plain user name, as in admin:12345@, is still
+# redacted.
+regexes = ['''(?i)://(?:localhost|[0-9]{1,3}(?:\.[0-9]{1,3}){3}|[a-z0-9-]+(?:\.[a-z0-9-]+)+):[0-9]{1,5}@''']
+
+[[allowlists]]
+description = "An elided password in documentation, such as http://user:…@example.com"
+targetRules = ["generic-credential-uri"]
+regexes = ['''^(?:…|\.{3})$''']

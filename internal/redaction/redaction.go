@@ -334,20 +334,24 @@ func (r *Redactor) Redact(ctx context.Context, doc []byte) ([]byte, *Report, err
 			allowed:      map[string]int{},
 			located:      map[string]struct{}{},
 			kept:         map[string]struct{}{},
+			protected:    map[string]struct{}{},
 		}
 		w.rewriteMap(root, "")
 
 		for _, s := range pending {
 			_, located := w.located[s.secret]
 			_, kept := w.kept[s.secret]
+			_, protected := w.protected[s.secret]
 			switch {
+			// A copy in a protected leaf stays in the document whatever happened
+			// to the others, so it is reported even when another was kept.
+			case protected || (!located && !kept):
+				skip[s.secret] = struct{}{}
+				report.Unlocated[s.ruleID]++
 			case kept:
 				// It is only left on allowed lines after this pass, so a further
 				// pass would only find it again.
 				skip[s.secret] = struct{}{}
-			case !located:
-				skip[s.secret] = struct{}{}
-				report.Unlocated[s.ruleID]++
 			}
 		}
 		for rule, n := range w.byRule {
@@ -489,8 +493,11 @@ type rewriter struct {
 	allowed map[string]int
 	located map[string]struct{}
 	// kept holds the secrets with an occurrence kept on an allowed line.
-	kept  map[string]struct{}
-	count int
+	kept map[string]struct{}
+	// protected holds the secrets with an occurrence in a leaf the path filter
+	// protects, which therefore stays in the document.
+	protected map[string]struct{}
+	count     int
 }
 
 func (w *rewriter) rewriteMap(m map[string]any, path string) {
@@ -524,8 +531,9 @@ func (w *rewriter) rewrite(node any, path string) any {
 // characters `\n`.
 //
 // The path filter is consulted only once the leaf is known to hold a secret, and
-// nothing is recorded for a leaf it protects. Nearly every leaf holds none, and
-// the filter runs for each leaf on every pass otherwise.
+// a leaf it protects is left as it is, with its secrets recorded as protected.
+// Nearly every leaf holds none, and the filter runs for each leaf on every pass
+// otherwise.
 func (w *rewriter) redactLeaf(s, path string) string {
 	body, err := encodeStringBody(s)
 	if err != nil {
@@ -540,13 +548,19 @@ func (w *rewriter) redactLeaf(s, path string) string {
 		// the whole leaf.
 		marked = w.allowMarkers && hasAllowMarker(body)
 	)
-	for _, sr := range w.secrets {
+	for i, sr := range w.secrets {
 		c := strings.Count(body, sr.secret)
 		if c == 0 {
 			continue
 		}
 		if !eligible {
 			if !w.pathFilter(path) {
+				// The secrets before this one are not in the leaf.
+				for _, rest := range w.secrets[i:] {
+					if strings.Contains(body, rest.secret) {
+						w.protected[rest.secret] = struct{}{}
+					}
+				}
 				return s
 			}
 			eligible = true

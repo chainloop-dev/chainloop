@@ -73,6 +73,11 @@ var (
 	// AnnotationMaterialRedactionRules lists the detection rules that matched,
 	// so a policy can act on the kind of credential that was present.
 	AnnotationMaterialRedactionRules = CreateAnnotation("material.redaction.rules")
+	// AnnotationMaterialRedactionRuleset is the version of the detection rules
+	// the scan ran with, so a policy can tell placeholders from an older, less
+	// precise ruleset apart from current ones. Absent on materials redacted
+	// before it was introduced, which used version 1.
+	AnnotationMaterialRedactionRuleset = CreateAnnotation("material.redaction.ruleset")
 	// AnnotationMaterialRedactionSkipped marks a material uploaded without
 	// redaction because the operator explicitly asked for it. Recorded so the
 	// bypass is visible to policies rather than silent.

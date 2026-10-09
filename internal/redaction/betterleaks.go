@@ -75,6 +75,12 @@ type betterleaksScanner struct {
 //go:embed betterleaks.toml
 var rulesConfig string
 
+// RulesetVersion identifies what the scanner detects. Bump it whenever
+// betterleaks.toml, the betterleaks version, or the handling of findings in
+// this file changes what gets redacted, so that policies can tell placeholders
+// from different rulesets apart. Version 1 is the plain default ruleset.
+const RulesetVersion = 2
+
 var (
 	defaultScanner = sync.OnceValues(newBetterleaksScanner)
 	// useRE2 selects the regex engine. It is process-wide and only affects

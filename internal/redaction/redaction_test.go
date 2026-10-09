@@ -577,6 +577,21 @@ func TestRedactAllowMarkers(t *testing.T) {
 	}
 }
 
+// TestRedactAllowMarkerDoesNotHideProtectedCopy checks that a copy of a secret
+// in a protected leaf is still reported when another copy was kept by an allow
+// marker.
+func TestRedactAllowMarkerDoesNotHideProtectedCopy(t *testing.T) {
+	scanner := &fakeScanner{findings: []Finding{{RuleID: "r1", Secret: "SEC-0123456789"}}, requirePresent: true}
+	doc := `{"keepme":"SEC-0123456789","other":"x SEC-0123456789 // gitleaks:allow"}`
+
+	_, report, err := New(scanner, WithAllowMarkers(), WithPathFilter(func(p string) bool { return p != "/keepme" })).
+		Redact(context.Background(), []byte(doc))
+
+	require.NoError(t, err)
+	assert.Equal(t, map[string]int{"r1": 1}, report.Allowed)
+	assert.Equal(t, map[string]int{"r1": 1}, report.Unlocated)
+}
+
 // TestRedactTextAllowMarker checks a kept secret next to a replaced one in plain
 // text, the shape of a captured spec.
 func TestRedactTextAllowMarker(t *testing.T) {
