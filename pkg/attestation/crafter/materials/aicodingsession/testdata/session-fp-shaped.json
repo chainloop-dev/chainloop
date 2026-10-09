@@ -79,6 +79,36 @@
           "type": "assistant",
           "message": {"role": "assistant", "content": "Reading pkg/attestation/crafter/materials/aicodingsession/aicodingsession.go and running `go test ./... -run TestRedact`. Base64 of hello: aGVsbG8=. Escaped: <tag> & \"quotes\" and a tab\there."},
           "timestamp": "2026-03-25T15:13:40.100Z"
+        },
+        {
+          "type": "user",
+          "message": {"role": "user", "content": "Pushed the attestation.\n  digest: sha256:9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c69f8e7d6c5b4a39281706f5e4\n  access sha256:9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c69f8e7d6c5b4a39281706f5e4\nworkflow key: 3bf79921-3c03-81b6-afff-cb246849866f\nidempotency_key=3bf79921-3c03-81b6-afff-cb246849866f\n"},
+          "timestamp": "2026-03-25T15:14:02.000Z"
+        },
+        {
+          "type": "user",
+          "message": {"role": "user", "content": "- **Dex OIDC**: localhost:5556, users sarah@chainloop.local / john@chainloop.local (password: `password`)\n- **Database**: host: localhost, user: postgres\n"},
+          "timestamp": "2026-03-25T15:14:03.000Z"
+        },
+        {
+          "type": "user",
+          "message": {"role": "user", "content": "host: localhost\nuser: admin\n!function(e){var t={};e.password=t.password||n.password,e.user=u}\n"},
+          "timestamp": "2026-03-25T15:14:04.000Z"
+        },
+        {
+          "type": "assistant",
+          "message": {"role": "assistant", "content": "curl -H 'Authorization: Bearer REPLACE_ME' https://api.example.com\nissuer: http://localhost:8000@chainloop.local\n"},
+          "timestamp": "2026-03-25T15:14:05.000Z"
+        },
+        {
+          "type": "user",
+          "message": {"role": "user", "content": "| ai-config-no-secrets | fail | Secret (generic-password) detected [CHAINLOOP_TRACE_REDACTED:generic-password] |\npassword: [CHAINLOOP_TRACE_REDACTED:generic-password]\napi_key: [CHAINLOOP_TRACE_REDACTED:generic-api-key]\n"},
+          "timestamp": "2026-03-25T15:14:06.000Z"
+        },
+        {
+          "type": "user",
+          "message": {"role": "user", "content": "119\tconst pat = \"__GITHUB_PAT__\" // gitleaks:allow\n120\twantURI := \"https://tracker.example.com/issue/1?token=\" + pat\n"},
+          "timestamp": "2026-03-25T15:14:07.000Z"
         }
       ]
     },

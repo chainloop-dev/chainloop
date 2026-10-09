@@ -76,13 +76,19 @@ var protectedPaths = []string{
 // its original digest. The result is guaranteed to still validate against the AI
 // coding session schema; if it does not, redaction fails rather than uploading
 // either an invalid document or an unredacted one.
+//
+// A secret on a line with an inline gitleaks:allow or betterleaks:allow marker
+// is kept, as a repository scan would keep it: an agent reading a test fixture
+// marked that way is the common case. The marker is text in the transcript, so
+// the agent could also write one next to a real secret; it covers only its
+// own line, which is the same trust a repository scan gives it.
 func Redact(ctx context.Context, evidence []byte) ([]byte, *redaction.Report, error) {
 	scanner, err := redaction.DefaultScanner()
 	if err != nil {
 		return nil, nil, fmt.Errorf("initialising the secret scanner: %w", err)
 	}
 
-	redacted, report, err := redaction.New(scanner, redaction.WithPathFilter(eligible), redaction.WithOpaque(isMedia)).Redact(ctx, evidence)
+	redacted, report, err := redaction.New(scanner, redaction.WithPathFilter(eligible), redaction.WithOpaque(isMedia), redaction.WithAllowMarkers()).Redact(ctx, evidence)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -99,8 +105,8 @@ func Redact(ctx context.Context, evidence []byte) ([]byte, *redaction.Report, er
 // RedactSpecText removes detected secrets from the text of one captured spec.
 //
 // A spec is stored as its own material rather than inside the session
-// document, so it does not pass through Redact. It gets the same scanner and
-// the same placeholders here, so a credential pasted into a ticket body is
+// document, so it does not pass through Redact. It gets the same scanner, the
+// same allow markers and the same placeholders here, so a credential pasted into a ticket body is
 // removed exactly as it would be from the transcript. Text with no detected
 // secrets is returned unchanged.
 func RedactSpecText(ctx context.Context, text string) (string, *redaction.Report, error) {
@@ -109,7 +115,7 @@ func RedactSpecText(ctx context.Context, text string) (string, *redaction.Report
 		return "", nil, fmt.Errorf("initialising the secret scanner: %w", err)
 	}
 
-	return redaction.New(scanner).RedactText(ctx, text)
+	return redaction.New(scanner, redaction.WithAllowMarkers()).RedactText(ctx, text)
 }
 
 // eligible reports whether the string leaf at path may be rewritten.

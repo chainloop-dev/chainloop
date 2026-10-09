@@ -1,0 +1,44 @@
+# Secret scanning rules for redaction: the betterleaks default ruleset, with
+# allowlists for values the generic rules match in AI coding sessions but which
+# are not credentials.
+#
+# Every allowlist targets one or more low-precision rules and tests the found
+# secret, or the rule's match. None tests the whole line: a string leaf of the
+# scanned document is a single line, so a line allowlist would drop every
+# finding in a whole tool result.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "UUIDs are identifiers, not credentials"
+targetRules = ["generic-api-key", "generic-password"]
+regexes = ['''^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$''']
+
+[[allowlists]]
+description = "Content digests, such as sha256:<hex>"
+targetRules = ["generic-api-key"]
+regexTarget = "match"
+regexes = ['''(?i)\bsha(?:1|224|256|384|512):[0-9a-f]{40,128}\b''']
+
+[[allowlists]]
+description = "Code expressions and the bare key word, which are not password values"
+targetRules = ["generic-password"]
+regexes = [
+    # An expression such as t.password||n.password in minified JavaScript.
+    '''\|\||&&|\?\?''',
+    # A property access such as e.password or config.db_password.
+    '''^[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)*\.\w*(?i:passw(?:or)?d|pwd)\w*$''',
+    # Documentation such as (password: `password`).
+    '''(?i)^(?:password|passwd|pwd)$''',
+]
+
+[[allowlists]]
+description = "Placeholders in documentation, such as Bearer YOUR_API_TOKEN"
+targetRules = ["curl-auth-header"]
+regexes = ['''^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$''']
+
+[[allowlists]]
+description = "A port number read as the password of a URI, such as http://localhost:8000@example.com"
+targetRules = ["generic-credential-uri"]
+regexes = ['''^[0-9]{1,5}$''']
