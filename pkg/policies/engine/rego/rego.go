@@ -144,6 +144,7 @@ func (r *Engine) Verify(ctx context.Context, policy *engine.Policy, input []byte
 	// wins, since context.WithTimeout never extends the parent's.
 	ctx, cancel := context.WithTimeout(ctx, r.executionTimeout)
 	defer cancel()
+	ctx = r.evalContext(ctx)
 
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
@@ -452,11 +453,21 @@ func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, v
 	return matchesEvaluation, nil
 }
 
+// evalContext marks the context of permissive engines, which lifts the
+// http.send request option restrictions.
+func (r *Engine) evalContext(ctx context.Context) context.Context {
+	if r.operatingMode == EnvironmentModePermissive {
+		return withPermissiveMode(ctx)
+	}
+	return ctx
+}
+
 // Evaluates a single rule and returns its boolean result
 func (r *Engine) evaluateMatchingRule(ctx context.Context, ruleName string, parsedModule *ast.Module, decodedInput interface{}) (result bool, found bool, err error) {
 	// Bound the evaluation, same as Verify does for the main rule
 	ctx, cancel := context.WithTimeout(ctx, r.executionTimeout)
 	defer cancel()
+	ctx = r.evalContext(ctx)
 
 	// Add input
 	regoInput := rego.Input(decodedInput)
