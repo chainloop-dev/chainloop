@@ -83,6 +83,9 @@ func TestAnnounceSessionStart(t *testing.T) {
 	const (
 		banner      = "Chainloop Trace is recording this session."
 		instruction = "Write the specification this session is working from into /repo/.chainloop/specs/abc-123 now."
+		// Claude Code prints a systemMessage flush against the transcript, so
+		// the provider sets the banner apart with blank lines.
+		framedBanner = "\n\n" + banner + "\n"
 	)
 
 	testCases := []struct {
@@ -95,7 +98,7 @@ func TestAnnounceSessionStart(t *testing.T) {
 		{
 			name:            "both channels in one document",
 			msg:             trace.SessionStartMessage{Banner: banner, Instruction: instruction},
-			wantBanner:      banner,
+			wantBanner:      framedBanner,
 			wantInstruction: instruction,
 			wantEmitted:     true,
 		},
@@ -104,7 +107,7 @@ func TestAnnounceSessionStart(t *testing.T) {
 			// still gets the banner, the model is told nothing.
 			name:        "a banner with nothing to instruct",
 			msg:         trace.SessionStartMessage{Banner: banner},
-			wantBanner:  banner,
+			wantBanner:  framedBanner,
 			wantEmitted: true,
 		},
 		{

@@ -201,9 +201,18 @@ func (p *Provider) SupportsSessionStartInstruction() bool {
 // systemMessage must stay top-level; nested inside hookSpecificOutput it is
 // silently ignored. The event name is the one that fired, not the one
 // AnnounceToUser hardcodes for its own, different hook.
+//
+// The blank lines around the banner are this client's framing: Claude Code
+// prints a systemMessage flush against the transcript, so without them the
+// banner reads as part of whatever came before.
 func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
 	if msg.Empty() {
 		return nil
+	}
+
+	banner := msg.Banner
+	if banner != "" {
+		banner = "\n\n" + banner + "\n"
 	}
 
 	type hookSpecificOutput struct {
@@ -215,7 +224,7 @@ func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
 		SystemMessage      string             `json:"systemMessage,omitempty"`
 		HookSpecificOutput hookSpecificOutput `json:"hookSpecificOutput"`
 	}{
-		SystemMessage: msg.Banner,
+		SystemMessage: banner,
 		HookSpecificOutput: hookSpecificOutput{
 			HookEventName:     eventSessionStart,
 			AdditionalContext: msg.Instruction,
@@ -283,7 +292,7 @@ func (p *Provider) AnnounceToUser(msg string) error {
 		SystemMessage: msg,
 		HookSpecificOutput: hookSpecificOutput{
 			HookEventName:     eventPostToolUse,
-			AdditionalContext: "Tell the user the following, including any link verbatim: " + msg,
+			AdditionalContext: trace.RelayToModelInstruction + msg,
 		},
 	}
 
