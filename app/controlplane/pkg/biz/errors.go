@@ -200,3 +200,22 @@ func (e ErrAlreadyExists) Error() string {
 func IsErrAlreadyExists(err error) bool {
 	return errors.As(err, &ErrAlreadyExists{})
 }
+
+// ErrInvalidPassphrase is returned when the attestation state stored for a
+// workflow run cannot be decrypted with the passphrase derived from the current
+// request token. It typically means the state was created by a run that
+// authenticated with a different token, for example after the API token was
+// rotated.
+type ErrInvalidPassphrase struct{}
+
+func NewErrInvalidPassphrase() ErrInvalidPassphrase {
+	return ErrInvalidPassphrase{}
+}
+
+func (e ErrInvalidPassphrase) Error() string {
+	return "the attestation state was created with a different token, use the same token that ran 'attestation init', or reset the attestation and run 'attestation init' again"
+}
+
+func IsErrInvalidPassphrase(err error) bool {
+	return errors.As(err, &ErrInvalidPassphrase{})
+}

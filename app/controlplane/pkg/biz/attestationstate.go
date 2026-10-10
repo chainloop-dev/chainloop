@@ -274,7 +274,9 @@ func decrypt(ciphertext []byte, passphrase string) ([]byte, error) {
 
 	// Check if the decrypted data starts with the magic string
 	if string(ciphertext[:len(magic)]) != magic {
-		return nil, fmt.Errorf("incorrect passphrase")
+		// A mismatch means the state was encrypted with a different passphrase,
+		// i.e. a different request token, not a server-side failure.
+		return nil, NewErrInvalidPassphrase()
 	}
 
 	return ciphertext[len(magic):], nil
