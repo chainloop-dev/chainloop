@@ -160,7 +160,8 @@ func (s *attestationStateTestSuite) TestRead() {
 		s.NoError(err)
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), "wrong-passphrase")
-		s.ErrorContains(err, "incorrect passphrase")
+		s.ErrorContains(err, "created with a different token")
+		s.True(biz.IsErrInvalidPassphrase(err))
 		s.Nil(got)
 	})
 
@@ -173,7 +174,8 @@ func (s *attestationStateTestSuite) TestRead() {
 		s.NoError(err)
 
 		got, err := s.AttestationState.Read(ctx, s.workflowOrg1.ID.String(), s.runOrg1.ID.String(), s.passphrase)
-		s.ErrorContains(err, "incorrect passphrase")
+		s.ErrorContains(err, "created with a different token")
+		s.True(biz.IsErrInvalidPassphrase(err))
 		s.Nil(got)
 	})
 }

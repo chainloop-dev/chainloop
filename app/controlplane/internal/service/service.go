@@ -543,6 +543,11 @@ func handleUseCaseErr(ctx context.Context, err error, l *log.Helper) error {
 		return status.Error(codes.AlreadyExists, err.Error())
 	case biz.IsErrReleasedVersionImmutable(err):
 		return status.Error(codes.FailedPrecondition, err.Error())
+	case biz.IsErrInvalidPassphrase(err):
+		// Client-side condition: the state was encrypted with a different token
+		// than the one used to resume the attestation. Surface it as a known
+		// error instead of masking it and reporting it to Sentry.
+		return status.Error(codes.FailedPrecondition, err.Error())
 	default:
 		// Client errors already converted by this function can be processed again
 		// (e.g. AttestationService.Store wraps storeAttestation, which converts internally).
