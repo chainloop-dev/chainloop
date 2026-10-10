@@ -457,7 +457,7 @@ require (
 	go4.org v0.0.0-20260112195520-a5071408f32f // indirect
 	goa.design/goa/v3 v3.27.0 // indirect
 	golang.org/x/mod v0.41.0 // indirect
-	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 	golang.org/x/tools v0.50.0 // indirect
