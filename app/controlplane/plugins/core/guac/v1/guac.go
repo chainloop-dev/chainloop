@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -80,6 +80,31 @@ func New(l log.Logger) (sdk.FanOut, error) {
 	return &Integration{base}, err
 }
 
+// gcsServiceAccountType is the only Google credential type GUAC accepts.
+const gcsServiceAccountType = "service_account"
+
+// validateGCSCredentials checks that the supplied credentials are a Google
+// service account key, the only type GUAC supports, and rejects anything else.
+//
+// The Google SDK dispatches on the credential "type" field and handles each
+// type differently when it builds the client. GUAC only ever needs a service
+// account key to write to a bucket, so the type is checked up front and every
+// other type is refused, keeping the credential path narrow and predictable.
+func validateGCSCredentials(raw string) error {
+	var parsed struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return fmt.Errorf("credentials are not valid JSON: %w", err)
+	}
+
+	if parsed.Type != gcsServiceAccountType {
+		return fmt.Errorf("unsupported Google credential type %q: only a service account key is accepted", parsed.Type)
+	}
+
+	return nil
+}
+
 // Register is executed when a operator wants to register a specific instance of this integration with their Chainloop organization
 func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest) (*sdk.RegistrationResponse, error) {
 	i.Logger.Info("registration requested")
@@ -88,6 +113,12 @@ func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest
 	var request *registrationRequest
 	if err := sdk.FromConfig(req.Payload, &request); err != nil {
 		return nil, fmt.Errorf("invalid registration request: %w", err)
+	}
+
+	// GUAC supports only a service account key. Validate the credential type
+	// before the Google SDK builds a client from it.
+	if err := validateGCSCredentials(request.Credentials); err != nil {
+		return nil, fmt.Errorf("invalid credentials: %w", err)
 	}
 
 	// Check that the credentials are valid and the bucket exists
@@ -134,6 +165,12 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 
 	if req.RegistrationInfo.Credentials == nil || req.RegistrationInfo.Credentials.Password == "" {
 		return errors.New("missing expected credentials")
+	}
+
+	// Re-check the stored credential on every dispatch, so a registration created
+	// before this validation is refused here rather than passed to the SDK as-is.
+	if err := validateGCSCredentials(req.RegistrationInfo.Credentials.Password); err != nil {
+		return fmt.Errorf("invalid credentials: %w", err)
 	}
 
 	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(req.RegistrationInfo.Credentials.Password)))

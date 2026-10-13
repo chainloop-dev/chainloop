@@ -135,7 +135,93 @@ func (s *testSuite) TearDownTest() {
 	s.server.Stop()
 }
 
+// TestRegisterRejectsNonServiceAccountCredentials proves the credential type is
+// checked before the Google SDK is built: a non-service-account credential is
+// refused by Register with no client created.
+func (s *testSuite) TestRegisterRejectsNonServiceAccountCredentials() {
+	integration, err := New(log.NewStdLogger(io.Discard))
+	require.NoError(s.T(), err)
+
+	payload, err := sdk.ToConfig(&registrationRequest{
+		Bucket:      "some-bucket",
+		Credentials: `{"type":"external_account"}`,
+	})
+	require.NoError(s.T(), err)
+
+	_, err = integration.(*Integration).Register(context.Background(), &sdk.RegistrationRequest{Payload: payload})
+	require.Error(s.T(), err)
+	assert.ErrorContains(s.T(), err, "invalid credentials")
+	assert.ErrorContains(s.T(), err, "service account key")
+}
+
 // Run all the tests
 func TestGuacIntegration(t *testing.T) {
 	suite.Run(t, new(testSuite))
+}
+
+func TestValidateGCSCredentials(t *testing.T) {
+	const wantUnsupportedType = "unsupported Google credential type"
+
+	testCases := []struct {
+		name    string
+		creds   string
+		wantErr string // substring to expect; empty means the credential is accepted
+	}{
+		{
+			name:  "service account key is accepted",
+			creds: `{"type":"service_account","project_id":"p"}`,
+		},
+		{
+			name:    "external account is rejected",
+			creds:   `{"type":"external_account"}`,
+			wantErr: wantUnsupportedType,
+		},
+		{
+			name:    "impersonated service account is rejected",
+			creds:   `{"type":"impersonated_service_account"}`,
+			wantErr: wantUnsupportedType,
+		},
+		{
+			name:    "external account authorized user is rejected",
+			creds:   `{"type":"external_account_authorized_user"}`,
+			wantErr: wantUnsupportedType,
+		},
+		{
+			name:    "authorized user is rejected",
+			creds:   `{"type":"authorized_user"}`,
+			wantErr: wantUnsupportedType,
+		},
+		{
+			name:    "gdch service account is rejected",
+			creds:   `{"type":"gdch_service_account"}`,
+			wantErr: wantUnsupportedType,
+		},
+		{
+			name:    "missing type is rejected",
+			creds:   `{"project_id":"p"}`,
+			wantErr: wantUnsupportedType,
+		},
+		{
+			name:    "non-JSON is rejected",
+			creds:   `-----BEGIN PRIVATE KEY-----`,
+			wantErr: "credentials are not valid JSON",
+		},
+		{
+			name:    "empty string is rejected",
+			creds:   ``,
+			wantErr: "credentials are not valid JSON",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := validateGCSCredentials(tc.creds)
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.wantErr)
+		})
+	}
 }
