@@ -92,8 +92,10 @@ func (r *ChainloopSandbox) VerifyCommitSignature(_ context.Context, commitHash s
 		return nil
 	}
 
+	// A verification without a status carries no result, the same as a missing one.
 	var given SandboxCommitVerification
-	if err := json.Unmarshal([]byte(raw), &given); err != nil || given.Verification == nil {
+	if err := json.Unmarshal([]byte(raw), &given); err != nil || given.Verification == nil ||
+		given.Verification.Status == commitverification.VerificationStatusUnspecified {
 		return &commitverification.CommitVerification{
 			Attempted: true,
 			Status:    commitverification.VerificationStatusUnavailable,

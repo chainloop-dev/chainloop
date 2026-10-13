@@ -182,6 +182,18 @@ func (s *chainloopSandboxSuite) TestVerifyCommitSignature() {
 			commit: commit,
 			want:   invalid,
 		},
+		{
+			name:   "verification without a status",
+			env:    `{"commit":"` + commit + `","verification":{"attempted":true,"platform":"gitlab"}}`,
+			commit: commit,
+			want:   invalid,
+		},
+		{
+			name:   "unspecified status",
+			env:    `{"commit":"` + commit + `","verification":{"attempted":true,"status":"unspecified"}}`,
+			commit: commit,
+			want:   invalid,
+		},
 	}
 
 	for _, tc := range testCases {
