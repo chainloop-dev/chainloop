@@ -286,7 +286,7 @@ func TestWriteTraceInitStateFailureLeavesNothing(t *testing.T) {
 	require.NoError(t, err)
 
 	cfg := &traceInitConfig{project: "a-project", workflow: defaultTraceWorkflow, saveProject: true}
-	require.Error(t, writeTraceInitState(cfg, repoRoot, gitDir),
+	require.Error(t, writeTraceInitState(cfg, repoRoot, gitDir, false),
 		"a trace directory that cannot be created has to fail the step")
 
 	// The step is not atomic on its own: it saved the configuration before it

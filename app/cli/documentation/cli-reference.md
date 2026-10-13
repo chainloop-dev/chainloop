@@ -3257,6 +3257,55 @@ Options inherited from parent commands
 -y, --yes                       Skip confirmation
 ```
 
+### chainloop trace export
+
+Write the recorded AI coding session evidence to a local directory
+
+Synopsis
+
+Write the recorded AI coding sessions of this repository to a local directory,
+instead of pushing a signed attestation.
+
+It runs the same assembly a push does: it reads each spec source, redacts
+secrets, replaces copies with pointers, and stores each spec, skill, and image
+as its own material. Every material is written under its content digest, next to
+a manifest that lists them, so the output equals what a push would upload apart
+from the signature.
+
+It makes no call to the control plane and needs no credentials or network. Pair
+it with "chainloop trace init --local": that sets the repository up to record
+sessions without a backend, and this writes their evidence to disk. --no-redact
+turns off secret redaction for a trusted local run, so the output can then hold
+secrets.
+
+```
+chainloop trace export <dir> [flags]
+```
+
+Options
+
+```
+-h, --help        help for export
+--no-redact   disable secret redaction; for a trusted local run only, as the output can then hold secrets
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
 ### chainloop trace help
 
 Help about any command
@@ -3322,6 +3371,13 @@ turn the questions off on a terminal too.
 The organization, project, workflow and require-trace values are saved to
 .chainloop.yml, and every push reads them from there.
 
+With --local, the repository is set up without a control plane: it installs the
+same hooks but creates no workflow, needs no login, and asks for no organization
+or project. The pre-push hook then pushes no attestation. Sessions are recorded
+as usual, and their evidence is written to disk with "chainloop trace export".
+Local mode is per-clone: it is marked in the local trace state, not in the shared
+.chainloop.yml, so it never turns off attestation for teammates.
+
 ```
 chainloop trace init [flags]
 ```
@@ -3333,6 +3389,7 @@ Options
 --contract string   workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor            install Cursor hooks
 -h, --help              help for init
+--local             set up backend-free local mode: no control plane, no login, no workflow; export the evidence to disk with 'chainloop trace export'
 --opencode          install opencode hooks
 --project string    chainloop project name
 --require-trace     block pushes when attestation fails for AI-assisted commits

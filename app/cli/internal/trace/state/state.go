@@ -39,11 +39,18 @@ const (
 	// detect trace-run mode without depending on environment-variable
 	// inheritance from the agent.
 	traceRunActiveFile = "run-active"
-	traceDirSessions   = "sessions"
-	traceDirRaw        = "raw"
-	traceDirCommits    = "commits"
-	traceDirSnapshots  = "snapshots"
-	traceDirAILines    = "ai-lines"
+	// traceLocalFile is the sentinel created by `chainloop trace init --local`.
+	// It marks this clone as a backend-free install: sessions are recorded as
+	// usual, the pre-push hook pushes no attestation, and the evidence is
+	// written to disk with `chainloop trace export`. It lives in the per-clone
+	// trace state, never in the shared .chainloop.yml, so one developer's local
+	// setup does not turn off attestation for the whole team.
+	traceLocalFile    = "local"
+	traceDirSessions  = "sessions"
+	traceDirRaw       = "raw"
+	traceDirCommits   = "commits"
+	traceDirSnapshots = "snapshots"
+	traceDirAILines   = "ai-lines"
 	// traceDirSpecRedactions holds the redacted copies of each session's
 	// spec files, so a later push of the session does not scan an unchanged
 	// file again. It lives for the session, not for one push.
@@ -369,6 +376,30 @@ func (s *Store) MarkTraceInitialized() error {
 // RemoveTraceInitialized removes the sentinel file.
 func (s *Store) RemoveTraceInitialized() error {
 	return removeIfExists(filepath.Join(s.traceDirPath(), traceInitializedFile))
+}
+
+// IsLocal reports whether this clone was set up with `trace init --local`, so
+// the pre-push hook pushes no attestation and the evidence is exported to disk
+// instead.
+func (s *Store) IsLocal() bool {
+	_, err := os.Stat(filepath.Join(s.traceDirPath(), traceLocalFile))
+	return err == nil
+}
+
+// MarkLocal creates the sentinel that puts this clone in backend-free local
+// mode. It survives WipeTraceDir, so the mode outlasts the per-push cleanup, and
+// is cleared only when the trace directory is removed (trace uninstall).
+func (s *Store) MarkLocal() error {
+	base := s.traceDirPath()
+	if err := os.MkdirAll(base, 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(base, traceLocalFile), nil, 0600)
+}
+
+// RemoveLocal removes the local-mode sentinel.
+func (s *Store) RemoveLocal() error {
+	return removeIfExists(filepath.Join(s.traceDirPath(), traceLocalFile))
 }
 
 // MarkTraceRunActive marks the trace state as belonging to a running

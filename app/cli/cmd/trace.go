@@ -33,6 +33,7 @@ func newTraceCmd() *cobra.Command {
 	cmd.AddCommand(
 		newTraceInitCmd(),
 		newTraceRunCmd(),
+		newTraceExportCmd(),
 		newTraceUninstallCmd(),
 		newTraceHookCmd(),
 	)

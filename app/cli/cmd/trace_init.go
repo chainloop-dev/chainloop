@@ -42,6 +42,7 @@ func newTraceInitCmd() *cobra.Command {
 	var (
 		project      string
 		contract     string
+		localFlag    bool
 		claudeFlag   bool
 		cursorFlag   bool
 		opencodeFlag bool
@@ -71,7 +72,14 @@ required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
 turn the questions off on a terminal too.
 
 The organization, project, workflow and require-trace values are saved to
-.chainloop.yml, and every push reads them from there.`,
+.chainloop.yml, and every push reads them from there.
+
+With --local, the repository is set up without a control plane: it installs the
+same hooks but creates no workflow, needs no login, and asks for no organization
+or project. The pre-push hook then pushes no attestation. Sessions are recorded
+as usual, and their evidence is written to disk with "chainloop trace export".
+Local mode is per-clone: it is marked in the local trace state, not in the shared
+.chainloop.yml, so it never turns off attestation for teammates.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			gitDir, repoRoot, err := tracegit.FindGitDirAndRoot()
 			if err != nil {
@@ -83,14 +91,31 @@ The organization, project, workflow and require-trace values are saved to
 				return err
 			}
 
+			// Local mode creates no workflow and pushes no attestation, so the
+			// flags that only shape those are contradictions rather than extra
+			// configuration. Reject them instead of ignoring them silently.
+			if localFlag {
+				if contract != "" {
+					return fmt.Errorf("--contract cannot be used with --local: local mode creates no workflow and contacts no control plane")
+				}
+				if cmd.Flags().Changed("require-trace") {
+					return fmt.Errorf("--require-trace cannot be used with --local: local mode pushes no attestation, so there is nothing to require")
+				}
+			}
+
 			// Fill in whatever the flags and .chainloop.yml did not settle,
 			// asking the user when there is one to ask. The executor it hands
 			// back is pinned to the resolved organization and reused below.
-			executor, err := resolveTraceIdentity(cmd.Context(), cfg, repoRoot)
-			if err != nil {
-				return stopIfAborted(err)
+			// Local mode talks to no control plane, so it resolves no identity
+			// and opens no executor.
+			var executor *action.AttestationExecutor
+			if !localFlag {
+				executor, err = resolveTraceIdentity(cmd.Context(), cfg, repoRoot)
+				if err != nil {
+					return stopIfAborted(err)
+				}
+				defer func() { _ = executor.Close() }()
 			}
-			defer func() { _ = executor.Close() }()
 
 			// Ask which agents to trace before anything is created or written,
 			// so every question is answered up front and an abort leaves the
@@ -107,8 +132,12 @@ The organization, project, workflow and require-trace values are saved to
 				return fmt.Errorf("no trace providers selected")
 			}
 
-			if err := ensureTraceInitWorkflow(cmd.Context(), executor, cfg, contract); err != nil {
-				return err
+			// Local mode has no control plane to create the workflow in; the
+			// evidence is exported to disk rather than attested to a workflow.
+			if !localFlag {
+				if err := ensureTraceInitWorkflow(cmd.Context(), executor, cfg, contract); err != nil {
+					return err
+				}
 			}
 
 			// The harness hooks come first of everything that is left behind.
@@ -171,7 +200,7 @@ The organization, project, workflow and require-trace values are saved to
 			// local, but a failure part-way through it would leave a repository
 			// half set up: harness hooks calling a configuration that is not
 			// there, or a configuration with nothing recording into it.
-			if err := writeTraceInitState(cfg, repoRoot, gitDir); err != nil {
+			if err := writeTraceInitState(cfg, repoRoot, gitDir, localFlag); err != nil {
 				for _, snapshot := range before {
 					if rerr := snapshot.restore(); rerr != nil {
 						logger.Debug().Err(rerr).Str("path", snapshot.path).
@@ -189,13 +218,20 @@ The organization, project, workflow and require-trace values are saved to
 				workDir = repoRoot
 			}
 
+			// What the run produced, and what to do with it. Every step above logs
+			// at debug, so this is what the user is left with.
+			if localFlag {
+				writeTraceInitLocalSummary(os.Stdout, providerNames(installed))
+				writeTraceLocalNextSteps(os.Stdout, repoRoot, workDir, installed)
+
+				return nil
+			}
+
 			// Nothing pinned an organization when cfg has none, so the workflow
 			// went to the one the CLI points at. That is the one to report: it is
 			// what the connection used, not a guess.
 			organization := cmp.Or(cfg.organization, viper.GetString(confOptions.organization.viperKey))
 
-			// What the run produced, and what to do with it. Every step above logs
-			// at debug, so this is what the user is left with.
 			writeTraceInitSummary(os.Stdout, organization, cfg.project, cfg.workflow, providerNames(installed))
 			writeTraceNextSteps(os.Stdout, repoRoot, workDir, installed)
 
@@ -205,6 +241,7 @@ The organization, project, workflow and require-trace values are saved to
 
 	cmd.Flags().StringVar(&project, "project", "", "chainloop project name")
 	cmd.Flags().StringVar(&contract, "contract", "", traceContractFlagDesc)
+	cmd.Flags().BoolVar(&localFlag, "local", false, "set up backend-free local mode: no control plane, no login, no workflow; export the evidence to disk with 'chainloop trace export'")
 	cmd.Flags().String("workflow", "", "chainloop workflow name used for trace attestations (defaults to \"ai-coding-session\")")
 	cmd.Flags().Bool("require-trace", false, "block pushes when attestation fails for AI-assisted commits")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no harness flag is set)")
@@ -233,6 +270,44 @@ func writeTraceInitSummary(w io.Writer, organization, project, workflow string, 
 	fmt.Fprintf(w, "  project       %s\n", project)
 	fmt.Fprintf(w, "  workflow      %s\n", workflow)
 	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
+}
+
+// writeTraceInitLocalSummary reports what a local init set up. It names no
+// organization, project or workflow, because local mode has none: it records
+// sessions and writes their evidence to disk, with no control plane.
+func writeTraceInitLocalSummary(w io.Writer, harnesses []string) {
+	fmt.Fprint(w, "\nCongratulations, your repository is initialized in local mode\n\n")
+	fmt.Fprintf(w, "  mode          local (no control plane)\n")
+	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
+}
+
+// writeTraceLocalNextSteps says what is left to do after a local init. Unlike
+// the backend path, there is nothing to push: the evidence is read off disk with
+// `chainloop trace export`, so that is the step that replaces "commit and push".
+func writeTraceLocalNextSteps(w io.Writer, repoRoot, workDir string, installed []trace.Provider) {
+	files := make([]string, 0, len(installed))
+	for _, p := range installed {
+		absolute := p.SettingsFile(repoRoot)
+		if rel, err := filepath.Rel(workDir, absolute); err == nil {
+			files = append(files, rel)
+			continue
+		}
+
+		files = append(files, absolute)
+	}
+
+	fmt.Fprintf(w, `
+What's next
+
+  1. Commit the harness configuration. Teammates then only need to run
+     chainloop trace init (local mode is yours alone and is not committed):
+       git add %s
+  2. Start %s and write some code
+  3. Write the session evidence to a directory to inspect it, no push needed:
+       chainloop trace export ./trace-evidence
+
+Learn more: %s
+`, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
 }
 
 // writeTraceNextSteps says what is left for the user to do. Committing comes
@@ -398,7 +473,7 @@ func (f fileSnapshot) restore() error {
 // trace directory, the managed git hooks and the marker that says init ran. It
 // is one step so its caller can undo the harness hooks if any part of it fails,
 // rather than leaving a half-configured repository behind.
-func writeTraceInitState(cfg *traceInitConfig, repoRoot, gitDir string) error {
+func writeTraceInitState(cfg *traceInitConfig, repoRoot, gitDir string, local bool) error {
 	if err := cfg.save(repoRoot); err != nil {
 		return err
 	}
@@ -417,6 +492,19 @@ func writeTraceInitState(cfg *traceInitConfig, repoRoot, gitDir string) error {
 
 	if err := store.MarkTraceInitialized(); err != nil {
 		return fmt.Errorf("mark trace initialized: %w", err)
+	}
+
+	// The local marker lives in the per-clone trace state, not in the shared
+	// .chainloop.yml, so it never turns attestation off for a teammate who
+	// clones the repository and runs a normal init. A normal init clears any
+	// stale marker, so re-running without --local switches the clone back to
+	// pushing attestations.
+	if local {
+		if err := store.MarkLocal(); err != nil {
+			return fmt.Errorf("mark local mode: %w", err)
+		}
+	} else if err := store.RemoveLocal(); err != nil {
+		return fmt.Errorf("clear local mode: %w", err)
 	}
 
 	return nil

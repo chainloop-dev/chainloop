@@ -533,7 +533,25 @@ type RunTracePushOpts struct {
 func HandlePrePushHook(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts) error {
 	drainPushStdin()
 
+	// A clone set up with `trace init --local` talks to no control plane, so the
+	// pre-push hook has no attestation to push. The session is still recorded by
+	// the other hooks; its evidence is written to disk with `trace export`.
+	if isLocalTrace() {
+		log.Debug().Msg("local trace mode: skipping attestation on push; use `chainloop trace export` to write the evidence to disk")
+
+		return nil
+	}
+
 	return RunTracePush(ctx, log, opts)
+}
+
+// isLocalTrace reports whether the clone the hook runs in was set up with
+// `trace init --local`. A failure to locate the trace state is treated as "not
+// local": the normal attestation path then runs and reports any real problem,
+// rather than this silently swallowing the push.
+func isLocalTrace() bool {
+	store, _, err := state.Locate()
+	return err == nil && store.IsLocal()
 }
 
 // PrePushFailure decides what a failed pre-push hook does. The managed
