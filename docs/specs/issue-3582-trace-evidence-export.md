@@ -16,100 +16,102 @@ This spec records a design that humans reviewed and approved. Do not change it a
 When your code goes against this spec, say so in your PR. Do not edit the spec to match the code.
 -->
 
-# Spec issue-3582: Trace evidence export to disk
+# Spec issue-3582: Trace local mode
 
 ## Summary
-Chainloop Trace records an AI coding session. On a git push, it assembles the session evidence and sends it to the control plane as a signed attestation. The assembly does real work. It reads the spec sources at push time, redacts secrets, and replaces copies with pointers. It stores each spec, skill, and image as its own material. Today that assembly runs only inside a push. The setup needs the control plane too. So a developer needs an account, credentials, and a network before they see any evidence. This spec adds a local mode. `trace init --local` sets the repository up with no control plane: no login, no organization, no workflow. In local mode the push hook sends no attestation and writes nothing itself. `trace run --export` wraps the agent and writes the evidence when the session ends, and `trace export` writes the evidence of the sessions the hooks already recorded. Both run the same assembly a push runs. There is no attestation and no push. It gives developers and tests the exact evidence a push would produce, on disk, with no backend at all.
+Chainloop Trace records an AI coding session. Today it needs a control plane. The setup creates a workflow and needs a login, and a git push attests the session to the backend. So a developer cannot use Trace without an account, credentials, and a network. This spec adds a local mode. A repository records its sessions and stores them on disk, with no control plane. The mode is set in `.chainloop.yml` with `traceStorage: LOCAL` and an optional `tracePath`. The normal flow works. A developer runs the harness, writes code, and pushes. The pre-push hook runs the same assembly a push runs and stores the session under the path, and tells the user where it went. `traceRequired` replaces `requireTrace`. This spec is about recording a session without a control plane. Exporting an already-recorded session on demand is a separate feature, left to a future spec.
 
 ## Problem
-- The evidence a push produces is more than the raw transcript. The push reads the spec sources, redacts secrets, and adds the pointers, the pasted images, and the skills.
-- This assembly runs only inside a push. So a developer needs a running control plane, credentials, and a network to see its output.
-- The setup also needs the control plane. The init step creates the workflow and needs a login, so there is no way to use Trace without a backend at all.
-- A test cannot get the pushed evidence without a live backend. So the assembly is hard to test.
-- No command writes the session evidence to disk. A developer cannot see what a session would send before they send it.
-- The push also signs and stores the attestation. A developer who only wants to read the evidence pays for the whole backend path.
+- Trace needs a control plane. The init step creates a workflow and needs a login, so there is no way to set Trace up without a backend.
+- A push attests the session to the control plane. So recording a session needs an account, credentials, and a network.
+- Some teams want to record AI coding sessions with no backend at all. An evaluation, an air-gapped machine, a privacy need, or a trial before adopting the backend all want local recording.
+- The evidence a push produces is more than the raw transcript. It reads the spec sources, redacts secrets, and adds the pointers, the pasted images, and the skills. A local mode has to do the same work, so the stored session matches a push.
 
 ## Goals and Non-Goals
-- Goal: `trace init --local` sets up the repository for local mode and contacts no control plane.
-- Goal: `trace run --export` runs the full push-time assembly and writes the result to a local directory when the session ends. It needs no control plane and does no push.
-- Goal: the written evidence equals what a push would upload for the same session. The fields, the redaction, the pointers, and the spec, skill, and image materials match.
-- Goal: the output is laid out so a reader and a test find each material by its digest.
-- Goal: a developer sets up and reads the evidence of a session with no account, no credentials, and no network.
-- Non-goal: a signed attestation. The export writes the evidence set, not a signed statement or a signed bundle. A control-plane-free signed attestation needs a contract and a signing key, and it is a separate, larger effort.
+- Goal: a repository records and stores its AI coding sessions on disk, with no control plane, no login, and no workflow.
+- Goal: `.chainloop.yml` sets the storage mode: the control plane (the default) or local disk, with an optional path.
+- Goal: the normal flow works. The developer runs the harness and pushes, and the session is stored locally.
+- Goal: the user is told where the session is stored.
+- Goal: the stored evidence equals what a push would upload for the same session, apart from the signature.
+- Non-goal: exporting an already-recorded session to a directory on demand. That is a separate feature for a future spec.
+- Non-goal: a signed attestation. Local mode stores the evidence set, not a signed statement. A control-plane-free signed attestation needs a contract and a signing key, and it is a separate, larger effort.
 - Non-goal: policy evaluation and contract-required materials. Those need a contract from the control plane.
-- Non-goal: a change to the push path, or to what a push uploads.
 - Non-goal: the agent or the model offline. The agent still calls its model over the network during the session. This feature is about the Chainloop backend, not the model.
 
 ## Requirements
 
-### R-001: Write the evidence to a local directory
-The export MUST run the push-time assembly and write the result to a directory the user names. It MUST make no call to the control plane and emit no attestation.
-- Done when: the export reaches no control plane, needs no credentials, and writes the directory.
+### R-001: Store the session evidence on disk
+In local mode, Trace MUST run the push-time assembly and store the result on disk under the configured path. It MUST make no call to the control plane and emit no attestation.
+- Done when: a push in a local-mode repository reaches no control plane, needs no credentials, and stores the session on disk.
 
 ### R-002: The same evidence as a push
-The written evidence record MUST equal the one a push would upload for the same session. The fields, the redaction, the pointers, and the spec, skill, and image materials MUST match. The one difference is the signature and the attestation wrapper, which the export does not produce.
-- Done when: a session that is exported and the same session that is pushed give the same evidence record and the same material digests.
+The stored evidence record MUST equal the one a push would upload for the same session. The fields, the redaction, the pointers, and the spec, skill, and image materials MUST match. The one difference is the signature and the attestation wrapper, which local mode does not produce.
+- Done when: a session stored locally and the same session pushed give the same evidence record and the same material digests.
 
 ### R-003: Materials addressable by digest
-The export MUST write each material under its content digest. A reader and a test MUST find each material from the reference in the evidence record.
+The stored session MUST write each material under its content digest. A reader and a test MUST find each material from the reference in the evidence record.
 
 ### R-004: Redaction on by default
-The export MUST redact secrets in the evidence and in the materials, as a push does. An opt-out is for a trusted local run only, and the output can then hold secrets.
-- Done when: a secret in a spec source does not appear in the exported files.
+Local mode MUST redact secrets in the evidence and in the materials, as a push does. An opt-out is for a trusted local run only, and the output can then hold secrets.
+- Done when: a secret in a spec source does not appear in the stored files.
 
 ### R-005: No control plane and no credentials
-The export MUST NOT need a control plane, an organization, a token, or a network. The agent run that records the session still uses the network for its model.
+Local mode MUST NOT need a control plane, an organization, a token, or a network. The agent run that records the session still uses the network for its model.
 
 ### R-006: A manifest
-The export MUST write an index. The index MUST state that the export is unsigned and is not an attestation. It MUST list each material by name, kind, and digest. A reader MUST see the whole set of materials from the index, with no need to parse each file. The evidence record holds the warnings of the run, not the index.
+Local mode MUST write an index next to the stored session. The index MUST state that the stored evidence is unsigned and is not an attestation. It MUST list each material by name, kind, and digest. A reader MUST see the whole set of materials from the index, with no need to parse each file. The evidence record holds the warnings of the run, not the index.
 
-### R-007: Export from a recorded session
-The export MUST come from the session state that the hooks recorded. It MUST NOT depend on one way of running the agent.
+### R-007: Store from a recorded session
+The stored evidence MUST come from the session state that the hooks recorded. It MUST NOT depend on one way of running the agent.
 
 ### R-008: Local mode set up with no control plane
-`trace init --local` MUST set up the repository for local mode without contacting the control plane: no login, no organization, no workflow. In local mode the push hook MUST send no attestation, and it writes nothing itself. A separate command, `trace export`, writes the evidence to disk on demand (R-010). Local mode MUST be per-clone, so it does not change whether another clone of the same repository attests.
-- Done when: `trace init --local` runs with no network and no credentials, and a push in that clone sends no attestation.
+`trace init --local` MUST set the repository up for local mode without contacting the control plane: no login, no organization, no workflow. It MUST record the local storage mode in `.chainloop.yml` (R-011), and MAY record a path.
+- Done when: `trace init --local` runs with no network and no credentials, and later pushes store the session on disk.
 
-### R-009: Export when the session ends
-`trace run --export` MUST wrap the agent and, when the session ends, write the evidence set to the named directory. It MUST NOT push an attestation.
-- Done when: the agent runs, the session ends, and the directory holds the evidence with no push.
+### R-009: Store the session on push
+In local mode the pre-push hook MUST store the session on disk instead of pushing an attestation.
+- Done when: a `git push` in a local-mode repository stores the session under the configured path and sends no attestation.
 
-### R-010: Export a session the hooks already recorded
-The CLI MUST provide a command that writes the evidence of the already-recorded sessions to a directory, without wrapping a run. A developer who set the repository up with `trace init --local` MUST be able to export the sessions the hooks recorded.
-- Done when: after a recorded session, the command writes the evidence to the directory, with no push.
+### ~~R-010: Export a session the hooks already recorded~~
+~~The CLI MUST provide a command that writes the evidence of the already-recorded sessions to a directory, without wrapping a run.~~ Dropped. Exporting an already-recorded session on demand moved to a future spec (D-020).
+
+### R-011: Configure trace storage
+`.chainloop.yml` MUST carry the trace storage mode in `traceStorage`, one of `CONTROL_PLANE` (the default) or `LOCAL`. In `LOCAL`, Trace stores sessions on disk and contacts no control plane. An optional `tracePath` MUST name where local sessions are stored, with a default when it is absent. `traceRequired` MUST replace `requireTrace` with the same meaning: block a push when a required trace is missing. The old `requireTrace` and `localTrace` fields are deprecated, and a later change drops them.
+- Done when: a repository with `traceStorage: LOCAL` stores its sessions on disk, and `traceRequired` blocks a push with no recorded session.
+
+### R-012: Say where the session is stored
+In local mode, Trace MUST tell the user where the session is stored. It MUST say so when the harness starts and when a push stores the session.
+- Done when: a user who runs the harness and pushes sees the path the session was written to.
 
 ## Constraints
-- The repository is public. The export and its code hold no internal context.
-- The agent calls its model over the network during the session. The export changes the Chainloop backend path only.
-- The export is not signed, so it is not proof of anything. It is for inspection and for tests.
-- The export reuses the push assembly. It does not fork that logic.
-- Local mode is per-clone. It is recorded in the local trace state, not in the shared repository config, so it never changes attestation for another clone.
-- An export can hold the content of the session, including local files the session read. A developer keeps the output directory as they keep any working copy of the session.
+- The repository is public. The code holds no internal context.
+- The agent calls its model over the network during the session. Local mode changes the Chainloop backend path only.
+- The stored evidence is not signed, so it is not proof of anything.
+- Local mode reuses the push assembly. It does not fork that logic.
+- `traceStorage` is a committed repository policy, so a local-trace repository is the same for every clone of it.
+- A stored session can hold the content of the session, including local files the session read. A developer keeps the storage directory as they keep any working copy of the session.
 
 ## Proposal
-The developer sets up the repository once with `trace init --local`. Init installs the same hooks but creates no workflow and contacts no control plane. Today init needs a login and creates the workflow the attestations target. Local mode drops that step, so a developer with no account can set up Trace. Local mode is recorded in the local trace state, not in the shared repository config. So it is per-clone, and never turns attestation off for a teammate. In local mode the push hook sends no attestation, because there is no control plane to send it to. It writes nothing itself. The export commands write the evidence to disk on demand.
+The developer sets the repository up once with `trace init --local`. Init installs the hooks but creates no workflow and contacts no control plane. It writes the storage mode to `.chainloop.yml`: `traceStorage: LOCAL`, with an optional `tracePath` for where the sessions go. Today init needs a login and creates the workflow the attestations target. Local mode drops that step, so a developer with no account can set Trace up. The storage mode is a committed repository policy, visible to every clone. So a local-trace repository is a deliberate, readable choice, not a hidden per-developer flag.
 
-The developer then runs the agent through `trace run --export` with an output directory. The run wraps the agent as it does today. When the session ends, instead of signing and pushing an attestation, the run executes the same assembly a push runs. It parses the session. It reads each spec source at that time. It redacts secrets. It replaces each copy in the transcript with a pointer. It gathers the pasted images and the skills. A push would store each material in the backend and send a signed attestation. Instead, the run writes each material to the output directory under its digest, writes the session evidence record, and writes a manifest.
+The developer then runs the harness as usual. When the harness starts, Trace tells the user the session is recorded and where it will be stored. The hooks record the session as they do today. On `git push`, the pre-push hook runs the same assembly a push runs. It parses the session. It reads each spec source, redacts secrets, and replaces each copy in the transcript with a pointer. It gathers the pasted images and the skills. A push would store each material in the backend and send a signed attestation. In local mode the hook instead writes each material under `tracePath`, by its digest, with the session evidence record and a manifest. It then tells the user where it stored the session. There is no attestation and no control plane.
 
-The push path already separates the assembly from the step that stores one material. That store step is a single seam. The export gives the seam a store that writes to disk and returns the digest, in place of the store that uploads to the backend. Every assembly step runs unchanged: the spec read, the redaction, the pointers, the images, the skills, and the evidence record. So the export cannot drift from a push. It is the same assembly with a different sink.
+The push path already separates the assembly from the step that stores one material. That store step is a single seam. Local mode gives the seam a store that writes to disk and returns the digest, in place of the store that uploads to the backend. Every assembly step runs unchanged. So the stored evidence cannot drift from a push. It is the same assembly with a different sink.
 
-The output directory holds three things. It holds the session evidence record, which carries the warnings of the run. It holds a folder of materials, each named by its digest. It holds a manifest that lists the materials. The layout mirrors the content-addressed store the backend uses. So a material is found by its digest, and two runs of the same session are easy to compare.
+Under `tracePath`, each session holds three things. It holds the session evidence record, which carries the warnings of the run. It holds a folder of materials, each named by its digest. It holds a manifest that lists the materials and states the evidence is unsigned and not an attestation. The layout mirrors the content-addressed store the backend uses. So a material is found by its digest, and two runs of the same session are easy to compare.
 
-The export writes the evidence set, not a signed attestation. A signed attestation with no control plane needs a contract and a signing key. That is a separate, larger effort, and this spec puts it out of scope. The export is for a developer who reads the evidence, and for a test that checks the assembly.
+Local mode stores the evidence set, not a signed attestation. A signed attestation with no control plane needs a contract and a signing key. That is a separate, larger effort, out of scope here. Exporting an already-recorded session to a directory on demand is also out of scope. It is a separate feature with its own surface, left to a future spec. This spec is about recording a session without a control plane.
 
-The export is not named "offline". The agent still calls its model over the network during the session, so "offline" would claim something false. Two names say what the parts do. `--local` names the init mode: no control plane, evidence on local disk. `--export` names the run output: write the evidence to a directory. A standalone `trace export` command writes the evidence of the sessions the hooks already recorded. A developer who set up local mode then exports without wrapping a run.
+Local mode is not named "offline". The agent still calls its model over the network during the session, so "offline" would claim something false. The name says where the evidence goes: local, on disk.
 
 ```mermaid
 flowchart TD
-    Init[trace init --local: local mode, no control plane] --> Run[trace run --export: wraps the agent]
-    Init --> Export[trace export: already-recorded sessions]
-    Run --> Session[Coding agent session, hooks record it]
-    Session --> End{Session ends}
-    End --> Assembly[Same push-time assembly: parse, read specs, redact, pointers, images, skills]
-    Export --> Assembly
-    Assembly --> Sink{Material sink}
-    Sink -->|push| Backend[Control plane and CAS: stored, signed attestation]
-    Sink -->|export| Disk[Local directory: evidence record, materials by digest, manifest]
+    Init[trace init --local: writes traceStorage LOCAL and tracePath, no control plane] --> Harness[Run the harness: hooks record the session]
+    Harness --> Push{git push: pre-push hook}
+    Push --> Assembly[Same push-time assembly: parse, read specs, redact, pointers, images, skills]
+    Assembly --> Sink{Material sink by traceStorage}
+    Sink -->|CONTROL_PLANE| Backend[Control plane and CAS: stored, signed attestation]
+    Sink -->|LOCAL| Disk[tracePath: evidence record, materials by digest, manifest]
 ```
 
 ## Decision Record
@@ -131,23 +133,27 @@ flowchart TD
 | D-013 | Where local mode is recorded | A per-clone marker in the local trace state, nothing in the shared repository config | The repository config is committed and shared. A local flag there would turn attestation off for every teammate who clones the repository and runs init. The export assembles each material with no organization or project, so none needs recording. This supersedes D-010, which put a reserved organization and project in the config. | implementation |
 | D-014 | What the push hook does in local mode | It sends no attestation and returns cleanly | Local mode has no control plane to attest to. The git-push-triggered export was already rejected (D-011), so the hook does nothing on push. The evidence is exported on demand with `trace export`. | implementation |
 | D-015 | When the standalone export command ships | Now, as `trace export`, together with local mode | A clone set up with `trace init --local` records sessions through the installed hooks, with no wrapped run to export them. Without the command there is no way to export them. This brings forward the standalone command that D-006 deferred. | implementation |
+| D-016 | What the spec is about | Recording and storing a session without a control plane, configured in `.chainloop.yml`. Not exporting an already-recorded session | A reviewer noted the value is removing the control-plane dependency, not inspecting an export. This supersedes the export framing of D-005 and D-006. Rejected: keeping the "export" framing (it reads as a dev and test tool and hides the real use case). | PR review |
+| D-017 | The surface that stores locally | The pre-push hook stores the session on disk when the storage mode is local | The normal flow already runs at push time, so storing there needs no new wrapper. This supersedes D-011, which stored on session end from `trace run --export`, and the standalone command of D-015. `trace run` stays a one-off wrapper for a single run. Rejected: a `trace run --export` flag as the surface (it is a single-run command, not the normal push-time path). | PR review |
+| D-018 | How local mode is configured | `.chainloop.yml` carries `traceStorage` (CONTROL_PLANE default, or LOCAL), an optional `tracePath`, and `traceRequired`. The old `requireTrace` and `localTrace` are deprecated | A committed storage mode is an explicit, visible repository policy, which is what a local-trace repository wants. This supersedes D-013, whose per-clone marker avoided an accidental shared flag. An explicit `traceStorage` is intentional, not accidental, so a shared field is right. The old boolean fields are replaced, and a later change drops them. Rejected: a per-clone-only local flag (a local-trace repository is a team choice, not a per-developer one). | owner request |
+| D-019 | Where local sessions are stored | Under `tracePath`, content-addressed with a manifest, with a default path when `tracePath` is absent | A reader finds each material by its digest, and the layout matches the content-addressed store the backend uses. Rejected: a path with no default (every local repository would have to set one). | owner request |
+| D-020 | Exporting an already-recorded session | Out of scope. A future spec | The value here is recording without a control plane. A command that exports an existing session on demand is a separate feature with its own surface. This reverses D-015. Rejected: folding it into this spec (it widens the scope and confuses the use case). | PR review |
 
 ## Open Questions
-None.
+- [ ] **Encrypt the stored sessions at rest?** Proposed: no by default. The stored session holds what a working copy of the session already holds, and redaction drops secrets by default. An opt-in encryption could come later. Left for reviewers.
 
 ## Milestones
-1. **Local init.** `trace init --local` sets up local mode without a control plane, marked per-clone, and the push hook sends no attestation in that mode.
-2. **Disk sink and core export.** The assembly writes the evidence set of a session to a directory through the disk store, with no control plane.
-3. **Export from the run.** `trace run --export` wraps the agent and writes the evidence when the session ends, with no push.
-4. **Layout and manifest.** The content-addressed layout and the manifest have a documented structure, so a test reads the output without guessing.
-5. **Standalone export.** `trace export` writes the evidence of the already-recorded sessions to a directory.
+1. **Config and local init.** `.chainloop.yml` carries `traceStorage`, `tracePath`, and `traceRequired`, and `trace init --local` writes the local storage mode with no control plane.
+2. **Store on push.** The pre-push hook stores the session on disk in local mode, through the same assembly a push runs, with no attestation.
+3. **Layout and manifest.** The content-addressed layout and the manifest have a documented structure, so a reader and a test find each material.
+4. **Tell the user.** The harness start and the push say where the session is stored.
 
 ## Risks
 
 | Risk | Mitigation |
 |------|------------|
-| The export drifts from a real push. | The export reuses the push assembly through its store seam, so the only difference is the sink. A test compares an export with a push for the same session (R-002). |
-| The output holds secrets. | Redaction is on by default, as in a push. The opt-out is for a trusted local run, and it is documented as such (D-004). |
-| A reader treats the export as a signed attestation. | The export is not signed, and the index says so (R-006). The export is for inspection and for tests. |
-| A developer's local mode turns attestation off for the whole team. | Local mode is per-clone. It is recorded in the local trace state, not in the shared repository config, so it never changes attestation for another clone (D-013). |
+| The stored evidence drifts from a real push. | Local mode reuses the push assembly through its store seam, so the only difference is the sink. A test compares the stored output with a push for the same session (R-002). |
+| The stored output holds secrets. | Redaction is on by default, as in a push. The opt-out is for a trusted local run, and it is documented as such (D-004). |
+| A reader treats the stored evidence as a signed attestation. | The stored evidence is not signed, and the index says so (R-006). |
+| A committed storage mode surprises a teammate. | `traceStorage` is explicit and visible in `.chainloop.yml`, so a local-trace repository is a deliberate, readable choice that a teammate sees on clone (D-018). |
 | Timestamps and volatile paths make a test flaky. | The test normalizes the volatile fields before a compare (D-008). |
