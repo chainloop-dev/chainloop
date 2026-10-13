@@ -120,6 +120,9 @@ func TestRunTraceExportMatchesPush(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(outDir, manifestFileName))
 	require.NoError(t, err)
 	require.NoError(t, json.Unmarshal(data, &manifest))
+	// R-006: the index declares the export is unsigned and not an attestation.
+	assert.False(t, manifest.Signed)
+	assert.False(t, manifest.IsAttestation)
 	assert.True(t, manifest.Redaction)
 	assert.Contains(t, manifest.Sessions, sessionName)
 	require.NotEmpty(t, manifest.Materials)

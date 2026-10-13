@@ -169,10 +169,16 @@ type exportedMaterial struct {
 
 // exportManifest is the top-level index of an export directory.
 type exportManifest struct {
-	GeneratedAt string             `json:"generated_at"`
-	Redaction   bool               `json:"redaction"`
-	Sessions    []string           `json:"sessions"`
-	Materials   []exportedMaterial `json:"materials"`
+	GeneratedAt string `json:"generated_at"`
+	// Signed and IsAttestation are always false: the export is an unsigned
+	// evidence set, not a signed in-toto attestation, so it proves nothing on
+	// its own. The index declares this so a reader never mistakes the export for
+	// an attestation (spec issue-3582, R-006).
+	Signed        bool               `json:"signed"`
+	IsAttestation bool               `json:"is_attestation"`
+	Redaction     bool               `json:"redaction"`
+	Sessions      []string           `json:"sessions"`
+	Materials     []exportedMaterial `json:"materials"`
 }
 
 func newDiskMaterialSink(outDir string, noRedact bool, logger zerolog.Logger) *diskMaterialSink {
@@ -286,10 +292,12 @@ func (s *diskMaterialSink) writeManifest(redaction bool) error {
 	}
 
 	manifest := exportManifest{
-		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-		Redaction:   redaction,
-		Sessions:    sessions,
-		Materials:   s.materials,
+		GeneratedAt:   time.Now().UTC().Format(time.RFC3339),
+		Signed:        false,
+		IsAttestation: false,
+		Redaction:     redaction,
+		Sessions:      sessions,
+		Materials:     s.materials,
 	}
 
 	data, err := json.MarshalIndent(manifest, "", "  ")
