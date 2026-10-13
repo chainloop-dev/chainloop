@@ -110,6 +110,14 @@ func TestGitlabCrafter_Craft(t *testing.T) {
 			},
 		},
 		{
+			name:     "secret detection report with observability events",
+			filePath: "./testdata/gl-secret-detection-report-observability.json",
+			annotations: map[string]string{
+				"chainloop.material.tool.name":    "Gitleaks",
+				"chainloop.material.tool.version": "8.29.1",
+			},
+		},
+		{
 			name:     "sonarqube report",
 			filePath: "./testdata/gl-sonarqube-report.json",
 			annotations: map[string]string{
