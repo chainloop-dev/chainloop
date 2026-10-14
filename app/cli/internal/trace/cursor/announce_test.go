@@ -89,6 +89,18 @@ func TestAnnouncePromptSubmit(t *testing.T) {
 	assert.Empty(t, out)
 }
 
+// TestAllowToolUse pins the preToolUse response: Cursor blocks the command
+// when the response is not valid JSON.
+func TestAllowToolUse(t *testing.T) {
+	out := captureStdout(t, func() {
+		require.NoError(t, New().AllowToolUse())
+	})
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal([]byte(out), &got))
+	assert.Equal(t, map[string]any{"permission": "allow"}, got)
+}
+
 // captureStdout runs fn and returns what it wrote to stdout.
 func captureStdout(t *testing.T, fn func()) string {
 	t.Helper()

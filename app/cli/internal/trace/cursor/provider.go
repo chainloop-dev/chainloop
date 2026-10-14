@@ -57,17 +57,16 @@ func (p *Provider) Name() string {
 }
 
 // IsFileWritingTool returns true for the synthetic "edit" tool name we set on
-// afterFileEdit hook inputs. Cursor has no tool-name concept for generic
-// preToolUse/postToolUse events in our flow, so "edit" is the sole signal.
+// afterFileEdit hook inputs. The preToolUse/postToolUse hooks are installed
+// for the shell tool only, so "edit" is the sole file-writing signal.
 func (p *Provider) IsFileWritingTool(toolName string) bool {
 	return toolName == syntheticEditToolName
 }
 
-// IsCommandTool always returns false for Cursor: shell-execution hooks are not
-// yet wired (Cursor installs only sessionStart/sessionEnd/afterFileEdit), so
-// shell-driven file changes are not captured for this provider.
-func (p *Provider) IsCommandTool(_ string) bool {
-	return false
+// IsCommandTool returns true for Cursor's shell tool, whose preToolUse and
+// postToolUse hooks snapshot the worktree around each command.
+func (p *Provider) IsCommandTool(toolName string) bool {
+	return toolName == shellToolName
 }
 
 // AnnounceSessionStart writes Cursor's sessionStart hook response. Cursor adds
@@ -114,8 +113,18 @@ func (p *Provider) AnnouncePromptSubmit(_ string) error {
 	return nil
 }
 
-// AnnounceToUser is unsupported for Cursor: it installs only sessionStart,
-// sessionEnd and afterFileEdit, so no hook fires after a shell command and
+// AllowToolUse writes the preToolUse hook response that lets the tool call
+// proceed. Cursor blocks the call when a preToolUse hook writes a response
+// that is not valid JSON or does not match the schema, so the pre hook writes
+// this response whatever the trace does.
+func (p *Provider) AllowToolUse() error {
+	return json.NewEncoder(os.Stdout).Encode(struct {
+		Permission string `json:"permission"`
+	}{Permission: "allow"})
+}
+
+// AnnounceToUser is unsupported for Cursor: the postToolUse response that
+// runs after a shell command has no field that Cursor shows to the user, so
 // there is nowhere to deliver the message.
 func (p *Provider) AnnounceToUser(_ string) error {
 	return trace.ErrAnnounceUnsupported

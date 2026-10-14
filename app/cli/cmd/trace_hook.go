@@ -233,6 +233,8 @@ func newTraceHookCursorCmd() *cobra.Command {
 		newTraceHookCursorSessionStartCmd(),
 		newTraceHookCursorSessionEndCmd(),
 		newTraceHookCursorAfterFileEditCmd(),
+		newTraceHookCursorPreToolUseCmd(),
+		newTraceHookCursorPostToolUseCmd(),
 	)
 
 	return cmd
@@ -270,6 +272,41 @@ func newTraceHookCursorAfterFileEditCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "after-file-edit",
 		Short: "Record AI line ranges after Cursor file edit",
+		Annotations: map[string]string{
+			"skipActionOptsInit": "true",
+		},
+		RunE: func(_ *cobra.Command, _ []string) error {
+			InitHookLogger()
+			return action.HandleAgentPostToolUse(cursor.New(), logger)
+		},
+	}
+}
+
+func newTraceHookCursorPreToolUseCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "pre-tool-use",
+		Short: "Snapshot the worktree before a Cursor shell command",
+		Annotations: map[string]string{
+			"skipActionOptsInit": "true",
+		},
+		RunE: func(_ *cobra.Command, _ []string) error {
+			InitHookLogger()
+			provider := cursor.New()
+			// Respond first: Cursor blocks the command when the response is
+			// not valid JSON, and the trace must never block the agent.
+			if err := provider.AllowToolUse(); err != nil {
+				return err
+			}
+
+			return action.HandleAgentPreToolUse(provider, logger)
+		},
+	}
+}
+
+func newTraceHookCursorPostToolUseCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "post-tool-use",
+		Short: "Record AI line ranges after a Cursor shell command",
 		Annotations: map[string]string{
 			"skipActionOptsInit": "true",
 		},

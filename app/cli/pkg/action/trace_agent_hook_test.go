@@ -674,6 +674,34 @@ func TestHandleAgentCommandTool_AttributesShellFileChanges(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// TestHandleAgentCursorShellCommand drives the pre/post-tool-use handlers with
+// the preToolUse and postToolUse payloads Cursor sends for its Shell tool, and
+// asserts the file the command created is attributed to the AI.
+func TestHandleAgentCursorShellCommand(t *testing.T) {
+	dir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+
+	p := cursor.New()
+	const toolInput = `"tool_name":"Shell","tool_use_id":"call-1","tool_input":{"command":"seq 3 > generated.txt"}`
+
+	withStdin(t, `{"conversation_id":"conv-cmd","hook_event_name":"preToolUse",`+toolInput+`}`)
+	require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop()))
+
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "generated.txt"), []byte("1\n2\n3\n"), 0600))
+
+	withStdin(t, `{"conversation_id":"conv-cmd","hook_event_name":"postToolUse",`+toolInput+`,"tool_output":"{}"}`)
+	require.NoError(t, HandleAgentPostToolUse(p, zerolog.Nop()))
+
+	attr := store.LoadAILineAttribution("conv-cmd")
+	require.Contains(t, attr.Files, "generated.txt")
+	require.NotEmpty(t, attr.Files["generated.txt"])
+	assert.Equal(t, 3, attr.Files["generated.txt"][0].End)
+
+	_, err := store.LoadShellPreSignature(state.ShellCallKey{SessionID: "conv-cmd", ToolUseID: "call-1"})
+	assert.Error(t, err, "pre-command signature is cleaned up")
+}
+
 // TestHandleAgentClaudeCodeSession drives the pre/post-tool-use handlers with
 // the real JSON payloads Claude Code pipes to its hooks, across a full session:
 // SessionStart → Write (new file) → Edit (modify it) → Bash (generate a file).
