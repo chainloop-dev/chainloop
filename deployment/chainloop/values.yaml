@@ -1758,7 +1758,7 @@ postgresql:
   auth:
     enablePostgresUser: false
     username: "chainloop"
-    password: "chainlooppwd"
+    password: "chainlooppwd" # checkov:skip=CKV_SECRET_6: default for the bundled development PostgreSQL, override in production
     database: "chainloop-cp"
     existingSecret: ""
 
