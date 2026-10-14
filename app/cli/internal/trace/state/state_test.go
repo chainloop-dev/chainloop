@@ -109,6 +109,41 @@ func TestWipeTraceDir(t *testing.T) {
 		"ai-lines must survive the wipe so post-rebase attribution still works")
 }
 
+// TestRemoveTraceDirPreservesLocalSessions pins that RemoveTraceDir keeps the
+// local-sessions directory — the durable evidence a LOCAL-mode push or
+// `trace run` wrote — while clearing the rest of the state, so trace uninstall
+// and the trace-run teardown never destroy a developer's stored sessions.
+func TestRemoveTraceDirPreservesLocalSessions(t *testing.T) {
+	store := NewGitStore(t.TempDir())
+	require.NoError(t, store.InitTraceDir())
+	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "abc123", SessionIDs: []string{"sess-1"}, Timestamp: "2026-03-28T00:00:00Z"}))
+
+	// A stored session on disk, as LOCAL storage would write it.
+	sessionDir := filepath.Join(store.LocalSessionsDir(), "sess-1")
+	require.NoError(t, os.MkdirAll(sessionDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(sessionDir, "manifest.json"), []byte("{}"), 0o600))
+
+	require.NoError(t, store.RemoveTraceDir())
+
+	// The stored sessions survive.
+	data, err := os.ReadFile(filepath.Join(sessionDir, "manifest.json"))
+	require.NoError(t, err)
+	assert.Equal(t, "{}", string(data))
+
+	// Everything else is gone.
+	commits, err := store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	assert.Empty(t, commits, "non-local state is removed")
+
+	t.Run("an ordinary repository with no stored sessions removes the trace dir", func(t *testing.T) {
+		plain := NewGitStore(t.TempDir())
+		require.NoError(t, plain.InitTraceDir())
+		require.NoError(t, plain.RemoveTraceDir())
+		_, err := os.Stat(plain.LocalSessionsDir())
+		assert.True(t, os.IsNotExist(err))
+	})
+}
+
 func TestGCOrphans(t *testing.T) {
 	store := NewGitStore(t.TempDir())
 	require.NoError(t, store.InitTraceDir())

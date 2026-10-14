@@ -112,7 +112,7 @@ func applyPrePushPolicy(executed *cobra.Command, err error) error {
 		return err
 	}
 
-	return action.PrePushFailure(err, config.LoadRequireTraceFromYML("."), logger)
+	return action.PrePushFailure(err, config.LoadTraceRequiredFromYML("."), logger)
 }
 
 func newTraceHookGitPrePushCmd() *cobra.Command {
@@ -121,11 +121,34 @@ func newTraceHookGitPrePushCmd() *cobra.Command {
 		Short: "Handle the pre-push git hook",
 		// Any error of this command, setup included, goes through
 		// action.PrePushFailure in Execute.
+		//
+		// skipActionOptsInit keeps root from building the control-plane
+		// connection (and probing the current org) up front: a LOCAL-mode
+		// repository must reach no control plane, so the connection is built
+		// lazily below, only when the storage mode is CONTROL_PLANE.
 		Annotations: map[string]string{
 			prePushHookAnnotation: trueString,
+			skipActionOptsInit:    trueString,
 		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			InitHookLogger()
+
+			// The hook runs at the repository root, so "." resolves the nearest
+			// .chainloop.yml the same way the push identity does.
+			mode, err := config.LoadTraceStorageFromYML(".")
+			if err != nil {
+				return err
+			}
+
+			if mode == config.TraceStorageLocal {
+				return action.HandlePrePushHookLocal(cmd.Context(), logger)
+			}
+
+			// Control plane: build ActionOpts lazily, since this command is
+			// skipActionOptsInit and root did not.
+			if err := ensureActionOpts(cmd); err != nil {
+				return err
+			}
 
 			return action.HandlePrePushHook(cmd.Context(), logger, action.RunTracePushOpts{
 				ActionOpts: ActionOpts,

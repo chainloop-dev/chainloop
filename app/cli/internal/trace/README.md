@@ -47,7 +47,7 @@ What the user sees in the agent.
 
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
-| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and in which project. | Yes | No | No | No |
+| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No |
 | Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop. | Yes | No | No | No |
 
 Why not Yes:
@@ -99,7 +99,8 @@ How the sessions are linked to the commits and attested.
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
 | Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes |
-| Attestation at push | The `pre-push` hook attests the sessions of the pushed commits. | Yes | Yes | Yes | Yes |
+| Attestation at push | In the default control-plane storage mode, the `pre-push` hook attests the sessions of the pushed commits to the control plane. | Yes | Yes | Yes | Yes |
+| Local storage at push | In a repository with `traceStorage: LOCAL` in `.chainloop.yml`, the `pre-push` hook runs the same assembly but writes the session evidence set to disk under `tracePath` (default `.git/chainloop-trace/local-sessions`) instead of attesting, so it needs no control plane, login, or network. The stored set equals what a push would upload, apart from the signature, and a `manifest.json` marks it unsigned and not an attestation. `trace init --local` sets the mode up; `trace run` honors it. Redaction is on by default, with the `CHAINLOOP_TRACE_NO_REDACT` opt-out for a trusted local store (spec issue-3582). | Yes | Yes | Yes | Yes |
 
 ## How each agent is hooked in
 

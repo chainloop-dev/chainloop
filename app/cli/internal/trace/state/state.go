@@ -44,6 +44,11 @@ const (
 	traceDirCommits    = "commits"
 	traceDirSnapshots  = "snapshots"
 	traceDirAILines    = "ai-lines"
+	// traceDirLocalSessions holds the evidence sets written by LOCAL trace
+	// storage: one subdirectory per session, each with its materials and a
+	// manifest. Unlike raw/ and snapshots/ it is durable user data, so it is
+	// never touched by WipeTraceDir, GCOrphans, or RemoveTraceDir.
+	traceDirLocalSessions = "local-sessions"
 	// traceDirSpecRedactions holds the redacted copies of each session's
 	// spec files, so a later push of the session does not scan an unchanged
 	// file again. It lives for the session, not for one push.
@@ -98,6 +103,14 @@ func (s *Store) WipeTraceDir() error {
 // session's spec files.
 func (s *Store) SpecRedactionDir(sessionID string) string {
 	return filepath.Join(s.traceDirPath(), traceDirSpecRedactions, SanitizeID(sessionID))
+}
+
+// LocalSessionsDir returns the default directory LOCAL trace storage writes its
+// evidence sets to when .chainloop.yml sets no tracePath. It sits beside the
+// other trace state inside .git/chainloop-trace, so it is never committed, and
+// it is durable: the per-push WipeTraceDir and GCOrphans do not touch it.
+func (s *Store) LocalSessionsDir() string {
+	return filepath.Join(s.traceDirPath(), traceDirLocalSessions)
 }
 
 // RecordedSpecFiles returns the names of the spec files that the last push of
@@ -334,9 +347,40 @@ func (s *Store) staleSessionIDs(unattested map[string]struct{}) map[string]struc
 	return stale
 }
 
-// RemoveTraceDir removes the entire <dir>/chainloop-trace/ directory.
+// RemoveTraceDir removes the trace state but preserves local-sessions/, the
+// durable evidence sets a LOCAL-mode push or `trace run` wrote. A developer
+// keeps those as they keep any working copy of a session, so trace uninstall and
+// the trace-run teardown must not delete them. An ordinary repository with no
+// stored sessions is left as clean as before: the trace directory is removed
+// once nothing but the (absent) sessions would remain.
 func (s *Store) RemoveTraceDir() error {
-	return os.RemoveAll(s.traceDirPath())
+	base := s.traceDirPath()
+
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	for _, e := range entries {
+		if e.Name() == traceDirLocalSessions {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(base, e.Name())); err != nil {
+			return err
+		}
+	}
+
+	// Drop the trace directory itself only when the preserved sessions did not
+	// keep it alive.
+	if remaining, err := os.ReadDir(base); err == nil && len(remaining) == 0 {
+		return os.Remove(base)
+	}
+
+	return nil
 }
 
 // LogFilePath returns the path to the hook log file inside the trace directory.

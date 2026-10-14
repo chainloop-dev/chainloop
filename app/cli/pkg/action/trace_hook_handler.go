@@ -536,6 +536,38 @@ func HandlePrePushHook(ctx context.Context, log zerolog.Logger, opts RunTracePus
 	return RunTracePush(ctx, log, opts)
 }
 
+// HandlePrePushHookLocal stores the recorded session evidence to disk instead of
+// pushing an attestation, for a repository configured with traceStorage: LOCAL
+// (R-009). It makes no control-plane call. Like the control-plane path it drains
+// the push stdin first, to avoid a SIGPIPE on the git side, then runs the same
+// assembly and writes the evidence under the configured tracePath. It tells the
+// user where the session went (R-012).
+//
+// "Nothing recorded" is not an error, so a human-only push is never blocked;
+// only a genuine store failure is returned, which the caller turns into a
+// blocked push when traceRequired is set.
+func HandlePrePushHookLocal(ctx context.Context, log zerolog.Logger) error {
+	drainPushStdin()
+
+	stored, tracePath, err := RunTraceLocalStore(ctx, log, RunTraceLocalStoreOpts{
+		NoRedact: traceNoRedactFromEnv(),
+		Mode:     aicodingsession.ModeCoding,
+	})
+	if err != nil {
+		return fmt.Errorf("store session evidence locally: %w", err)
+	}
+
+	if stored == 0 {
+		log.Info().Msg("no new AI coding session evidence, nothing stored")
+
+		return nil
+	}
+
+	log.Info().Int("sessions", stored).Msgf("AI coding session evidence stored at %s", tracePath)
+
+	return nil
+}
+
 // PrePushFailure decides what a failed pre-push hook does. The managed
 // pre-push script propagates the hook's exit status to git. When
 // requireTrace is true, it returns the error so that the git push is
@@ -571,89 +603,12 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	log.Debug().Str("state_dir", store.Dir()).Str("repo_root", repoRoot).
 		Bool("allow_empty", opts.AllowEmpty).Str("mode", sessionMode).Msg("trace push invoked")
 
-	allCommits, err := store.LoadAllCommitRecords()
+	sessions, aiCommits, err := gatherPushSessions(ctx, store, repoRoot, sessionMode, opts.AllowEmpty, log)
 	if err != nil {
-		return fmt.Errorf("load commit records: %w", err)
+		return err
 	}
-	log.Debug().Int("commit_count", len(allCommits)).Msg("loaded commit records")
-
-	gitClient := tracegit.NewGoGitClient()
-
-	// Drop orphan records (SHAs no longer in the branch — typically left over
-	// by a rebase) and any record that turns out to belong to a merge commit.
-	allCommits = filterCurrentBranchCommits(gitClient, repoRoot, allCommits, log)
-
-	// Discard commits without any session IDs (no AI agent involved)
-	var aiCommits []*state.CommitRecord
-	var untrackedAICommits int
-	for _, c := range allCommits {
-		if len(c.SessionIDs) > 0 {
-			aiCommits = append(aiCommits, c)
-			if !c.Tracked {
-				untrackedAICommits++
-			}
-		}
-	}
-
-	if len(aiCommits) == 0 && !opts.AllowEmpty {
-		log.Info().Msg("no AI-assisted commits, skipping attestation")
-
-		return nil
-	}
-
-	// If every candidate AI commit has already been attested by a previous
-	// successful push, there is nothing new to report. Short-circuit to avoid
-	// emitting a duplicate attestation on no-op `git push` invocations
-	// (including `git tag && git push --tags` over already-pushed commits).
-	if len(aiCommits) > 0 && untrackedAICommits == 0 && !opts.AllowEmpty {
-		log.Info().Int("ai_commit_count", len(aiCommits)).Msg("all AI-assisted commits already attested, skipping push")
-
-		return nil
-	}
-
-	sessionCommits := make(map[string][]*state.CommitRecord)
-	for _, c := range aiCommits {
-		for _, sid := range c.SessionIDs {
-			sessionCommits[sid] = append(sessionCommits[sid], c)
-		}
-	}
-	for _, commits := range sessionCommits {
-		sort.Slice(commits, func(i, j int) bool {
-			return commits[i].Timestamp < commits[j].Timestamp
-		})
-	}
-
-	sessionRecords, err := store.LoadAllSessionRecords()
-	if err != nil {
-		log.Debug().Err(err).Msg("could not load session records")
-	}
-
-	if len(aiCommits) == 0 {
-		for sid, rec := range sessionRecords {
-			// A session that has ended without contributing a commit to this
-			// branch has nothing new to say; attesting it on every later push
-			// republishes the same stale evidence.
-			if !rec.Active {
-				continue
-			}
-			sessionCommits[sid] = nil
-		}
-		if len(sessionCommits) == 0 {
-			log.Info().Msg("no AI coding sessions recorded, skipping attestation")
-
-			return nil
-		}
-		log.Info().Int("session_count", len(sessionCommits)).Msg("no AI-assisted commits; attesting session evidence only")
-	} else {
-		log.Info().Int("ai_commit_count", len(aiCommits)).Msg("parsing AI-assisted commit records")
-	}
-
-	log.Debug().Int("session_count", len(sessionCommits)).Msg("grouped commits by session")
-
-	sessions := buildSessionEvidence(ctx, store, repoRoot, gitClient, sessionCommits, sessionRecords, sessionMode, log)
-
 	if len(sessions) == 0 {
-		log.Debug().Msg("no session evidence could be generated")
+		log.Info().Msg("no new AI coding session evidence, skipping attestation")
 
 		return nil
 	}
@@ -698,7 +653,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 
 	// Add evidence for each session: its spec materials first, so that the
 	// session material can record their digests, then the session itself.
-	attestedSessions, attestedSpecs := attachSessionEvidence(ctx, executor, store, sessions, log)
+	attestedSessions, attestedSpecs := attachSessionEvidence(ctx, executor, store, sessions, log, false)
 
 	if len(attestedSessions) == 0 {
 		log.Debug().Msg("no evidence successfully added, resetting attestation")
@@ -743,10 +698,119 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		recordPushedSpecs(store, sessionID, fileNames, log)
 	}
 
-	// Mark every AI commit included in this attestation as tracked so that a
-	// subsequent `git push` with no new commits short-circuits at the skip
-	// check above. Save errors are non-fatal: the attestation already went
-	// out, and at worst we re-attest the same commits on the next push.
+	finalizePush(store, repoRoot, aiCommits, log)
+
+	return nil
+}
+
+// sessionCommitGroups groups the AI commits by the sessions that contributed to
+// them, each group sorted oldest first. With allowEmpty and no AI commits it
+// falls back to the active sessions, so their evidence is assembled even when
+// they produced no commit on this branch (the trace-run and local-store paths).
+// A session that has ended without a commit is left out: assembling it on every
+// later push would republish the same stale evidence.
+func sessionCommitGroups(aiCommits []*state.CommitRecord, sessionRecords map[string]*state.SessionRecord, allowEmpty bool) map[string][]*state.CommitRecord {
+	groups := make(map[string][]*state.CommitRecord)
+	for _, c := range aiCommits {
+		for _, sid := range c.SessionIDs {
+			groups[sid] = append(groups[sid], c)
+		}
+	}
+	for _, commits := range groups {
+		sort.Slice(commits, func(i, j int) bool {
+			return commits[i].Timestamp < commits[j].Timestamp
+		})
+	}
+
+	if len(aiCommits) == 0 && allowEmpty {
+		for sid, rec := range sessionRecords {
+			if rec == nil || !rec.Active {
+				continue
+			}
+			groups[sid] = nil
+		}
+	}
+
+	return groups
+}
+
+// gatherPushSessions runs the shared front half of a push: it loads the commit
+// records, drops those not on the current branch, applies the idempotency
+// short-circuits, groups the AI commits by session, and assembles each
+// session's evidence. It returns the assembled sessions and the AI commits that
+// back them, which finalizePush later marks tracked. An empty session slice
+// means there is nothing new to record (no AI commits, or every one already
+// tracked); the caller decides what to tell the user. allowEmpty mirrors
+// RunTracePushOpts.AllowEmpty. The assembly (buildSessionEvidence) is shared by
+// the control-plane push and the local store, so the two cannot drift (D-001).
+func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessionMode string, allowEmpty bool, log zerolog.Logger) ([]sessionEvidence, []*state.CommitRecord, error) {
+	allCommits, err := store.LoadAllCommitRecords()
+	if err != nil {
+		return nil, nil, fmt.Errorf("load commit records: %w", err)
+	}
+	log.Debug().Int("commit_count", len(allCommits)).Msg("loaded commit records")
+
+	gitClient := tracegit.NewGoGitClient()
+
+	// Drop orphan records (SHAs no longer in the branch — typically left over
+	// by a rebase) and any record that turns out to belong to a merge commit.
+	allCommits = filterCurrentBranchCommits(gitClient, repoRoot, allCommits, log)
+
+	// Discard commits without any session IDs (no AI agent involved).
+	var aiCommits []*state.CommitRecord
+	var untrackedAICommits int
+	for _, c := range allCommits {
+		if len(c.SessionIDs) > 0 {
+			aiCommits = append(aiCommits, c)
+			if !c.Tracked {
+				untrackedAICommits++
+			}
+		}
+	}
+
+	if len(aiCommits) == 0 && !allowEmpty {
+		log.Debug().Msg("no AI-assisted commits")
+
+		return nil, nil, nil
+	}
+
+	// If every candidate AI commit has already been recorded by a previous
+	// successful run, there is nothing new. Short-circuit so a no-op `git push`
+	// does not re-record the same evidence.
+	if len(aiCommits) > 0 && untrackedAICommits == 0 && !allowEmpty {
+		log.Debug().Int("ai_commit_count", len(aiCommits)).Msg("all AI-assisted commits already recorded")
+
+		return nil, aiCommits, nil
+	}
+
+	sessionRecords, err := store.LoadAllSessionRecords()
+	if err != nil {
+		log.Debug().Err(err).Msg("could not load session records")
+	}
+
+	sessionCommits := sessionCommitGroups(aiCommits, sessionRecords, allowEmpty)
+	if len(sessionCommits) == 0 {
+		log.Debug().Msg("no AI coding sessions to record")
+
+		return nil, aiCommits, nil
+	}
+	log.Debug().Int("session_count", len(sessionCommits)).Msg("grouped commits by session")
+
+	sessions := buildSessionEvidence(ctx, store, repoRoot, gitClient, sessionCommits, sessionRecords, sessionMode, log)
+	if len(sessions) == 0 {
+		log.Debug().Msg("no session evidence could be generated")
+	}
+
+	return sessions, aiCommits, nil
+}
+
+// finalizePush marks the AI commits recorded by this run as tracked and prunes
+// the single-use trace state, so a later `git push` with no new commits
+// short-circuits in gatherPushSessions rather than re-recording. Every step is
+// best-effort: the evidence is already out, and at worst the next run repeats
+// the work. It is shared by the control-plane push and the local store, so both
+// get the same idempotency.
+func finalizePush(store *state.Store, repoRoot string, aiCommits []*state.CommitRecord, log zerolog.Logger) {
 	for _, c := range aiCommits {
 		if c.Tracked {
 			continue
@@ -758,6 +822,8 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	}
 
 	_ = store.WipeTraceDir()
+
+	gitClient := tracegit.NewGoGitClient()
 	if liveSHAs, err := gitClient.LocalReachableSHAs(repoRoot); err == nil {
 		if err := store.GCOrphans(liveSHAs); err != nil {
 			log.Debug().Err(err).Msg("orphan GC failed; trace state is intact but not pruned")
@@ -765,8 +831,6 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	} else {
 		log.Debug().Err(err).Msg("could not enumerate local branch SHAs; skipping orphan GC")
 	}
-
-	return nil
 }
 
 // sessionEvidence is the evidence of one session before it is added to the
@@ -900,7 +964,10 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 // its spec and skill materials first, so that the session material can record
 // their digests, then the session itself. It returns the sessions that were
 // added, and the spec files that each of them stored.
-func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *state.Store, sessions []sessionEvidence, log zerolog.Logger) (attestedSessions []string, attestedSpecs map[string][]string) {
+// noRedact disables secret redaction, for a trusted local store only (R-004);
+// a push always passes false. It threads into both the spec/skill redactor here
+// and, through the adder, the session transcript's own redaction.
+func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *state.Store, sessions []sessionEvidence, log zerolog.Logger, noRedact bool) (attestedSessions []string, attestedSpecs map[string][]string) {
 	attestedSessions = make([]string, 0, len(sessions))
 	attestedSpecs = make(map[string][]string, len(sessions))
 	// One allocator for the whole attestation: names taken from the start of
@@ -908,7 +975,7 @@ func attachSessionEvidence(ctx context.Context, adder specMaterialAdder, store *
 	// replace an earlier material.
 	names := materials.NewNameAllocator(nil)
 	for _, se := range sessions {
-		redactor := newSpecRedactor(store.SpecRedactionDir(se.sessionID))
+		redactor := newSpecRedactor(store.SpecRedactionDir(se.sessionID), noRedact)
 		entries, warnings, stored, sources := attachSpecs(ctx, adder, redactor, names, se.sessionID, se.specs, log)
 		se.evidence.Data.Warnings = append(se.evidence.Data.Warnings, warnings...)
 

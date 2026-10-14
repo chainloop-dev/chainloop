@@ -40,16 +40,23 @@ import (
 // newTraceInitCmd creates the trace init subcommand.
 func newTraceInitCmd() *cobra.Command {
 	var (
-		project      string
-		contract     string
-		claudeFlag   bool
-		cursorFlag   bool
-		opencodeFlag bool
+		project       string
+		contract      string
+		localFlag     bool
+		tracePathFlag string
+		claudeFlag    bool
+		cursorFlag    bool
+		opencodeFlag  bool
 	)
 
 	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialize git hooks for automatic AI session tracing",
+		Use: "init", //nolint:goconst // cobra verb, kept literal like the other init subcommands
+		// skipActionOptsInit keeps root from building the control-plane
+		// connection up front. Control-plane mode builds it lazily with
+		// ensureActionOpts below; local mode never does, so it reaches no
+		// control plane at all (R-008).
+		Annotations: map[string]string{skipActionOptsInit: trueString},
+		Short:       "Initialize git hooks for automatic AI session tracing",
 		Long: `Initialize git hooks that automatically trace AI coding sessions and
 create Chainloop attestations when you push.
 
@@ -71,26 +78,62 @@ required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
 turn the questions off on a terminal too.
 
 The organization, project, workflow and require-trace values are saved to
-.chainloop.yml, and every push reads them from there.`,
+.chainloop.yml, and every push reads them from there.
+
+With --local, the repository is set up for local mode: it installs the same
+hooks but creates no workflow, needs no login, and reaches no control plane. It
+writes traceStorage: LOCAL to .chainloop.yml (and tracePath when --trace-path is
+given), so every clone records sessions on disk. The pre-push hook then stores a
+session's evidence under the path instead of pushing an attestation. --contract,
+--workflow, --org and --project are control-plane settings and cannot be used
+with --local; --require-trace can.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			gitDir, repoRoot, err := tracegit.FindGitDirAndRoot()
 			if err != nil {
 				return err
 			}
 
+			// A tracePath only has meaning in local mode, so naming one turns it
+			// on rather than being silently ignored.
+			if tracePathFlag != "" {
+				localFlag = true
+			}
+
+			// Local mode contacts no control plane, so the control-plane
+			// identity and workflow flags are contradictions rather than extra
+			// configuration. --require-trace is orthogonal and allowed.
+			if localFlag {
+				for _, name := range []string{"contract", "workflow", "org", "project"} { //nolint:goconst // flag names, kept literal like the other flag references
+					if cmd.Flags().Changed(name) {
+						return fmt.Errorf("--%s cannot be used with --local: local mode contacts no control plane and creates no workflow", name)
+					}
+				}
+			}
+
 			cfg, err := resolveTraceInitConfig(cmd, repoRoot, project)
 			if err != nil {
 				return err
 			}
+			cfg.local = localFlag
+			cfg.tracePath = tracePathFlag
+			cfg.saveTraceStorage = localFlag
+			cfg.saveTracePath = localFlag && tracePathFlag != ""
 
-			// Fill in whatever the flags and .chainloop.yml did not settle,
-			// asking the user when there is one to ask. The executor it hands
-			// back is pinned to the resolved organization and reused below.
-			executor, err := resolveTraceIdentity(cmd.Context(), cfg, repoRoot)
-			if err != nil {
-				return stopIfAborted(err)
+			// Control-plane mode fills in the identity and opens an executor,
+			// building the connection lazily (the command is skipActionOptsInit).
+			// Local mode resolves no identity and opens no executor.
+			var executor *action.AttestationExecutor
+			if !localFlag {
+				if err := ensureActionOpts(cmd); err != nil {
+					return err
+				}
+
+				executor, err = resolveTraceIdentity(cmd.Context(), cfg, repoRoot)
+				if err != nil {
+					return stopIfAborted(err)
+				}
+				defer func() { _ = executor.Close() }()
 			}
-			defer func() { _ = executor.Close() }()
 
 			// Ask which agents to trace before anything is created or written,
 			// so every question is answered up front and an abort leaves the
@@ -107,8 +150,11 @@ The organization, project, workflow and require-trace values are saved to
 				return fmt.Errorf("no trace providers selected")
 			}
 
-			if err := ensureTraceInitWorkflow(cmd.Context(), executor, cfg, contract); err != nil {
-				return err
+			// Local mode has no control plane to create the workflow in.
+			if !localFlag {
+				if err := ensureTraceInitWorkflow(cmd.Context(), executor, cfg, contract); err != nil {
+					return err
+				}
 			}
 
 			// The harness hooks come first of everything that is left behind.
@@ -189,13 +235,20 @@ The organization, project, workflow and require-trace values are saved to
 				workDir = repoRoot
 			}
 
+			// What the run produced, and what to do with it. Every step above logs
+			// at debug, so this is what the user is left with.
+			if cfg.local {
+				writeTraceInitLocalSummary(os.Stdout, repoRoot, providerNames(installed))
+				writeTraceLocalNextSteps(os.Stdout, repoRoot, workDir, installed)
+
+				return nil
+			}
+
 			// Nothing pinned an organization when cfg has none, so the workflow
 			// went to the one the CLI points at. That is the one to report: it is
 			// what the connection used, not a guess.
 			organization := cmp.Or(cfg.organization, viper.GetString(confOptions.organization.viperKey))
 
-			// What the run produced, and what to do with it. Every step above logs
-			// at debug, so this is what the user is left with.
 			writeTraceInitSummary(os.Stdout, organization, cfg.project, cfg.workflow, providerNames(installed))
 			writeTraceNextSteps(os.Stdout, repoRoot, workDir, installed)
 
@@ -205,8 +258,10 @@ The organization, project, workflow and require-trace values are saved to
 
 	cmd.Flags().StringVar(&project, "project", "", "chainloop project name")
 	cmd.Flags().StringVar(&contract, "contract", "", traceContractFlagDesc)
+	cmd.Flags().BoolVar(&localFlag, "local", false, "set up local mode: no control plane, no login, no workflow; the pre-push hook stores session evidence on disk")
+	cmd.Flags().StringVar(&tracePathFlag, "trace-path", "", "where local-mode sessions are stored (default: under .git/chainloop-trace/local-sessions); implies --local")
 	cmd.Flags().String("workflow", "", "chainloop workflow name used for trace attestations (defaults to \"ai-coding-session\")")
-	cmd.Flags().Bool("require-trace", false, "block pushes when attestation fails for AI-assisted commits")
+	cmd.Flags().Bool("require-trace", false, "block pushes when a required trace is missing")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no harness flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
@@ -273,6 +328,57 @@ What's next
   2. Start %s and write some code
   3. Commit and push as usual. The AI coding sessions behind those commits are
      recorded and stored automatically
+
+Learn more: %s
+`, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
+}
+
+// writeTraceInitLocalSummary reports what a local init set up. It names no
+// organization, project or workflow, because local mode has none: it records
+// sessions and writes their evidence to disk, with no control plane.
+func writeTraceInitLocalSummary(w io.Writer, repoRoot string, harnesses []string) {
+	fmt.Fprint(w, "\nCongratulations, your repository is initialized in local mode\n\n")
+	fmt.Fprint(w, "  storage       local (no control plane)\n")
+
+	if path := config.LoadTracePathFromYML(repoRoot); path != "" {
+		fmt.Fprintf(w, "  sessions      stored under %s on push\n", path)
+	} else {
+		fmt.Fprint(w, "  sessions      stored under .git/chainloop-trace/local-sessions on push\n")
+	}
+
+	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
+}
+
+// writeTraceLocalNextSteps says what is left after a local init. Committing
+// .chainloop.yml is what makes the choice shared: traceStorage: LOCAL is a
+// repository policy, so a teammate who commits and clones it records locally
+// too. Unlike the control-plane path there is nothing to push to a backend; the
+// evidence lands on disk when the session's commits are pushed.
+func writeTraceLocalNextSteps(w io.Writer, repoRoot, workDir string, installed []trace.Provider) {
+	files := make([]string, 0, len(installed)+1)
+	add := func(absolute string) {
+		if rel, err := filepath.Rel(workDir, absolute); err == nil {
+			files = append(files, rel)
+			return
+		}
+
+		files = append(files, absolute)
+	}
+
+	add(filepath.Join(repoRoot, config.ChainloopYMLName(repoRoot)))
+
+	for _, p := range installed {
+		add(p.SettingsFile(repoRoot))
+	}
+
+	fmt.Fprintf(w, `
+What's next
+
+  1. Commit these files so every clone records locally:
+       git add %s
+  2. Start %s and write some code
+  3. Commit and push as usual. The session evidence is written to disk, with no
+     control plane; the push tells you where
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
@@ -464,9 +570,16 @@ type traceInitConfig struct {
 	organization string
 	requireTrace bool
 
+	// local records that this is a local-mode init: it writes traceStorage:
+	// LOCAL and reaches no control plane. tracePath is the optional override for
+	// where local sessions are stored.
+	local     bool
+	tracePath string
+
 	// The save* fields mark the values the user set on this run. Only those
 	// are written back to .chainloop.yml, leaving the rest of the file alone.
 	saveProject, saveWorkflow, saveOrganization, saveRequireTrace bool
+	saveTraceStorage, saveTracePath                               bool
 }
 
 // resolveTraceInitConfig reads the trace settings from the flags, falling back
@@ -524,6 +637,22 @@ func resolveTraceInitConfig(cmd *cobra.Command, repoRoot, projectFlag string) (*
 // save persists the values the user passed to .chainloop.yml so the trace
 // hooks target the same organization, project and workflow on every push.
 func (c *traceInitConfig) save(repoRoot string) error {
+	// Storage mode first: in local mode it is the field that makes the push
+	// hook store on disk, so it must land even if nothing else is written.
+	if c.saveTraceStorage {
+		if err := config.SaveTraceStorageToYML(repoRoot, config.TraceStorageLocal); err != nil {
+			return err
+		}
+		logger.Debug().Msg("traceStorage: LOCAL saved to .chainloop.yml")
+	}
+
+	if c.saveTracePath {
+		if err := config.SaveTracePathToYML(repoRoot, c.tracePath); err != nil {
+			return err
+		}
+		logger.Debug().Str("tracePath", c.tracePath).Msg("tracePath saved to .chainloop.yml")
+	}
+
 	if c.saveProject {
 		if err := config.SaveProjectToYML(repoRoot, c.project); err != nil {
 			return err
@@ -546,9 +675,12 @@ func (c *traceInitConfig) save(repoRoot string) error {
 	}
 
 	if c.saveRequireTrace {
-		if err := config.SaveRequireTraceToYML(repoRoot, c.requireTrace); err != nil {
+		// Written as the current traceRequired field; the deprecated
+		// requireTrace is only read back for an older config.
+		if err := config.SaveTraceRequiredToYML(repoRoot, c.requireTrace); err != nil {
 			return err
 		}
+		logger.Debug().Bool("traceRequired", c.requireTrace).Msg("traceRequired saved to .chainloop.yml")
 	}
 
 	return nil

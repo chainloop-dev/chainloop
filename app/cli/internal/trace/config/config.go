@@ -77,8 +77,105 @@ func SaveProjectToYML(dir, project string) error {
 
 // SaveRequireTraceToYML writes (or updates) the requireTrace field in
 // .chainloop.yml at the given directory, preserving any other fields.
+//
+// Deprecated: write traceRequired with SaveTraceRequiredToYML. This remains for
+// the legacy path until requireTrace is dropped.
 func SaveRequireTraceToYML(dir string, val bool) error {
 	return updateChainloopYMLField(dir, "requireTrace", val)
+}
+
+const (
+	// TraceStorageControlPlane uploads a signed attestation to the control
+	// plane. It is the mode when traceStorage is unset.
+	TraceStorageControlPlane = "CONTROL_PLANE"
+	// TraceStorageLocal writes the session evidence set to disk, with no
+	// control plane.
+	TraceStorageLocal = "LOCAL"
+)
+
+// ResolveTraceStorage canonicalizes a traceStorage value: surrounding space is
+// trimmed and the name upper-cased, an empty value is CONTROL_PLANE, and any
+// value other than the two known modes is an error, so a committed typo surfaces
+// instead of silently falling back to the control plane (and pushing to a
+// backend a LOCAL repository means to avoid).
+func ResolveTraceStorage(persisted string) (string, error) {
+	switch v := strings.ToUpper(strings.TrimSpace(persisted)); v {
+	case "":
+		return TraceStorageControlPlane, nil
+	case TraceStorageControlPlane, TraceStorageLocal:
+		return v, nil
+	default:
+		return "", fmt.Errorf("unknown traceStorage %q in .chainloop.yml: want %s or %s", persisted, TraceStorageControlPlane, TraceStorageLocal)
+	}
+}
+
+// LoadTraceStorageFromYML reads and canonicalizes the traceStorage mode from the
+// nearest .chainloop.yml. A missing config or field is CONTROL_PLANE.
+func LoadTraceStorageFromYML(dir string) (string, error) {
+	cfg := repositoryconfig.FindChainloopYML(dir)
+	if cfg == nil {
+		return TraceStorageControlPlane, nil
+	}
+
+	return ResolveTraceStorage(cfg.TraceStorage)
+}
+
+// IsLocalStorage reports whether the repository is configured for LOCAL trace
+// storage. It is best-effort: a missing config, or an invalid value, is treated
+// as not-local, so a caller that only shapes local-mode behavior (a banner, a
+// self-heal) falls back to the control-plane path. The pre-push hook calls
+// LoadTraceStorageFromYML directly instead, so an invalid value blocks the push
+// rather than being ignored.
+func IsLocalStorage(dir string) bool {
+	mode, err := LoadTraceStorageFromYML(dir)
+	return err == nil && mode == TraceStorageLocal
+}
+
+// SaveTraceStorageToYML writes (or updates) the traceStorage field in
+// .chainloop.yml at the given directory, preserving any other fields.
+func SaveTraceStorageToYML(dir, mode string) error {
+	return updateChainloopYMLField(dir, "traceStorage", mode)
+}
+
+// SaveTracePathToYML writes (or updates) the tracePath field in .chainloop.yml
+// at the given directory, preserving any other fields.
+func SaveTracePathToYML(dir, path string) error {
+	return updateChainloopYMLField(dir, "tracePath", path)
+}
+
+// LoadTracePathFromYML looks for .chainloop.yml starting from dir and returns
+// the tracePath value. Returns empty string when the field is absent.
+func LoadTracePathFromYML(dir string) string {
+	cfg := repositoryconfig.FindChainloopYML(dir)
+	if cfg == nil {
+		return ""
+	}
+
+	return cfg.TracePath
+}
+
+// SaveTraceRequiredToYML writes (or updates) the traceRequired field in
+// .chainloop.yml at the given directory, preserving any other fields.
+func SaveTraceRequiredToYML(dir string, val bool) error {
+	return updateChainloopYMLField(dir, "traceRequired", val)
+}
+
+// LoadTraceRequiredFromYML reports whether a required trace must block a push.
+// It prefers traceRequired and falls back to the deprecated requireTrace, so an
+// older .chainloop.yml keeps working. Absent in both is false (default-off).
+func LoadTraceRequiredFromYML(dir string) bool {
+	cfg := repositoryconfig.FindChainloopYML(dir)
+	if cfg == nil {
+		return false
+	}
+	if cfg.TraceRequired != nil {
+		return *cfg.TraceRequired
+	}
+	if cfg.RequireTrace != nil {
+		return *cfg.RequireTrace
+	}
+
+	return false
 }
 
 // SaveOrganizationToYML writes (or updates) the organization field in

@@ -150,6 +150,19 @@ func sessionStartBanner(dashboardURL, org, project string) string {
 	return banner
 }
 
+// localSessionStartBanner is the session-start banner for a local-mode
+// repository. It says the session is recorded and where its evidence lands,
+// with no Chainloop vocabulary and no control-plane round trip: local mode has
+// no dashboard to point at (R-012).
+func localSessionStartBanner(tracePath string) string {
+	banner := "Chainloop Trace is recording this session."
+	if tracePath != "" {
+		banner += "\nIts evidence will be stored on disk at " + tracePath + " when you push."
+	}
+
+	return banner
+}
+
 // HandleAgentSessionStart handles the agent session-start hook.
 func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error {
 	input, err := provider.ReadHookInput(os.Stdin)
@@ -186,11 +199,18 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	}
 
 	if provider.SupportsSessionStartBanner() {
-		banner := sessionStartBanner(
-			hookDashboardURL(log),
-			config.LoadOrganizationFromYML(repoRoot),
-			repositoryconfig.LoadProjectFromYML(repoRoot),
-		)
+		var banner string
+		if config.IsLocalStorage(repoRoot) {
+			// Local mode reaches no control plane, so the banner names the
+			// on-disk destination and makes no dashboard round trip (R-012).
+			banner = localSessionStartBanner(ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot)))
+		} else {
+			banner = sessionStartBanner(
+				hookDashboardURL(log),
+				config.LoadOrganizationFromYML(repoRoot),
+				repositoryconfig.LoadProjectFromYML(repoRoot),
+			)
+		}
 		msg.Banner = "\n\n" + banner + "\n"
 	}
 
@@ -752,8 +772,12 @@ func autoInstallGitHooks(store *state.Store, repoRoot string, log zerolog.Logger
 		return
 	}
 
-	if repositoryconfig.LoadProjectFromYML(repoRoot) == "" {
-		return // can't auto-install without a project name
+	// Auto-install needs a repository that is set up for trace: a control-plane
+	// project name, or local storage mode. A local-mode repository writes no
+	// projectName, so without the local check its hooks would never self-heal
+	// after a re-clone or a manual delete.
+	if repositoryconfig.LoadProjectFromYML(repoRoot) == "" && !config.IsLocalStorage(repoRoot) {
+		return
 	}
 
 	if _, err := hooks.Install(gitDir, skipPrePush); err != nil {

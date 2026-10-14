@@ -31,11 +31,14 @@ const traceRunLong = `Wrap an external command (typically an AI coding agent) an
 Chainloop attestation for the session once the command exits successfully.
 Sessions without git commits are still attested.
 
-trace run is isolated: it ignores .chainloop.yml entirely. The attestation
-identity must come from the --org, --project, --workflow flags (mandatory)
-and the optional --version flag. It does not read from or write to
-.chainloop.yml, and removes every hook and local trace artifact when the
-wrapped command exits, so a session never leaks setup into the next one.
+trace run keeps its identity isolated from .chainloop.yml: the attestation
+--org, --project and --workflow come from the flags (mandatory) and the
+optional --version flag, never from the file. It does read the repository's
+traceStorage mode, though: in a local-mode repository (traceStorage: LOCAL) the
+session is written to disk when the command exits, with no control plane, and
+the --org, --project and --workflow flags are not required. Either way it
+removes every hook and local trace artifact when the wrapped command exits, so a
+session never leaks setup into the next one.
 
 The workflow is created before the command runs. That part is best-effort: the
 session runs either way and the attestation creates the workflow if this did
@@ -58,6 +61,10 @@ func newTraceRunCmd() *cobra.Command {
 		Short: "Run a single-shot AI coding session and attest it",
 		Long:  traceRunLong,
 		Args:  cobra.MinimumNArgs(1),
+		// skipActionOptsInit keeps root from building the control-plane
+		// connection up front; the attestation path builds it lazily with
+		// ensureActionOpts, and a local-mode run never does (R-005).
+		Annotations: map[string]string{skipActionOptsInit: trueString},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Outside a git repository trace state lives in a deterministic
 			// out-of-tree directory keyed by the working directory. The store
@@ -88,28 +95,51 @@ func newTraceRunCmd() *cobra.Command {
 				store = state.NewGitStore(gitDir)
 			}
 
-			// --org is a persistent flag declared on the root command,
-			// so we cannot MarkFlagRequired it on this subcommand.
-			organization, err := cmd.Flags().GetString("org")
+			// The storage mode is a repository policy, read even though trace
+			// run keeps its identity flag-only: a LOCAL repository stores to
+			// disk and needs no identity and no control plane.
+			storageMode, err := config.LoadTraceStorageFromYML(repoRoot)
 			if err != nil {
-				return fmt.Errorf("reading --org flag: %w", err)
+				return err
 			}
+			local := storageMode == config.TraceStorageLocal
 
-			// MarkFlagRequired and Changed() only check that a flag was
-			// passed, so an empty value like --workflow "" would slip
-			// through and silently fall back to the default workflow.
-			// Validate the actual values here.
-			if organization == "" {
-				return fmt.Errorf("--org is required for trace run")
-			}
-			if projectFlag == "" {
-				return fmt.Errorf("--project is required for trace run")
-			}
-			if workflowFlag == "" {
-				return fmt.Errorf("--workflow is required for trace run")
-			}
+			var (
+				organization     string
+				contractName     string
+				contractRequired bool
+			)
 
-			contractName, contractRequired := config.ResolveContract(contractFlag)
+			if !local {
+				// --org is a persistent flag declared on the root command,
+				// so we cannot MarkFlagRequired it on this subcommand.
+				organization, err = cmd.Flags().GetString("org")
+				if err != nil {
+					return fmt.Errorf("reading --org flag: %w", err)
+				}
+
+				// MarkFlagRequired and Changed() only check that a flag was
+				// passed, so an empty value like --workflow "" would slip
+				// through and silently fall back to the default workflow.
+				// Validate the actual values here.
+				if organization == "" {
+					return fmt.Errorf("--org is required for trace run")
+				}
+				if projectFlag == "" {
+					return fmt.Errorf("--project is required for trace run")
+				}
+				if workflowFlag == "" {
+					return fmt.Errorf("--workflow is required for trace run")
+				}
+
+				contractName, contractRequired = config.ResolveContract(contractFlag)
+
+				// Build ActionOpts lazily (this command is skipActionOptsInit),
+				// so a LOCAL run never opens a control-plane connection.
+				if err := ensureActionOpts(cmd); err != nil {
+					return err
+				}
+			}
 
 			return action.TraceRun(cmd.Context(), logger, action.TraceRunOpts{
 				Store:            store,
@@ -124,20 +154,21 @@ func newTraceRunCmd() *cobra.Command {
 				ContractRequired: contractRequired,
 				ActionOpts:       ActionOpts,
 				CLIVersion:       Version,
+				Local:            local,
 			})
 		},
 	}
 
-	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required; .chainloop.yml is ignored)")
-	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name used for trace attestations (required; .chainloop.yml is ignored)")
+	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required unless the repository is in local mode; .chainloop.yml identity is ignored)")
+	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name used for trace attestations (required unless the repository is in local mode; .chainloop.yml identity is ignored)")
 	cmd.Flags().StringVar(&versionFlag, "version", "", "chainloop project version (optional; defaults to the latest version)")
 	cmd.Flags().StringVar(&contractFlag, "contract", "", traceContractFlagDesc)
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no provider flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
-	_ = cmd.MarkFlagRequired("project")
-	_ = cmd.MarkFlagRequired("workflow")
+	// project and workflow are not required in local mode, so the check is done
+	// in RunE (after the storage mode is known) rather than by cobra up front.
 
 	return cmd
 }
