@@ -116,8 +116,15 @@ with --local; --require-trace can.`,
 			}
 			cfg.local = localFlag
 			cfg.tracePath = tracePathFlag
-			cfg.saveTraceStorage = localFlag
 			cfg.saveTracePath = localFlag && tracePathFlag != ""
+
+			// A control-plane init over a repository previously set to LOCAL has
+			// to clear the stale policy, or the pre-push hook keeps storing on
+			// disk while init configured the control plane, and the two
+			// disagree. A fresh control-plane repository writes nothing and keeps
+			// relying on the CONTROL_PLANE default.
+			existingMode, _ := config.LoadTraceStorageFromYML(repoRoot)
+			cfg.traceStorage, cfg.saveTraceStorage = traceStorageToPersist(localFlag, existingMode)
 
 			// Control-plane mode fills in the identity and opens an executor,
 			// building the connection lazily (the command is skipActionOptsInit).
@@ -350,10 +357,12 @@ func writeTraceInitLocalSummary(w io.Writer, repoRoot string, harnesses []string
 }
 
 // writeTraceLocalNextSteps says what is left after a local init. Committing
-// .chainloop.yml is what makes the choice shared: traceStorage: LOCAL is a
-// repository policy, so a teammate who commits and clones it records locally
-// too. Unlike the control-plane path there is nothing to push to a backend; the
-// evidence lands on disk when the session's commits are pushed.
+// .chainloop.yml shares the choice: traceStorage: LOCAL is a repository policy a
+// clone inherits. The git hooks that record a session live under .git and are
+// not cloned, though, so each teammate installs their own by running chainloop
+// trace init --local once after cloning. Unlike the control-plane path there is
+// nothing to push to a backend; the evidence lands on disk when the session's
+// commits are pushed.
 func writeTraceLocalNextSteps(w io.Writer, repoRoot, workDir string, installed []trace.Provider) {
 	files := make([]string, 0, len(installed)+1)
 	add := func(absolute string) {
@@ -374,11 +383,15 @@ func writeTraceLocalNextSteps(w io.Writer, repoRoot, workDir string, installed [
 	fmt.Fprintf(w, `
 What's next
 
-  1. Commit these files so every clone records locally:
+  1. Commit these files so the local-mode policy is shared:
        git add %s
   2. Start %s and write some code
   3. Commit and push as usual. The session evidence is written to disk, with no
      control plane; the push tells you where
+
+Each teammate installs their own git hooks once after cloning, since the hooks
+live under .git and are not cloned:
+       chainloop trace init --local
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
@@ -575,11 +588,32 @@ type traceInitConfig struct {
 	// where local sessions are stored.
 	local     bool
 	tracePath string
+	// traceStorage is the value written when saveTraceStorage is set. Local init
+	// writes LOCAL. A control-plane init writes CONTROL_PLANE only to clear a
+	// stale LOCAL left by an earlier local init.
+	traceStorage string
 
 	// The save* fields mark the values the user set on this run. Only those
 	// are written back to .chainloop.yml, leaving the rest of the file alone.
 	saveProject, saveWorkflow, saveOrganization, saveRequireTrace bool
 	saveTraceStorage, saveTracePath                               bool
+}
+
+// traceStorageToPersist decides which traceStorage value trace init writes and
+// whether it writes one at all. Local init always records LOCAL. A control-plane
+// init writes CONTROL_PLANE only to clear a stale LOCAL an earlier local init
+// left behind, so the pre-push hook never keeps storing on disk after a
+// control-plane re-init. A fresh control-plane repository writes nothing and
+// keeps its config minimal, relying on the CONTROL_PLANE default.
+func traceStorageToPersist(localFlag bool, existingMode string) (value string, save bool) {
+	switch {
+	case localFlag:
+		return config.TraceStorageLocal, true
+	case existingMode == config.TraceStorageLocal:
+		return config.TraceStorageControlPlane, true
+	default:
+		return "", false
+	}
 }
 
 // resolveTraceInitConfig reads the trace settings from the flags, falling back
@@ -640,10 +674,10 @@ func (c *traceInitConfig) save(repoRoot string) error {
 	// Storage mode first: in local mode it is the field that makes the push
 	// hook store on disk, so it must land even if nothing else is written.
 	if c.saveTraceStorage {
-		if err := config.SaveTraceStorageToYML(repoRoot, config.TraceStorageLocal); err != nil {
+		if err := config.SaveTraceStorageToYML(repoRoot, c.traceStorage); err != nil {
 			return err
 		}
-		logger.Debug().Msg("traceStorage: LOCAL saved to .chainloop.yml")
+		logger.Debug().Str("traceStorage", c.traceStorage).Msg("traceStorage saved to .chainloop.yml")
 	}
 
 	if c.saveTracePath {

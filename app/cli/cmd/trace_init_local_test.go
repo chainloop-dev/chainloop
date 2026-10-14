@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -131,4 +132,61 @@ func TestWriteTraceLocalNextSteps(t *testing.T) {
 	assert.Contains(t, got, claudeSettings)
 	assert.Contains(t, got, "written to disk")
 	assert.Contains(t, got, traceDocsURL)
+	// The git hooks live under .git and are not cloned, so a teammate must run
+	// init themselves; the steps must say so rather than imply a commit is
+	// enough.
+	assert.Contains(t, got, "chainloop trace init --local")
+	assert.Contains(t, got, "not cloned")
+}
+
+func TestTraceStorageToPersist(t *testing.T) {
+	testCases := []struct {
+		name         string
+		local        bool
+		existingMode string
+		wantValue    string
+		wantSave     bool
+	}{
+		{
+			name:      "local init writes LOCAL",
+			local:     true,
+			wantValue: config.TraceStorageLocal,
+			wantSave:  true,
+		},
+		{
+			name:         "local init writes LOCAL even over an existing control plane",
+			local:        true,
+			existingMode: config.TraceStorageControlPlane,
+			wantValue:    config.TraceStorageLocal,
+			wantSave:     true,
+		},
+		{
+			// A control-plane re-init must clear a stale LOCAL so the pre-push
+			// hook stops storing on disk.
+			name:         "control-plane init over LOCAL clears it to CONTROL_PLANE",
+			local:        false,
+			existingMode: config.TraceStorageLocal,
+			wantValue:    config.TraceStorageControlPlane,
+			wantSave:     true,
+		},
+		{
+			name:         "fresh control-plane init writes nothing",
+			local:        false,
+			existingMode: config.TraceStorageControlPlane,
+			wantSave:     false,
+		},
+		{
+			name:     "control-plane init with no existing mode writes nothing",
+			local:    false,
+			wantSave: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			value, save := traceStorageToPersist(tc.local, tc.existingMode)
+			assert.Equal(t, tc.wantSave, save)
+			assert.Equal(t, tc.wantValue, value)
+		})
+	}
 }
