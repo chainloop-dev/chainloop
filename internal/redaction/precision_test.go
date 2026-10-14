@@ -139,6 +139,15 @@ func TestRulesConfigKeepsNonSecrets(t *testing.T) {
 			text:            "issuer: http://localhost:8000@chainloop.local\n",
 			wantDefaultRule: ruleCredentialURI,
 		},
+		{
+			// The file content of a Write tool call. The scanner sees it
+			// JSON-encoded, so the password of the match ran from the port,
+			// through the escaped line breaks, to the user part of an email
+			// address on a later line.
+			name:            "uri password running through line breaks to an email address",
+			text:            "API_URL=http://localhost:48002\nCAS_ENDPOINT=localhost:49001\nTEST_EMAIL=" + sampleEmail + "\n",
+			wantDefaultRule: ruleCredentialURI,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -212,6 +221,13 @@ func TestRulesConfigStillRedactsSecrets(t *testing.T) {
 			text:     "dsn: postgres://admin:" + samplePassword + "@db.internal:5432/app\n",
 			secret:   samplePassword,
 			wantRule: ruleCredentialURI,
+		},
+		{
+			name:     "password in a connection uri on the line after a host and port",
+			text:     "API_URL=http://localhost:48002\nDSN=postgres://admin:" + samplePassword + "@db.internal:5432/app\n",
+			secret:   samplePassword,
+			wantRule: ruleCredentialURI,
+			keep:     "localhost:48002",
 		},
 	}
 

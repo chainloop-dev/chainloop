@@ -109,6 +109,11 @@
           "type": "user",
           "message": {"role": "user", "content": "119\tconst pat = \"__GITHUB_PAT__\" // gitleaks:allow\n120\twantURI := \"https://tracker.example.com/issue/1?token=\" + pat\n"},
           "timestamp": "2026-03-25T15:14:07.000Z"
+        },
+        {
+          "type": "assistant",
+          "message": {"role": "assistant", "content": [{"type": "tool_use", "name": "Write", "input": {"file_path": "/work/e2e/.env", "content": "ENVIRONMENT=local\nBASE_URL=http://localhost:43000\nAPI_URL=http://localhost:48002\nCAS_ENDPOINT=localhost:49001\nCHAINLOOP_API_INSECURE=true\nTEST_EMAIL=john@chainloop.local\n"}}]},
+          "timestamp": "2026-03-25T15:14:08.000Z"
         }
       ]
     },

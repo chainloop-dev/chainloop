@@ -59,6 +59,18 @@ regexTarget = "match"
 regexes = ['''(?i)://(?:localhost|[0-9]{1,3}(?:\.[0-9]{1,3}){3}|[a-z0-9-]+(?:\.[a-z0-9-]+)+):[0-9]{1,5}@''']
 
 [[allowlists]]
+description = "A password of a URI that runs through a line break, such as a port followed by more lines up to an email address"
+targetRules = ["generic-credential-uri"]
+# The password stops at whitespace in source text, but in the JSON-encoded text
+# a line break is the escape \n, so the match runs on into later lines up to
+# the next @. A URI cannot contain a line break, so such a match is not one. A
+# real URI on a later line has its own ://, which the password cannot run
+# through, so it is still found. Only an escape counts: an odd run of
+# backslashes before the n, r or t. A \n written in source code reaches the
+# scanner as \\n and is not a line break.
+regexes = ['''(?:^|[^\\])(?:\\\\)*\\[nrt]''']
+
+[[allowlists]]
 description = "An elided password in documentation, such as http://user:…@example.com"
 targetRules = ["generic-credential-uri"]
 regexes = ['''^(?:…|\.{3})$''']
