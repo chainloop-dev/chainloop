@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -108,7 +108,7 @@ func TestMatchesEvaluation(t *testing.T) {
 	}
 
 	// Should always return true for WASM policies
-	matches, err := eng.MatchesEvaluation(ctx, policy, []string{"violation"}, map[string]string{"key": "value"})
+	matches, err := eng.MatchesEvaluation(ctx, policy, []string{"violation"}, []map[string]any{{"severity": "HIGH"}}, map[string]string{"key": "value"})
 	assert.NoError(t, err)
 	assert.True(t, matches)
 }

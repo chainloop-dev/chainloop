@@ -79,6 +79,7 @@ const (
 	inputArgs                                 = "args"
 	expectedArgs                              = "expected_args"
 	violationsResult                          = "violations"
+	findingsResult                            = "findings"
 	inputElements                             = "elements"
 	mainRule                                  = "result"
 	matchesParametersRule                     = "matches_parameters"
@@ -418,15 +419,17 @@ func (r *Engine) MatchesParameters(ctx context.Context, policy *engine.Policy, e
 }
 
 // MatchesEvaluation evaluates the matches_evaluation rule in a rego policy.
-// Creates an input object with expected parameters and policy violations.
-func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, violations []string, expectedParams map[string]string) (bool, error) {
+// Creates an input object with expected parameters, policy violations and the
+// structured findings of those violations. A nil list reaches the rule as an empty
+// array, never as null, so that a rule that counts it raises no strict builtin error.
+func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, violations []string, findings []map[string]any, expectedParams map[string]string) (bool, error) {
 	policyString := string(policy.Source)
 	parsedModule, err := ast.ParseModule(policy.Name, policyString)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse rego policy: %w", sanitizeParseError(err))
 	}
 
-	// Create input expected parameters and policy violations
+	// Create input expected parameters, policy violations and findings
 	inputMap := make(map[string]interface{})
 	if expectedParams == nil {
 		inputMap[expectedArgs] = map[string]string{}
@@ -437,6 +440,11 @@ func (r *Engine) MatchesEvaluation(ctx context.Context, policy *engine.Policy, v
 		inputMap[violationsResult] = []string{}
 	} else {
 		inputMap[violationsResult] = violations
+	}
+	if findings == nil {
+		inputMap[findingsResult] = []map[string]any{}
+	} else {
+		inputMap[findingsResult] = findings
 	}
 	decodedInput := r.injectProjectMetadata(inputMap)
 

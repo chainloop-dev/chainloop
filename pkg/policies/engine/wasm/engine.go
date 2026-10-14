@@ -284,7 +284,7 @@ func (e *Engine) MatchesParameters(_ context.Context, _ *engine.Policy,
 // MatchesEvaluation is a stub implementation for WASM policies
 // WASM policies don't currently support evaluation matching
 func (e *Engine) MatchesEvaluation(_ context.Context, _ *engine.Policy,
-	_ []string, _ map[string]string) (bool, error) {
+	_ []string, _ []map[string]any, _ map[string]string) (bool, error) {
 	// Default to true - WASM policies handle their own evaluation logic
 	return true, nil
 }
