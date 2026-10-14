@@ -102,7 +102,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.44.0
 	github.com/vektah/gqlparser/v2 v2.5.60
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
-	gitlab.com/gitlab-org/security-products/analyzers/report/v5 v5.13.1
+	gitlab.com/gitlab-org/security-products/analyzers/report/v7 v7.3.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.72.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.72.0
 	go.opentelemetry.io/otel v1.47.0
