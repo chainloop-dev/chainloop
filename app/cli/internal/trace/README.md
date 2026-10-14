@@ -100,7 +100,11 @@ How the sessions are linked to the commits and attested.
 |---------|---------------|-------------|--------|--------------|------------|
 | Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes |
 | Attestation at push | The `pre-push` hook attests the sessions of the pushed commits. | Yes | Yes | Yes | Yes |
+| Shell commands in another checkout | A session can work in a checkout other than the one it started in through shell commands only, for example in a fresh clone. The checkout is found from the command text: the target of `cd` or `pushd`, the path of `git -C`, and the folder that `git clone` or `gh repo clone` creates. The git hooks are installed there and the session is recorded there, the same as for a file tool edit in that checkout. A clone gets the git hooks only after the command that created it, so a commit in that same command does not carry the session. For OpenCode, a plugin installed by an earlier version does not send the command text: install the hooks again to update it. | Yes | Partial | Yes | Yes |
 
+Why not Yes:
+
+- **Shell commands in another checkout, Cursor:** the shell hooks are verified for the Cursor IDE only. A relative path in the command resolves against the first workspace root, not against the folder where the shell runs.
 ## How each agent is hooked in
 
 | Agent | Hook installation | Hooks |

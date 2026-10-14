@@ -143,8 +143,9 @@ async function toolEvent(directory: string, hook: string, hookEventName: string,
   }
   if (commandTools.includes(tool)) {
     // The call ID pairs this hook with the other hook of the same call, so
-    // overlapping commands keep their own snapshots.
-    await fire(directory, hook, { ...payload, tool_use_id: callID })
+    // overlapping commands keep their own snapshots. The command line names
+    // the checkouts that the command works in.
+    await fire(directory, hook, { ...payload, tool_use_id: callID, command: args?.command ?? "" })
     return
   }
   if (!fileWritingTools.includes(tool)) return
