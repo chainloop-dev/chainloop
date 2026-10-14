@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -156,6 +156,85 @@ func TestCallbackAllowed(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := callbackAllowed(tc.callback, allowed)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}
+
+const (
+	testOrigin         = "https://api.example.com"
+	testOriginWithPort = testOrigin + ":8443"
+)
+
+func TestParseCallbackOrigins(t *testing.T) {
+	testCases := []struct {
+		name    string
+		origins []string
+		want    []string
+		wantErr bool
+	}{
+		{name: "nil list", origins: nil, want: []string{}},
+		{name: "empty list", origins: []string{}, want: []string{}},
+		{name: "origin", origins: []string{testOrigin}, want: []string{testOrigin}},
+		{name: "origin with port", origins: []string{testOriginWithPort}, want: []string{testOriginWithPort}},
+		{name: "origin with a trailing slash", origins: []string{"https://api.example.com/"}, want: []string{testOrigin}},
+		{name: "mixed case is normalized", origins: []string{"https://API.Example.com"}, want: []string{testOrigin}},
+		{name: "several origins", origins: []string{"https://a.example.com", "http://b.example.com:8080"}, want: []string{"https://a.example.com", "http://b.example.com:8080"}},
+		{name: "empty entry", origins: []string{""}, wantErr: true},
+		{name: "malformed entry", origins: []string{testOrigin, "://nope"}, wantErr: true},
+		{name: "missing scheme", origins: []string{"api.example.com"}, wantErr: true},
+		{name: "non http scheme", origins: []string{"ftp://api.example.com"}, wantErr: true},
+		{name: "wildcard host", origins: []string{"https://*.example.com"}, wantErr: true},
+		{name: "wildcard only", origins: []string{"*"}, wantErr: true},
+		{name: "with a path", origins: []string{"https://api.example.com/auth/callback"}, wantErr: true},
+		{name: "with a query", origins: []string{"https://api.example.com?foo=bar"}, wantErr: true},
+		{name: "with a fragment", origins: []string{"https://api.example.com#foo"}, wantErr: true},
+		{name: "with user info", origins: []string{"https://user@api.example.com"}, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := parseCallbackOrigins(tc.origins)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+func TestCallbackAllowedAdditionalOrigins(t *testing.T) {
+	extra, err := parseCallbackOrigins([]string{testOriginWithPort})
+	assert.NoError(t, err)
+
+	testCases := []struct {
+		name     string
+		allowed  []string
+		callback string
+		wantErr  bool
+	}{
+		{name: "exact match", allowed: extra, callback: "https://api.example.com:8443/auth/callback?state=foo"},
+		{name: "different port", allowed: extra, callback: "https://api.example.com:9443/auth/callback", wantErr: true},
+		{name: "default port", allowed: extra, callback: "https://api.example.com/auth/callback", wantErr: true},
+		{name: "different scheme", allowed: extra, callback: "http://api.example.com:8443/auth/callback", wantErr: true},
+		{name: "allowed origin as a host prefix", allowed: extra, callback: "https://api.example.com.evil.example:8443/collect", wantErr: true},
+		{name: "allowed origin as a port prefix", allowed: extra, callback: "https://api.example.com:84431/collect", wantErr: true},
+		{name: "allowed origin as user info", allowed: extra, callback: "https://api.example.com:8443@evil.example/collect", wantErr: true},
+		{name: "empty list changes nothing", allowed: nil, callback: "https://api.example.com:8443/auth/callback", wantErr: true},
+		{name: "empty list still allows loopback", allowed: nil, callback: "http://127.0.0.1:41337/auth/callback"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := callbackAllowed(tc.callback, tc.allowed)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
