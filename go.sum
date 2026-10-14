@@ -1342,8 +1342,8 @@ gitlab.com/gitlab-org/api/client-go v1.46.0 h1:YxBWFZIFYKcGESCb9fpkwzouo+apyB9pr
 gitlab.com/gitlab-org/api/client-go v1.46.0/go.mod h1:FtgyU6g2HS5+fMhw6nLK96GBEEBx5MzntOiJWfIaiN8=
 gitlab.com/gitlab-org/security-products/analyzers/common/v3 v3.4.0 h1:+1k1NQiBSVeLDePX82ec3nHdrOsDvhMmA09LL25omTk=
 gitlab.com/gitlab-org/security-products/analyzers/common/v3 v3.4.0/go.mod h1:VEhMaykRqWmiLS7uWGKAVfsFmAqeHp1q1K1s24d37Ig=
-gitlab.com/gitlab-org/security-products/analyzers/report/v5 v5.13.1 h1:936hBRBYfrLjQp5LGrSsP6vet2EawSI1zyUppoHOj/I=
-gitlab.com/gitlab-org/security-products/analyzers/report/v5 v5.13.1/go.mod h1:89AMh07hABjE8V9JFl6UYmjXYaBrsAlQCR7FGWD/aIQ=
+gitlab.com/gitlab-org/security-products/analyzers/report/v7 v7.3.0 h1:jAbRipqripmOdrN3oea0LGkUA48DdzXARNrf3YE7ZrI=
+gitlab.com/gitlab-org/security-products/analyzers/report/v7 v7.3.0/go.mod h1:sSgZy0JXQUfMPPUIdxN7KNNjM6uboLeTnpQAfkDLllU=
 gitlab.com/gitlab-org/security-products/analyzers/ruleset/v3 v3.3.2 h1:dvJgv4yfy+B2DcPtc9cE23sHdm8bcETeprTcD0pHfJA=
 gitlab.com/gitlab-org/security-products/analyzers/ruleset/v3 v3.3.2/go.mod h1:hHFwTR6EqMt2J0b5U18oMxU/yG0h/j7vVboqIszwCrA=
 go.etcd.io/bbolt v1.3.3/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=

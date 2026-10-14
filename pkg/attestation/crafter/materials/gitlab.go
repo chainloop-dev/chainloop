@@ -26,7 +26,7 @@ import (
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
-	"gitlab.com/gitlab-org/security-products/analyzers/report/v5"
+	"gitlab.com/gitlab-org/security-products/analyzers/report/v7"
 )
 
 var supportedTypes = []string{"sast", "dast", "api_fuzzing", "coverage_fuzzing", "secret_detection", "dependency_scanning", "container_scanning", "container_scanning_for_registry", "cluster_image_scanning"}
