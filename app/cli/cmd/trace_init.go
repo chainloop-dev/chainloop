@@ -265,6 +265,14 @@ with --local; --require-trace can.`,
 			organization := cmp.Or(cfg.organization, viper.GetString(confOptions.organization.viperKey))
 
 			writeTraceInitSummary(os.Stdout, organization, cfg.project, cfg.workflow, providerNames(installed))
+
+			// A control-plane init that cleared a previous LOCAL policy changed
+			// how every push behaves, so say it rather than leave it to a debug
+			// log the user never sees.
+			if existingMode == config.TraceStorageLocal {
+				writeTraceStorageSwitchedNote(os.Stdout, config.ChainloopYMLName(repoRoot))
+			}
+
 			writeTraceNextSteps(os.Stdout, repoRoot, workDir, installed)
 
 			return nil
@@ -362,6 +370,14 @@ func writeTraceInitLocalSummary(w io.Writer, repoRoot string, harnesses []string
 	}
 
 	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
+}
+
+// writeTraceStorageSwitchedNote tells the user that this control-plane init
+// cleared a previous local-mode policy. The switch changes how every push
+// behaves, so it is stated plainly here rather than left to a debug log, and the
+// user is reminded to commit it like any other repository policy change.
+func writeTraceStorageSwitchedNote(w io.Writer, ymlName string) {
+	fmt.Fprintf(w, "\nThis repository was in local mode. Trace now attests sessions to the control\nplane. Commit %s so every clone switches too.\n", ymlName)
 }
 
 // writeTraceLocalNextSteps says what is left after a local init. Committing

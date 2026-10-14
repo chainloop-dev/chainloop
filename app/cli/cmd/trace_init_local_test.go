@@ -145,6 +145,16 @@ func TestTraceInitInvalidStorage(t *testing.T) {
 	})
 }
 
+func TestWriteTraceStorageSwitchedNote(t *testing.T) {
+	out := &bytes.Buffer{}
+	writeTraceStorageSwitchedNote(out, ".chainloop.yml")
+
+	got := out.String()
+	assert.Contains(t, got, "was in local mode")
+	assert.Contains(t, got, "control")
+	assert.Contains(t, got, ".chainloop.yml")
+}
+
 func TestWriteTraceInitLocalSummary(t *testing.T) {
 	out := &bytes.Buffer{}
 	writeTraceInitLocalSummary(out, t.TempDir(), []string{providerClaudeCode, "cursor"}) //nolint:goconst // provider wire name, kept literal like the other provider tests
