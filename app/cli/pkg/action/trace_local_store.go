@@ -358,7 +358,10 @@ func mergeAnnotations(crafted, extra map[string]string) map[string]string {
 		return nil
 	}
 
-	merged := make(map[string]string, len(crafted)+len(extra))
+	// Both maps hold a handful of annotation keys, so a capacity hint from
+	// crafted alone is enough and the map grows for the few extra entries.
+	// Summing the two lengths is an overflow pattern a scanner flags for no gain.
+	merged := make(map[string]string, len(crafted))
 	for k, v := range crafted {
 		merged[k] = v
 	}
