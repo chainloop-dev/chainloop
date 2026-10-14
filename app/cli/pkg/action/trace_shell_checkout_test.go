@@ -23,6 +23,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
@@ -149,40 +150,77 @@ func TestClaudeSessionCommitsInClonedCheckoutThroughShell(t *testing.T) {
 	assert.Equal(t, mainRoot, sessions[sid].Cwd, "the record keeps the directory the agent runs in")
 }
 
-// The OpenCode plugin sends the command line of a shell call too. A checkout
-// that exists before the call is registered at the pre hook, so the changes
-// that the same call makes there are recorded in its ledger.
-func TestOpenCodeShellCommandInOtherCheckout(t *testing.T) {
+// OpenCode and Cursor send the command line of a shell call too, each in its
+// own payload. A checkout that exists before the call is registered at the
+// pre hook, so the changes that the same call makes there are recorded in its
+// ledger.
+func TestShellCommandInOtherCheckout(t *testing.T) {
 	const sid = "ses_7614"
 
-	mainRoot := chdirToResolvedGitRepo(t)
-	other := resolvedTempGitRepo(t)
-	require.NoError(t, os.WriteFile(filepath.Join(other, ".chainloop.yml"), []byte("projectName: repo-b\n"), 0600))
+	cases := []struct {
+		name     string
+		provider trace.Provider
+		// start, pre and post return the payloads of the session start and
+		// of the hooks before and after one shell call of command.
+		start     string
+		pre, post func(command string) string
+	}{
+		{
+			name:     "opencode",
+			provider: opencode.New(),
+			start:    fmt.Sprintf(`{"session_id":%q,"hook_event_name":"session.created"}`, sid),
+			pre: func(command string) string {
+				return fmt.Sprintf(`{"session_id":%q,"hook_event_name":"tool.execute.before","tool_name":"bash","tool_use_id":"call_01","command":%q}`, sid, command)
+			},
+			post: func(command string) string {
+				return fmt.Sprintf(`{"session_id":%q,"hook_event_name":"tool.execute.after","tool_name":"bash","tool_use_id":"call_01","command":%q}`, sid, command)
+			},
+		},
+		{
+			name:     "cursor",
+			provider: cursor.New(),
+			start:    fmt.Sprintf(`{"conversation_id":%q,"hook_event_name":"sessionStart"}`, sid),
+			pre: func(command string) string {
+				return fmt.Sprintf(`{"conversation_id":%q,"hook_event_name":"preToolUse","tool_name":"Shell","tool_use_id":"call-1","tool_input":{"command":%q}}`, sid, command)
+			},
+			post: func(command string) string {
+				return fmt.Sprintf(`{"conversation_id":%q,"hook_event_name":"postToolUse","tool_name":"Shell","tool_use_id":"call-1","tool_input":{"command":%q},"tool_output":"{}"}`, sid, command)
+			},
+		},
+	}
 
-	p := opencode.New()
-	payload := fmt.Sprintf(`"tool_name":"bash","tool_use_id":"call_01","command":"cd %s && sed -i '' s/a/b/ notes.md"`, other)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			mainRoot := chdirToResolvedGitRepo(t)
+			other := resolvedTempGitRepo(t)
+			require.NoError(t, os.WriteFile(filepath.Join(other, ".chainloop.yml"), []byte("projectName: repo-b\n"), 0600))
 
-	withStdin(t, fmt.Sprintf(`{"session_id":%q,"hook_event_name":"session.created"}`, sid))
-	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+			p := tc.provider
+			command := fmt.Sprintf("cd %s && sed -i '' s/a/b/ notes.md", other)
 
-	withStdin(t, fmt.Sprintf(`{"session_id":%q,"hook_event_name":"tool.execute.before",%s}`, sid, payload))
-	require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop()))
-	require.NoError(t, os.WriteFile(filepath.Join(other, "notes.md"), []byte("b\n"), 0600))
-	withStdin(t, fmt.Sprintf(`{"session_id":%q,"hook_event_name":"tool.execute.after",%s}`, sid, payload))
-	require.NoError(t, HandleAgentPostToolUse(p, zerolog.Nop()))
+			withStdin(t, tc.start)
+			captureStdout(t, func() { require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop())) })
 
-	otherGitDir := filepath.Join(other, ".git")
-	assert.True(t, hooks.IsInstalled(otherGitDir, false), "the git hooks are installed in the other checkout")
+			withStdin(t, tc.pre(command))
+			captureStdout(t, func() { require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop())) })
+			require.NoError(t, os.WriteFile(filepath.Join(other, "notes.md"), []byte("b\n"), 0600))
+			withStdin(t, tc.post(command))
+			captureStdout(t, func() { require.NoError(t, HandleAgentPostToolUse(p, zerolog.Nop())) })
 
-	rec, err := state.NewGitStore(filepath.Join(mainRoot, ".git")).LoadSessionRecord(sid)
-	require.NoError(t, err)
-	require.NotNil(t, rec)
-	assert.Equal(t, []string{other}, rec.Checkouts)
+			otherGitDir := filepath.Join(other, ".git")
+			assert.True(t, hooks.IsInstalled(otherGitDir, false), "the git hooks are installed in the other checkout")
 
-	otherStore := state.NewGitStore(otherGitDir)
-	assert.True(t, otherStore.SessionRecordExists(sid))
-	assert.Contains(t, otherStore.LoadAILineAttribution(sid).Files, "notes.md",
-		"the change of the same call is recorded in the other checkout")
+			rec, err := state.NewGitStore(filepath.Join(mainRoot, ".git")).LoadSessionRecord(sid)
+			require.NoError(t, err)
+			require.NotNil(t, rec)
+			assert.Equal(t, []string{other}, rec.Checkouts)
+
+			otherStore := state.NewGitStore(otherGitDir)
+			assert.True(t, otherStore.SessionRecordExists(sid))
+			assert.Contains(t, otherStore.LoadAILineAttribution(sid).Files, "notes.md",
+				"the change of the same call is recorded in the other checkout")
+		})
+	}
 }
 
 func configureGitUser(t *testing.T, dir string) {
