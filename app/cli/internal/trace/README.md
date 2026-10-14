@@ -39,7 +39,7 @@ Which lines of a commit the AI wrote.
 Why not Yes:
 
 - **Line attribution, Cursor:** Cursor has only the `afterFileEdit` hook, which gives the edits but no snapshot before the edit. The provider rebuilds the content before the edit from the edits.
-- **Shell changes attribution, Cursor:** Cursor has no hook before and after a shell command.
+- **Shell changes attribution, Cursor:** the provider does not install the shell hooks of Cursor (`preToolUse` and `postToolUse` for the shell tool).
 
 ## User experience
 
@@ -53,7 +53,7 @@ What the user sees in the agent.
 Why not Yes:
 
 - **Welcome message, Cursor and OpenCode:** the provider gives the session-start context to the model only. It has no channel that shows a message to the user at session start, so the welcome message is dropped.
-- **Session link after push, Cursor:** Cursor has no hook after a shell command, so there is no point at which to show the link.
+- **Session link after push, Cursor:** the provider does not install a Cursor hook that runs after a shell command, so there is no point at which to show the link.
 - **Session link after push, OpenCode:** the plugin hook fires after a shell command, but the response that shows a message to the user is not verified yet. The link stays pending until it expires.
 
 ## Specs and skills
@@ -100,13 +100,17 @@ How the sessions are linked to the commits and attested.
 |---------|---------------|-------------|--------|--------------|------------|
 | Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes |
 | Attestation at push | The `pre-push` hook attests the sessions of the pushed commits. | Yes | Yes | Yes | Yes |
+| Shell commands in another checkout | A session can work in a checkout other than the one it started in through shell commands only, for example in a fresh clone. The checkout is found from the command text: the target of `cd` or `pushd`, the path of `git -C`, and the folder that `git clone` or `gh repo clone` creates. The git hooks are installed there and the session is recorded there, the same as for a file tool edit in that checkout. A clone gets the git hooks only after the command that created it, so a commit in that same command does not carry the session. | Yes | No | Yes | Yes |
 
+Why not Yes:
+
+- **Shell commands in another checkout, Cursor:** the provider does not install the shell hooks of Cursor. A file tool edit in the other checkout still registers it.
 ## How each agent is hooked in
 
 | Agent | Hook installation | Hooks |
 |-------|-------------------|-------|
 | Claude Code | `.claude/settings.json` | Session start and end, user prompt, and before and after each file and shell tool and the Skill tool. |
-| Cursor | `.cursor/hooks.json` | Session start and end, and `afterFileEdit`. There is no shell hook and no prompt hook. |
+| Cursor | `.cursor/hooks.json` | Session start and end, and `afterFileEdit`. The provider installs no shell hook and no prompt hook. |
 | OpenCode | `.opencode/plugins/chainloop-trace.ts` | Session start and end, user prompt, and before and after each tool. One plugin covers both versions: `server()` for 1.x (1.3.4 or later) and `setup()` for 2. The provider picks the export command from `opencode --version`. |
 
 All agents share the git hooks `commit-msg`, `post-commit` and `pre-push`.

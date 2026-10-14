@@ -257,6 +257,19 @@ func TestReadHookInput(t *testing.T) {
 		assert.Equal(t, "/some/file.go", input.FilePath)
 	})
 
+	t.Run("extracts the shell command", func(t *testing.T) {
+		r := bytes.NewBufferString(`{
+			"session_id": "abc-123",
+			"hook_event_name": "PreToolUse",
+			"tool_name": "Bash",
+			"tool_input": {"command": "cd /tmp/repo-b && git commit -m x", "description": "commit"}
+		}`)
+		input, err := provider.ReadHookInput(r)
+		require.NoError(t, err)
+		assert.Equal(t, "cd /tmp/repo-b && git commit -m x", input.Command)
+		assert.Empty(t, input.FilePath)
+	})
+
 	t.Run("handles missing tool_input gracefully", func(t *testing.T) {
 		r := bytes.NewBufferString(`{"session_id":"abc-123","hook_event_name":"SessionStart"}`)
 		input, err := provider.ReadHookInput(r)

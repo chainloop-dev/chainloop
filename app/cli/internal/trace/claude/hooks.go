@@ -205,6 +205,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		trace.HookInput
 		ToolInput struct {
 			FilePath string `json:"file_path"`
+			Command  string `json:"command"`
 		} `json:"tool_input"`
 		CursorVersion string `json:"cursor_version"`
 	}
@@ -226,6 +227,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	if raw.ToolInput.FilePath != "" {
 		input.FilePath = raw.ToolInput.FilePath
 	}
+	input.Command = raw.ToolInput.Command
 	input.ToolFailed = input.HookEventName == eventPostToolUseFailure
 
 	return &input, nil

@@ -891,8 +891,8 @@ func TestHandleAgentCommandTool_OtherCheckout(t *testing.T) {
 	homeAttr := homeStore.LoadAILineAttribution(sid)
 	assert.Empty(t, homeAttr.Files, "the session's own checkout did not change")
 
-	// Accepted gap: without a file tool edit there, a checkout is not
-	// snapshotted.
+	// Accepted gap: a checkout that no file tool edited and that the command
+	// does not name is not snapshotted.
 	assert.Empty(t, untouchedStore.LoadAILineAttribution(sid).Files)
 	assert.False(t, untouchedStore.SessionRecordExists(sid))
 

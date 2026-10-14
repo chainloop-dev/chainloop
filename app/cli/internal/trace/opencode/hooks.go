@@ -203,8 +203,9 @@ async function toolEvent(directory: string, hook: string, hookEventName: string,
   }
   if (commandTools.includes(tool)) {
     // The call ID pairs this hook with the other hook of the same call, so
-    // overlapping commands keep their own snapshots.
-    await fire(directory, hook, { ...payload, tool_use_id: callID })
+    // overlapping commands keep their own snapshots. The command line names
+    // the checkouts that the command works in.
+    await fire(directory, hook, { ...payload, tool_use_id: callID, command: args?.command ?? "" })
     return
   }
   if (!fileWritingTools.includes(tool)) return
@@ -422,8 +423,8 @@ const maxHookPayloadBytes = 16 * 1024 * 1024
 
 // ReadHookInput reads and parses the opencode hook JSON from the given reader.
 // The plugin pipes JSON to stdin with fields: session_id, hook_event_name,
-// tool_name, file_path. A relative file_path is resolved against the working
-// directory.
+// tool_name, file_path, and for shell tools tool_use_id and command. A
+// relative file_path is resolved against the working directory.
 func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	data, err := io.ReadAll(io.LimitReader(r, maxHookPayloadBytes))
 	if err != nil {
@@ -437,6 +438,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		FilePath      string `json:"file_path"`
 		ToolUseID     string `json:"tool_use_id"`
 		SkillDir      string `json:"skill_dir"`
+		Command       string `json:"command"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, err
@@ -466,6 +468,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		FilePath:      filePath,
 		ToolUseID:     raw.ToolUseID,
 		SkillDir:      skillDir,
+		Command:       raw.Command,
 	}, nil
 }
 
