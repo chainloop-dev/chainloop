@@ -85,10 +85,11 @@ func TestClaudeSessionCommitsInClonedCheckoutThroughShell(t *testing.T) {
 	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
 
 	// 1. The agent writes a file in a folder that is not a git repository.
+	const specBody = "# Spec\n\nline\n"
 	spec := filepath.Join(notes, "spec.md")
-	writeInput := fmt.Sprintf(`{"file_path":%q,"content":"# Spec\n\nline\n"}`, spec)
+	writeInput := fmt.Sprintf(`{"file_path":%q,"content":%q}`, spec, specBody)
 	hook("PreToolUse", "Write", "toolu_w1", writeInput, HandleAgentPreToolUse)
-	require.NoError(t, os.WriteFile(spec, []byte("# Spec\n\nline\n"), 0600))
+	require.NoError(t, os.WriteFile(spec, []byte(specBody), 0600))
 	hook("PostToolUse", "Write", "toolu_w1", writeInput, HandleAgentPostToolUse)
 
 	// 2. The agent clones the repository. The clone does not exist at the
@@ -108,9 +109,7 @@ func TestClaudeSessionCommitsInClonedCheckoutThroughShell(t *testing.T) {
 
 	// 3. The agent copies the file into the clone with a shell command.
 	bash("toolu_b2", fmt.Sprintf("cd %s && cp %s docs/", clone, spec), func() {
-		content, err := os.ReadFile(spec)
-		require.NoError(t, err)
-		require.NoError(t, os.WriteFile(filepath.Join(clone, "docs", "spec.md"), content, 0600))
+		require.NoError(t, os.WriteFile(filepath.Join(clone, "docs", "spec.md"), []byte(specBody), 0600))
 	})
 
 	cloneStore := state.NewGitStore(cloneGitDir)

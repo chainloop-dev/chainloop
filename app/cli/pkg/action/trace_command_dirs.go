@@ -50,7 +50,8 @@ var (
 // `cd`/`pushd`, the path of `git -C`, and the directory that `git clone` or
 // `gh repo clone` creates. Relative paths resolve against cwd and the `cd`
 // targets before them. A path that holds an expansion ($VAR, $(…)) is unknown
-// and is skipped, and so is every relative path after an unknown `cd`.
+// and is skipped, and so is every relative path after an unknown `cd`. A `cd`
+// inside parentheses applies only until the closing parenthesis.
 //
 // It is a heuristic, not a shell interpreter. The caller checks each
 // directory, so a wrong guess costs a lookup only.
@@ -63,44 +64,77 @@ func commandCheckoutDirs(command, cwd string) []string {
 	}
 
 	dir := cwd
-	for _, words := range splitShellCommands(command) {
-		for len(words) > 0 && !words[0].dynamic && shellAssignment.MatchString(words[0].text) {
-			words = words[1:]
-		}
-		if len(words) == 0 {
-			continue
-		}
-
-		name, args := words[0].text, words[1:]
-		switch {
-		case name == "cd" || name == "pushd":
-			// Without a usable target ("cd", "cd -", "cd $X") the directory
-			// is unknown from here on.
-			base := dir
-			dir = ""
-			if i := slices.IndexFunc(args, func(w shellWord) bool { return !strings.HasPrefix(w.text, "-") }); i >= 0 {
-				if d, ok := resolveShellPath(base, args[i]); ok {
-					dir = d
-					add(d)
-				}
+	// outer holds the directory of each enclosing shell, one per open
+	// parenthesis.
+	var outer []string
+	for _, cmd := range splitShellCommands(command) {
+		switch cmd.subshell {
+		case '(':
+			outer = append(outer, dir)
+		case ')':
+			if n := len(outer); n > 0 {
+				dir, outer = outer[n-1], outer[:n-1]
 			}
-		case name == "git":
-			for _, d := range gitCommandDirs(dir, args) {
-				add(d)
-			}
-		case name == "gh" && len(args) >= 2 && args[0].text == "repo" && args[1].text == "clone":
-			args = args[2:]
-			// The words after "--" are flags for git, not operands.
-			if i := slices.IndexFunc(args, func(w shellWord) bool { return w.text == "--" }); i >= 0 {
-				args = args[:i]
-			}
-			if d, ok := cloneDir(dir, args, ghCloneValueOptions); ok {
-				add(d)
-			}
+		default:
+			dir = applyShellCommand(cmd.words, dir, add)
 		}
 	}
 
 	return dirs
+}
+
+// applyShellCommand passes to add each directory that one simple command
+// names, and returns the directory that the shell is in after it.
+func applyShellCommand(words []shellWord, dir string, add func(string)) string {
+	// The name of an assignment is never an expansion, whatever its value.
+	for len(words) > 0 && shellAssignment.MatchString(words[0].text) {
+		words = words[1:]
+	}
+	if len(words) == 0 {
+		return dir
+	}
+
+	name, args := words[0].text, words[1:]
+	switch {
+	case name == "cd" || name == "pushd":
+		// Without a usable target ("cd -", "pushd", "cd $X") the directory
+		// is unknown from here on.
+		d, ok := cdTarget(dir, args, name == "cd")
+		if !ok {
+			return ""
+		}
+		add(d)
+		return d
+	case name == "git":
+		for _, d := range gitCommandDirs(dir, args) {
+			add(d)
+		}
+	case name == "gh" && len(args) >= 2 && args[0].text == "repo" && args[1].text == "clone":
+		args = args[2:]
+		// The words after "--" are flags for git, not operands.
+		if i := slices.IndexFunc(args, func(w shellWord) bool { return w.text == "--" }); i >= 0 {
+			args = args[:i]
+		}
+		if d, ok := cloneDir(dir, args, ghCloneValueOptions); ok {
+			add(d)
+		}
+	}
+
+	return dir
+}
+
+// cdTarget returns the directory that a cd or pushd with args moves to. A cd
+// without arguments moves to the home directory, when homeIfBare is set.
+func cdTarget(dir string, args []shellWord, homeIfBare bool) (string, bool) {
+	i := slices.IndexFunc(args, func(w shellWord) bool { return !strings.HasPrefix(w.text, "-") })
+	switch {
+	case i >= 0:
+		return resolveShellPath(dir, args[i])
+	case len(args) == 0 && homeIfBare:
+		return resolveShellPath(dir, shellWord{text: "~"})
+	default:
+		return "", false
+	}
 }
 
 // gitCommandDirs returns the directories of one git command: the -C path,
@@ -226,110 +260,164 @@ type shellWord struct {
 	dynamic bool
 }
 
-// splitShellCommands splits a shell command line into its simple commands,
-// each one a list of words. It knows quotes, backslash escapes, comments,
+// shellCommand is one simple command of a command line, or the start or end
+// of a subshell.
+type shellCommand struct {
+	words []shellWord
+	// subshell is '(' or ')' for the start or end of a subshell, which has
+	// no words. It is 0 for a simple command.
+	subshell rune
+}
+
+// splitShellCommands splits a shell command line into its simple commands
+// and subshell boundaries. It knows quotes, backslash escapes, comments,
 // command separators and redirections, which it drops with their target.
 // It does not expand anything: commandCheckoutDirs only needs the words.
-func splitShellCommands(line string) [][]shellWord {
-	var (
-		cmds                      [][]shellWord
-		cmd                       []shellWord
-		word                      strings.Builder
-		inWord, dynamic, skipWord bool
-	)
+func splitShellCommands(line string) []shellCommand {
+	l := &shellLexer{runes: []rune(line)}
+	for ; l.pos < len(l.runes); l.pos++ {
+		l.step(l.runes[l.pos])
+	}
+	l.endCommand()
 
-	endWord := func() {
-		if !inWord {
+	return l.cmds
+}
+
+// shellLexer holds the state of splitShellCommands.
+type shellLexer struct {
+	runes []rune
+	pos   int
+	cmds  []shellCommand
+	words []shellWord
+	word  strings.Builder
+	// inWord is set while a word is open, also an empty quoted one.
+	inWord bool
+	// dynamic is set when the open word holds an expansion.
+	dynamic bool
+	// skipWord drops the next word, the target of a redirection.
+	skipWord bool
+}
+
+func (l *shellLexer) step(c rune) {
+	switch {
+	case c == ' ' || c == '\t':
+		l.endWord()
+	case c == '(' || c == ')':
+		l.endCommand()
+		l.cmds = append(l.cmds, shellCommand{subshell: c})
+	case strings.ContainsRune("\n;&|", c):
+		l.endCommand()
+	case c == '>' || c == '<':
+		l.redirection()
+	case c == '#' && !l.inWord:
+		// A comment runs to the end of the line.
+		for l.peek() != 0 && l.peek() != '\n' {
+			l.pos++
+		}
+	case c == '\\':
+		l.escape()
+	case c == '\'':
+		l.singleQuoted()
+	case c == '"':
+		l.doubleQuoted()
+	default:
+		l.dynamic = l.dynamic || c == '$' || c == '`'
+		l.add(c)
+	}
+}
+
+// peek returns the rune after the current one, or 0 at the end.
+func (l *shellLexer) peek() rune {
+	if l.pos+1 < len(l.runes) {
+		return l.runes[l.pos+1]
+	}
+
+	return 0
+}
+
+func (l *shellLexer) add(c rune) {
+	l.word.WriteRune(c)
+	l.inWord = true
+}
+
+func (l *shellLexer) endWord() {
+	if !l.inWord {
+		return
+	}
+	if l.skipWord {
+		l.skipWord = false
+	} else {
+		l.words = append(l.words, shellWord{text: l.word.String(), dynamic: l.dynamic})
+	}
+	l.word.Reset()
+	l.inWord, l.dynamic = false, false
+}
+
+func (l *shellLexer) endCommand() {
+	l.endWord()
+	l.skipWord = false
+	if len(l.words) > 0 {
+		l.cmds = append(l.cmds, shellCommand{words: l.words})
+	}
+	l.words = nil
+}
+
+// redirection drops a redirection operator and marks its target for
+// dropping. A file descriptor number before the operator ("2>") belongs to
+// it, not to the command.
+func (l *shellLexer) redirection() {
+	if l.inWord && isDigits(l.word.String()) {
+		l.word.Reset()
+		l.inWord, l.dynamic = false, false
+	} else {
+		l.endWord()
+	}
+	for strings.ContainsRune(">&|", l.peek()) {
+		l.pos++
+	}
+	l.skipWord = true
+}
+
+// escape adds the rune after a backslash as it is. A backslash before a
+// line break joins the lines.
+func (l *shellLexer) escape() {
+	next := l.peek()
+	if next == 0 {
+		return
+	}
+	l.pos++
+	if next != '\n' {
+		l.add(next)
+	}
+}
+
+func (l *shellLexer) singleQuoted() {
+	l.inWord = true
+	for l.peek() != 0 {
+		l.pos++
+		if l.runes[l.pos] == '\'' {
 			return
 		}
-		if skipWord {
-			skipWord = false
-		} else {
-			cmd = append(cmd, shellWord{text: word.String(), dynamic: dynamic})
-		}
-		word.Reset()
-		inWord, dynamic = false, false
+		l.word.WriteRune(l.runes[l.pos])
 	}
-	endCommand := func() {
-		endWord()
-		skipWord = false
-		if len(cmd) > 0 {
-			cmds = append(cmds, cmd)
-		}
-		cmd = nil
-	}
+}
 
-	runes := []rune(line)
-	for i := 0; i < len(runes); i++ {
-		switch c := runes[i]; {
-		case c == ' ' || c == '\t':
-			endWord()
-		case strings.ContainsRune("\n;&|()", c):
-			endCommand()
-		case c == '>' || c == '<':
-			// A file descriptor number before the operator ("2>") belongs
-			// to it, not to the command.
-			if inWord && isDigits(word.String()) {
-				word.Reset()
-				inWord, dynamic = false, false
-			} else {
-				endWord()
-			}
-			for i+1 < len(runes) && strings.ContainsRune(">&|", runes[i+1]) {
-				i++
-			}
-			skipWord = true
-		case c == '#' && !inWord:
-			for i+1 < len(runes) && runes[i+1] != '\n' {
-				i++
-			}
-		case c == '\\':
-			if i+1 < len(runes) {
-				i++
-				if runes[i] == '\n' {
-					continue
-				}
-				word.WriteRune(runes[i])
-				inWord = true
-			}
-		case c == '\'':
-			inWord = true
-			for i+1 < len(runes) {
-				i++
-				if runes[i] == '\'' {
-					break
-				}
-				word.WriteRune(runes[i])
-			}
+func (l *shellLexer) doubleQuoted() {
+	l.inWord = true
+	for l.peek() != 0 {
+		l.pos++
+		c := l.runes[l.pos]
+		switch {
 		case c == '"':
-			inWord = true
-			for i+1 < len(runes) {
-				i++
-				d := runes[i]
-				if d == '"' {
-					break
-				}
-				if d == '\\' && i+1 < len(runes) && strings.ContainsRune("\"\\$`\n", runes[i+1]) {
-					i++
-					word.WriteRune(runes[i])
-					continue
-				}
-				if d == '$' || d == '`' {
-					dynamic = true
-				}
-				word.WriteRune(d)
-			}
+			return
+		case c == '\\' && strings.ContainsRune("\"\\$`\n", l.peek()):
+			l.pos++
+			l.word.WriteRune(l.runes[l.pos])
 		default:
-			if c == '$' || c == '`' {
-				dynamic = true
-			}
-			word.WriteRune(c)
-			inWord = true
+			l.dynamic = l.dynamic || c == '$' || c == '`'
+			l.word.WriteRune(c)
 		}
 	}
-	endCommand()
-
-	return cmds
 }
 
 func isDigits(s string) bool {
