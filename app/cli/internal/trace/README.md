@@ -34,12 +34,12 @@ Which lines of a commit the AI wrote.
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
 | Line attribution | Each changed line of a commit is attributed to the AI or to a human, from a snapshot of each file before and after the agent edits it. | Yes | Partial | Yes | Yes |
-| Shell changes attribution | Changes that the agent makes with shell commands (for example `sed`) are attributed to the AI too, not only changes made with the file tools. | Yes | No | Yes | Yes |
+| Shell changes attribution | Changes that the agent makes with shell commands (for example `sed`) are attributed to the AI too, not only changes made with the file tools. | Yes | Partial | Yes | Yes |
 
 Why not Yes:
 
 - **Line attribution, Cursor:** Cursor has only the `afterFileEdit` hook, which gives the edits but no snapshot before the edit. The provider rebuilds the content before the edit from the edits.
-- **Shell changes attribution, Cursor:** Cursor has no hook before and after a shell command.
+- **Shell changes attribution, Cursor:** the provider installs the `preToolUse` and `postToolUse` hooks for the `Shell` tool. These hooks are verified for the Cursor IDE only. It is not verified that the Cursor CLI sends them.
 
 ## User experience
 
@@ -53,7 +53,7 @@ What the user sees in the agent.
 Why not Yes:
 
 - **Welcome message, Cursor and OpenCode:** the provider gives the session-start context to the model only. It has no channel that shows a message to the user at session start, so the welcome message is dropped.
-- **Session link after push, Cursor:** Cursor has no hook after a shell command, so there is no point at which to show the link.
+- **Session link after push, Cursor:** the `postToolUse` hook runs after a shell command, but its response has no field that Cursor shows to the user. The link stays pending until it expires.
 - **Session link after push, OpenCode:** the plugin hook fires after a shell command, but the response that shows a message to the user is not verified yet. The link stays pending until it expires.
 
 ## Specs and skills
@@ -106,7 +106,7 @@ How the sessions are linked to the commits and attested.
 | Agent | Hook installation | Hooks |
 |-------|-------------------|-------|
 | Claude Code | `.claude/settings.json` | Session start and end, user prompt, and before and after each file and shell tool and the Skill tool. |
-| Cursor | `.cursor/hooks.json` | Session start and end, and `afterFileEdit`. There is no shell hook and no prompt hook. |
+| Cursor | `.cursor/hooks.json` | Session start and end, `afterFileEdit`, and `preToolUse` and `postToolUse` for the `Shell` tool. The `preToolUse` hook always allows the command. The provider installs no prompt hook. |
 | OpenCode | `.opencode/plugins/chainloop-trace.ts` | Session start and end, user prompt, and before and after each tool. One plugin covers both versions: `server()` for 1.x (1.3.4 or later) and `setup()` for 2. The provider picks the export command from `opencode --version`. |
 
 All agents share the git hooks `commit-msg`, `post-commit` and `pre-push`.

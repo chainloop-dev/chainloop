@@ -605,7 +605,7 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 	}
 
 	// Guarantees session tracking + git-hook install when afterFileEdit is
-	// the first hook we see (Cursor has no pre-tool-use).
+	// the first hook we see (Cursor has no pre hook for file edits).
 	ensureSessionTracked(provider, store, repoRoot, input, log)
 
 	if isCommand {
@@ -625,7 +625,8 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 		return nil
 	}
 
-	// Cursor has no pre-tool-use, so the post hook registers the checkout too.
+	// Cursor has no pre hook for file edits, so the post hook registers the
+	// checkout too.
 	registerSessionCheckout(sessionID, repoRoot, log)
 
 	after, err := os.ReadFile(input.FilePath)

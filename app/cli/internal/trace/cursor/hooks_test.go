@@ -251,3 +251,134 @@ func TestHooksInstalled(t *testing.T) {
 		})
 	}
 }
+
+func TestInstallHooksShellToolHooks(t *testing.T) {
+	testCases := []struct {
+		name           string
+		install        func(p *Provider, repoRoot string) error
+		wantSessionEnd bool
+	}{
+		{name: "install", install: (*Provider).InstallHooks, wantSessionEnd: true},
+		{name: "install for trace run", install: (*Provider).InstallHooksForTraceRun},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			require.NoError(t, tc.install(New(), repoRoot))
+
+			hooks := readInstalledHooks(t, repoRoot)
+			for event, command := range map[string]string{
+				eventPreToolUse:  "chainloop trace hook cursor pre-tool-use",
+				eventPostToolUse: "chainloop trace hook cursor post-tool-use",
+			} {
+				entries, _ := hooks[event].([]any)
+				require.Len(t, entries, 1, "entries for %s", event)
+				entry, _ := entries[0].(map[string]any)
+				assert.Equal(t, command, entry["command"], "command for %s", event)
+				assert.Equal(t, shellToolName, entry["matcher"], "matcher for %s", event)
+			}
+
+			_, hasSessionEnd := hooks[eventSessionEnd]
+			assert.Equal(t, tc.wantSessionEnd, hasSessionEnd, "sessionEnd installed")
+		})
+	}
+}
+
+func TestInstallHooksUpdatesChainloopEntryWithoutMatcher(t *testing.T) {
+	repoRoot := t.TempDir()
+	settingsPath := filepath.Join(repoRoot, settingsFile)
+	require.NoError(t, os.MkdirAll(filepath.Dir(settingsPath), 0755))
+	require.NoError(t, os.WriteFile(settingsPath, []byte(`{"version":1,"hooks":{"preToolUse":[
+		{"command":"./my-hook.sh"},
+		{"command":"chainloop trace hook cursor pre-tool-use","timeout":30}
+	]}}`), 0600))
+
+	require.NoError(t, New().InstallHooks(repoRoot))
+
+	entries, _ := readInstalledHooks(t, repoRoot)[eventPreToolUse].([]any)
+	require.Len(t, entries, 2)
+	user, _ := entries[0].(map[string]any)
+	assert.Equal(t, "./my-hook.sh", user["command"], "user hook kept")
+	chainloop, _ := entries[1].(map[string]any)
+	assert.Equal(t, shellToolName, chainloop["matcher"], "matcher added to chainloop hook")
+}
+
+func TestReadHookInputShellTool(t *testing.T) {
+	testCases := []struct {
+		name    string
+		payload string
+		wantCwd string
+	}{
+		{
+			name: "workspace root wins over the shell cwd",
+			payload: `{
+				"conversation_id": "conv-sh",
+				"hook_event_name": "preToolUse",
+				"workspace_roots": ["/abs/repo"],
+				"cwd": "/abs/repo/sub",
+				"tool_name": "Shell",
+				"tool_use_id": "call-1",
+				"tool_input": {"command": "sed -i s/a/b/ f.txt", "working_directory": "/abs/repo/sub"}
+			}`,
+			wantCwd: "/abs/repo",
+		},
+		{
+			name: "shell cwd when no workspace root",
+			payload: `{
+				"conversation_id": "conv-sh",
+				"hook_event_name": "postToolUse",
+				"cwd": "/abs/repo",
+				"tool_name": "Shell",
+				"tool_use_id": "call-1",
+				"tool_input": {"command": "sed -i s/a/b/ f.txt"},
+				"tool_output": "{}"
+			}`,
+			wantCwd: "/abs/repo",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			in, err := New().ReadHookInput(bytes.NewReader([]byte(tc.payload)))
+			require.NoError(t, err)
+			assert.Equal(t, "conv-sh", in.SessionID, "SessionID")
+			assert.Equal(t, shellToolName, in.ToolName, "ToolName")
+			assert.Equal(t, "call-1", in.ToolUseID, "ToolUseID")
+			assert.Equal(t, "sed -i s/a/b/ f.txt", in.Command, "Command")
+			assert.Equal(t, tc.wantCwd, in.Cwd, "Cwd")
+			assert.Empty(t, in.FilePath, "FilePath")
+		})
+	}
+}
+
+func TestIsCommandTool(t *testing.T) {
+	testCases := []struct {
+		toolName string
+		want     bool
+	}{
+		{toolName: "Shell", want: true},
+		{toolName: syntheticEditToolName},
+		{toolName: "Read"},
+		{toolName: ""},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.toolName, func(t *testing.T) {
+			assert.Equal(t, tc.want, New().IsCommandTool(tc.toolName))
+		})
+	}
+}
+
+func readInstalledHooks(t *testing.T, repoRoot string) map[string]any {
+	t.Helper()
+
+	data, err := os.ReadFile(filepath.Join(repoRoot, settingsFile))
+	require.NoError(t, err)
+
+	var out map[string]any
+	require.NoError(t, json.Unmarshal(data, &out))
+	hooks, _ := out["hooks"].(map[string]any)
+
+	return hooks
+}

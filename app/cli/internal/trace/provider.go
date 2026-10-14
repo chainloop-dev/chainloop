@@ -307,6 +307,9 @@ type HookInput struct {
 	ToolName string `json:"tool_name,omitempty"`
 	// FilePath is the absolute path of the file being edited, set by provider's ReadHookInput.
 	FilePath string `json:"-"`
+	// Command is the command line of a shell command tool, set by provider's
+	// ReadHookInput. Empty when the provider does not report it.
+	Command string `json:"-"`
 	// Cwd is the directory the agent session runs in, which is where the
 	// agent files its transcripts. It can differ from the checkout that owns
 	// FilePath, e.g. for an edit in a linked git worktree. Empty when the
