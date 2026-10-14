@@ -111,6 +111,40 @@ func TestTraceInitLocal(t *testing.T) {
 	})
 }
 
+// TestTraceInitInvalidStorage covers the guard that a control-plane init over an
+// invalid traceStorage fails before installing hooks, so init never reports
+// success for a repository whose every pre-push would then error, while an
+// explicit --local run overrides the bad value.
+func TestTraceInitInvalidStorage(t *testing.T) {
+	t.Run("control-plane init over an invalid traceStorage errors before install", func(t *testing.T) {
+		repoDir := t.TempDir()
+		gitInit(t, repoDir)
+		require.NoError(t, os.WriteFile(filepath.Join(repoDir, chainloopYMLName),
+			[]byte("traceStorage: bogus\n"), 0600))
+
+		err := runTraceInit(t, repoDir, "--claude")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "traceStorage")
+
+		// Nothing was written: the harness settings were not installed.
+		_, statErr := os.Stat(filepath.Join(repoDir, claudeSettings))
+		assert.True(t, os.IsNotExist(statErr), "hooks must not be installed over a broken config")
+	})
+
+	t.Run("--local overrides an invalid traceStorage", func(t *testing.T) {
+		repoDir := t.TempDir()
+		gitInit(t, repoDir)
+		require.NoError(t, os.WriteFile(filepath.Join(repoDir, chainloopYMLName),
+			[]byte("traceStorage: bogus\n"), 0600))
+
+		require.NoError(t, runTraceInit(t, repoDir, "--local", "--claude"))
+
+		data, err := os.ReadFile(filepath.Join(repoDir, chainloopYMLName))
+		require.NoError(t, err)
+		assert.Contains(t, string(data), "traceStorage: LOCAL")
+	})
+}
+
 func TestWriteTraceInitLocalSummary(t *testing.T) {
 	out := &bytes.Buffer{}
 	writeTraceInitLocalSummary(out, t.TempDir(), []string{providerClaudeCode, "cursor"}) //nolint:goconst // provider wire name, kept literal like the other provider tests

@@ -123,7 +123,15 @@ with --local; --require-trace can.`,
 			// disk while init configured the control plane, and the two
 			// disagree. A fresh control-plane repository writes nothing and keeps
 			// relying on the CONTROL_PLANE default.
-			existingMode, _ := config.LoadTraceStorageFromYML(repoRoot)
+			existingMode, err := config.LoadTraceStorageFromYML(repoRoot)
+			if err != nil && !localFlag {
+				// An invalid traceStorage already in .chainloop.yml would make
+				// every pre-push fail. A control-plane init cannot pick a mode
+				// for a value it cannot read, so surface it now rather than
+				// install hooks over a config that only errors. An explicit
+				// --local run overrides the value and is let through.
+				return fmt.Errorf("existing .chainloop.yml: %w", err)
+			}
 			cfg.traceStorage, cfg.saveTraceStorage = traceStorageToPersist(localFlag, existingMode)
 
 			// Control-plane mode fills in the identity and opens an executor,
