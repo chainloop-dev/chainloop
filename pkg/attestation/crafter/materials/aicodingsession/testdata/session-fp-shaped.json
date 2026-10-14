@@ -97,7 +97,7 @@
         },
         {
           "type": "assistant",
-          "message": {"role": "assistant", "content": "curl -H 'Authorization: Bearer __CURL_PLACEHOLDER__' https://api.example.com\nissuer: http://localhost:8000@chainloop.local\n"},
+          "message": {"role": "assistant", "content": "curl -H 'Authorization: Bearer REPLACE_ME' https://api.example.com\nissuer: http://localhost:8000@chainloop.local\n"},
           "timestamp": "2026-03-25T15:14:05.000Z"
         },
         {

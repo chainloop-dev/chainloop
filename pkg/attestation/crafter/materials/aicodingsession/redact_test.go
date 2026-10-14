@@ -75,7 +75,6 @@ var fixtureSecrets = map[string]string{
 	"__SESSION_UUID__":                    fixtureUUID,
 	"__COMMIT_START__":                    fixtureCommitStart,
 	"__COMMIT_END__":                      fixtureCommitEnd,
-	"__CURL_PLACEHOLDER__":                "REPLACE" + "_ME",
 }
 
 // readFixture loads a session fixture with its credential placeholders resolved.
