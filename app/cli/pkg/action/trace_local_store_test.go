@@ -173,6 +173,7 @@ func TestLocalSessionStartBanner(t *testing.T) {
 	t.Run("names the on-disk destination", func(t *testing.T) {
 		got := localSessionStartBanner("/repo/.git/chainloop-trace/local-sessions")
 		assert.Contains(t, got, "recording this session")
+		assert.Contains(t, got, "local mode")
 		assert.Contains(t, got, "/repo/.git/chainloop-trace/local-sessions")
 		// No Chainloop/control-plane vocabulary: a reader should not think a
 		// backend is involved.
@@ -183,6 +184,7 @@ func TestLocalSessionStartBanner(t *testing.T) {
 	t.Run("drops the destination when unknown", func(t *testing.T) {
 		got := localSessionStartBanner("")
 		assert.Contains(t, got, "recording this session")
+		assert.Contains(t, got, "local mode")
 		assert.NotContains(t, got, "stored on disk at")
 	})
 }

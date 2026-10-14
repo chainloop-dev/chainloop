@@ -151,11 +151,11 @@ func sessionStartBanner(dashboardURL, org, project string) string {
 }
 
 // localSessionStartBanner is the session-start banner for a local-mode
-// repository. It says the session is recorded and where its evidence lands,
-// with no Chainloop vocabulary and no control-plane round trip: local mode has
-// no dashboard to point at (R-012).
+// repository. It names the local mode outright and says where the evidence
+// lands, with no dashboard or attestation vocabulary and no control-plane round
+// trip: local mode has no dashboard to point at (R-012).
 func localSessionStartBanner(tracePath string) string {
-	banner := "Chainloop Trace is recording this session."
+	banner := "Chainloop Trace is recording this session in local mode."
 	if tracePath != "" {
 		banner += "\nIts evidence will be stored on disk at " + tracePath + " when you push."
 	}
