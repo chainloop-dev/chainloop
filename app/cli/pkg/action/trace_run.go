@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
@@ -206,7 +207,6 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		})
 		switch {
 		case storeErr != nil:
-			// A store failure must not mask the agent's own exit status.
 			log.Warn().Err(storeErr).Msg("could not store session evidence")
 		case stored == 0:
 			log.Warn().Msg("no AI coding session was recorded, so nothing was stored")
@@ -214,7 +214,19 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 			log.Info().Int("sessions", stored).Msgf("AI coding session evidence stored at %s", tracePath)
 		}
 
-		return subprocessError(opts.Command[0], runErr)
+		// The agent's own exit status wins: a non-zero exit is what the user
+		// needs to see, and a store failure must not mask it. Only when the
+		// agent exited cleanly does a store failure become the error to return,
+		// so a silent failure to persist the evidence is never reported as
+		// success.
+		if runErr != nil {
+			return subprocessError(opts.Command[0], runErr)
+		}
+		if storeErr != nil {
+			return fmt.Errorf("store session evidence locally: %w", storeErr)
+		}
+
+		return nil
 	}
 
 	if runErr != nil {
@@ -403,7 +415,11 @@ func CleanupTrace(store *state.Store, repoRoot string, log zerolog.Logger) error
 		}
 	}
 
-	if err := store.RemoveTraceDir(); err != nil {
+	// Preserve the configured storage path too: a custom tracePath can resolve
+	// inside the trace directory, and RemoveTraceDir would otherwise delete the
+	// stored evidence it is not named local-sessions.
+	storagePath := ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot))
+	if err := store.RemoveTraceDir(storagePath); err != nil {
 		log.Warn().Err(err).Msg("could not remove trace directory")
 		errs = append(errs, fmt.Errorf("remove trace directory: %w", err))
 	}

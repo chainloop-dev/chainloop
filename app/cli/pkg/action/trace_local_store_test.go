@@ -170,19 +170,27 @@ func TestResolveTracePath(t *testing.T) {
 }
 
 func TestLocalSessionStartBanner(t *testing.T) {
-	t.Run("names the on-disk destination", func(t *testing.T) {
-		got := localSessionStartBanner("/repo/.git/chainloop-trace/local-sessions")
+	t.Run("names the on-disk destination and the push timing", func(t *testing.T) {
+		got := localSessionStartBanner("/repo/.git/chainloop-trace/local-sessions", false)
 		assert.Contains(t, got, "recording this session")
 		assert.Contains(t, got, "local mode")
 		assert.Contains(t, got, "/repo/.git/chainloop-trace/local-sessions")
+		assert.Contains(t, got, "when you push")
 		// No Chainloop/control-plane vocabulary: a reader should not think a
 		// backend is involved.
 		assert.NotContains(t, got, "attest")
 		assert.NotContains(t, got, "dashboard")
 	})
 
+	t.Run("says this run finishes under trace run", func(t *testing.T) {
+		got := localSessionStartBanner("/repo/.git/chainloop-trace/local-sessions", true)
+		assert.Contains(t, got, "local mode")
+		assert.Contains(t, got, "when this run finishes")
+		assert.NotContains(t, got, "when you push")
+	})
+
 	t.Run("drops the destination when unknown", func(t *testing.T) {
-		got := localSessionStartBanner("")
+		got := localSessionStartBanner("", false)
 		assert.Contains(t, got, "recording this session")
 		assert.Contains(t, got, "local mode")
 		assert.NotContains(t, got, "stored on disk at")

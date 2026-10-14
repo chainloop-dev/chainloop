@@ -282,6 +282,13 @@ func TestShouldReportCommand(t *testing.T) {
 			name:        "local-only command is not reported",
 			annotations: map[string]string{skipActionOptsInit: trueString},
 		},
+		{
+			// A control-plane `trace run` is skipActionOptsInit for lazy
+			// connection setup but opts back into reporting at runtime.
+			name:        "skipActionOptsInit with reportTelemetryAnyway is reported",
+			annotations: map[string]string{skipActionOptsInit: trueString, reportTelemetryAnyway: trueString},
+			want:        true,
+		},
 	}
 
 	for _, tc := range testCases {

@@ -142,6 +142,31 @@ func TestRemoveTraceDirPreservesLocalSessions(t *testing.T) {
 		_, err := os.Stat(plain.LocalSessionsDir())
 		assert.True(t, os.IsNotExist(err))
 	})
+
+	t.Run("a custom tracePath inside the trace dir is preserved", func(t *testing.T) {
+		s := NewGitStore(t.TempDir())
+		require.NoError(t, s.InitTraceDir())
+
+		// A configured tracePath that lands inside the trace directory under a
+		// name other than local-sessions. Without being passed to
+		// RemoveTraceDir it would be deleted with the rest of the state.
+		base := filepath.Join(s.Dir(), "chainloop-trace")
+		custom := filepath.Join(base, "my-sessions", "sess-9")
+		require.NoError(t, os.MkdirAll(custom, 0o700))
+		require.NoError(t, os.WriteFile(filepath.Join(custom, "manifest.json"), []byte("{}"), 0o600))
+
+		// A sibling entry that is neither local-sessions nor the custom path
+		// must still be removed.
+		stale := filepath.Join(base, "sessions", "sess-stale")
+		require.NoError(t, os.MkdirAll(stale, 0o700))
+
+		require.NoError(t, s.RemoveTraceDir(filepath.Join(base, "my-sessions")))
+
+		_, err := os.Stat(filepath.Join(custom, "manifest.json"))
+		assert.NoError(t, err, "the configured storage path survives")
+		_, err = os.Stat(stale)
+		assert.True(t, os.IsNotExist(err), "unrelated state is still removed")
+	})
 }
 
 func TestGCOrphans(t *testing.T) {

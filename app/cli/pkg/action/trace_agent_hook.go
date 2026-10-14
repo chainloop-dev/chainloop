@@ -154,10 +154,17 @@ func sessionStartBanner(dashboardURL, org, project string) string {
 // repository. It names the local mode outright and says where the evidence
 // lands, with no dashboard or attestation vocabulary and no control-plane round
 // trip: local mode has no dashboard to point at (R-012).
-func localSessionStartBanner(tracePath string) string {
+func localSessionStartBanner(tracePath string, traceRunActive bool) string {
 	banner := "Chainloop Trace is recording this session in local mode."
 	if tracePath != "" {
-		banner += "\nIts evidence will be stored on disk at " + tracePath + " when you push."
+		// A git-hook session stores its evidence on the next push. A `trace run`
+		// session stores it as soon as the wrapped command exits, so the timing
+		// has to match how the session is driven, not always claim a push.
+		when := "when you push"
+		if traceRunActive {
+			when = "when this run finishes"
+		}
+		banner += "\nIts evidence will be stored on disk at " + tracePath + " " + when + "."
 	}
 
 	return banner
@@ -203,7 +210,10 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 		if config.IsLocalStorage(repoRoot) {
 			// Local mode reaches no control plane, so the banner names the
 			// on-disk destination and makes no dashboard round trip (R-012).
-			banner = localSessionStartBanner(ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot)))
+			banner = localSessionStartBanner(
+				ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot)),
+				store.IsTraceRunActive(),
+			)
 		} else {
 			banner = sessionStartBanner(
 				hookDashboardURL(log),

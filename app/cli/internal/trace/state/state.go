@@ -347,14 +347,24 @@ func (s *Store) staleSessionIDs(unattested map[string]struct{}) map[string]struc
 	return stale
 }
 
-// RemoveTraceDir removes the trace state but preserves local-sessions/, the
-// durable evidence sets a LOCAL-mode push or `trace run` wrote. A developer
-// keeps those as they keep any working copy of a session, so trace uninstall and
-// the trace-run teardown must not delete them. An ordinary repository with no
-// stored sessions is left as clean as before: the trace directory is removed
+// RemoveTraceDir removes the trace state but preserves local-sessions/ and any
+// preservePaths that resolve inside the trace directory, the durable evidence
+// sets a LOCAL-mode push or `trace run` wrote. A developer keeps those as they
+// keep any working copy of a session, so trace uninstall and the trace-run
+// teardown must not delete them. A configured tracePath can point at a folder
+// inside the trace directory under a name other than local-sessions, so the
+// caller passes it here to keep it from the cleanup. An ordinary repository with
+// no stored sessions is left as clean as before: the trace directory is removed
 // once nothing but the (absent) sessions would remain.
-func (s *Store) RemoveTraceDir() error {
+func (s *Store) RemoveTraceDir(preservePaths ...string) error {
 	base := s.traceDirPath()
+
+	keep := map[string]struct{}{traceDirLocalSessions: {}}
+	for _, p := range preservePaths {
+		if name := topLevelEntryUnder(base, p); name != "" {
+			keep[name] = struct{}{}
+		}
+	}
 
 	entries, err := os.ReadDir(base)
 	if err != nil {
@@ -366,7 +376,7 @@ func (s *Store) RemoveTraceDir() error {
 	}
 
 	for _, e := range entries {
-		if e.Name() == traceDirLocalSessions {
+		if _, ok := keep[e.Name()]; ok {
 			continue
 		}
 		if err := os.RemoveAll(filepath.Join(base, e.Name())); err != nil {
@@ -381,6 +391,40 @@ func (s *Store) RemoveTraceDir() error {
 	}
 
 	return nil
+}
+
+// topLevelEntryUnder returns the first path element of target relative to base,
+// or "" when target is empty or does not resolve inside base. RemoveTraceDir
+// uses it to map a configured storage path to the single trace-directory entry
+// that must survive cleanup. Both paths are made absolute first, so a relative
+// base (a git store's .git) and an absolute tracePath still compare correctly.
+func topLevelEntryUnder(base, target string) string {
+	if target == "" {
+		return ""
+	}
+
+	absBase, err := filepath.Abs(base)
+	if err != nil {
+		return ""
+	}
+	absTarget, err := filepath.Abs(target)
+	if err != nil {
+		return ""
+	}
+
+	rel, err := filepath.Rel(absBase, absTarget)
+	if err != nil {
+		return ""
+	}
+	if rel == "." || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return ""
+	}
+
+	if i := strings.IndexRune(rel, filepath.Separator); i >= 0 {
+		return rel[:i]
+	}
+
+	return rel
 }
 
 // LogFilePath returns the path to the hook log file inside the trace directory.

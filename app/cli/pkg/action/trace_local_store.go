@@ -109,9 +109,14 @@ func RunTraceLocalStore(ctx context.Context, log zerolog.Logger, opts RunTraceLo
 		return stored, tracePath, err
 	}
 
-	// Only prune the single-use state once something was stored, so a run that
-	// stored nothing leaves the recorded session in place for a later retry.
-	if stored > 0 {
+	// Prune the single-use state only when every gathered session was stored.
+	// finalizePush marks all of aiCommits tracked and wipes their retry state,
+	// so finalizing while one session failed to store would strand that
+	// session's evidence with no way back. A run that stored nothing, or only
+	// some sessions, leaves the recorded sessions in place for a later push to
+	// retry. Re-storing a session that already succeeded is harmless: the store
+	// is content-addressed and rewrites the same bytes.
+	if stored == len(sessions) && stored > 0 {
 		finalizePush(store, repoRoot, aiCommits, log)
 	}
 

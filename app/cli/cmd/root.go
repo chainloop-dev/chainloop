@@ -62,7 +62,12 @@ const (
 	confirmWhenUserToken = "confirmWhenUserToken"
 	// Skip ActionOpts initialization for commands that operate locally
 	skipActionOptsInit = "skipActionOptsInit"
-	appName            = "chainloop"
+	// reportTelemetryAnyway lets a command annotated skipActionOptsInit opt back
+	// into telemetry at runtime, once it knows it ran against the control plane.
+	// `trace run` is skipActionOptsInit so a local-mode run opens no connection,
+	// but a control-plane run of it must still be reported as it was before.
+	reportTelemetryAnyway = "reportTelemetryAnyway"
+	appName               = "chainloop"
 	//nolint:gosec
 	tokenEnvVarName = "CHAINLOOP_TOKEN"
 	// Follow the convention stated on https://consoledonottrack.com/

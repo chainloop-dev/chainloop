@@ -82,6 +82,19 @@ func TestLoadTraceStorageFromYML(t *testing.T) {
 		// Best-effort callers treat an invalid value as not-local.
 		assert.False(t, IsLocalStorage(dir))
 	})
+
+	t.Run("a malformed config is an error, not a silent control plane", func(t *testing.T) {
+		// A LOCAL repository whose config broke must not fall back to the
+		// control plane and upload a local-only session: the pre-push hook
+		// reads this and a silent CONTROL_PLANE would do exactly that.
+		dir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, ".chainloop.yml"),
+			[]byte("traceStorage: [not, a, string]\n"), 0600))
+
+		mode, err := LoadTraceStorageFromYML(dir)
+		assert.Error(t, err)
+		assert.NotEqual(t, TraceStorageControlPlane, mode)
+	})
 }
 
 func TestTraceStorageRoundTrip(t *testing.T) {

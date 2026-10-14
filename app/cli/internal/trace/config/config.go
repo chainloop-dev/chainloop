@@ -17,6 +17,7 @@ package config
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -110,11 +111,17 @@ func ResolveTraceStorage(persisted string) (string, error) {
 }
 
 // LoadTraceStorageFromYML reads and canonicalizes the traceStorage mode from the
-// nearest .chainloop.yml. A missing config or field is CONTROL_PLANE.
+// nearest .chainloop.yml. A missing config or field is CONTROL_PLANE, but a
+// config that exists and cannot be read or parsed is an error, never a silent
+// CONTROL_PLANE. A LOCAL repository whose config broke must not have its
+// pre-push hook fall back to the control plane and upload a local-only session.
 func LoadTraceStorageFromYML(dir string) (string, error) {
-	cfg := repositoryconfig.FindChainloopYML(dir)
-	if cfg == nil {
+	cfg, _, err := repositoryconfig.LoadChainloopYML(dir)
+	if errors.Is(err, repositoryconfig.ErrChainloopYMLNotFound) {
 		return TraceStorageControlPlane, nil
+	}
+	if err != nil {
+		return "", err
 	}
 
 	return ResolveTraceStorage(cfg.TraceStorage)

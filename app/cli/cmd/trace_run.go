@@ -37,8 +37,9 @@ optional --version flag, never from the file. It does read the repository's
 traceStorage mode, though: in a local-mode repository (traceStorage: LOCAL) the
 session is written to disk when the command exits, with no control plane, and
 the --org, --project and --workflow flags are not required. Either way it
-removes every hook and local trace artifact when the wrapped command exits, so a
-session never leaks setup into the next one.
+removes the temporary hooks and trace state when the wrapped command exits while
+preserving stored local session evidence, so a session never leaks setup into
+the next one.
 
 The workflow is created before the command runs. That part is best-effort: the
 session runs either way and the attestation creates the workflow if this did
@@ -111,6 +112,11 @@ func newTraceRunCmd() *cobra.Command {
 			)
 
 			if !local {
+				// A control-plane run is reported in telemetry as it was before
+				// local mode made this command skipActionOptsInit. A local run
+				// is not: it leaves the annotation unset and stays excluded.
+				cmd.Annotations[reportTelemetryAnyway] = trueString
+
 				// --org is a persistent flag declared on the root command,
 				// so we cannot MarkFlagRequired it on this subcommand.
 				organization, err = cmd.Flags().GetString("org")
