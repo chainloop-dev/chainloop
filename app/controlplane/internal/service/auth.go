@@ -139,6 +139,11 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		return nil, fmt.Errorf("failed to create OIDC authenticator: %w", err)
 	}
 
+	extraOrigins, err := parseCallbackOrigins(bootstrapConfig.GetAllowedCallbackOrigins())
+	if err != nil {
+		return nil, fmt.Errorf("invalid allowed_callback_origins: %w", err)
+	}
+
 	svc := newService(opts...)
 	if authConfig.DevUser != "" {
 		err := generateAndLogDevUser(userUC, svc.log, authConfig)
@@ -157,9 +162,37 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		membershipUseCase: mUC,
 		orgInvitesUseCase: inviteUC,
 		auditorUseCase:    auc,
-		allowedCallbackOrigins: originsOf(authURLs.Login, bootstrapConfig.GetServer().GetHttp().GetExternalUrl(),
-			bootstrapConfig.GetUiDashboardUrl()),
+		allowedCallbackOrigins: append(originsOf(authURLs.Login, bootstrapConfig.GetServer().GetHttp().GetExternalUrl(),
+			bootstrapConfig.GetUiDashboardUrl()), extraOrigins...),
 	}, nil
+}
+
+// parseCallbackOrigins validates the operator-provided origins. Unlike originsOf, a bad entry is an
+// error, so a typo fails at start up instead of silently leaving the origin out
+func parseCallbackOrigins(raw []string) ([]string, error) {
+	origins := make([]string, 0, len(raw))
+	for _, o := range raw {
+		u, err := url.Parse(o)
+		if err != nil {
+			return nil, fmt.Errorf("origin %q: %w", o, err)
+		}
+
+		if u.Scheme != "http" && u.Scheme != "https" {
+			return nil, fmt.Errorf("origin %q: scheme must be http or https", o)
+		}
+
+		if u.Host == "" || strings.Contains(u.Host, "*") {
+			return nil, fmt.Errorf("origin %q: a host without wildcards is required", o)
+		}
+
+		if u.User != nil || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" || u.ForceQuery {
+			return nil, fmt.Errorf("origin %q: must be scheme://host[:port] only", o)
+		}
+
+		origins = append(origins, originOf(u))
+	}
+
+	return origins, nil
 }
 
 var errInvalidCallback = errors.New("invalid callback URL")

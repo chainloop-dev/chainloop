@@ -129,6 +129,11 @@ message Bootstrap {
 
   // Outbound network policy applied to the integration plugins
   PluginsNetworkPolicy plugins_network_policy = 22;
+
+  // Additional origins (scheme://host[:port]) the post-login callback may redirect to,
+  // on top of the control plane external URL, the login URL and the UI dashboard URL.
+  // Matched exactly, wildcards, paths, queries and fragments are not allowed
+  repeated string allowed_callback_origins = 23;
 }
 
 message PluginsNetworkPolicy {
