@@ -229,6 +229,12 @@ func TestRulesConfigStillRedactsSecrets(t *testing.T) {
 			wantRule: ruleCredentialURI,
 			keep:     "localhost:48002",
 		},
+		{
+			name:     "password in a uri followed by a line break and an email address",
+			text:     "API_URL=http://admin:" + samplePassword + "\nTEST_EMAIL=" + sampleEmail + "\n",
+			secret:   samplePassword,
+			wantRule: ruleCredentialURI,
+		},
 	}
 
 	for _, tc := range testCases {

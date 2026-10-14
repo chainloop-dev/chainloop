@@ -72,7 +72,7 @@
       "main": [
         {
           "type": "user",
-          "message": {"role": "user", "content": "the sha256 digest is 9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c6f9e8d7c6b5a4938271605f4e"},
+          "message": {"role": "user", "content": "the sha256 digest is __SHA256_DIGEST_A__"},
           "timestamp": "2026-03-25T15:13:37.330Z"
         },
         {
@@ -82,7 +82,7 @@
         },
         {
           "type": "user",
-          "message": {"role": "user", "content": "Pushed the attestation.\n  digest: sha256:9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c69f8e7d6c5b4a39281706f5e4\n  access sha256:9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c69f8e7d6c5b4a39281706f5e4\nworkflow key: 3bf79921-3c03-81b6-afff-cb246849866f\nidempotency_key=3bf79921-3c03-81b6-afff-cb246849866f\n"},
+          "message": {"role": "user", "content": "Pushed the attestation.\n  digest: sha256:__SHA256_DIGEST_B__\n  access sha256:__SHA256_DIGEST_B__\nworkflow key: 3bf79921-3c03-81b6-afff-cb246849866f\nidempotency_key=3bf79921-3c03-81b6-afff-cb246849866f\n"},
           "timestamp": "2026-03-25T15:14:02.000Z"
         },
         {
