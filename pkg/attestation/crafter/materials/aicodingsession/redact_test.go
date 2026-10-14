@@ -55,6 +55,10 @@ const (
 	// high-entropy hex string in a file is flagged by the repository scan.
 	fixtureDigestA = "9f8e7d6c5b4a39281706f5e4d3c2b1a0" + "f9e8d7c6f9e8d7c6b5a4938271605f4e"
 	fixtureDigestB = "9f8e7d6c5b4a39281706f5e4d3c2b1a0" + "f9e8d7c69f8e7d6c5b4a39281706f5e4"
+	// The UUID and commit ids are values the generic rules must leave alone.
+	fixtureUUID        = "3bf79921-3c03-81b6-" + "afff-cb246849866f"
+	fixtureCommitStart = "9f8e7d6c5b4a39281706f5e4d3c2b1a0" + "f9e8d7c6"
+	fixtureCommitEnd   = "e25fa85e1c4b7a9d3f082165" + "0cd7e4b39a1f8c2d"
 )
 
 // fixtureSecrets maps each placeholder in the session fixtures to the value the
@@ -68,6 +72,10 @@ var fixtureSecrets = map[string]string{
 	"__GIT_REPOSITORY_WITH_CREDENTIALS__": fixtureRepository,
 	"__SHA256_DIGEST_A__":                 fixtureDigestA,
 	"__SHA256_DIGEST_B__":                 fixtureDigestB,
+	"__SESSION_UUID__":                    fixtureUUID,
+	"__COMMIT_START__":                    fixtureCommitStart,
+	"__COMMIT_END__":                      fixtureCommitEnd,
+	"__CURL_PLACEHOLDER__":                "REPLACE" + "_ME",
 }
 
 // readFixture loads a session fixture with its credential placeholders resolved.

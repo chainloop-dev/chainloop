@@ -8,7 +8,7 @@
       "version": "2.1.83"
     },
     "session": {
-      "id": "3bf79921-3c03-81b6-afff-cb246849866f",
+      "id": "__SESSION_UUID__",
       "slug": "memoized-purring-valley",
       "started_at": "2026-03-25T15:10:49.161Z",
       "ended_at": "2026-03-25T16:59:14.988Z",
@@ -18,8 +18,8 @@
       "repository": "git@github.com:chainloop-dev/chainloop.git",
       "branch": "jiparis/pfm-6984-redact-secrets-in-session",
       "work_dir": "/Users/jiparis/projects/chainloop",
-      "commit_start": "9f8e7d6c5b4a39281706f5e4d3c2b1a0f9e8d7c6",
-      "commit_end": "e25fa85e1c4b7a9d3f0821650cd7e4b39a1f8c2d",
+      "commit_start": "__COMMIT_START__",
+      "commit_end": "__COMMIT_END__",
       "commits": [
         "9f8e7d6 perf(crafter): de-duplicate AccessChk security descriptors",
         "e25fa85 Bump Helm Chart and Dagger Version"
@@ -32,7 +32,7 @@
       "lines_removed": 87,
       "files": [
         {"path": "app/controlplane/internal/service/attestation.go", "status": "modified", "attribution": "ai"},
-        {"path": "pkg/attestation/crafter/materials/aicodingsession/redact.go", "status": "created", "attribution": "ai", "session_ids": ["3bf79921-3c03-81b6-afff-cb246849866f"]}
+        {"path": "pkg/attestation/crafter/materials/aicodingsession/redact.go", "status": "created", "attribution": "ai", "session_ids": ["__SESSION_UUID__"]}
       ]
     },
     "model": {
@@ -82,7 +82,7 @@
         },
         {
           "type": "user",
-          "message": {"role": "user", "content": "Pushed the attestation.\n  digest: sha256:__SHA256_DIGEST_B__\n  access sha256:__SHA256_DIGEST_B__\nworkflow key: 3bf79921-3c03-81b6-afff-cb246849866f\nidempotency_key=3bf79921-3c03-81b6-afff-cb246849866f\n"},
+          "message": {"role": "user", "content": "Pushed the attestation.\n  digest: sha256:__SHA256_DIGEST_B__\n  access sha256:__SHA256_DIGEST_B__\nworkflow key: __SESSION_UUID__\nidempotency_key=__SESSION_UUID__\n"},
           "timestamp": "2026-03-25T15:14:02.000Z"
         },
         {
@@ -97,7 +97,7 @@
         },
         {
           "type": "assistant",
-          "message": {"role": "assistant", "content": "curl -H 'Authorization: Bearer REPLACE_ME' https://api.example.com\nissuer: http://localhost:8000@chainloop.local\n"},
+          "message": {"role": "assistant", "content": "curl -H 'Authorization: Bearer __CURL_PLACEHOLDER__' https://api.example.com\nissuer: http://localhost:8000@chainloop.local\n"},
           "timestamp": "2026-03-25T15:14:05.000Z"
         },
         {
