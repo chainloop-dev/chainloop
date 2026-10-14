@@ -200,7 +200,7 @@ controlplane:
   ## @param controlplane.uiDashboardURL Optional external URL for the dashboard UI. If set, CLI will display attestation view links after push
   uiDashboardURL: ""
 
-  ## @param controlplane.allowedCallbackOrigins Additional origins (scheme://host[:port]) the OIDC login callback may redirect to, on top of the control plane external URL and the dashboard UI URL. Matched exactly, wildcards and paths are not allowed
+  ## @param controlplane.allowedCallbackOrigins Additional HTTP(S) origins (http(s)://host[:port]) the OIDC login callback may redirect to, on top of the control plane external URL and the dashboard UI URL. Matched exactly, other schemes, wildcards and paths are rejected at startup
   allowedCallbackOrigins: []
 
   ## @extra controlplane.nats optional NATS configuration for events publishing.

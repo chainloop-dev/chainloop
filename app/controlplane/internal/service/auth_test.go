@@ -184,6 +184,7 @@ func TestParseCallbackOrigins(t *testing.T) {
 		{name: "origin with port", origins: []string{testOriginWithPort}, want: []string{testOriginWithPort}},
 		{name: "origin with a trailing slash", origins: []string{"https://api.example.com/"}, want: []string{testOrigin}},
 		{name: "mixed case is normalized", origins: []string{"https://API.Example.com"}, want: []string{testOrigin}},
+		{name: "upper case scheme is normalized", origins: []string{"HTTPS://api.example.com"}, want: []string{testOrigin}},
 		{name: "several origins", origins: []string{"https://a.example.com", "http://b.example.com:8080"}, want: []string{"https://a.example.com", "http://b.example.com:8080"}},
 		{name: "empty entry", origins: []string{""}, wantErr: true},
 		{name: "malformed entry", origins: []string{testOrigin, "://nope"}, wantErr: true},
