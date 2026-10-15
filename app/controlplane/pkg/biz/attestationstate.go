@@ -272,6 +272,12 @@ func decrypt(ciphertext []byte, passphrase string) ([]byte, error) {
 	stream := cipher.NewCFBDecrypter(block, iv)
 	stream.XORKeyStream(ciphertext, ciphertext)
 
+	// Too short to hold the magic prefix: a truncated or tampered row, reported like
+	// any other value that does not decrypt to the magic prefix.
+	if len(ciphertext) < len(magic) {
+		return nil, NewErrInvalidPassphrase()
+	}
+
 	// Check if the decrypted data starts with the magic string
 	if string(ciphertext[:len(magic)]) != magic {
 		// A mismatch means the state was encrypted with a different passphrase,

@@ -49,3 +49,34 @@ func TestErrInvalidPassphraseIsDiscoverableWhenWrapped(t *testing.T) {
 	wrapped := fmt.Errorf("failed to decrypt attestation state: %w", NewErrInvalidPassphrase())
 	assert.True(t, IsErrInvalidPassphrase(wrapped))
 }
+
+// Truncated stored values (salt + IV + fewer bytes than the magic prefix) must return an error, not panic.
+func TestDecryptShortInput(t *testing.T) {
+	testCases := []struct {
+		name string
+		size int
+	}{
+		{name: "salt and IV only", size: saltSize + 16},
+		{name: "one byte after IV", size: saltSize + 16 + 1},
+		{name: "one byte short of magic", size: saltSize + 16 + len(magic) - 1},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var err error
+			require.NotPanics(t, func() {
+				_, err = decrypt(make([]byte, tc.size), "passphrase")
+			})
+			assert.True(t, IsErrInvalidPassphrase(err))
+		})
+	}
+}
+
+func TestEncryptDecryptRoundTrip(t *testing.T) {
+	enc, err := encrypt([]byte("data"), "passphrase")
+	require.NoError(t, err)
+
+	got, err := decrypt(enc, "passphrase")
+	require.NoError(t, err)
+	assert.Equal(t, []byte("data"), got)
+}
