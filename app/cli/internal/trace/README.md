@@ -109,7 +109,7 @@ How the sessions are linked to the commits and attested.
 - **To local:** run `chainloop trace init --local`. It writes `traceStorage: LOCAL` (and `tracePath` with `--trace-path`), installs the hooks, and contacts no control plane. Commit `.chainloop.yml` to share the choice.
 - **Back to the control plane:** run `chainloop trace init` (without `--local`). It writes `traceStorage: CONTROL_PLANE`, clearing the local policy, and sets up the workflow as usual. The command tells you it switched. Commit `.chainloop.yml`.
 
-The git hooks live under `.git` and are not cloned, so each teammate runs `chainloop trace init` (or `chainloop trace init --local`) once after cloning to install their own.
+Run `chainloop trace init` once per repository. The git hooks live under `.git` and are not cloned, but in a clone the first traced session installs them, so a teammate does not run init.
 
 ## How each agent is hooked in
 

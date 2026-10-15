@@ -176,11 +176,10 @@ func TestWriteTraceLocalNextSteps(t *testing.T) {
 	assert.Contains(t, got, claudeSettings)
 	assert.Contains(t, got, "written to disk")
 	assert.Contains(t, got, traceDocsURL)
-	// The git hooks live under .git and are not cloned, so a teammate must run
-	// init themselves; the steps must say so rather than imply a commit is
-	// enough.
-	assert.Contains(t, got, "chainloop trace init --local")
-	assert.Contains(t, got, "not cloned")
+	// In a clone, the first traced session installs the git hooks, so the
+	// steps must not tell a teammate to run init again.
+	assert.NotContains(t, got, "chainloop trace init")
+	assert.NotContains(t, got, "not cloned")
 }
 
 func TestTraceStorageToPersist(t *testing.T) {

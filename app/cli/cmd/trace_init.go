@@ -382,9 +382,8 @@ func writeTraceStorageSwitchedNote(w io.Writer, ymlName string) {
 
 // writeTraceLocalNextSteps says what is left after a local init. Committing
 // .chainloop.yml shares the choice: traceStorage: LOCAL is a repository policy a
-// clone inherits. The git hooks that record a session live under .git and are
-// not cloned, though, so each teammate installs their own by running chainloop
-// trace init --local once after cloning. Unlike the control-plane path there is
+// clone inherits. A teammate does not run init: in a clone, the first traced
+// session installs the git hooks. Unlike the control-plane path there is
 // nothing to push to a backend; the evidence lands on disk when the session's
 // commits are pushed.
 func writeTraceLocalNextSteps(w io.Writer, repoRoot, workDir string, installed []trace.Provider) {
@@ -412,10 +411,6 @@ What's next
   2. Start %s and write some code
   3. Commit and push as usual. The session evidence is written to disk, with no
      control plane; the push tells you where
-
-Each teammate installs their own git hooks once after cloning, since the hooks
-live under .git and are not cloned:
-       chainloop trace init --local
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)

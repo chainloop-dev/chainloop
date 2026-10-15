@@ -412,6 +412,28 @@ func TestAutoInstallGitHooks(t *testing.T) {
 		assert.True(t, store.IsTraceInitialized())
 	})
 
+	t.Run("installs in a local-mode clone with no project name", func(t *testing.T) {
+		// A local-mode repository writes no projectName. A teammate who clones
+		// it does not run trace init, so the first session must install the
+		// git hooks.
+		repoDir := initTempGitRepo(t)
+		gitDir := filepath.Join(repoDir, ".git")
+		store := state.NewGitStore(gitDir)
+
+		require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".chainloop.yml"), []byte("traceStorage: LOCAL\n"), 0600))
+
+		origDir, _ := os.Getwd()
+		require.NoError(t, os.Chdir(repoDir))
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		autoInstallGitHooks(store, repoDir, zerolog.Nop())
+
+		content, err := os.ReadFile(filepath.Join(gitDir, "hooks", "pre-push"))
+		require.NoError(t, err)
+		assert.Contains(t, string(content), hooks.HookMarker)
+		assert.True(t, store.IsTraceInitialized())
+	})
+
 	t.Run("skips when hooks already installed", func(t *testing.T) {
 		repoDir := initTempGitRepo(t)
 		gitDir := filepath.Join(repoDir, ".git")
