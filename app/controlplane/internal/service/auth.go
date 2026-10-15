@@ -771,10 +771,11 @@ func (svc *AuthService) ExchangeHandoff(ctx context.Context, req *pb.AuthService
 		var exchangeErr biz.ErrLoginHandoffExchange
 		if errors.As(err, &exchangeErr) {
 			svc.log.WithContext(ctx).Warnw("msg", "login handoff exchange failed", "reason", exchangeErr.Reason)
-			return nil, errLoginHandoffExchange
+		} else {
+			svc.log.WithContext(ctx).Errorw("msg", "login handoff exchange failed unexpectedly", "error", err)
 		}
 
-		return nil, handleUseCaseErr(ctx, err, svc.log)
+		return nil, errLoginHandoffExchange
 	}
 
 	token, err := svc.userToken(h.UserID.String(), h.TokenTTL)

@@ -369,12 +369,25 @@ func TestExchangeHandoff(t *testing.T) {
 		})
 	}
 
-	t.Run("internal error", func(t *testing.T) {
-		svc := newHandoffTestService(nil, &fakeLoginHandoffs{exchangeErr: errors.New("db down")}, nil)
-		_, err := svc.ExchangeHandoff(context.Background(), req)
-		require.Error(t, err)
-		assert.True(t, kerrors.IsInternalServer(err))
-	})
+	unexpected := []struct {
+		name string
+		err  error
+	}{
+		{"repository error", errors.New("db down")},
+		{"cancelled", context.Canceled},
+	}
+
+	for _, tc := range unexpected {
+		t.Run(tc.name, func(t *testing.T) {
+			var logs bytes.Buffer
+			svc := newHandoffTestService(nil, &fakeLoginHandoffs{exchangeErr: tc.err}, &logs)
+
+			_, err := svc.ExchangeHandoff(context.Background(), req)
+			// Unexpected failures are indistinguishable from the rest for the client, the cause only goes to the server log
+			assert.Equal(t, errLoginHandoffExchange, err)
+			assert.Contains(t, logs.String(), tc.err.Error())
+		})
+	}
 }
 
 func TestInfozLoginFlags(t *testing.T) {
