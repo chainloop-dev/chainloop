@@ -146,6 +146,8 @@ PKCE-style challenge (S256) from the client, plus the callback URL.
 - Source: drafting
 
 ### D-003: Exchange endpoint
+Superseded in part by D-013: the HTTP mapping was dropped.
+
 Unauthenticated RPC on the auth service with an HTTP POST mapping.
 - Why: the CLI already has a gRPC connection, and other clients use HTTP.
 - Alternatives considered:
