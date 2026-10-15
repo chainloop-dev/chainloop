@@ -110,7 +110,7 @@ func TestWipeTraceDir(t *testing.T) {
 }
 
 // TestRemoveTraceDirPreservesLocalSessions pins that RemoveTraceDir keeps the
-// local-sessions directory — the durable evidence a LOCAL-mode push or
+// local-sessions directory — the durable evidence an offline-mode push or
 // `trace run` wrote — while clearing the rest of the state, so trace uninstall
 // and the trace-run teardown never destroy a developer's stored sessions.
 func TestRemoveTraceDirPreservesLocalSessions(t *testing.T) {
@@ -118,7 +118,7 @@ func TestRemoveTraceDirPreservesLocalSessions(t *testing.T) {
 	require.NoError(t, store.InitTraceDir())
 	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "abc123", SessionIDs: []string{"sess-1"}, Timestamp: "2026-03-28T00:00:00Z"}))
 
-	// A stored session on disk, as LOCAL storage would write it.
+	// A stored session on disk, as the offline mode would write it.
 	sessionDir := filepath.Join(store.LocalSessionsDir(), "sess-1")
 	require.NoError(t, os.MkdirAll(sessionDir, 0o700))
 	require.NoError(t, os.WriteFile(filepath.Join(sessionDir, "manifest.json"), []byte("{}"), 0o600))

@@ -22,6 +22,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -341,7 +342,7 @@ func TestWriteTraceNextSteps(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			out := &bytes.Buffer{}
 			repoRoot := t.TempDir()
-			writeTraceNextSteps(out, repoRoot, repoRoot, providers.ByNames(tc.providers))
+			writeTraceNextSteps(out, config.TraceModes{Online: true}, repoRoot, repoRoot, providers.ByNames(tc.providers))
 
 			got := out.String()
 			for _, f := range tc.wantFiles {
@@ -363,7 +364,7 @@ func TestWriteTraceNextStepsFromSubdirectory(t *testing.T) {
 	require.NoError(t, os.MkdirAll(workDir, 0750))
 
 	out := &bytes.Buffer{}
-	writeTraceNextSteps(out, repoRoot, workDir, providers.ByNames([]string{providerClaudeCode}))
+	writeTraceNextSteps(out, config.TraceModes{Online: true}, repoRoot, workDir, providers.ByNames([]string{providerClaudeCode}))
 
 	got := out.String()
 	assert.Contains(t, got, filepath.Join("..", "..", chainloopYMLName))
@@ -373,8 +374,13 @@ func TestWriteTraceNextStepsFromSubdirectory(t *testing.T) {
 func TestWriteTraceInitSummary(t *testing.T) {
 	t.Run("every value is reported", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		writeTraceInitSummary(out, "acme", "backend-api", defaultTraceWorkflow,
-			[]string{providerClaudeCode, "cursor"})
+		writeTraceInitSummary(out, traceInitSummary{
+			modes:        config.TraceModes{Online: true},
+			organization: "acme",
+			project:      "backend-api",
+			workflow:     defaultTraceWorkflow,
+			harnesses:    []string{providerClaudeCode, "cursor"},
+		})
 
 		got := out.String()
 		assert.Contains(t, got, "your repository is initialized")
@@ -382,11 +388,18 @@ func TestWriteTraceInitSummary(t *testing.T) {
 		assert.Contains(t, got, "backend-api")
 		assert.Contains(t, got, defaultTraceWorkflow)
 		assert.Contains(t, got, "claude-code, cursor")
+		assert.Contains(t, got, "online")
+		assert.NotContains(t, got, "offline")
 	})
 
 	t.Run("no organization anywhere leaves the line out rather than guessing", func(t *testing.T) {
 		out := &bytes.Buffer{}
-		writeTraceInitSummary(out, "", "backend-api", defaultTraceWorkflow, []string{providerClaudeCode})
+		writeTraceInitSummary(out, traceInitSummary{
+			modes:     config.TraceModes{Online: true},
+			project:   "backend-api",
+			workflow:  defaultTraceWorkflow,
+			harnesses: []string{providerClaudeCode},
+		})
 
 		assert.NotContains(t, out.String(), "organization")
 	})

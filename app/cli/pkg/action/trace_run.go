@@ -77,17 +77,18 @@ type TraceRunOpts struct {
 	ContractRequired bool
 
 	// ActionOpts is the root command's initialized options, used to build
-	// the attestation executor. Required unless Local, which reaches no
-	// control plane.
+	// the attestation executor. Required when Modes.Online is set; the
+	// offline mode reaches no control plane.
 	ActionOpts *ActionsOpts
 	// CLIVersion is the bare CLI version recorded in the attestation
 	// predicate.
 	CLIVersion string
 
-	// Local runs in local storage mode (traceStorage: LOCAL): the session is
-	// written to disk at session end instead of attested, and no control plane
-	// is contacted. The identity fields above are then unused.
-	Local bool
+	// Modes selects where the session goes. Online attests it to the control
+	// plane after a clean run. Offline writes it to disk at session end, also
+	// after a failed run, and contacts no control plane. With offline only, the
+	// identity fields above are unused.
+	Modes config.TraceModes
 }
 
 // TraceRun wraps a single-shot agent invocation: it cleans any prior
@@ -105,10 +106,9 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		return fmt.Errorf("no trace providers selected")
 	}
 
-	// Local mode reaches no control plane, so it skips the credential check and
-	// the up-front workflow creation: the session is recorded and written to
-	// disk either way.
-	if !opts.Local {
+	// Only the online mode reaches the control plane, so offline alone skips
+	// the credential check and the up-front workflow creation.
+	if opts.Modes.Online {
 		var authExecOpts []ExecutorOption
 		if opts.Organization != "" {
 			authExecOpts = append(authExecOpts, WithForcedOrganization(opts.Organization))
@@ -193,60 +193,52 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 
 	runErr := sub.Run()
 
-	// Local mode writes the evidence to disk whatever the agent's exit status
-	// was: a session the user interrupted still has evidence worth keeping, and
-	// it reaches no control plane. The attestation path, in contrast, attests
-	// only a clean run. Either way the agent's own exit code is preserved.
-	if opts.Local {
-		log.Debug().Msg("wrapped command finished; storing session evidence to disk")
-
-		stored, tracePath, storeErr := RunTraceLocalStore(ctx, log, RunTraceLocalStoreOpts{
-			NoRedact:   traceNoRedactFromEnv(),
-			Mode:       aicodingsession.ModeGeneric,
-			AllowEmpty: true,
-		})
-		switch {
-		case storeErr != nil:
-			log.Warn().Err(storeErr).Msg("could not store session evidence")
-		case stored == 0:
-			log.Warn().Msg("no AI coding session was recorded, so nothing was stored")
-		default:
-			log.Info().Int("sessions", stored).Msgf("AI coding session evidence stored at %s", tracePath)
-		}
-
-		// The agent's own exit status wins: a non-zero exit is what the user
-		// needs to see, and a store failure must not mask it. Only when the
-		// agent exited cleanly does a store failure become the error to return,
-		// so a silent failure to persist the evidence is never reported as
-		// success.
-		if runErr != nil {
-			return subprocessError(opts.Command[0], runErr)
-		}
-		if storeErr != nil {
-			return fmt.Errorf("store session evidence locally: %w", storeErr)
-		}
-
-		return nil
+	// The offline mode writes the evidence to disk whatever the agent's exit
+	// status was: a session the user interrupted still has evidence worth
+	// keeping, and it reaches no control plane. The online mode, in contrast,
+	// attests only a clean run. Either way the agent's own exit code is
+	// preserved.
+	modes := opts.Modes
+	if runErr != nil {
+		modes.Online = false
 	}
 
-	if runErr != nil {
+	if !modes.Online && !modes.Offline {
 		return subprocessError(opts.Command[0], runErr)
 	}
 
-	log.Debug().Msg("wrapped command completed; attesting session")
+	log.Debug().Str("trace_modes", modes.String()).Msg("wrapped command finished; recording session")
 
-	return RunTracePush(ctx, log, RunTracePushOpts{
-		AllowEmpty:            true,
-		ProjectName:           opts.ProjectName,
-		Organization:          opts.Organization,
-		WorkflowName:          opts.WorkflowName,
-		ProjectVersion:        opts.ProjectVersion,
-		IgnoreYAML:            true,
-		SkipAgentNotification: true,
-		Mode:                  aicodingsession.ModeGeneric,
-		ActionOpts:            opts.ActionOpts,
-		CLIVersion:            opts.CLIVersion,
+	_, storeErr := RunTraceStore(ctx, log, RunTraceStoreOpts{
+		Modes:    modes,
+		NoRedact: traceNoRedactFromEnv(),
+		Push: RunTracePushOpts{
+			AllowEmpty:            true,
+			ProjectName:           opts.ProjectName,
+			Organization:          opts.Organization,
+			WorkflowName:          opts.WorkflowName,
+			ProjectVersion:        opts.ProjectVersion,
+			IgnoreYAML:            true,
+			SkipAgentNotification: true,
+			Mode:                  aicodingsession.ModeGeneric,
+			ActionOpts:            opts.ActionOpts,
+			CLIVersion:            opts.CLIVersion,
+		},
 	})
+
+	// The agent's own exit status wins: a non-zero exit is what the user needs
+	// to see, and a store failure must not mask it. Only when the agent exited
+	// cleanly does a store failure become the error to return, so a silent
+	// failure to record the evidence is never reported as success.
+	if runErr != nil {
+		if storeErr != nil {
+			log.Warn().Err(storeErr).Msg("could not store session evidence")
+		}
+
+		return subprocessError(opts.Command[0], runErr)
+	}
+
+	return storeErr
 }
 
 // subprocessError maps the error from running the wrapped command into the

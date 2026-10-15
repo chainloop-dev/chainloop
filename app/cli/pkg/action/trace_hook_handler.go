@@ -19,6 +19,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -528,44 +529,16 @@ type RunTracePushOpts struct {
 	CLIVersion string
 }
 
-// HandlePrePushHook handles the pre-push git hook. The caller passes a
-// returned error through PrePushFailure.
-func HandlePrePushHook(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts) error {
+// HandlePrePushHook handles the pre-push git hook: it sends the recorded
+// sessions to every enabled trace mode. The caller passes a returned error
+// through PrePushFailure.
+func HandlePrePushHook(ctx context.Context, log zerolog.Logger, opts RunTraceStoreOpts) error {
 	drainPushStdin()
 
-	return RunTracePush(ctx, log, opts)
-}
+	opts.NoRedact = traceNoRedactFromEnv()
+	_, err := RunTraceStore(ctx, log, opts)
 
-// HandlePrePushHookLocal stores the recorded session evidence to disk instead of
-// pushing an attestation, for a repository configured with traceStorage: LOCAL
-// (R-009). It makes no control-plane call. Like the control-plane path it drains
-// the push stdin first, to avoid a SIGPIPE on the git side, then runs the same
-// assembly and writes the evidence under the configured tracePath. It tells the
-// user where the session went (R-012).
-//
-// "Nothing recorded" is not an error, so a human-only push is never blocked;
-// only a genuine store failure is returned, which the caller turns into a
-// blocked push when traceRequired is set.
-func HandlePrePushHookLocal(ctx context.Context, log zerolog.Logger) error {
-	drainPushStdin()
-
-	stored, tracePath, err := RunTraceLocalStore(ctx, log, RunTraceLocalStoreOpts{
-		NoRedact: traceNoRedactFromEnv(),
-		Mode:     aicodingsession.ModeCoding,
-	})
-	if err != nil {
-		return fmt.Errorf("store session evidence locally: %w", err)
-	}
-
-	if stored == 0 {
-		log.Info().Msg("no new AI coding session evidence, nothing stored")
-
-		return nil
-	}
-
-	log.Info().Int("sessions", stored).Msgf("AI coding session evidence stored at %s", tracePath)
-
-	return nil
+	return err
 }
 
 // PrePushFailure decides what a failed pre-push hook does. The managed
@@ -588,31 +561,142 @@ func PrePushFailure(err error, requireTrace bool, log zerolog.Logger) error {
 }
 
 // RunTracePush gathers AI-coding-session evidence from the local trace
-// state and emits a Chainloop attestation. Shared between the pre-push
-// git hook and `chainloop trace run`.
-//
-//nolint:gocyclo // straight-line orchestration of the pre-push flow; splitting it would only move the branches
+// state and emits a Chainloop attestation. It is RunTraceStore with the online
+// mode only.
 func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts) error {
+	_, err := RunTraceStore(ctx, log, RunTraceStoreOpts{
+		Modes: config.TraceModes{Online: true},
+		Push:  opts,
+	})
+
+	return err
+}
+
+// RunTraceStoreOpts configures one run of the trace modes over the recorded
+// sessions.
+type RunTraceStoreOpts struct {
+	// Modes selects where the evidence goes. Online attests it to the control
+	// plane, offline writes it to disk. Both can be set.
+	Modes config.TraceModes
+	// Push configures the run. Its Mode and AllowEmpty apply to both modes; the
+	// rest of it is the online identity and connection, unused offline.
+	Push RunTracePushOpts
+	// NoRedact disables secret redaction in the offline store, for a trusted
+	// local store only (R-004). The online attestation always redacts.
+	NoRedact bool
+}
+
+// RunTraceStoreResult tells the caller what the offline mode stored.
+type RunTraceStoreResult struct {
+	// StoredLocally is the number of sessions written to disk.
+	StoredLocally int
+	// TracePath is the directory the offline mode writes under. It is set
+	// whenever the offline mode is enabled, also when nothing was stored.
+	TracePath string
+}
+
+// RunTraceStore sends the recorded sessions to every enabled trace mode. Each
+// mode assembles its own copy of the evidence from the same recorded state,
+// because the assembly rewrites the evidence it attaches. The offline mode runs
+// first: it needs no network, so a control-plane failure cannot cost the local
+// copy.
+//
+// The single-use trace state is pruned only when every enabled mode finished
+// its work. A mode that failed leaves the sessions in place, so the next push
+// retries it. Storing a session offline again is harmless: the store is
+// content-addressed and rewrites the same bytes.
+func RunTraceStore(ctx context.Context, log zerolog.Logger, opts RunTraceStoreOpts) (RunTraceStoreResult, error) {
+	var res RunTraceStoreResult
+
 	store, repoRoot, err := state.Locate()
 	if err != nil {
-		return err
+		return res, err
 	}
 
-	sessionMode := aicodingsession.ResolveMode(opts.Mode)
+	sessionMode := aicodingsession.ResolveMode(opts.Push.Mode)
 
 	log.Debug().Str("state_dir", store.Dir()).Str("repo_root", repoRoot).
-		Bool("allow_empty", opts.AllowEmpty).Str("mode", sessionMode).Msg("trace push invoked")
+		Bool("allow_empty", opts.Push.AllowEmpty).Str("mode", sessionMode).
+		Str("trace_modes", opts.Modes.String()).Msg("trace store invoked")
 
-	sessions, aiCommits, err := gatherPushSessions(ctx, store, repoRoot, sessionMode, opts.AllowEmpty, log)
-	if err != nil {
-		return err
+	var (
+		errs      []error
+		aiCommits []*state.CommitRecord
+		// done is set when a mode recorded something, and complete is cleared
+		// when an enabled mode did not finish. Both gate the final prune.
+		done     bool
+		complete = true
+	)
+
+	if opts.Modes.Offline {
+		res.TracePath = ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot))
+
+		sessions, commits, err := gatherPushSessions(ctx, store, repoRoot, sessionMode, opts.Push.AllowEmpty, log)
+		aiCommits = commits
+
+		switch {
+		case err != nil:
+			errs = append(errs, err)
+			complete = false
+		case len(sessions) == 0:
+			log.Info().Msg("no new AI coding session evidence, nothing stored on disk")
+		default:
+			stored, err := storeSessionsLocally(ctx, log, store, sessions, res.TracePath, opts.NoRedact)
+			res.StoredLocally = stored
+
+			if stored > 0 {
+				log.Info().Int("sessions", stored).Msgf("AI coding session evidence stored at %s", res.TracePath)
+			}
+
+			switch {
+			case err != nil:
+				errs = append(errs, fmt.Errorf("store session evidence locally: %w", err))
+				complete = false
+			case stored != len(sessions):
+				complete = false
+			default:
+				done = true
+			}
+		}
 	}
-	if len(sessions) == 0 {
-		log.Info().Msg("no new AI coding session evidence, skipping attestation")
 
-		return nil
+	if opts.Modes.Online {
+		sessions, commits, err := gatherPushSessions(ctx, store, repoRoot, sessionMode, opts.Push.AllowEmpty, log)
+		aiCommits = commits
+
+		switch {
+		case err != nil:
+			errs = append(errs, err)
+			complete = false
+		case len(sessions) == 0:
+			log.Info().Msg("no new AI coding session evidence, skipping attestation")
+		default:
+			pushed, err := pushSessions(ctx, log, store, repoRoot, sessions, opts.Push)
+			switch {
+			case err != nil:
+				errs = append(errs, err)
+				complete = false
+			case !pushed:
+				complete = false
+			default:
+				done = true
+			}
+		}
 	}
 
+	// Pruning while one mode failed would mark its sessions tracked and wipe
+	// their state, with no way back for that mode.
+	if done && complete {
+		finalizePush(store, repoRoot, aiCommits, log)
+	}
+
+	return res, errors.Join(errs...)
+}
+
+// pushSessions attests the assembled sessions to the control plane in one
+// attestation. It reports whether an attestation went out: false with no error
+// means no session evidence could be added, so nothing was sent.
+func pushSessions(ctx context.Context, log zerolog.Logger, store *state.Store, repoRoot string, sessions []sessionEvidence, opts RunTracePushOpts) (bool, error) {
 	// Create attestation using local state file to avoid conflicts with other attestations
 	localStatePath := store.AttestationStatePath()
 	defer func() { _ = os.Remove(localStatePath) }()
@@ -620,10 +704,10 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 	projectName, organization, workflowName := resolvePushIdentity(repoRoot, opts)
 	if projectName == "" {
 		if opts.IgnoreYAML {
-			return fmt.Errorf("no project name provided")
+			return false, fmt.Errorf("no project name provided")
 		}
 
-		return fmt.Errorf("no project name found (pass via options or .chainloop.yml)")
+		return false, fmt.Errorf("no project name found (pass via options or .chainloop.yml)")
 	}
 
 	log.Debug().Str("project", projectName).Msg("resolved project for trace push")
@@ -640,13 +724,13 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		// unless require-trace is on.
 		log.Warn().Err(err).Msg("skipping trace attestation")
 
-		return err
+		return false, err
 	}
 	defer func() { _ = executor.Close() }()
 
 	attestationID, err := executor.Init(ctx, workflowName, projectName, opts.ProjectVersion)
 	if err != nil {
-		return fmt.Errorf("attestation init: %w", err)
+		return false, fmt.Errorf("attestation init: %w", err)
 	}
 
 	log.Debug().Str("attestation_id", attestationID).Msg("attestation initialized")
@@ -659,14 +743,14 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		log.Debug().Msg("no evidence successfully added, resetting attestation")
 		_ = executor.Reset(ctx, AttestationResetTriggerCancelled, "no CHAINLOOP_AI_CODING_SESSION evidence added")
 
-		return nil
+		return false, nil
 	}
 
 	// Push attestation
 	log.Debug().Msg("pushing attestation")
 	res, err := executor.Push(ctx)
 	if err != nil {
-		return fmt.Errorf("attestation push: %w", err)
+		return false, fmt.Errorf("attestation push: %w", err)
 	}
 
 	// Tell the user where each session landed. The organization comes from the
@@ -690,17 +774,13 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		log.Debug().Err(err).Msg("could not record session links for the agent hook")
 	}
 
-	log.Debug().Msg("attestation pushed, wiping single-use trace state")
-
 	// A later push of each session keeps the spec files recorded here, so
 	// that the limit never drops a spec that is already in the evidence.
 	for sessionID, fileNames := range attestedSpecs {
 		recordPushedSpecs(store, sessionID, fileNames, log)
 	}
 
-	finalizePush(store, repoRoot, aiCommits, log)
-
-	return nil
+	return true, nil
 }
 
 // sessionCommitGroups groups the AI commits by the sessions that contributed to

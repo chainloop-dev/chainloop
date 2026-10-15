@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -141,20 +142,23 @@ func TestStoreSessionsLocally(t *testing.T) {
 	})
 }
 
-// TestRunTraceLocalStoreNoSessions covers the local pre-push path when nothing
-// was recorded: it stores nothing, returns the resolved default path, and
-// reaches no control plane (it never builds an executor), so a human-only push
-// is never blocked (decision 4) and needs no network (R-005).
-func TestRunTraceLocalStoreNoSessions(t *testing.T) {
+// TestRunTraceStoreOfflineNoSessions covers the offline pre-push path when
+// nothing was recorded: it stores nothing, returns the resolved default path,
+// and reaches no control plane (it never builds an executor), so a human-only
+// push is never blocked (decision 4) and needs no network (R-005).
+func TestRunTraceStoreOfflineNoSessions(t *testing.T) {
 	_, gitDir := initGitRepo(t)
 	require.NoError(t, state.NewGitStore(gitDir).InitTraceDir())
 
-	stored, tracePath, err := RunTraceLocalStore(t.Context(), zerolog.Nop(), RunTraceLocalStoreOpts{Mode: aicodingsession.ModeCoding})
+	res, err := RunTraceStore(t.Context(), zerolog.Nop(), RunTraceStoreOpts{
+		Modes: config.TraceModes{Offline: true},
+		Push:  RunTracePushOpts{Mode: aicodingsession.ModeCoding},
+	})
 	require.NoError(t, err)
-	assert.Zero(t, stored, "nothing recorded, nothing stored")
-	assert.Equal(t, state.NewGitStore(gitDir).LocalSessionsDir(), tracePath, "the default path is resolved and returned")
+	assert.Zero(t, res.StoredLocally, "nothing recorded, nothing stored")
+	assert.Equal(t, state.NewGitStore(gitDir).LocalSessionsDir(), res.TracePath, "the default path is resolved and returned")
 
-	_, statErr := os.Stat(tracePath)
+	_, statErr := os.Stat(res.TracePath)
 	assert.True(t, os.IsNotExist(statErr), "no output directory is created when there is nothing to store")
 }
 
@@ -169,32 +173,58 @@ func TestResolveTracePath(t *testing.T) {
 	assert.Equal(t, filepath.Join(repoRoot, "evidence"), ResolveTracePath(repoRoot, store, "evidence"))
 }
 
-func TestLocalSessionStartBanner(t *testing.T) {
-	t.Run("names the on-disk destination and the push timing", func(t *testing.T) {
-		got := localSessionStartBanner("/repo/.git/chainloop-trace/local-sessions", false)
-		assert.Contains(t, got, "recording this session")
-		assert.Contains(t, got, "local mode")
-		assert.Contains(t, got, "/repo/.git/chainloop-trace/local-sessions")
-		assert.Contains(t, got, "when you push")
-		// No Chainloop/control-plane vocabulary: a reader should not think a
-		// backend is involved.
-		assert.NotContains(t, got, "attest")
-		assert.NotContains(t, got, "dashboard")
-	})
+// TestOfflineSessionStartBanner covers R-012 and the mode names: the banner
+// says which trace modes record the session and where the evidence goes.
+func TestOfflineSessionStartBanner(t *testing.T) {
+	const sessionsDir = "/repo/.git/chainloop-trace/local-sessions"
 
-	t.Run("says this run finishes under trace run", func(t *testing.T) {
-		got := localSessionStartBanner("/repo/.git/chainloop-trace/local-sessions", true)
-		assert.Contains(t, got, "local mode")
-		assert.Contains(t, got, "when this run finishes")
-		assert.NotContains(t, got, "when you push")
-	})
+	testCases := []struct {
+		name  string
+		modes config.TraceModes
+		dest  bannerDestination
+		want  string
+	}{
+		{
+			name:  "offline names the on-disk destination and the push timing",
+			modes: config.TraceModes{Offline: true},
+			dest:  bannerDestination{tracePath: sessionsDir},
+			want: "Chainloop Trace is recording this session in offline mode." +
+				"\nEvidence will be stored on disk at " + sessionsDir + " when you push.",
+		},
+		{
+			name:  "offline says this run finishes under trace run",
+			modes: config.TraceModes{Offline: true},
+			dest:  bannerDestination{tracePath: sessionsDir, traceRunActive: true},
+			want: "Chainloop Trace is recording this session in offline mode." +
+				"\nEvidence will be stored on disk at " + sessionsDir + " when this run finishes.",
+		},
+		{
+			name:  "offline drops the destination when unknown",
+			modes: config.TraceModes{Offline: true},
+			want:  "Chainloop Trace is recording this session in offline mode.",
+		},
+		{
+			name:  "offline ignores the control-plane identity",
+			modes: config.TraceModes{Offline: true},
+			dest:  bannerDestination{dashboardURL: testDashboardURL, org: testOrgName, tracePath: sessionsDir},
+			want: "Chainloop Trace is recording this session in offline mode." +
+				"\nEvidence will be stored on disk at " + sessionsDir + " when you push.",
+		},
+		{
+			name:  "both modes name both destinations",
+			modes: config.TraceModes{Online: true, Offline: true},
+			dest:  bannerDestination{dashboardURL: testDashboardURL, org: testOrgName, tracePath: sessionsDir},
+			want: "Chainloop Trace is recording this session in online and offline modes." +
+				"\nEvidence will be sent to " + testDashboardURL + " (organization: " + testOrgName + ")" +
+				"\nEvidence will be stored on disk at " + sessionsDir + " when you push.",
+		},
+	}
 
-	t.Run("drops the destination when unknown", func(t *testing.T) {
-		got := localSessionStartBanner("", false)
-		assert.Contains(t, got, "recording this session")
-		assert.Contains(t, got, "local mode")
-		assert.NotContains(t, got, "stored on disk at")
-	})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, sessionStartBanner(tc.modes, tc.dest))
+		})
+	}
 }
 
 func readJSONFile(t *testing.T, path string, v any) {
@@ -213,4 +243,69 @@ func materialByName(t *testing.T, m localManifest, name string) storedMaterial {
 	}
 	require.Failf(t, "material not found", "material %q not found in manifest", name)
 	return storedMaterial{}
+}
+
+// TestRunTraceStoreBothModes follows a push with the online and offline modes
+// together. The offline mode stores the session on disk first. When the online
+// mode then fails, the commit stays untracked, so the next push retries the
+// online mode instead of losing the session. When every mode succeeds, the
+// commit is marked tracked.
+func TestRunTraceStoreBothModes(t *testing.T) {
+	const sessionID = "5d2b9e7a-1c3f-4a6b-8d9e-0f1a2b3c4d5e"
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	repoDir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+	t.Chdir(repoDir)
+
+	projectDir := claudeProjectDir(home, repoDir)
+	require.NoError(t, os.MkdirAll(projectDir, 0o700))
+	tr := transcript{t: t, path: filepath.Join(projectDir, sessionID+".jsonl")}
+	tr.append(`{"type":"user","uuid":"u1","timestamp":"2026-10-15T10:00:00.000Z","sessionId":"` + sessionID + `","message":{"role":"user","content":"Add a hello world."}}`)
+
+	payload, err := json.Marshal(struct {
+		SessionID      string `json:"session_id"`
+		HookEventName  string `json:"hook_event_name"`
+		TranscriptPath string `json:"transcript_path"`
+		Cwd            string `json:"cwd"`
+	}{sessionID, "SessionStart", tr.path, repoDir})
+	require.NoError(t, err)
+	withStdin(t, string(payload))
+	captureStdout(t, func() { require.NoError(t, HandleAgentSessionStart(claude.New(), zerolog.Nop())) })
+
+	sha := headSHA(t, repoDir)
+	require.NoError(t, store.SaveCommitRecord(&state.CommitRecord{
+		SHA:        sha,
+		Message:    "initial",
+		SessionIDs: []string{sessionID},
+		Timestamp:  state.NowTimestamp(),
+	}))
+
+	tracePath := filepath.Join(repoDir, "sessions")
+	require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".chainloop.yml"), []byte("tracePath: sessions\n"), 0o600))
+
+	// The online mode fails before it reaches any control plane: no project
+	// name is known.
+	res, err := RunTraceStore(t.Context(), zerolog.Nop(), RunTraceStoreOpts{
+		Modes: config.TraceModes{Online: true, Offline: true},
+		Push:  RunTracePushOpts{IgnoreYAML: true, Mode: aicodingsession.ModeCoding},
+	})
+	require.ErrorContains(t, err, "no project name")
+	assert.Equal(t, 1, res.StoredLocally, "the offline mode stored the session before the online mode failed")
+	assert.Equal(t, tracePath, res.TracePath)
+	assert.FileExists(t, filepath.Join(tracePath, state.SanitizeID(sessionID), manifestFileName))
+	assert.False(t, mustLoadRecord(t, store, sha).Tracked, "a failed mode keeps the commit for the next push")
+
+	// The offline mode alone now finishes every enabled mode, so the commit is
+	// marked tracked.
+	res, err = RunTraceStore(t.Context(), zerolog.Nop(), RunTraceStoreOpts{
+		Modes: config.TraceModes{Offline: true},
+		Push:  RunTracePushOpts{Mode: aicodingsession.ModeCoding},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 1, res.StoredLocally)
+	assert.True(t, mustLoadRecord(t, store, sha).Tracked, "every mode succeeded, so the commit is tracked")
 }

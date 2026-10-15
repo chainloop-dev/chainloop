@@ -121,8 +121,8 @@ func telemetryIdentity() *token.ParsedToken {
 // Beyond that, commands annotated skipActionOptsInit are the local-only ones, such as the
 // git hooks, which have never been reported. A command can opt back in at runtime with
 // reportTelemetryAnyway once it knows it ran against the control plane: `trace run` is
-// skipActionOptsInit so a local-mode run opens no connection, yet a control-plane run of
-// it must still be reported as it was before local mode existed.
+// skipActionOptsInit so an offline-only run opens no connection, yet an online run of
+// it must still be reported as it was before the offline mode existed.
 func shouldReportCommand(executed *cobra.Command) bool {
 	if executed == nil || isTelemetryCommand(executed) || isCompletionCommand(executed) {
 		return false

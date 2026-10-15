@@ -64,7 +64,7 @@ const (
 	skipActionOptsInit = "skipActionOptsInit"
 	// reportTelemetryAnyway lets a command annotated skipActionOptsInit opt back
 	// into telemetry at runtime, once it knows it ran against the control plane.
-	// `trace run` is skipActionOptsInit so a local-mode run opens no connection,
+	// `trace run` is skipActionOptsInit so an offline-only run opens no connection,
 	// but a control-plane run of it must still be reported as it was before.
 	reportTelemetryAnyway = "reportTelemetryAnyway"
 	appName               = "chainloop"
@@ -158,7 +158,7 @@ func handleOrganizationExecutionError(executed *cobra.Command, err error) error 
 // interactive-token warning. It is the control-plane half of the root
 // PersistentPreRunE, factored out so a command annotated skipActionOptsInit can
 // skip it entirely and, when it does need the control plane, call this lazily
-// instead. A trace command in LOCAL storage mode never calls it, so it makes no
+// instead. A trace command in the offline mode alone never calls it, so it makes no
 // control-plane request (R-005). It sets the package-level ActionOpts.
 func ensureActionOpts(cmd *cobra.Command) error {
 	if apiInsecure() {
@@ -278,7 +278,7 @@ Command reference: ` + cliReferenceURL,
 			// These are local-only commands that don't interact with the control plane.
 			// The trace pre-push hook and `trace init` carry the annotation and build
 			// ActionOpts lazily with ensureActionOpts, only in their control-plane
-			// branch, so a LOCAL-mode repository makes no control-plane call at all.
+			// branch, so an offline-only repository makes no control-plane call at all.
 			if cmd.Annotations[skipActionOptsInit] == trueString {
 				return nil
 			}

@@ -34,11 +34,12 @@ Sessions without git commits are still attested.
 trace run keeps its identity isolated from .chainloop.yml: the attestation
 --org, --project and --workflow come from the flags (mandatory) and the
 optional --version flag, never from the file. It does read the repository's
-traceStorage mode, though: in a local-mode repository (traceStorage: LOCAL) the
+traceModes, though: in an offline repository (traceModes: [offline]) the
 session is written to disk when the command exits, with no control plane, and
-the --org, --project and --workflow flags are not required. Either way it
+the --org, --project and --workflow flags are not required. With both modes,
+the session is written to disk and attested. Either way it
 removes the temporary hooks and trace state when the wrapped command exits while
-preserving stored local session evidence, so a session never leaks setup into
+preserving stored offline session evidence, so a session never leaks setup into
 the next one.
 
 The workflow is created before the command runs. That part is best-effort: the
@@ -64,7 +65,7 @@ func newTraceRunCmd() *cobra.Command {
 		Args:  cobra.MinimumNArgs(1),
 		// skipActionOptsInit keeps root from building the control-plane
 		// connection up front; the attestation path builds it lazily with
-		// ensureActionOpts, and a local-mode run never does (R-005).
+		// ensureActionOpts, and an offline-only run never does (R-005).
 		Annotations: map[string]string{skipActionOptsInit: trueString},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Outside a git repository trace state lives in a deterministic
@@ -96,14 +97,13 @@ func newTraceRunCmd() *cobra.Command {
 				store = state.NewGitStore(gitDir)
 			}
 
-			// The storage mode is a repository policy, read even though trace
-			// run keeps its identity flag-only: a LOCAL repository stores to
+			// The trace modes are a repository policy, read even though trace
+			// run keeps its identity flag-only: an offline-only repository stores to
 			// disk and needs no identity and no control plane.
-			storageMode, err := config.LoadTraceStorageFromYML(repoRoot)
+			modes, err := config.LoadTraceModesFromYML(repoRoot)
 			if err != nil {
 				return err
 			}
-			local := storageMode == config.TraceStorageLocal
 
 			var (
 				organization     string
@@ -111,10 +111,11 @@ func newTraceRunCmd() *cobra.Command {
 				contractRequired bool
 			)
 
-			if !local {
-				// A control-plane run is reported in telemetry as it was before
-				// local mode made this command skipActionOptsInit. A local run
-				// is not: it leaves the annotation unset and stays excluded.
+			if modes.Online {
+				// An online run is reported in telemetry as it was before the
+				// offline mode made this command skipActionOptsInit. An
+				// offline-only run is not: it leaves the annotation unset and
+				// stays excluded.
 				cmd.Annotations[reportTelemetryAnyway] = trueString
 
 				// --org is a persistent flag declared on the root command,
@@ -141,7 +142,7 @@ func newTraceRunCmd() *cobra.Command {
 				contractName, contractRequired = config.ResolveContract(contractFlag)
 
 				// Build ActionOpts lazily (this command is skipActionOptsInit),
-				// so a LOCAL run never opens a control-plane connection.
+				// so an offline-only run never opens a control-plane connection.
 				if err := ensureActionOpts(cmd); err != nil {
 					return err
 				}
@@ -160,20 +161,20 @@ func newTraceRunCmd() *cobra.Command {
 				ContractRequired: contractRequired,
 				ActionOpts:       ActionOpts,
 				CLIVersion:       Version,
-				Local:            local,
+				Modes:            modes,
 			})
 		},
 	}
 
-	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required unless the repository is in local mode; .chainloop.yml identity is ignored)")
-	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name used for trace attestations (required unless the repository is in local mode; .chainloop.yml identity is ignored)")
+	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required unless the repository is offline only; .chainloop.yml identity is ignored)")
+	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name used for trace attestations (required unless the repository is offline only; .chainloop.yml identity is ignored)")
 	cmd.Flags().StringVar(&versionFlag, "version", "", "chainloop project version (optional; defaults to the latest version)")
 	cmd.Flags().StringVar(&contractFlag, "contract", "", traceContractFlagDesc)
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no provider flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
-	// project and workflow are not required in local mode, so the check is done
+	// project and workflow are not required offline only, so the check is done
 	// in RunE (after the storage mode is known) rather than by cobra up front.
 
 	return cmd
