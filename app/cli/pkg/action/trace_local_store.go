@@ -58,10 +58,10 @@ const (
 	// localWorkflowName names the workflow in the statement subject. Local
 	// mode has no control-plane workflow, so it uses the trace default name.
 	localWorkflowName = "ai-coding-session"
-	// materialsDirName holds every material of a session, each file named by its
+	// evidenceDirName holds every material of a session, each file named by its
 	// content digest so a reader and a test find it from the reference in the
 	// evidence record.
-	materialsDirName = "materials"
+	evidenceDirName = "evidence"
 )
 
 // RunTraceLocalStoreOpts configures a disk store of the recorded session
@@ -142,7 +142,7 @@ func RunTraceLocalStore(ctx context.Context, log zerolog.Logger, opts RunTraceLo
 
 // storeSessionsLocally writes each assembled session under tracePath in its own
 // content-addressed directory: tracePath/<session-id>/statement.json plus a
-// materials/ folder whose files are named by digest. Each session is
+// evidence/ folder whose files are named by digest. Each session is
 // self-contained, so it uses a fresh sink and runs the shared assembly for that
 // one session. repoRoot is where the head commit of the statement comes from.
 // It returns how many sessions were stored.
@@ -276,13 +276,13 @@ func materialContent(inline, override []byte, path string) ([]byte, error) {
 	}
 }
 
-// writeMaterial stores content under materials/<digest>. Materials are
+// writeMaterial stores content under evidence/<digest>. Materials are
 // content-addressed, so a repeated digest is the same bytes and the rewrite is
 // a harmless no-op.
 func (s *diskMaterialSink) writeMaterial(digest string, content []byte) error {
 	// A ':' in the digest is awkward on some filesystems, so the stored file
 	// uses '-'; the digest itself is kept intact in the statement.
-	rel := filepath.Join(materialsDirName, strings.ReplaceAll(digest, ":", "-"))
+	rel := filepath.Join(evidenceDirName, strings.ReplaceAll(digest, ":", "-"))
 	abs := filepath.Join(s.outDir, rel)
 
 	if err := os.MkdirAll(filepath.Dir(abs), 0o700); err != nil {

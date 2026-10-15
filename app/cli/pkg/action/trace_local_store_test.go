@@ -93,7 +93,7 @@ func TestStoreSessionsLocally(t *testing.T) {
 		for _, e := range entries {
 			names = append(names, e.Name())
 		}
-		assert.ElementsMatch(t, []string{statementFileName, materialsDirName}, names, "no envelope, no bundle")
+		assert.ElementsMatch(t, []string{statementFileName, evidenceDirName}, names, "no envelope, no bundle")
 		require.NotEmpty(t, mats)
 
 		var specDigest, recordFile string
@@ -105,7 +105,7 @@ func TestStoreSessionsLocally(t *testing.T) {
 			assert.False(t, mat.UploadedToCAS, "material %s is not in a CAS", mat.Name)
 
 			digest := mat.Hash.String()
-			file := filepath.Join(sessionDir, materialsDirName, strings.ReplaceAll(digest, ":", "-"))
+			file := filepath.Join(sessionDir, evidenceDirName, strings.ReplaceAll(digest, ":", "-"))
 			content, err := os.ReadFile(file)
 			require.NoError(t, err, "material %s is stored under its digest", mat.Name)
 
@@ -150,7 +150,7 @@ func TestStoreSessionsLocally(t *testing.T) {
 
 		var found bool
 		for _, mat := range mats {
-			content, err := os.ReadFile(filepath.Join(sessionDir, materialsDirName, strings.ReplaceAll(mat.Hash.String(), ":", "-")))
+			content, err := os.ReadFile(filepath.Join(sessionDir, evidenceDirName, strings.ReplaceAll(mat.Hash.String(), ":", "-")))
 			require.NoError(t, err)
 			if strings.Contains(string(content), pat) {
 				found = true
