@@ -57,6 +57,13 @@ On its single port, each service MUST serve gRPC (HTTP/2), gRPC-Web, and plain H
 
 ### R-002: Same behavior on both paths
 A request on the single port MUST get the same authentication, authorization, validation, logging, tracing, and metrics as the same request on the legacy port.
+- Done when: server-level tests send the same calls through the single port and through the legacy port, and get the same result. The calls cover:
+  - no token, a user token, an API token, and a robot account or attestation token
+  - CAS uploader and downloader tokens on streams and on the download endpoint
+  - a validation error and a suspended organization
+  - a gRPC-Web call
+
+  These tests merge before the listener change, so that they first record the current behavior.
 
 ### R-003: CAS streaming parity
 Through the single port, CAS uploads and downloads MUST stream with bounded memory. Their throughput MUST stay within 10% of the legacy ports for the same artifact.
@@ -160,4 +167,5 @@ None open. D-007 and D-008 record the answers to the questions from drafting.
 | A proxy shares one upstream connection between gRPC and HTTP requests. A plain HTTP request then lands on a connection that the classifier gave to gRPC. | The chart routes gRPC and HTTP to separate backend protocols on nginx, and keeps HTTP/1.1 for the HTTP path on other controllers. Document the requirement. The HTTP server safety net handles the reverse case. |
 | A gRPC client waits for the server before it sends anything, so the classifier cannot read the first request. | The classifier sends the server's HTTP/2 settings frame first when it sees an HTTP/2 preface, then reads the first request. |
 | A slow or idle client holds a connection before the classifier decides. | Put a short read deadline on classification only, and clear it when the classifier hands over the connection. Long CAS streams are not affected. |
+| A middleware behaves differently on the single port, for example an authentication step that does not run. | The server-level tests in R-002 merge first and record the current behavior. The same tests then run against the single port. |
 | CAS throughput drops on the single port. | The benchmark in R-003 runs before release. gRPC streams use the native transport, so the expected result is no change. |
