@@ -76,11 +76,17 @@ type TraceRunOpts struct {
 	ContractRequired bool
 
 	// ActionOpts is the root command's initialized options, used to build
-	// the attestation executor. Required.
+	// the attestation executor. Required unless Local, which reaches no
+	// control plane.
 	ActionOpts *ActionsOpts
 	// CLIVersion is the bare CLI version recorded in the attestation
 	// predicate.
 	CLIVersion string
+
+	// Local runs in local mode (--local): the session is written to disk at
+	// session end instead of attested, and no control plane is contacted. The
+	// identity fields above are then unused.
+	Local bool
 }
 
 // TraceRun wraps a single-shot agent invocation: it cleans any prior
@@ -98,20 +104,25 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		return fmt.Errorf("no trace providers selected")
 	}
 
-	var authExecOpts []ExecutorOption
-	if opts.Organization != "" {
-		authExecOpts = append(authExecOpts, WithForcedOrganization(opts.Organization))
-	}
-	executor, err := NewAttestationExecutor(opts.ActionOpts, opts.CLIVersion, authExecOpts...)
-	if err != nil {
-		return err
-	}
-	prepErr := prepareTraceRunWorkflow(ctx, log, executor, opts)
-	if err := executor.Close(); err != nil {
-		log.Debug().Err(err).Msg("closing auth-check executor")
-	}
-	if prepErr != nil {
-		return prepErr
+	// Local mode reaches no control plane, so it skips the credential check and
+	// the up-front workflow creation: the session is recorded and written to
+	// disk either way.
+	if !opts.Local {
+		var authExecOpts []ExecutorOption
+		if opts.Organization != "" {
+			authExecOpts = append(authExecOpts, WithForcedOrganization(opts.Organization))
+		}
+		executor, err := NewAttestationExecutor(opts.ActionOpts, opts.CLIVersion, authExecOpts...)
+		if err != nil {
+			return err
+		}
+		prepErr := prepareTraceRunWorkflow(ctx, log, executor, opts)
+		if err := executor.Close(); err != nil {
+			log.Debug().Err(err).Msg("closing auth-check executor")
+		}
+		if prepErr != nil {
+			return prepErr
+		}
 	}
 
 	// Snapshot the agent settings files before we touch anything else
@@ -168,6 +179,14 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		return fmt.Errorf("mark trace run active: %w", err)
 	}
 
+	// The agent hooks read the mode of the run from here, not from
+	// .chainloop.yml.
+	if opts.Local {
+		if err := opts.Store.MarkTraceRunLocal(); err != nil {
+			return fmt.Errorf("mark trace run local: %w", err)
+		}
+	}
+
 	// The wrapped command is supplied by the user on their own machine
 	// (`chainloop trace run -- <cmd>`); running it verbatim is the feature and
 	// crosses no trust boundary.
@@ -179,13 +198,47 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 
 	log.Debug().Strs("command", opts.Command).Msg("running wrapped command")
 
-	if err := sub.Run(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return &SubprocessExitError{Command: opts.Command[0], ExitCode: exitErr.ExitCode()}
+	runErr := sub.Run()
+
+	// Local mode writes the evidence to disk whatever the agent's exit status
+	// was: a session the user interrupted still has evidence worth keeping, and
+	// it reaches no control plane. The attestation path, in contrast, attests
+	// only a clean run. Either way the agent's own exit code is preserved.
+	if opts.Local {
+		log.Debug().Msg("wrapped command finished; storing session evidence to disk")
+
+		stored, tracePath, storeErr := RunTraceLocalStore(ctx, log, RunTraceLocalStoreOpts{
+			NoRedact:   traceNoRedactFromEnv(),
+			Mode:       aicodingsession.ModeGeneric,
+			AllowEmpty: true,
+			CLIVersion: opts.CLIVersion,
+		})
+		switch {
+		case storeErr != nil:
+			log.Warn().Err(storeErr).Msg("could not store session evidence")
+		case stored == 0:
+			log.Warn().Msg("trace recorded no AI coding session, so it stored nothing")
+		default:
+			log.Info().Int("sessions", stored).Msgf("AI coding session evidence stored at %s", tracePath)
 		}
 
-		return fmt.Errorf("run %s: %w", opts.Command[0], err)
+		// The agent's own exit status wins: a non-zero exit is what the user
+		// needs to see, and a store failure must not mask it. Only when the
+		// agent exited cleanly does a store failure become the error to return,
+		// so a silent failure to persist the evidence is never reported as
+		// success.
+		if runErr != nil {
+			return subprocessError(opts.Command[0], runErr)
+		}
+		if storeErr != nil {
+			return fmt.Errorf("store session evidence locally: %w", storeErr)
+		}
+
+		return nil
+	}
+
+	if runErr != nil {
+		return subprocessError(opts.Command[0], runErr)
 	}
 
 	log.Debug().Msg("wrapped command completed; attesting session")
@@ -202,6 +255,23 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		ActionOpts:            opts.ActionOpts,
 		CLIVersion:            opts.CLIVersion,
 	})
+}
+
+// subprocessError maps the error from running the wrapped command into the
+// value TraceRun returns: a SubprocessExitError that carries the exit code so
+// the CLI can propagate it, a wrapped error for a failure to launch, or nil on
+// success.
+func subprocessError(command string, err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return &SubprocessExitError{Command: command, ExitCode: exitErr.ExitCode()}
+	}
+
+	return fmt.Errorf("run %s: %w", command, err)
 }
 
 // prepareTraceRunWorkflow checks the credentials and creates the workflow the

@@ -39,8 +39,25 @@ type ChainloopYML struct {
 	ProjectName    string `yaml:"projectName"`
 	ProjectVersion string `yaml:"projectVersion"`
 	Organization   string `yaml:"organization,omitempty"`
-	RequireTrace   *bool  `yaml:"requireTrace,omitempty"`
 	WorkflowName   string `yaml:"workflowName,omitempty"`
+
+	// TraceStorage selects where Chainloop Trace stores a session's evidence:
+	// "CONTROL_PLANE" (the default) uploads a signed attestation, "LOCAL" writes
+	// the evidence set to disk with no control plane. It is a committed, shared
+	// repository policy, so a local-trace repository is the same for every clone.
+	TraceStorage string `yaml:"traceStorage,omitempty"`
+	// TracePath names the trace state directory, where Chainloop Trace keeps
+	// its data in every storage mode. LOCAL mode writes the sessions to its
+	// local-sessions folder. A relative path resolves against the repository
+	// root. Empty means <git dir>/chainloop-trace.
+	TracePath string `yaml:"tracePath,omitempty"`
+	// TraceRequired blocks a push when a required trace is missing. It replaces
+	// the deprecated RequireTrace with the same meaning.
+	TraceRequired *bool `yaml:"traceRequired,omitempty"`
+
+	// RequireTrace is deprecated in favor of TraceRequired and kept only so an
+	// older .chainloop.yml keeps working until it is dropped.
+	RequireTrace *bool `yaml:"requireTrace,omitempty"`
 }
 
 // LoadChainloopYML loads the nearest .chainloop.yml (or .chainloop.yaml),

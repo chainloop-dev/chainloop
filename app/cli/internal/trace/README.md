@@ -47,7 +47,7 @@ What the user sees in the agent.
 
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
-| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and in which project. | Yes | No | No | No |
+| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No |
 | Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop. | Yes | No | No | No |
 
 Why not Yes:
@@ -99,8 +99,20 @@ How the sessions are linked to the commits and attested.
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
 | Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes |
-| Attestation at push | The `pre-push` hook attests the sessions of the pushed commits. | Yes | Yes | Yes | Yes |
+| Attestation at push | In the default control-plane storage mode, the `pre-push` hook attests the sessions of the pushed commits to the control plane. | Yes | Yes | Yes | Yes |
+| Local storage at push | In a repository with `traceStorage: LOCAL` in `.chainloop.yml`, the `pre-push` hook runs the same assembly as an attestation. It writes the session evidence set to the `local-sessions` folder of the trace directory and sends no attestation. It needs no control plane, login, or network. The stored set is equal to the upload of a push, except for the signature. A `statement.json` file indexes the set: the in-toto statement that a push would sign, with the `chainloop.dev/attestation/v0.2` predicate. It has no envelope and no signature, so it is not an attestation. `trace init --local` sets up the mode. `trace run --local` stores one wrapped session the same way, with no `.chainloop.yml` setting. Redaction is on by default. Set `CHAINLOOP_TRACE_NO_REDACT` to turn it off, for a trusted local store only (spec issue-3582). | Yes | Yes | Yes | Yes |
 | Shell commands in another checkout | A session can work in a checkout other than the one it started in through shell commands only, for example in a fresh clone. The checkout is found from the command text: the target of `cd` or `pushd`, the path of `git -C`, and the folder that `git clone` or `gh repo clone` creates. The git hooks are installed there and the session is recorded there, the same as for a file tool edit in that checkout. A clone gets the git hooks only after the command that created it, so a commit in that same command does not carry the session. For OpenCode, a plugin installed by an earlier version does not send the command text: install the hooks again to update it. | Yes | Partial | Yes | Yes |
+
+### Switching storage modes
+
+`traceStorage` in `.chainloop.yml` is a committed repository policy. It is the same for every clone. When a repository uses `LOCAL`, Trace stores every session of every user on disk. To change the mode:
+
+- **To local:** run `chainloop trace init --local`. It writes `traceStorage: LOCAL`, installs the hooks, and does not connect to a control plane. Commit `.chainloop.yml` to share the change.
+- **Back to the control plane:** run `chainloop trace init` without `--local`. It writes `traceStorage: CONTROL_PLANE` and sets up the workflow. The command tells you about the change. Commit `.chainloop.yml`.
+
+`tracePath` in `.chainloop.yml` sets the trace directory, where Chainloop Trace keeps its data in every mode. The default is `.git/chainloop-trace`. A relative path starts at the repository root. `chainloop trace init --trace-path <dir>` writes it. A directory in the working tree must be in `.gitignore`.
+
+Run `chainloop trace init` one time for each repository. Git does not clone the git hooks in `.git`. In a clone, the first traced session installs them, so a teammate does not run init.
 
 Why not Yes:
 

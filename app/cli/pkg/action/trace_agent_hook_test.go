@@ -130,6 +130,47 @@ func TestHandleAgentSessionStart(t *testing.T) {
 		assert.Contains(t, stdout, "Chainloop Trace is recording this session.")
 	})
 
+	// A `trace run` session takes its mode from the run, not from
+	// traceStorage in .chainloop.yml.
+	for _, tc := range []struct {
+		name      string
+		yml       string
+		runActive bool
+		runLocal  bool
+		wantLocal bool
+	}{
+		{name: "trace run --local in a control-plane repository says local mode", runActive: true, runLocal: true, wantLocal: true},
+		{name: "trace run without --local in a LOCAL repository says control plane", yml: "traceStorage: LOCAL\n", runActive: true},
+		{name: "a git-hook session in a LOCAL repository says local mode", yml: "traceStorage: LOCAL\n", wantLocal: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			repoDir := initTempGitRepo(t)
+			store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+			require.NoError(t, store.InitTraceDir())
+			if tc.yml != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".chainloop.yml"), []byte(tc.yml), 0o600))
+			}
+			if tc.runActive {
+				require.NoError(t, store.MarkTraceRunActive())
+			}
+			if tc.runLocal {
+				require.NoError(t, store.MarkTraceRunLocal())
+			}
+			t.Chdir(repoDir)
+
+			withStdin(t, `{"session_id":"mode-test"}`)
+			stdout := captureStdout(t, func() {
+				require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+			})
+
+			if tc.wantLocal {
+				assert.Contains(t, stdout, "in local mode")
+			} else {
+				assert.NotContains(t, stdout, "local mode")
+			}
+		})
+	}
+
 	t.Run("carries the banner and the spec instruction in one document", func(t *testing.T) {
 		repoDir := initTempGitRepo(t)
 		store := state.NewGitStore(filepath.Join(repoDir, ".git"))
@@ -409,6 +450,28 @@ func TestAutoInstallGitHooks(t *testing.T) {
 		assert.Contains(t, string(content), hooks.HookMarker)
 
 		// Trace should be marked as initialized
+		assert.True(t, store.IsTraceInitialized())
+	})
+
+	t.Run("installs in a local-mode clone with no project name", func(t *testing.T) {
+		// A local-mode repository writes no projectName. A teammate who clones
+		// it does not run trace init, so the first session must install the
+		// git hooks.
+		repoDir := initTempGitRepo(t)
+		gitDir := filepath.Join(repoDir, ".git")
+		store := state.NewGitStore(gitDir)
+
+		require.NoError(t, os.WriteFile(filepath.Join(repoDir, ".chainloop.yml"), []byte("traceStorage: LOCAL\n"), 0600))
+
+		origDir, _ := os.Getwd()
+		require.NoError(t, os.Chdir(repoDir))
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		autoInstallGitHooks(store, repoDir, zerolog.Nop())
+
+		content, err := os.ReadFile(filepath.Join(gitDir, "hooks", "pre-push"))
+		require.NoError(t, err)
+		assert.Contains(t, string(content), hooks.HookMarker)
 		assert.True(t, store.IsTraceInitialized())
 	})
 

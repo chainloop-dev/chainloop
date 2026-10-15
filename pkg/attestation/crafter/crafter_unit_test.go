@@ -391,3 +391,39 @@ func (s *crafterUnitSuite) TestGitRepoHeadWorktree() {
 func TestSuite(t *testing.T) {
 	suite.Run(t, new(crafterUnitSuite))
 }
+
+func (s *crafterUnitSuite) TestGitRepoHeadProto() {
+	s.Run("not a repository", func() {
+		head, err := GitRepoHead(s.T().TempDir(), nil)
+		s.NoError(err)
+		s.Nil(head)
+	})
+
+	s.Run("a repository with a commit", func() {
+		repoPath := s.T().TempDir()
+		repo, err := git.PlainInit(repoPath, false)
+		s.Require().NoError(err)
+		s.Require().NoError(disableGPGSign(repo))
+		_, err = repo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{"git@cyberdyne.com:skynet.git"}})
+		s.Require().NoError(err)
+
+		wt, err := repo.Worktree()
+		s.Require().NoError(err)
+		s.Require().NoError(os.WriteFile(filepath.Join(repoPath, "f"), []byte("x"), 0600))
+		_, err = wt.Add("f")
+		s.Require().NoError(err)
+		h, err := wt.Commit("test commit", &git.CommitOptions{
+			Author: &object.Signature{Name: "John Doe", Email: "john@doe.org", When: time.Now()},
+		})
+		s.Require().NoError(err)
+
+		head, err := GitRepoHead(repoPath, nil)
+		s.Require().NoError(err)
+		s.Require().NotNil(head)
+		s.Equal(h.String(), head.GetHash())
+		s.Equal("john@doe.org", head.GetAuthorEmail())
+		s.Equal("test commit", head.GetMessage())
+		s.Require().Len(head.GetRemotes(), 1)
+		s.Equal("origin", head.GetRemotes()[0].GetName())
+	})
+}

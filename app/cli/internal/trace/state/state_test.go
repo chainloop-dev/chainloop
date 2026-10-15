@@ -109,6 +109,109 @@ func TestWipeTraceDir(t *testing.T) {
 		"ai-lines must survive the wipe so post-rebase attribution still works")
 }
 
+// TestRemoveTraceDirPreservesLocalSessions pins that RemoveTraceDir keeps the
+// local-sessions directory — the durable evidence a LOCAL-mode push or
+// `trace run` wrote — while clearing the rest of the state, so trace uninstall
+// and the trace-run teardown never destroy a developer's stored sessions.
+func TestRemoveTraceDirPreservesLocalSessions(t *testing.T) {
+	store := NewGitStore(t.TempDir())
+	require.NoError(t, store.InitTraceDir())
+	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "abc123", SessionIDs: []string{"sess-1"}, Timestamp: "2026-03-28T00:00:00Z"}))
+
+	// A stored session on disk, as LOCAL storage would write it.
+	sessionDir := filepath.Join(store.LocalSessionsDir(), "sess-1")
+	require.NoError(t, os.MkdirAll(sessionDir, 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(sessionDir, "statement.json"), []byte("{}"), 0o600))
+
+	require.NoError(t, store.RemoveTraceDir())
+
+	// The stored sessions survive.
+	data, err := os.ReadFile(filepath.Join(sessionDir, "statement.json"))
+	require.NoError(t, err)
+	assert.Equal(t, "{}", string(data))
+
+	// Everything else is gone.
+	commits, err := store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	assert.Empty(t, commits, "non-local state is removed")
+
+	t.Run("an ordinary repository with no stored sessions removes the trace dir", func(t *testing.T) {
+		plain := NewGitStore(t.TempDir())
+		require.NoError(t, plain.InitTraceDir())
+		require.NoError(t, plain.RemoveTraceDir())
+		_, err := os.Stat(plain.LocalSessionsDir())
+		assert.True(t, os.IsNotExist(err))
+	})
+}
+
+// TestNewRepoStore covers tracePath in .chainloop.yml: it moves the whole
+// trace state directory, in every storage mode. A relative path resolves
+// against the repository root. With no tracePath, the state stays in
+// .git/chainloop-trace.
+func TestNewRepoStore(t *testing.T) {
+	testCases := []struct {
+		name string
+		yml  string
+		// want returns the expected trace directory for the repository root
+		// and the .git directory.
+		want func(repoRoot, gitDir string) string
+	}{
+		{
+			name: "no config keeps the default",
+			want: func(_, gitDir string) string { return filepath.Join(gitDir, "chainloop-trace") },
+		},
+		{
+			name: "no tracePath keeps the default",
+			yml:  "projectName: p\n",
+			want: func(_, gitDir string) string { return filepath.Join(gitDir, "chainloop-trace") },
+		},
+		{
+			name: "a relative tracePath resolves against the repository root",
+			yml:  "tracePath: .trace-state\n",
+			want: func(repoRoot, _ string) string { return filepath.Join(repoRoot, ".trace-state") },
+		},
+		{
+			name: "an absolute tracePath is used as is",
+			yml:  "tracePath: /var/lib/trace\n",
+			want: func(_, _ string) string { return "/var/lib/trace" },
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			gitDir := filepath.Join(repoRoot, ".git")
+			require.NoError(t, os.MkdirAll(gitDir, 0o700))
+			if tc.yml != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(repoRoot, ".chainloop.yml"), []byte(tc.yml), 0o600))
+			}
+
+			store := NewRepoStore(gitDir, repoRoot)
+			want := tc.want(repoRoot, gitDir)
+			assert.Equal(t, want, store.TraceDir())
+			assert.Equal(t, filepath.Join(want, "local-sessions"), store.LocalSessionsDir())
+			assert.Equal(t, gitDir, store.GitDir(), "the git hooks stay in the .git directory")
+		})
+	}
+
+	t.Run("the state is written under the tracePath", func(t *testing.T) {
+		repoRoot := t.TempDir()
+		gitDir := filepath.Join(repoRoot, ".git")
+		require.NoError(t, os.MkdirAll(gitDir, 0o700))
+		require.NoError(t, os.WriteFile(filepath.Join(repoRoot, ".chainloop.yml"), []byte("tracePath: .trace-state\n"), 0o600))
+
+		store := NewRepoStore(gitDir, repoRoot)
+		require.NoError(t, store.InitTraceDir())
+		require.NoError(t, store.MarkTraceInitialized())
+
+		_, err := os.Stat(filepath.Join(repoRoot, ".trace-state"))
+		require.NoError(t, err)
+		_, err = os.Stat(filepath.Join(gitDir, "chainloop-trace"))
+		assert.True(t, os.IsNotExist(err), "nothing is written to the default directory")
+		assert.True(t, NewRepoStore(gitDir, repoRoot).IsTraceInitialized())
+	})
+}
+
 func TestGCOrphans(t *testing.T) {
 	store := NewGitStore(t.TempDir())
 	require.NoError(t, store.InitTraceDir())
@@ -719,4 +822,20 @@ func TestGCOrphansDropsSpecRedactions(t *testing.T) {
 
 	assert.FileExists(t, filepath.Join(store.SpecRedactionDir("sess-live"), "copy"))
 	assert.NoDirExists(t, store.SpecRedactionDir("sess-orphan"))
+}
+
+// TestTraceRunLocalSentinel covers the marker that tells the agent hooks a
+// `trace run` session stores its evidence locally.
+func TestTraceRunLocalSentinel(t *testing.T) {
+	store := NewGitStore(t.TempDir())
+	require.NoError(t, store.InitTraceDir())
+	assert.False(t, store.IsTraceRunLocal())
+
+	require.NoError(t, store.MarkTraceRunActive())
+	require.NoError(t, store.MarkTraceRunLocal())
+	assert.True(t, store.IsTraceRunLocal())
+
+	require.NoError(t, store.ClearTraceRunActive())
+	assert.False(t, store.IsTraceRunActive())
+	assert.False(t, store.IsTraceRunLocal(), "clearing the run also clears its local marker")
 }

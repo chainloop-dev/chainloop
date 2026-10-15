@@ -133,7 +133,7 @@ func TestCaptureSkillLoads(t *testing.T) {
 		assert.Equal(t, []string{`skill "asd-ste100" changed after its first use; the evidence holds the skill as it was at the first use`}, warnings)
 
 		adder := &fakeMaterialAdder{}
-		_, _ = attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), skillSessionID, skills, zerolog.Nop())
+		_, _ = attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir(), false), materials.NewNameAllocator(nil), skillSessionID, skills, zerolog.Nop())
 		require.Len(t, adder.added, 2)
 		assert.Equal(t, "as it ran", adder.added[0].content)
 	})
@@ -246,7 +246,7 @@ func TestAttachSkills(t *testing.T) {
 		}, trace.SkillUse{Name: steSkillName, FirstUsedAt: "2026-10-07T10:14:51Z", ByModel: 2, ByUser: 1, InSubagents: 1})
 
 		adder := &fakeMaterialAdder{}
-		entries, warnings := attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
+		entries, warnings := attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir(), false), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
 		assert.Empty(t, warnings)
 		require.Len(t, adder.added, 2)
 
@@ -292,7 +292,7 @@ func TestAttachSkills(t *testing.T) {
 		s := stored(t, map[string]string{skill.DefinitionFile: "# Big", "model.bin": string(big)}, trace.SkillUse{Name: "big", FirstUsedAt: skillTenOClock, ByModel: 1})
 
 		adder := &fakeMaterialAdder{}
-		entries, warnings := attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
+		entries, warnings := attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir(), false), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
 		assert.Equal(t, []string{`the package of skill "big" is larger than 5 MB and was not uploaded`}, warnings)
 		require.Len(t, adder.added, 1)
 		require.Len(t, entries, 1)
@@ -304,7 +304,7 @@ func TestAttachSkills(t *testing.T) {
 		s := stored(t, map[string]string{skill.DefinitionFile: skillDoc}, trace.SkillUse{Name: steSkillName, FirstUsedAt: skillTenOClock, ByModel: 1})
 
 		adder := &fakeMaterialAdder{failOn: map[string]bool{"spec-7412a0-skill-asd-ste100-pkg": true}}
-		entries, warnings := attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
+		entries, warnings := attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir(), false), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
 		assert.Equal(t, []string{`the package of skill "asd-ste100" was not uploaded`}, warnings)
 		require.Len(t, entries, 1)
 		assert.Empty(t, entries[0].Metadata.PackageDigest)
@@ -314,7 +314,7 @@ func TestAttachSkills(t *testing.T) {
 		s := stored(t, map[string]string{skill.DefinitionFile: skillDoc}, trace.SkillUse{Name: steSkillName, FirstUsedAt: skillTenOClock, ByModel: 1})
 
 		adder := &fakeMaterialAdder{failOn: map[string]bool{"spec-7412a0-skill-asd-ste100": true}}
-		entries, warnings := attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
+		entries, warnings := attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir(), false), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
 		assert.Empty(t, entries)
 		assert.Equal(t, []string{`skill "asd-ste100" was not recorded`}, warnings)
 	})
@@ -323,7 +323,7 @@ func TestAttachSkills(t *testing.T) {
 		s := stored(t, map[string]string{skill.DefinitionFile: skillDoc}, trace.SkillUse{Name: "superpowers:brainstorming", FirstUsedAt: skillTenOClock, ByModel: 1})
 
 		adder := &fakeMaterialAdder{}
-		_, _ = attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir()), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
+		_, _ = attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir(), false), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
 		require.Len(t, adder.added, 2)
 		assert.Equal(t, "spec-7412a0-skill-superpowers-brainstorming", adder.added[0].name)
 		assert.Equal(t, "superpowers-brainstorming.tar.gz", adder.added[1].fileName)

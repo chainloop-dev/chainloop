@@ -326,6 +326,41 @@ type CommitRemote struct {
 	Name, URL string
 }
 
+// toProto maps the head commit to the attestation commit.
+func (h *HeadCommit) toProto() *api.Commit {
+	commit := &api.Commit{
+		Hash:                 h.Hash,
+		AuthorEmail:          h.AuthorEmail,
+		AuthorName:           h.AuthorName,
+		Date:                 timestamppb.New(h.Date),
+		Message:              h.Message,
+		Signature:            h.Signature,
+		PlatformVerification: h.PlatformVerification,
+	}
+
+	for _, r := range h.Remotes {
+		commit.Remotes = append(commit.Remotes, &api.Commit_Remote{
+			Name: r.Name,
+			Url:  r.URL,
+		})
+	}
+
+	return commit
+}
+
+// GitRepoHead returns the head commit of the git repository at path, as the
+// attestation records it. It returns nil when path is not in a repository or
+// the repository has no commit. It makes no network call, so it does no
+// platform verification of the commit.
+func GitRepoHead(path string, logger *zerolog.Logger) (*api.Commit, error) {
+	head, err := gracefulGitRepoHead(path, logger)
+	if err != nil || head == nil {
+		return nil, err
+	}
+
+	return head.toProto(), nil
+}
+
 // Returns the current directory git commit hash if possible
 // If we are not in a git repo it will return an empty string
 func gracefulGitRepoHead(path string, logger *zerolog.Logger) (*HeadCommit, error) {
@@ -464,22 +499,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			headCommit.PlatformVerification = verifyCommitWithPlatform(headCommit, opts.Runner, opts.Logger)
 		}
 
-		headCommitP = &api.Commit{
-			Hash:                 headCommit.Hash,
-			AuthorEmail:          headCommit.AuthorEmail,
-			AuthorName:           headCommit.AuthorName,
-			Date:                 timestamppb.New(headCommit.Date),
-			Message:              headCommit.Message,
-			Signature:            headCommit.Signature,
-			PlatformVerification: headCommit.PlatformVerification,
-		}
-
-		for _, r := range headCommit.Remotes {
-			headCommitP.Remotes = append(headCommitP.Remotes, &api.Commit_Remote{
-				Name: r.Name,
-				Url:  r.URL,
-			})
-		}
+		headCommitP = headCommit.toProto()
 	}
 
 	var tsURL, caName string

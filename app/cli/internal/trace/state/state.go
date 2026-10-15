@@ -39,11 +39,19 @@ const (
 	// detect trace-run mode without depending on environment-variable
 	// inheritance from the agent.
 	traceRunActiveFile = "run-active"
-	traceDirSessions   = "sessions"
-	traceDirRaw        = "raw"
-	traceDirCommits    = "commits"
-	traceDirSnapshots  = "snapshots"
-	traceDirAILines    = "ai-lines"
+	// traceRunLocalFile marks a `chainloop trace run --local` session, so
+	// the agent hooks know it stores its evidence on disk.
+	traceRunLocalFile = "run-local"
+	traceDirSessions  = "sessions"
+	traceDirRaw       = "raw"
+	traceDirCommits   = "commits"
+	traceDirSnapshots = "snapshots"
+	traceDirAILines   = "ai-lines"
+	// traceDirLocalSessions holds the evidence sets written by LOCAL trace
+	// storage: one subdirectory per session, each with its materials and an
+	// unsigned in-toto statement. Unlike raw/ and snapshots/ it is durable user data, so it is
+	// never touched by WipeTraceDir, GCOrphans, or RemoveTraceDir.
+	traceDirLocalSessions = "local-sessions"
 	// traceDirSpecRedactions holds the redacted copies of each session's
 	// spec files, so a later push of the session does not scan an unchanged
 	// file again. It lives for the session, not for one push.
@@ -98,6 +106,14 @@ func (s *Store) WipeTraceDir() error {
 // session's spec files.
 func (s *Store) SpecRedactionDir(sessionID string) string {
 	return filepath.Join(s.traceDirPath(), traceDirSpecRedactions, SanitizeID(sessionID))
+}
+
+// LocalSessionsDir returns the directory LOCAL trace storage writes its
+// evidence sets to. It sits beside the other trace state in the trace directory
+// (.git/chainloop-trace unless tracePath moves it), and it is durable: the
+// per-push WipeTraceDir and GCOrphans do not touch it.
+func (s *Store) LocalSessionsDir() string {
+	return filepath.Join(s.traceDirPath(), traceDirLocalSessions)
 }
 
 // RecordedSpecFiles returns the names of the spec files that the last push of
@@ -334,9 +350,42 @@ func (s *Store) staleSessionIDs(unattested map[string]struct{}) map[string]struc
 	return stale
 }
 
-// RemoveTraceDir removes the entire <dir>/chainloop-trace/ directory.
+// RemoveTraceDir removes the trace state but preserves local-sessions/, the
+// durable evidence sets a LOCAL-mode push or `trace run` wrote. A developer
+// keeps those as they keep any working copy of a session, so trace uninstall
+// and the trace-run teardown must not delete them. An ordinary repository with
+// no stored sessions is left as clean as before: the trace directory is removed
+// once nothing but the (absent) sessions would remain.
 func (s *Store) RemoveTraceDir() error {
-	return os.RemoveAll(s.traceDirPath())
+	base := s.traceDirPath()
+
+	keep := map[string]struct{}{traceDirLocalSessions: {}}
+
+	entries, err := os.ReadDir(base)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+
+		return err
+	}
+
+	for _, e := range entries {
+		if _, ok := keep[e.Name()]; ok {
+			continue
+		}
+		if err := os.RemoveAll(filepath.Join(base, e.Name())); err != nil {
+			return err
+		}
+	}
+
+	// Drop the trace directory itself only when the preserved sessions did not
+	// keep it alive.
+	if remaining, err := os.ReadDir(base); err == nil && len(remaining) == 0 {
+		return os.Remove(base)
+	}
+
+	return nil
 }
 
 // LogFilePath returns the path to the hook log file inside the trace directory.
@@ -383,9 +432,33 @@ func (s *Store) MarkTraceRunActive() error {
 	return os.WriteFile(filepath.Join(base, traceRunActiveFile), nil, 0600)
 }
 
-// ClearTraceRunActive removes the trace-run-active sentinel.
+// ClearTraceRunActive removes the trace-run-active sentinel and the local
+// marker of the run.
 func (s *Store) ClearTraceRunActive() error {
+	if err := removeIfExists(filepath.Join(s.traceDirPath(), traceRunLocalFile)); err != nil {
+		return err
+	}
+
 	return removeIfExists(filepath.Join(s.traceDirPath(), traceRunActiveFile))
+}
+
+// MarkTraceRunLocal marks the running `chainloop trace run` session as local:
+// it stores its evidence on disk. ClearTraceRunActive removes the marker.
+func (s *Store) MarkTraceRunLocal() error {
+	base := s.traceDirPath()
+	if err := os.MkdirAll(base, 0755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(filepath.Join(base, traceRunLocalFile), nil, 0600)
+}
+
+// IsTraceRunLocal reports whether the running `chainloop trace run` session
+// stores its evidence locally.
+func (s *Store) IsTraceRunLocal() bool {
+	_, err := os.Stat(filepath.Join(s.traceDirPath(), traceRunLocalFile))
+
+	return err == nil
 }
 
 // IsTraceRunActive reports whether a `chainloop trace run` session owns

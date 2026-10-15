@@ -62,7 +62,12 @@ const (
 	confirmWhenUserToken = "confirmWhenUserToken"
 	// Skip ActionOpts initialization for commands that operate locally
 	skipActionOptsInit = "skipActionOptsInit"
-	appName            = "chainloop"
+	// reportTelemetryAnyway lets a command annotated skipActionOptsInit opt back
+	// into telemetry at runtime, once it knows it ran against the control plane.
+	// `trace run` is skipActionOptsInit so a local-mode run opens no connection,
+	// but a control-plane run of it must still be reported as it was before.
+	reportTelemetryAnyway = "reportTelemetryAnyway"
+	appName               = "chainloop"
 	//nolint:gosec
 	tokenEnvVarName = "CHAINLOOP_TOKEN"
 	// Follow the convention stated on https://consoledonottrack.com/
@@ -147,6 +152,101 @@ func handleOrganizationExecutionError(executed *cobra.Command, err error) error 
 	return err
 }
 
+// ensureActionOpts builds the control-plane connection and the shared
+// ActionOpts from the resolved configuration: the auth token, an optional
+// federated token, the gRPC options, the current-organization lookup, and the
+// interactive-token warning. It is the control-plane half of the root
+// PersistentPreRunE, factored out so a command annotated skipActionOptsInit can
+// skip it entirely and, when it does need the control plane, call this lazily
+// instead. A trace command in LOCAL storage mode never calls it, so it makes no
+// control-plane request (R-005). It sets the package-level ActionOpts.
+func ensureActionOpts(cmd *cobra.Command) error {
+	if apiInsecure() {
+		logger.Debug().Msg("API contacted in insecure mode")
+	}
+
+	authToken, isUserToken, err := loadAuthToken(cmd)
+	if err != nil {
+		return err
+	}
+	authTokenIsUser = isUserToken
+
+	// If the auth token is not set and the command supports federated auth, we try to discover the runner and use the federated token for the runner if available
+	if authToken == "" && cmdSupportsFederatedAuth(cmd) {
+		r := crafter.DiscoverRunner(authToken, logger)
+		if r.IsAuthenticated() && r.FederatedToken() != "" {
+			logger.Debug().Str("runner", r.ID().String()).Msg("using federated auth token")
+			authToken = r.FederatedToken()
+			// reset isUserToken to false because we are using a federated token and we don't want to ask for confirmation
+			isUserToken = false
+		}
+	}
+
+	var opts = []grpcconn.Option{
+		grpcconn.WithInsecure(apiInsecure()),
+		grpcconn.WithCLIVersion(fullVersion()),
+	}
+
+	if maxRecv := apiMaxRecvMsgSize(); maxRecv > 0 {
+		opts = append(opts, grpcconn.WithMaxRecvMsgSize(maxRecv))
+	}
+
+	if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
+		// Check if the value is a file path, if it is we read the content and encode it to base64, if not we assume it's the content already
+		if _, err := os.Stat(caValue); err == nil {
+			opts = append(opts, grpcconn.WithCAFile(caValue))
+		} else {
+			opts = append(opts, grpcconn.WithCAContent(caValue))
+		}
+	}
+
+	controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
+
+	// If no organization is selected, load it from the server and save it.
+	orgName := effectiveOrganization(cmd)
+	if orgName == "" {
+		conn, err := grpcconn.New(controlplaneURL, authToken, opts...)
+		if err != nil {
+			return err
+		}
+
+		currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn, authToken)).Run()
+		if err == nil && currentContext.CurrentMembership != nil {
+			if err := setLocalOrganization(currentContext.CurrentMembership.Org.Name); err != nil {
+				return fmt.Errorf("writing config file: %w", err)
+			}
+		}
+	}
+
+	// Reload the connection now that we have the organization name.
+	orgName = effectiveOrganization(cmd)
+	if orgName != "" {
+		opts = append(opts, grpcconn.WithOrgName(orgName))
+	}
+
+	// Warn users when the session is interactive, and the operation is supposed to use an API token instead
+	if shouldAskForConfirmation(cmd) && authToken != "" && isUserToken && !flagYes {
+		logger.Warn().Msg("User-attended mode detected. This is intended for local testing only. For CI/CD or automated workflows, please use an API token.")
+		if !confirmationPrompt(fmt.Sprintf("This command will run against the organization %q", orgName)) {
+			return errors.New("command canceled by user")
+		}
+	}
+
+	conn, err := grpcconn.New(controlplaneURL, authToken, opts...)
+	if err != nil {
+		return err
+	}
+
+	ActionOpts = newActionOpts(logger, conn, authToken)
+
+	// Add custom builtins to rego engine
+	if err = builtins.RegisterDiscoverBuiltin(conn); err != nil {
+		return fmt.Errorf("failed to register discover builtin: %w", err)
+	}
+
+	return nil
+}
+
 func NewRootCmd(l zerolog.Logger) *cobra.Command {
 	// Seed the root logger here and not only in PersistentPreRunE: cobra
 	// rejects unknown subcommands and invalid flags before that hook runs, and
@@ -175,95 +275,15 @@ Command reference: ` + cliReferenceURL,
 			logger.Debug().Str("path", viper.ConfigFileUsed()).Msg("using config file")
 
 			// Commands annotated with skipActionOptsInit don't need ActionOpts initialization
-			// These are local-only commands that don't interact with the control plane
+			// These are local-only commands that don't interact with the control plane.
+			// The trace pre-push hook and `trace init` carry the annotation and build
+			// ActionOpts lazily with ensureActionOpts, only in their control-plane
+			// branch, so a LOCAL-mode repository makes no control-plane call at all.
 			if cmd.Annotations[skipActionOptsInit] == trueString {
 				return nil
 			}
 
-			if apiInsecure() {
-				logger.Debug().Msg("API contacted in insecure mode")
-			}
-
-			authToken, isUserToken, err := loadAuthToken(cmd)
-			if err != nil {
-				return err
-			}
-			authTokenIsUser = isUserToken
-
-			// If the auth token is not set and the command supports federated auth, we try to discover the runner and use the federated token for the runner if available
-			if authToken == "" && cmdSupportsFederatedAuth(cmd) {
-				r := crafter.DiscoverRunner(authToken, logger)
-				if r.IsAuthenticated() && r.FederatedToken() != "" {
-					logger.Debug().Str("runner", r.ID().String()).Msg("using federated auth token")
-					authToken = r.FederatedToken()
-					// reset isUserToken to false because we are using a federated token and we don't want to ask for confirmation
-					isUserToken = false
-				}
-			}
-
-			var opts = []grpcconn.Option{
-				grpcconn.WithInsecure(apiInsecure()),
-				grpcconn.WithCLIVersion(fullVersion()),
-			}
-
-			if maxRecv := apiMaxRecvMsgSize(); maxRecv > 0 {
-				opts = append(opts, grpcconn.WithMaxRecvMsgSize(maxRecv))
-			}
-
-			if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
-				// Check if the value is a file path, if it is we read the content and encode it to base64, if not we assume it's the content already
-				if _, err := os.Stat(caValue); err == nil {
-					opts = append(opts, grpcconn.WithCAFile(caValue))
-				} else {
-					opts = append(opts, grpcconn.WithCAContent(caValue))
-				}
-			}
-
-			controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
-
-			// If no organization is selected, load it from the server and save it.
-			orgName := effectiveOrganization(cmd)
-			if orgName == "" {
-				conn, err := grpcconn.New(controlplaneURL, authToken, opts...)
-				if err != nil {
-					return err
-				}
-
-				currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn, authToken)).Run()
-				if err == nil && currentContext.CurrentMembership != nil {
-					if err := setLocalOrganization(currentContext.CurrentMembership.Org.Name); err != nil {
-						return fmt.Errorf("writing config file: %w", err)
-					}
-				}
-			}
-
-			// Reload the connection now that we have the organization name.
-			orgName = effectiveOrganization(cmd)
-			if orgName != "" {
-				opts = append(opts, grpcconn.WithOrgName(orgName))
-			}
-
-			// Warn users when the session is interactive, and the operation is supposed to use an API token instead
-			if shouldAskForConfirmation(cmd) && authToken != "" && isUserToken && !flagYes {
-				logger.Warn().Msg("User-attended mode detected. This is intended for local testing only. For CI/CD or automated workflows, please use an API token.")
-				if !confirmationPrompt(fmt.Sprintf("This command will run against the organization %q", orgName)) {
-					return errors.New("command canceled by user")
-				}
-			}
-
-			conn, err := grpcconn.New(controlplaneURL, authToken, opts...)
-			if err != nil {
-				return err
-			}
-
-			ActionOpts = newActionOpts(logger, conn, authToken)
-
-			// Add custom builtins to rego engine
-			if err = builtins.RegisterDiscoverBuiltin(conn); err != nil {
-				return fmt.Errorf("failed to register discover builtin: %w", err)
-			}
-
-			return nil
+			return ensureActionOpts(cmd)
 		},
 		PersistentPostRunE: func(_ *cobra.Command, _ []string) error {
 			if ActionOpts != nil {

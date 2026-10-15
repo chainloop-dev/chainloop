@@ -45,7 +45,7 @@ func newTraceUninstallCmd() *cobra.Command {
 			}
 
 			repoRoot, _ := tracegit.RepoRoot()
-			if err := action.CleanupTrace(state.NewGitStore(gitDir), repoRoot, logger); err != nil {
+			if err := action.CleanupTrace(state.NewRepoStore(gitDir, repoRoot), repoRoot, logger); err != nil {
 				return err
 			}
 			logger.Info().Msg("trace uninstalled")

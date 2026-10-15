@@ -150,6 +150,26 @@ func sessionStartBanner(dashboardURL, org, project string) string {
 	return banner
 }
 
+// localSessionStartBanner is the session-start banner for a local-mode
+// repository. It names the local mode outright and says where the evidence
+// lands, with no dashboard or attestation vocabulary and no control-plane round
+// trip: local mode has no dashboard to point at (R-012).
+func localSessionStartBanner(tracePath string, traceRunActive bool) string {
+	banner := "Chainloop Trace is recording this session in local mode."
+	if tracePath != "" {
+		// A git-hook session stores its evidence on the next push. A `trace run`
+		// session stores it as soon as the wrapped command exits, so the timing
+		// has to match how the session is driven, not always claim a push.
+		when := "when you push"
+		if traceRunActive {
+			when = "when this run finishes"
+		}
+		banner += "\nChainloop Trace writes the session evidence to " + tracePath + " " + when + "."
+	}
+
+	return banner
+}
+
 // HandleAgentSessionStart handles the agent session-start hook.
 func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error {
 	input, err := provider.ReadHookInput(os.Stdin)
@@ -186,11 +206,28 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	}
 
 	if provider.SupportsSessionStartBanner() {
-		banner := sessionStartBanner(
-			hookDashboardURL(log),
-			config.LoadOrganizationFromYML(repoRoot),
-			repositoryconfig.LoadProjectFromYML(repoRoot),
-		)
+		// A `trace run` session takes its mode from the run. Other sessions
+		// take it from traceStorage in .chainloop.yml.
+		local := config.IsLocalStorage(repoRoot)
+		if store.IsTraceRunActive() {
+			local = store.IsTraceRunLocal()
+		}
+
+		var banner string
+		if local {
+			// Local mode reaches no control plane, so the banner names the
+			// on-disk destination and makes no dashboard round trip (R-012).
+			banner = localSessionStartBanner(
+				store.LocalSessionsDir(),
+				store.IsTraceRunActive(),
+			)
+		} else {
+			banner = sessionStartBanner(
+				hookDashboardURL(log),
+				config.LoadOrganizationFromYML(repoRoot),
+				repositoryconfig.LoadProjectFromYML(repoRoot),
+			)
+		}
 		msg.Banner = "\n\n" + banner + "\n"
 	}
 
@@ -794,8 +831,12 @@ func autoInstallGitHooks(store *state.Store, repoRoot string, log zerolog.Logger
 		return
 	}
 
-	if repositoryconfig.LoadProjectFromYML(repoRoot) == "" {
-		return // can't auto-install without a project name
+	// Auto-install needs a repository that is set up for trace: a control-plane
+	// project name, or local storage mode. A local-mode repository writes no
+	// projectName, so without the local check its hooks would never self-heal
+	// after a re-clone or a manual delete.
+	if repositoryconfig.LoadProjectFromYML(repoRoot) == "" && !config.IsLocalStorage(repoRoot) {
+		return
 	}
 
 	if _, err := hooks.Install(gitDir, skipPrePush); err != nil {
