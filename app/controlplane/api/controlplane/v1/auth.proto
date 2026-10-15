@@ -18,7 +18,6 @@ syntax = "proto3";
 package controlplane.v1;
 
 import "buf/validate/validate.proto";
-import "google/api/annotations.proto";
 
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
@@ -26,12 +25,7 @@ service AuthService {
   rpc DeleteAccount(AuthServiceDeleteAccountRequest) returns (AuthServiceDeleteAccountResponse);
   // ExchangeHandoff trades the single-use handoff code that a login delivered to the client
   // callback for the user session token. It does not require an existing session.
-  rpc ExchangeHandoff(AuthServiceExchangeHandoffRequest) returns (AuthServiceExchangeHandoffResponse) {
-    option (google.api.http) = {
-      post: "/auth/exchange"
-      body: "*"
-    };
-  }
+  rpc ExchangeHandoff(AuthServiceExchangeHandoffRequest) returns (AuthServiceExchangeHandoffResponse);
 }
 
 // AuthServiceDeleteAccountResponse is the response for the DeleteAccount method.
