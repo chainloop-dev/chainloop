@@ -211,6 +211,7 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 			NoRedact:   traceNoRedactFromEnv(),
 			Mode:       aicodingsession.ModeGeneric,
 			AllowEmpty: true,
+			CLIVersion: opts.CLIVersion,
 		})
 		switch {
 		case storeErr != nil:

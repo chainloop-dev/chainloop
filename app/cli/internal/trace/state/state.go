@@ -48,8 +48,8 @@ const (
 	traceDirSnapshots = "snapshots"
 	traceDirAILines   = "ai-lines"
 	// traceDirLocalSessions holds the evidence sets written by LOCAL trace
-	// storage: one subdirectory per session, each with its materials and a
-	// manifest. Unlike raw/ and snapshots/ it is durable user data, so it is
+	// storage: one subdirectory per session, each with its materials and an
+	// unsigned in-toto statement. Unlike raw/ and snapshots/ it is durable user data, so it is
 	// never touched by WipeTraceDir, GCOrphans, or RemoveTraceDir.
 	traceDirLocalSessions = "local-sessions"
 	// traceDirSpecRedactions holds the redacted copies of each session's

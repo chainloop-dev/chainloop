@@ -546,12 +546,13 @@ func HandlePrePushHook(ctx context.Context, log zerolog.Logger, opts RunTracePus
 // "Nothing recorded" is not an error, so a human-only push is never blocked;
 // only a genuine store failure is returned, which the caller turns into a
 // blocked push when traceRequired is set.
-func HandlePrePushHookLocal(ctx context.Context, log zerolog.Logger) error {
+func HandlePrePushHookLocal(ctx context.Context, log zerolog.Logger, cliVersion string) error {
 	drainPushStdin()
 
 	stored, tracePath, err := RunTraceLocalStore(ctx, log, RunTraceLocalStoreOpts{
-		NoRedact: traceNoRedactFromEnv(),
-		Mode:     aicodingsession.ModeCoding,
+		NoRedact:   traceNoRedactFromEnv(),
+		Mode:       aicodingsession.ModeCoding,
+		CLIVersion: cliVersion,
 	})
 	if err != nil {
 		return fmt.Errorf("store session evidence locally: %w", err)

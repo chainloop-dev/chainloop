@@ -121,12 +121,12 @@ func TestRemoveTraceDirPreservesLocalSessions(t *testing.T) {
 	// A stored session on disk, as LOCAL storage would write it.
 	sessionDir := filepath.Join(store.LocalSessionsDir(), "sess-1")
 	require.NoError(t, os.MkdirAll(sessionDir, 0o700))
-	require.NoError(t, os.WriteFile(filepath.Join(sessionDir, "manifest.json"), []byte("{}"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(sessionDir, "statement.json"), []byte("{}"), 0o600))
 
 	require.NoError(t, store.RemoveTraceDir())
 
 	// The stored sessions survive.
-	data, err := os.ReadFile(filepath.Join(sessionDir, "manifest.json"))
+	data, err := os.ReadFile(filepath.Join(sessionDir, "statement.json"))
 	require.NoError(t, err)
 	assert.Equal(t, "{}", string(data))
 

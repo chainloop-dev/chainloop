@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"os"
@@ -29,14 +30,18 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	intoto "github.com/in-toto/attestation/go/v1"
 	"github.com/rs/zerolog"
+	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // TestStoreSessionsLocally follows R-002/R-003/R-004/R-006: the same assembly a
-// push runs is written to disk, content-addressed, redacted by default, with a
-// manifest that declares the output is unsigned and not an attestation.
+// push runs is written to disk, content-addressed, redacted by default, with an
+// unsigned in-toto statement as its index. The statement has no envelope and no
+// signature, so it is not an attestation.
 func TestStoreSessionsLocally(t *testing.T) {
 	const sessionID = "7c1e2d-session"
 	// Assembled from fragments so nothing credential-shaped is committed.
@@ -72,45 +77,61 @@ func TestStoreSessionsLocally(t *testing.T) {
 
 	t.Run("content-addressed, redacted, unsigned session on disk", func(t *testing.T) {
 		tracePath := t.TempDir()
-		stored, err := storeSessionsLocally(ctx, zerolog.Nop(), state.NewGitStore(t.TempDir()), []sessionEvidence{newSession()}, tracePath, false)
+		stored, err := storeSessionsLocally(ctx, zerolog.Nop(), state.NewGitStore(t.TempDir()), []sessionEvidence{newSession()}, tracePath, false, t.TempDir(), "test")
 		require.NoError(t, err)
 		require.Equal(t, 1, stored)
 
 		sessionDir := filepath.Join(tracePath, state.SanitizeID(sessionID))
-		var m localManifest
-		readJSONFile(t, filepath.Join(sessionDir, manifestFileName), &m)
+		statement, mats := readLocalStatement(t, sessionDir)
 
-		// R-006: the index declares the stored evidence is not a signed attestation.
-		assert.False(t, m.Signed)
-		assert.False(t, m.IsAttestation)
-		assert.True(t, m.Redaction)
-		assert.Equal(t, "ai-coding-session-7c1e2d", m.EvidenceRecord)
-		require.NotEmpty(t, m.Materials)
+		// R-006: the index is a Chainloop in-toto statement, with no envelope.
+		assert.Equal(t, chainloop.PredicateTypeV02, statement.GetPredicateType())
+		assert.Equal(t, "chainloop.workflow."+localWorkflowName, statement.GetSubject()[0].GetName())
+		entries, err := os.ReadDir(sessionDir)
+		require.NoError(t, err)
+		names := make([]string, 0, len(entries))
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		assert.ElementsMatch(t, []string{statementFileName, materialsDirName}, names, "no envelope, no bundle")
+		require.NotEmpty(t, mats)
 
-		var specDigest string
-		for _, mat := range m.Materials {
-			content, err := os.ReadFile(filepath.Join(sessionDir, mat.File))
-			require.NoError(t, err)
+		var specDigest, recordFile string
+		for _, mat := range mats {
+			// The content is on disk, not inline in the statement.
+			assert.False(t, mat.EmbeddedInline, "material %s is not inline", mat.Name)
+			// The content is on local disk, not in a CAS a reader could
+			// download it from.
+			assert.False(t, mat.UploadedToCAS, "material %s is not in a CAS", mat.Name)
+
+			digest := mat.Hash.String()
+			file := filepath.Join(sessionDir, materialsDirName, strings.ReplaceAll(digest, ":", "-"))
+			content, err := os.ReadFile(file)
+			require.NoError(t, err, "material %s is stored under its digest", mat.Name)
 
 			// R-003: every material is stored under its content digest.
 			sum := sha256.Sum256(content)
-			assert.Equal(t, "sha256:"+hex.EncodeToString(sum[:]), mat.Digest, "the stored file hashes back to its digest for %s", mat.Name)
+			assert.Equal(t, "sha256:"+hex.EncodeToString(sum[:]), digest, "the stored file hashes back to its digest for %s", mat.Name)
 
 			// R-004: redaction on by default, so no stored file holds the secret.
 			assert.NotContains(t, string(content), pat, "no stored file holds the secret: %s", mat.Name)
 
-			if mat.Kind == "EVIDENCE" {
-				specDigest = mat.Digest
+			switch mat.Type {
+			case "EVIDENCE":
+				specDigest = digest
 				// R-002: the spec material digest equals what a push produces.
-				assert.Equal(t, pushAdder.byName(mat.Name).digest, mat.Digest, "same digest as a push for %s", mat.Name)
+				assert.Equal(t, pushAdder.byName(mat.Name).digest, digest, "same digest as a push for %s", mat.Name)
+			case "CHAINLOOP_AI_CODING_SESSION":
+				assert.Equal(t, "ai-coding-session-7c1e2d", mat.Name)
+				recordFile = file
 			}
 		}
 		require.NotEmpty(t, specDigest, "the ticket became an EVIDENCE material")
+		require.NotEmpty(t, recordFile, "the session evidence record is a material")
 
 		// The evidence record references the stored spec material by digest.
-		record := materialByName(t, m, m.EvidenceRecord)
 		var ev aicodingsession.Evidence
-		readJSONFile(t, filepath.Join(sessionDir, record.File), &ev)
+		readJSONFile(t, recordFile, &ev)
 		referenced := make([]string, 0, len(ev.Data.Spec))
 		for _, e := range ev.Data.Spec {
 			referenced = append(referenced, e.Digest)
@@ -120,18 +141,16 @@ func TestStoreSessionsLocally(t *testing.T) {
 
 	t.Run("the no-redact opt-out keeps the raw secret", func(t *testing.T) {
 		tracePath := t.TempDir()
-		stored, err := storeSessionsLocally(ctx, zerolog.Nop(), state.NewGitStore(t.TempDir()), []sessionEvidence{newSession()}, tracePath, true)
+		stored, err := storeSessionsLocally(ctx, zerolog.Nop(), state.NewGitStore(t.TempDir()), []sessionEvidence{newSession()}, tracePath, true, t.TempDir(), "test")
 		require.NoError(t, err)
 		require.Equal(t, 1, stored)
 
 		sessionDir := filepath.Join(tracePath, state.SanitizeID(sessionID))
-		var m localManifest
-		readJSONFile(t, filepath.Join(sessionDir, manifestFileName), &m)
-		assert.False(t, m.Redaction, "the manifest records that redaction was off")
+		_, mats := readLocalStatement(t, sessionDir)
 
 		var found bool
-		for _, mat := range m.Materials {
-			content, err := os.ReadFile(filepath.Join(sessionDir, mat.File))
+		for _, mat := range mats {
+			content, err := os.ReadFile(filepath.Join(sessionDir, materialsDirName, strings.ReplaceAll(mat.Hash.String(), ":", "-")))
 			require.NoError(t, err)
 			if strings.Contains(string(content), pat) {
 				found = true
@@ -193,15 +212,22 @@ func readJSONFile(t *testing.T, path string, v any) {
 	require.NoError(t, json.Unmarshal(data, v))
 }
 
-func materialByName(t *testing.T, m localManifest, name string) storedMaterial {
+// readLocalStatement reads the in-toto statement of a stored session and the
+// materials of its Chainloop predicate.
+func readLocalStatement(t *testing.T, sessionDir string) (*intoto.Statement, []*chainloop.NormalizedMaterial) {
 	t.Helper()
-	for _, mat := range m.Materials {
-		if mat.Name == name {
-			return mat
-		}
-	}
-	require.Failf(t, "material not found", "material %q not found in manifest", name)
-	return storedMaterial{}
+	raw, err := os.ReadFile(filepath.Join(sessionDir, statementFileName))
+	require.NoError(t, err)
+
+	// The renderer reads predicates from an envelope. An unsigned one carries
+	// the statement as is.
+	envelope := &dsse.Envelope{PayloadType: "application/vnd.in-toto+json", Payload: base64.StdEncoding.EncodeToString(raw)}
+	statement, err := chainloop.ExtractStatement(envelope)
+	require.NoError(t, err)
+	predicate, err := chainloop.ExtractPredicate(envelope)
+	require.NoError(t, err)
+
+	return statement, predicate.GetMaterials()
 }
 
 // TestRunTraceLocalStorePartialFailure covers a session that cannot be stored.

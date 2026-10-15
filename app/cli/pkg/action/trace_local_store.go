@@ -17,7 +17,6 @@ package action
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,10 +26,15 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
+	attestationapi "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // traceNoRedactEnv turns secret redaction off for a local store. It is
@@ -47,8 +51,13 @@ func traceNoRedactFromEnv() bool {
 }
 
 const (
-	// manifestFileName is the index a reader opens first in a stored session.
-	manifestFileName = "manifest.json"
+	// statementFileName is the index of a stored session: an unsigned in-toto
+	// statement with the Chainloop predicate. It has no envelope and no
+	// signature, so it is not an attestation (R-006).
+	statementFileName = "statement.json"
+	// localWorkflowName names the workflow in the statement subject. Local
+	// mode has no control-plane workflow, so it uses the trace default name.
+	localWorkflowName = "ai-coding-session"
 	// materialsDirName holds every material of a session, each file named by its
 	// content digest so a reader and a test find it from the reference in the
 	// evidence record.
@@ -65,6 +74,9 @@ type RunTraceLocalStoreOpts struct {
 	// Mode records how the session was driven, one of the aicodingsession.Mode*
 	// constants. Empty means ModeCoding.
 	Mode string
+	// CLIVersion is the bare CLI version recorded as the builder in the
+	// statement.
+	CLIVersion string
 	// AllowEmpty assembles active sessions that produced no commit on this
 	// branch, as `chainloop trace run` does. The pre-push path leaves it off, so
 	// a push with no AI commits stores nothing.
@@ -103,7 +115,7 @@ func RunTraceLocalStore(ctx context.Context, log zerolog.Logger, opts RunTraceLo
 		return 0, tracePath, nil
 	}
 
-	stored, err = storeSessionsLocally(ctx, log, store, sessions, tracePath, opts.NoRedact)
+	stored, err = storeSessionsLocally(ctx, log, store, sessions, tracePath, opts.NoRedact, repoRoot, opts.CLIVersion)
 	if err != nil {
 		return stored, tracePath, err
 	}
@@ -129,11 +141,12 @@ func RunTraceLocalStore(ctx context.Context, log zerolog.Logger, opts RunTraceLo
 }
 
 // storeSessionsLocally writes each assembled session under tracePath in its own
-// content-addressed directory: tracePath/<session-id>/manifest.json plus a
+// content-addressed directory: tracePath/<session-id>/statement.json plus a
 // materials/ folder whose files are named by digest. Each session is
 // self-contained, so it uses a fresh sink and runs the shared assembly for that
-// one session. It returns how many sessions were stored.
-func storeSessionsLocally(ctx context.Context, log zerolog.Logger, store *state.Store, sessions []sessionEvidence, tracePath string, noRedact bool) (int, error) {
+// one session. repoRoot is where the head commit of the statement comes from.
+// It returns how many sessions were stored.
+func storeSessionsLocally(ctx context.Context, log zerolog.Logger, store *state.Store, sessions []sessionEvidence, tracePath string, noRedact bool, repoRoot, cliVersion string) (int, error) {
 	if err := os.MkdirAll(tracePath, 0o700); err != nil {
 		return 0, fmt.Errorf("create trace path: %w", err)
 	}
@@ -152,8 +165,8 @@ func storeSessionsLocally(ctx context.Context, log zerolog.Logger, store *state.
 			continue
 		}
 
-		if err := sink.writeManifest(!noRedact); err != nil {
-			return stored, fmt.Errorf("write manifest for session %s: %w", se.sessionID, err)
+		if err := sink.writeStatement(ctx, repoRoot, cliVersion); err != nil {
+			return stored, fmt.Errorf("write statement for session %s: %w", se.sessionID, err)
 		}
 
 		log.Debug().Str("session", se.sessionID).Str("dir", sessionDir).
@@ -176,51 +189,23 @@ type diskMaterialSink struct {
 	logger   zerolog.Logger
 	// backend has no uploader, so uploadAndCraft stores each artifact inline and
 	// never reaches the network.
-	backend   *casclient.CASBackend
-	materials []storedMaterial
-}
-
-// storedMaterial is one material's entry in the manifest.
-type storedMaterial struct {
-	// Name is the material name the assembly allocated for it.
-	Name string `json:"name"`
-	// Kind is the material type (e.g. EVIDENCE, CHAINLOOP_AI_CODING_SESSION).
-	Kind string `json:"kind"`
-	// Digest is the content digest the material is stored under, sha256:<hex>.
-	Digest string `json:"digest"`
-	// File is the path of the material's content, relative to the session
-	// directory.
-	File string `json:"file"`
-	// Annotations are the attestation annotations the material carries.
-	Annotations map[string]string `json:"annotations,omitempty"`
-}
-
-// localManifest is the index of one stored session.
-type localManifest struct {
-	GeneratedAt string `json:"generated_at"`
-	// Signed and IsAttestation are always false: the stored evidence is an
-	// unsigned evidence set, not a signed in-toto attestation, so it proves
-	// nothing on its own. The index declares this so a reader never mistakes the
-	// stored evidence for an attestation (R-006).
-	Signed        bool `json:"signed"`
-	IsAttestation bool `json:"is_attestation"`
-	// Redaction records whether secrets were stripped, so a reader can tell a
-	// safe-to-share session from a raw one.
-	Redaction bool `json:"redaction"`
-	// EvidenceRecord names the CHAINLOOP_AI_CODING_SESSION material that holds
-	// the session evidence record (and the warnings of the run).
-	EvidenceRecord string `json:"evidence_record,omitempty"`
-	// Materials lists every stored material by name, kind and digest, so a
-	// reader sees the whole set from the index with no need to parse each file.
-	Materials []storedMaterial `json:"materials"`
+	backend *casclient.CASBackend
+	// materials are the crafted materials, keyed by name, as a push keeps them
+	// in its crafting state. Their content is on disk, not inline.
+	materials map[string]*attestationapi.Attestation_Material
+	// startedAt is when the assembly of the session started, the
+	// initialization time of the statement.
+	startedAt time.Time
 }
 
 func newDiskMaterialSink(outDir string, noRedact bool, logger zerolog.Logger) *diskMaterialSink {
 	return &diskMaterialSink{
-		outDir:   outDir,
-		noRedact: noRedact,
-		logger:   logger,
-		backend:  &casclient.CASBackend{Name: "chainloop-trace-local", Uploader: nil},
+		outDir:    outDir,
+		noRedact:  noRedact,
+		logger:    logger,
+		backend:   &casclient.CASBackend{Name: "chainloop-trace-local", Uploader: nil},
+		materials: make(map[string]*attestationapi.Attestation_Material),
+		startedAt: time.Now(),
 	}
 }
 
@@ -256,18 +241,17 @@ func (s *diskMaterialSink) AddMaterial(ctx context.Context, name, path, kind str
 		return "", err
 	}
 
-	file, err := s.writeMaterial(artifact.GetDigest(), content)
-	if err != nil {
+	if err := s.writeMaterial(artifact.GetDigest(), content); err != nil {
 		return "", err
 	}
 
-	s.materials = append(s.materials, storedMaterial{
-		Name:        name,
-		Kind:        kind,
-		Digest:      artifact.GetDigest(),
-		File:        file,
-		Annotations: mergeAnnotations(res.Material.GetAnnotations(), annotations),
-	})
+	// The content is on disk under its digest, as a push keeps it in the CAS.
+	// So the statement references it and does not carry it inline.
+	material := res.Material
+	material.InlineCas = false
+	artifact.Content = nil
+	material.Annotations = mergeAnnotations(material.GetAnnotations(), annotations)
+	s.materials[name] = material
 
 	return artifact.GetDigest(), nil
 }
@@ -292,58 +276,64 @@ func materialContent(inline, override []byte, path string) ([]byte, error) {
 	}
 }
 
-// writeMaterial stores content under materials/<digest> and returns the path
-// relative to the session directory. Materials are content-addressed, so a
-// repeated digest is the same bytes and the rewrite is a harmless no-op.
-func (s *diskMaterialSink) writeMaterial(digest string, content []byte) (string, error) {
+// writeMaterial stores content under materials/<digest>. Materials are
+// content-addressed, so a repeated digest is the same bytes and the rewrite is
+// a harmless no-op.
+func (s *diskMaterialSink) writeMaterial(digest string, content []byte) error {
 	// A ':' in the digest is awkward on some filesystems, so the stored file
-	// uses '-'; the digest itself is kept intact in the manifest.
+	// uses '-'; the digest itself is kept intact in the statement.
 	rel := filepath.Join(materialsDirName, strings.ReplaceAll(digest, ":", "-"))
 	abs := filepath.Join(s.outDir, rel)
 
 	if err := os.MkdirAll(filepath.Dir(abs), 0o700); err != nil {
-		return "", fmt.Errorf("create materials directory: %w", err)
+		return fmt.Errorf("create materials directory: %w", err)
 	}
 
 	if err := os.WriteFile(abs, content, 0o600); err != nil {
-		return "", fmt.Errorf("write material %s: %w", digest, err)
+		return fmt.Errorf("write material %s: %w", digest, err)
 	}
 
-	return rel, nil
+	return nil
 }
 
-// writeManifest writes the index of one stored session. redaction records
-// whether secrets were stripped.
-func (s *diskMaterialSink) writeManifest(redaction bool) error {
-	sessionKind := v1.CraftingSchema_Material_CHAINLOOP_AI_CODING_SESSION.String()
-
-	var evidenceRecord string
-	for _, m := range s.materials {
-		if m.Kind == sessionKind {
-			evidenceRecord = m.Name
-			break
-		}
-	}
-
-	manifest := localManifest{
-		GeneratedAt:    time.Now().UTC().Format(time.RFC3339),
-		Signed:         false,
-		IsAttestation:  false,
-		Redaction:      redaction,
-		EvidenceRecord: evidenceRecord,
-		Materials:      s.materials,
-	}
-
-	data, err := json.MarshalIndent(manifest, "", "  ")
+// writeStatement writes the index of one stored session: the in-toto statement
+// a push would sign, rendered from the same kind of crafting state with the
+// same Chainloop renderer. It has no envelope and no signature (R-006). The
+// head commit comes from repoRoot, with no platform verification, since local
+// mode makes no network call.
+func (s *diskMaterialSink) writeStatement(ctx context.Context, repoRoot, cliVersion string) error {
+	head, err := crafter.GitRepoHead(repoRoot, &s.logger)
 	if err != nil {
-		return fmt.Errorf("encode manifest: %w", err)
+		s.logger.Debug().Err(err).Msg("could not read the head commit; the statement has none")
+	}
+
+	att := &attestationapi.Attestation{
+		InitializedAt: timestamppb.New(s.startedAt),
+		FinishedAt:    timestamppb.Now(),
+		Workflow:      &attestationapi.WorkflowMetadata{Name: localWorkflowName},
+		Materials:     s.materials,
+		Head:          head,
+	}
+
+	statement, err := chainloop.NewChainloopRendererV02(att, cliVersion, "", nil, &s.logger).Statement(ctx)
+	if err != nil {
+		return fmt.Errorf("render statement: %w", err)
+	}
+
+	if err := statement.Validate(); err != nil {
+		return fmt.Errorf("validate statement: %w", err)
+	}
+
+	data, err := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Marshal(statement)
+	if err != nil {
+		return fmt.Errorf("encode statement: %w", err)
 	}
 
 	if err := os.MkdirAll(s.outDir, 0o700); err != nil {
 		return fmt.Errorf("create session directory: %w", err)
 	}
 
-	return os.WriteFile(filepath.Join(s.outDir, manifestFileName), data, 0o600)
+	return os.WriteFile(filepath.Join(s.outDir, statementFileName), data, 0o600)
 }
 
 // mergeAnnotations combines the annotations the crafter set on a material with

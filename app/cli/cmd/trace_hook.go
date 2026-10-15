@@ -141,7 +141,7 @@ func newTraceHookGitPrePushCmd() *cobra.Command {
 			}
 
 			if mode == config.TraceStorageLocal {
-				return action.HandlePrePushHookLocal(cmd.Context(), logger)
+				return action.HandlePrePushHookLocal(cmd.Context(), logger, Version)
 			}
 
 			// Control plane: build ActionOpts lazily, since this command is
