@@ -45,11 +45,11 @@ At the end of an OIDC login, the control plane sends the user session token to t
 
 ### R-001: Code instead of token for opted-in logins
 A login request can carry a code challenge and a callback. For that request, the control plane MUST redirect to the callback with a handoff code. It MUST NOT put the session token in the URL.
-- Done when: the callback URL of an opted-in login has `code` and no token.
+- Done when: the callback URL of an opted-in login has `handoff` and no token.
 
 ### R-002: Bound, short-lived, single-use code
-A handoff code MUST expire 60 seconds after it is issued and MUST work only one time. The exchange MUST succeed only with the verifier that matches the challenge of the login, and with the same callback URL. A failed exchange MUST NOT tell which check failed.
-- Done when: an exchange fails for a reused code, an expired code, a wrong verifier, and a different callback.
+A handoff code MUST expire 60 seconds after it is issued and MUST work only one time. The exchange MUST succeed only with the verifier that matches the challenge of the login, and with the same callback URL. A failed exchange MUST return the same error to the client. The control plane MUST log the specific reason (unknown, expired, already used, wrong verifier, wrong callback) on the server side only.
+- Done when: an exchange fails for a reused code, an expired code, a wrong verifier, and a different callback. The client gets the same error each time, and each server log entry names its reason.
 
 ### R-003: Token only in the exchange response
 The exchange endpoint MUST return the session token only in the response body. The endpoint MUST NOT need an existing session. The token MUST be the same token the legacy flow gives for the same login, with the same lifetime.
@@ -84,9 +84,9 @@ The control plane MUST reject a login whose callback carries a post-login redire
 
 1. The client makes a random verifier and keeps it (the CLI keeps it in memory). It opens the login URL with the callback, a challenge (`code_challenge`, the SHA-256 of the verifier), and `code_challenge_method=S256`.
 2. The control plane does the OIDC login as today. It still checks the OIDC state cookie in the browser leg, and the callback against the allowed origins.
-3. The control plane does not create the session token yet. It makes a random handoff code. It keeps a hash of the code in the database. The row also holds the user, the token lifetime, the challenge, and the callback URL. It has an expiry of 60 seconds and a "used" flag. It redirects to the callback with `?code=<handoff code>`.
+3. The control plane does not create the session token yet. It makes a random handoff code. It keeps a hash of the code in the database. The row also holds the user, the token lifetime, the challenge, and the callback URL. It has an expiry of 60 seconds and a "used" flag. It redirects to the callback with `?handoff=<handoff code>` (see D-011).
 4. The client sends the code, the verifier, and the callback URL to the new exchange endpoint. This is an unauthenticated RPC on the auth service, with an HTTP POST mapping for clients that do not use gRPC.
-5. The control plane marks the code used in one atomic step, checks the expiry, the verifier against the challenge, and the callback. It then creates the session token and returns it in the response body. Any failure gives the same error.
+5. The control plane marks the code used in one atomic step, checks the expiry, the verifier against the challenge, and the callback. It then creates the session token and returns it in the response body. Any failure gives the client the same error, and the server log records the specific reason.
 
 Why this stops fixation: a person who starts a login gets a code that is bound to their own challenge. A victim who opens that callback link does not have the matching verifier, so the exchange fails. A code that leaks from a log is useless after 60 seconds, after one use, and without the verifier.
 
@@ -117,8 +117,8 @@ sequenceDiagram
     CP->>I: OIDC login
     I-->>CP: Auth result (state cookie checked)
     CP->>CP: Store hashed code with user, challenge and callback (60s, single use)
-    CP-->>B: Redirect to callback with code only
-    B->>C: Callback with code
+    CP-->>B: Redirect to callback with handoff code only
+    B->>C: Callback with handoff code
     C->>CP: Exchange(code, verifier, callback)
     CP->>CP: Consume code, check expiry, verifier, callback, create token
     CP-->>C: Token in response body
@@ -138,6 +138,8 @@ sequenceDiagram
 | D-008 | Browser artifact download flow | No change. It stays on the legacy callback and the legacy switch does not cover it | Its callback is a relative path on the control plane itself. The token it gets is not long-lived and expires after 10 seconds. A separate change can move it to the exchange. | drafting |
 | D-009 | Headless login and code life | Headless login does not change. The code lives 60 seconds | The headless page never puts the token in a URL. 60 seconds is enough for a browser redirect. | drafting |
 | D-010 | Post-login redirect | The control plane checks `returnTo` inside the callback and accepts only a single-slash relative path | Closes the open redirect at the server, where the client cannot skip it. The callback origin check stays. Rejected: leave it to each client. | drafting |
+| D-011 | Callback parameter name | `handoff`, not `code` | A client callback can also be an OAuth client that already gets `code` from its own identity provider. A different name prevents a collision. Rejected: `code` (the standard OAuth name, but it is ambiguous on such a callback). | drafting |
+| D-012 | Exchange failure detail | Same error to the client for every failure. The specific reason goes to the server log only | A uniform client error gives no hint to a person who guesses codes. The server log reason helps operators debug failed logins. Rejected: a uniform error with no server reason (hard to debug). | drafting |
 
 ## Open Questions
 
