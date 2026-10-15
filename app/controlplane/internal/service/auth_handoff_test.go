@@ -235,15 +235,16 @@ func TestLoginHandlerCodeChallenge(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, loginURL(tc.params), nil)
 
 			resp := loginHandler(svc, w, r)
-			require.NotNil(t, resp)
-			assert.Equal(t, tc.wantCode, resp.code)
-
 			if tc.wantCode != http.StatusBadRequest {
+				// The handler answered the request with the redirect
+				assert.Nil(t, resp)
 				assert.Equal(t, http.StatusFound, w.Code)
 				assert.Equal(t, tc.wantChallenge, cookieValue(w, cookieCodeChallenge))
 				return
 			}
 
+			require.NotNil(t, resp)
+			assert.Equal(t, tc.wantCode, resp.code)
 			assert.Contains(t, resp.ErrorMessage(context.Background(), svc.log), tc.wantErr)
 			assert.Empty(t, w.Result().Cookies())
 		})
@@ -299,14 +300,24 @@ func TestDeliverLogin(t *testing.T) {
 
 			before := testutil.ToFloat64(legacyCallbackDeliveries)
 			resp := svc.deliverLogin(context.Background(), w, r, userID)
-			require.NotNil(t, resp)
-			assert.Equal(t, tc.wantCode, resp.code)
 			assert.Equal(t, tc.wantLegacyInc, testutil.ToFloat64(legacyCallbackDeliveries)-before)
 
+			// The handler answers a delivered login itself and returns nothing
+			if tc.wantCode == http.StatusOK {
+				assert.Nil(t, resp)
+				assert.Equal(t, http.StatusOK, w.Code)
+				return
+			}
+
 			if tc.wantCode != http.StatusTemporaryRedirect {
+				require.NotNil(t, resp)
+				assert.Equal(t, tc.wantCode, resp.code)
 				assert.Empty(t, w.Header().Get("Location"))
 				return
 			}
+
+			assert.Nil(t, resp)
+			assert.Equal(t, http.StatusFound, w.Code)
 
 			location, err := url.Parse(w.Header().Get("Location"))
 			require.NoError(t, err)
@@ -325,6 +336,64 @@ func TestDeliverLogin(t *testing.T) {
 				assert.NotEmpty(t, q.Get(oauth.QueryParamLegacyToken))
 				assert.Empty(t, q.Get(oauth.QueryParamHandoff))
 			}
+		})
+	}
+}
+
+// headerCounter counts the WriteHeader calls, a second one is what net/http logs as "superfluous"
+type headerCounter struct {
+	*httptest.ResponseRecorder
+	writes int
+}
+
+func (h *headerCounter) WriteHeader(code int) {
+	h.writes++
+	h.ResponseRecorder.WriteHeader(code)
+}
+
+// A handler that already answered the request must not get a second response from ServeHTTP
+func TestOauthHandlerAnswersOnce(t *testing.T) {
+	loginRequest := func() *http.Request {
+		return httptest.NewRequest(http.MethodGet, loginURL(map[string]string{oauth.QueryParamCallback: testCLIBack}), nil)
+	}
+
+	deliverRequest := func(callback, challenge string) *http.Request {
+		r := httptest.NewRequest(http.MethodGet, "/auth/callback", nil)
+		r.AddCookie(&http.Cookie{Name: cookieLongLived, Value: "true"})  //nolint:gosec // cookies of a test request
+		r.AddCookie(&http.Cookie{Name: cookieCallback, Value: callback}) //nolint:gosec // cookies of a test request
+		if challenge != "" {
+			r.AddCookie(&http.Cookie{Name: cookieCodeChallenge, Value: challenge}) //nolint:gosec // cookies of a test request
+		}
+		return r
+	}
+
+	deliver := func(svc *AuthService, w http.ResponseWriter, r *http.Request) *oauthResp {
+		return svc.deliverLogin(context.Background(), w, r, uuid.NewString())
+	}
+
+	testCases := []struct {
+		name     string
+		handler  func(*AuthService, http.ResponseWriter, *http.Request) *oauthResp
+		request  *http.Request
+		wantCode int
+	}{
+		{name: "login redirect", handler: loginHandler, request: loginRequest(), wantCode: http.StatusFound},
+		{name: "handoff redirect", handler: deliver, request: deliverRequest(testCLIBack, testChallenge), wantCode: http.StatusFound},
+		{name: "legacy token redirect", handler: deliver, request: deliverRequest(testCLIBack, ""), wantCode: http.StatusFound},
+		{name: "headless token page", handler: deliver, request: deliverRequest("", ""), wantCode: http.StatusOK},
+		{name: "rejected callback", handler: deliver, request: deliverRequest(testMultiSlashBack, ""), wantCode: http.StatusBadRequest},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			svc := newHandoffTestService(nil, &fakeLoginHandoffs{}, nil)
+			w := &headerCounter{ResponseRecorder: httptest.NewRecorder()}
+
+			oauthHandler{tc.handler, svc}.ServeHTTP(w, tc.request)
+
+			assert.Equal(t, tc.wantCode, w.Code)
+			// A page body written with no explicit header counts as none
+			assert.LessOrEqual(t, w.writes, 1)
 		})
 	}
 }

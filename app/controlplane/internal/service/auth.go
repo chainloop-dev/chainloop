@@ -123,6 +123,8 @@ func (e *oauthResp) ErrorMessage(ctx context.Context, l *log.Helper) string {
 	return ""
 }
 
+// oauthHandler writes the error page for the response a handler returns. A handler that already
+// answered the request, with a redirect or a page, returns nil
 type oauthHandler struct {
 	H   func(*AuthService, http.ResponseWriter, *http.Request) *oauthResp
 	svc *AuthService
@@ -494,7 +496,7 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oau
 	}
 
 	http.Redirect(w, r, authorizationURI, http.StatusFound)
-	return newOauthResp(http.StatusTemporaryRedirect, nil, false)
+	return nil
 }
 
 // Extract custom claims
@@ -603,7 +605,7 @@ func (svc *AuthService) deliverLogin(ctx context.Context, w http.ResponseWriter,
 		if err := renderTokenPage(w, userToken); err != nil {
 			return newOauthResp(http.StatusInternalServerError, err, false)
 		}
-		return newOauthResp(http.StatusOK, nil, false)
+		return nil
 	}
 
 	// Redirect to the callback URL. The cookies were validated at login time, re-check them here
@@ -652,7 +654,7 @@ func (svc *AuthService) deliverLogin(ctx context.Context, w http.ResponseWriter,
 
 	setTokenLeakHeaders(w)
 	http.Redirect(w, r, callbackURL, http.StatusFound)
-	return newOauthResp(http.StatusTemporaryRedirect, nil, false)
+	return nil
 }
 
 func crafCallbackURL(callback, param, value string) (string, error) {
