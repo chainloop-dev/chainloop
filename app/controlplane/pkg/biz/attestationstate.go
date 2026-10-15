@@ -272,6 +272,10 @@ func decrypt(ciphertext []byte, passphrase string) ([]byte, error) {
 	stream := cipher.NewCFBDecrypter(block, iv)
 	stream.XORKeyStream(ciphertext, ciphertext)
 
+	if len(ciphertext) < len(magic) {
+		return nil, fmt.Errorf("ciphertext too short")
+	}
+
 	// Check if the decrypted data starts with the magic string
 	if string(ciphertext[:len(magic)]) != magic {
 		// A mismatch means the state was encrypted with a different passphrase,
