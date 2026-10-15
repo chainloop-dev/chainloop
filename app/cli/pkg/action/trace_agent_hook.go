@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -69,7 +70,7 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 	// stay after the session end, for a push that comes later.
 	captureSkillLoads(provider, store, input, log)
 
-	setSessionActive(store, sessionID, false, log)
+	cleanupSessionShellState(store, sessionID, log)
 
 	// The spec stays on disk for the whole session, so that every push of it
 	// records the spec as it is at that moment. The session end is where it
@@ -109,6 +110,32 @@ func setSessionActive(store *state.Store, sessionID string, active bool, log zer
 	rec.Active = active
 	if err := store.SaveSessionRecord(rec); err != nil {
 		log.Debug().Err(err).Bool("active", active).Msg("update session record failed")
+	}
+}
+
+func cleanupSessionShellState(store *state.Store, sessionID string, log zerolog.Logger) {
+	rec, err := store.LoadSessionRecord(sessionID)
+	if err != nil {
+		log.Debug().Err(err).Msg("load session record for shell cleanup failed")
+	}
+
+	setSessionActive(store, sessionID, false, log)
+	if err := store.DeleteShellSnapshots(sessionID); err != nil {
+		log.Debug().Err(err).Msg("delete shell snapshots failed")
+	}
+
+	if rec == nil {
+		return
+	}
+	for _, root := range rec.Checkouts {
+		checkoutStore, _, err := state.LocateFrom(root)
+		if err != nil {
+			continue
+		}
+		setSessionActive(checkoutStore, sessionID, false, log)
+		if err := checkoutStore.DeleteShellSnapshots(sessionID); err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("delete checkout shell snapshots failed")
+		}
 	}
 }
 
@@ -324,6 +351,7 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 		// checkouts the command names first, so the snapshot covers them.
 		registerCommandCheckouts(provider, input, repoRoot, log)
 		captureWorktreeSnapshot(store, repoRoot, shellCallKey(input), log)
+		tagShellCommand(provider, input, log)
 	case provider.IsFileWritingTool(input.ToolName):
 		if input.FilePath == "" {
 			log.Debug().Str("tool", input.ToolName).Msg("pre-tool-use: file-writing tool produced no file path, skipping")
@@ -355,23 +383,55 @@ func shellCallKey(input *trace.HookInput) state.ShellCallKey {
 // never block the agent.
 func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
 	client := tracegit.NewGoGitClient()
-	sigs := make(state.WorktreeSignatures)
 	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
-		sig, err := client.SnapshotWorktree(root)
+		worktreeSig, err := client.SnapshotWorktree(root)
 		if err != nil {
 			log.Debug().Err(err).Str("root", root).Msg("pre-command: worktree snapshot failed")
 			continue
 		}
-		sigs[root] = sig
+		indexSig, err := client.SnapshotIndex(root)
+		if err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: index snapshot failed")
+			continue
+		}
+
+		rootStore := store
+		if !sameDir(root, repoRoot) {
+			s, resolvedRoot, err := state.LocateFrom(root)
+			if err != nil {
+				log.Debug().Err(err).Str("root", root).Msg("pre-command: no trace state for checkout")
+				continue
+			}
+			rootStore, root = s, resolvedRoot
+			if err := copySessionRecord(store, rootStore, key.SessionID); err != nil {
+				log.Debug().Err(err).Str("session_id", key.SessionID).Msg("pre-command: copy session record failed")
+			}
+		}
+
+		if err := rootStore.SaveShellPreSignature(key, state.WorktreeSignatures{root: worktreeSig}); err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: save worktree signature failed")
+		}
+		if err := rootStore.SaveShellPreIndexSignature(key, state.WorktreeSignatures{root: indexSig}); err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: save index signature failed")
+		}
+	}
+}
+
+func copySessionRecord(source, target *state.Store, sessionID string) error {
+	rec, err := source.LoadSessionRecord(sessionID)
+	if err != nil {
+		return fmt.Errorf("load session record: %w", err)
+	}
+	if rec == nil {
+		return nil
 	}
 
-	if len(sigs) == 0 {
-		return
+	recordCopy := *rec
+	if err := target.SaveSessionRecord(&recordCopy); err != nil {
+		return fmt.Errorf("save session record: %w", err)
 	}
 
-	if err := store.SaveShellPreSignature(key, sigs); err != nil {
-		log.Debug().Err(err).Msg("pre-command: save worktree signature failed")
-	}
+	return nil
 }
 
 // shellSnapshotRoots returns the checkouts that a shell command of the session
@@ -751,16 +811,7 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 // blocks the agent.
 func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, store *state.Store, repoRoot string, log zerolog.Logger) {
 	key := shellCallKey(input)
-	before, err := store.LoadShellPreSignature(key)
-	if err != nil {
-		// No pre-command snapshot (missed pre hook, or an overlapping call
-		// of an agent without tool call IDs overwrote it) — skip.
-		log.Debug().Err(err).Msg("post-command: no pre-command worktree signature")
-		return
-	}
-	defer store.DeleteShellPreSignature(key)
-
-	for root, rootBefore := range before {
+	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
 		rootStore := store
 		if !sameDir(root, repoRoot) {
 			s, r, err := state.LocateFrom(root)
@@ -772,7 +823,19 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 			rootStore, root = s, r
 		}
 
-		recordRootChanges(rootStore, root, rootBefore, key.SessionID, log)
+		before, err := rootStore.LoadShellPreSignature(key)
+		if err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("post-command: no pre-command worktree signature")
+			continue
+		}
+
+		for snapshotRoot, rootBefore := range before {
+			if sameDir(snapshotRoot, root) {
+				recordRootChanges(rootStore, root, rootBefore, key.SessionID, log)
+				break
+			}
+		}
+		rootStore.DeleteShellPreSignature(key)
 	}
 }
 

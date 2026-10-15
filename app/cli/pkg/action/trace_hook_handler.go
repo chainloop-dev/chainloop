@@ -87,16 +87,21 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 		log.Debug().Strs("session_ids", sessionIDs).Msg("amending HEAD, keeping its trace sessions")
 	}
 
-	attrs, err := state.NewRepoStore(gitDir, repoRoot).LoadAllAILineAttributions()
+	store := state.NewRepoStore(gitDir, repoRoot)
+	stagedFiles, err := client.StagedFiles(repoRoot)
+	if err != nil {
+		return fmt.Errorf("get staged files: %w", err)
+	}
+
+	if err := checkpointActiveShellAttribution(store, repoRoot, stagedFiles); err != nil {
+		log.Debug().Err(err).Msg("commit-msg: checkpoint active shell attribution failed")
+	}
+
+	attrs, err := store.LoadAllAILineAttributions()
 	if err != nil {
 		return fmt.Errorf("load AI line attributions: %w", err)
 	}
 	if len(attrs) > 0 {
-		stagedFiles, err := client.StagedFiles(repoRoot)
-		if err != nil {
-			return fmt.Errorf("get staged files: %w", err)
-		}
-
 		sessionIDs = mergeSessionIDs(sessionIDs, matchSessionsToFiles(attrs, stagedFiles))
 	}
 

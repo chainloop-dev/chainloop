@@ -17,12 +17,17 @@ package state
 
 import (
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+const ShellCallEnv = "CHAINLOOP_TRACE_SHELL_CALL"
 
 // snapshotPath returns the path for a file snapshot: <dir>/chainloop-trace/snapshots/<session>/<path-hash>
 func (s *Store) snapshotPath(sessionID, filePath string) string {
@@ -65,6 +70,32 @@ type ShellCallKey struct {
 	ToolUseID string
 }
 
+func EncodeShellCallKey(key ShellCallKey) (string, error) {
+	data, err := json.Marshal(key)
+	if err != nil {
+		return "", fmt.Errorf("marshal shell call key: %w", err)
+	}
+
+	return base64.RawURLEncoding.EncodeToString(data), nil
+}
+
+func DecodeShellCallKey(encoded string) (ShellCallKey, error) {
+	data, err := base64.RawURLEncoding.DecodeString(encoded)
+	if err != nil {
+		return ShellCallKey{}, fmt.Errorf("decode shell call key: %w", err)
+	}
+
+	var key ShellCallKey
+	if err := json.Unmarshal(data, &key); err != nil {
+		return ShellCallKey{}, fmt.Errorf("parse shell call key: %w", err)
+	}
+	if !ValidSessionID(key.SessionID) {
+		return ShellCallKey{}, fmt.Errorf("invalid shell call session ID")
+	}
+
+	return key, nil
+}
+
 // shellPreSignaturePath returns the path storing the pre-command working-tree
 // signature of a shell command, under
 // <dir>/chainloop-trace/snapshots/<session>/:
@@ -74,12 +105,20 @@ type ShellCallKey struct {
 //
 // A tool use ID is unique within a session, so it needs no agent qualifier.
 func (s *Store) shellPreSignaturePath(key ShellCallKey) string {
-	name := "shell-pre.json"
+	return s.shellSignaturePath("shell-pre", key)
+}
+
+func (s *Store) shellPreIndexSignaturePath(key ShellCallKey) string {
+	return s.shellSignaturePath("shell-index", key)
+}
+
+func (s *Store) shellSignaturePath(prefix string, key ShellCallKey) string {
+	name := prefix + commitRecordExt
 	switch {
 	case key.ToolUseID != "":
-		name = "shell-pre-call-" + sanitizeID(key.ToolUseID) + ".json"
+		name = prefix + "-call-" + sanitizeID(key.ToolUseID) + commitRecordExt
 	case key.AgentID != "":
-		name = "shell-pre-" + sanitizeID(key.AgentID) + ".json"
+		name = prefix + "-" + sanitizeID(key.AgentID) + commitRecordExt
 	}
 
 	return filepath.Join(s.traceDirPath(), traceDirSnapshots, sanitizeID(key.SessionID), name)
@@ -106,6 +145,22 @@ func (s *Store) SaveShellPreSignature(key ShellCallKey, sig WorktreeSignatures) 
 	return os.WriteFile(path, data, 0600)
 }
 
+// SaveShellPreIndexSignature stores the staged index signature captured before
+// an agent-run shell command.
+func (s *Store) SaveShellPreIndexSignature(key ShellCallKey, sig WorktreeSignatures) error {
+	path := s.shellPreIndexSignaturePath(key)
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("create snapshot dir: %w", err)
+	}
+
+	data, err := json.Marshal(sig)
+	if err != nil {
+		return fmt.Errorf("marshal shell index signature: %w", err)
+	}
+
+	return os.WriteFile(path, data, 0600)
+}
+
 // LoadShellPreSignature loads the pre-command working-tree signatures of a
 // shell command. A file in the earlier single-checkout format (written by an
 // older CLI just before an upgrade) does not parse, and the caller skips it.
@@ -123,7 +178,53 @@ func (s *Store) LoadShellPreSignature(key ShellCallKey) (WorktreeSignatures, err
 	return sig, nil
 }
 
+func (s *Store) LoadShellPreIndexSignature(key ShellCallKey) (WorktreeSignatures, error) {
+	data, err := os.ReadFile(s.shellPreIndexSignaturePath(key))
+	if err != nil {
+		return nil, err
+	}
+
+	var sig WorktreeSignatures
+	if err := json.Unmarshal(data, &sig); err != nil {
+		return nil, fmt.Errorf("parse shell index signature: %w", err)
+	}
+
+	return sig, nil
+}
+
+// DeleteShellSnapshots removes every in-progress shell snapshot for a session
+// while preserving file-edit snapshots in the same directory.
+func (s *Store) DeleteShellSnapshots(sessionID string) error {
+	dir := filepath.Join(s.traceDirPath(), traceDirSnapshots, sanitizeID(sessionID))
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+
+		return fmt.Errorf("read shell snapshots: %w", err)
+	}
+
+	var errs []error
+	for _, entry := range entries {
+		if entry.IsDir() || !isShellSnapshotName(entry.Name()) {
+			continue
+		}
+		if err := os.Remove(filepath.Join(dir, entry.Name())); err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func isShellSnapshotName(name string) bool {
+	return filepath.Ext(name) == commitRecordExt &&
+		(strings.HasPrefix(name, "shell-pre") || strings.HasPrefix(name, "shell-index"))
+}
+
 // DeleteShellPreSignature removes the pre-command signature once processed.
 func (s *Store) DeleteShellPreSignature(key ShellCallKey) {
 	_ = os.Remove(s.shellPreSignaturePath(key))
+	_ = os.Remove(s.shellPreIndexSignaturePath(key))
 }

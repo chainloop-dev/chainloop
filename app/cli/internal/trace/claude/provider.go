@@ -37,6 +37,7 @@ const Name = "claude-code"
 
 // Compile-time check that Provider implements trace.Provider.
 var _ trace.Provider = (*Provider)(nil)
+var _ trace.ShellCommandTagger = (*Provider)(nil)
 
 // Provider implements trace.Provider for Claude Code sessions.
 type Provider struct{}
@@ -179,6 +180,37 @@ func (p *Provider) IsFileWritingTool(toolName string) bool {
 // IsCommandTool returns true if the named tool runs a shell command.
 func (p *Provider) IsCommandTool(toolName string) bool {
 	return slices.Contains(commandTools, toolName)
+}
+
+// TagShellCommand returns a PreToolUse response that exports token for every
+// subcommand in the Bash call. Git hooks inherit it and can load the exact
+// pre-command snapshot instead of guessing among abandoned calls.
+func (p *Provider) TagShellCommand(input *trace.HookInput, token string) error {
+	if input == nil || input.Command == "" || len(input.RawToolInput) == 0 || token == "" {
+		return nil
+	}
+
+	var updatedInput map[string]json.RawMessage
+	if err := json.Unmarshal(input.RawToolInput, &updatedInput); err != nil {
+		return fmt.Errorf("parse Bash input: %w", err)
+	}
+
+	command, err := json.Marshal("export " + state.ShellCallEnv + "=" + token + "; " + input.Command)
+	if err != nil {
+		return fmt.Errorf("encode tagged Bash command: %w", err)
+	}
+	updatedInput["command"] = command
+
+	output := struct {
+		HookSpecificOutput struct {
+			HookEventName string                     `json:"hookEventName"`
+			UpdatedInput  map[string]json.RawMessage `json:"updatedInput"`
+		} `json:"hookSpecificOutput"`
+	}{}
+	output.HookSpecificOutput.HookEventName = eventPreToolUse
+	output.HookSpecificOutput.UpdatedInput = updatedInput
+
+	return json.NewEncoder(os.Stdout).Encode(output)
 }
 
 // SupportsSessionStartBanner is true for Claude Code: it renders the

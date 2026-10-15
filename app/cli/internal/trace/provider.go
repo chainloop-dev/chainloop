@@ -187,6 +187,13 @@ type SkillTracker interface {
 	SkillRoots(repoRoot string) skill.Roots
 }
 
+// ShellCommandTagger is implemented by a provider whose pre-tool hook can
+// replace shell input before execution. The opaque token reaches git hooks
+// through the command environment, tying a commit to one exact tool call.
+type ShellCommandTagger interface {
+	TagShellCommand(input *HookInput, token string) error
+}
+
 // SpecCopyReplacer is implemented by a provider that can find the copies of
 // spec sources in its transcript (spec issue-3556). For the sessions of a
 // provider without it, the transcript keeps its copies.
@@ -310,6 +317,9 @@ type HookInput struct {
 	// Command is the command line of a shell command tool, set by provider's
 	// ReadHookInput. Empty when the provider does not report it.
 	Command string `json:"-"`
+	// RawToolInput is the provider's full tool input. A provider that rewrites
+	// shell input preserves every field and changes only Command.
+	RawToolInput json.RawMessage `json:"-"`
 	// Cwd is the directory the agent session runs in, which is where the
 	// agent files its transcripts. It can differ from the checkout that owns
 	// FilePath, e.g. for an edit in a linked git worktree. Empty when the
