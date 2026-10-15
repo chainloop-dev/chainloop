@@ -67,7 +67,7 @@ func TestDecryptShortInput(t *testing.T) {
 			require.NotPanics(t, func() {
 				_, err = decrypt(make([]byte, tc.size), "passphrase")
 			})
-			assert.Error(t, err)
+			assert.True(t, IsErrInvalidPassphrase(err))
 		})
 	}
 }
