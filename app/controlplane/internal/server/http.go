@@ -82,6 +82,8 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 			), "HTTP "+service.PrometheusMetricsPath))
 	statusSvc := service.NewStatusService(opts.AuthSvc.AuthURLs.Login, Version, opts.CASClientUseCase, opts.BootstrapConfig)
 	v1.RegisterStatusServiceHTTPServer(httpSrv, statusSvc)
+	// Only the login handoff exchange has an HTTP mapping in this service
+	v1.RegisterAuthServiceHTTPServer(httpSrv, opts.AuthSvc)
 	v1.RegisterReferrerServiceHTTPServer(httpSrv, service.NewReferrerService(opts.ReferrerUseCase))
 
 	// Wrap http server to handle grpc-web calls and we will return this new server

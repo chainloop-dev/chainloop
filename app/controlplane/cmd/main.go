@@ -64,7 +64,7 @@ func init() {
 func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer,
 	expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins,
 	userAccessSyncer *biz.UserAccessSyncerUseCase, casBackendChecker *biz.CASBackendChecker,
-	apiTokenStaleRevoker *biz.APITokenStaleRevoker, cfg *conf.Bootstrap) *app {
+	apiTokenStaleRevoker *biz.APITokenStaleRevoker, loginHandoffs *biz.LoginHandoffUseCase, cfg *conf.Bootstrap) *app {
 	servers := []transport.Server{gs, hs, ms}
 	if cfg.EnableProfiler {
 		servers = append(servers, profilerSvc)
@@ -78,7 +78,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
 			kratos.Server(servers...),
-		), expirer, plugins, userAccessSyncer, casBackendChecker, apiTokenStaleRevoker}
+		), expirer, plugins, userAccessSyncer, casBackendChecker, apiTokenStaleRevoker, loginHandoffs}
 }
 
 func main() {
@@ -180,6 +180,9 @@ func main() {
 		InitialDelay:  initialDelay,
 	})
 
+	// Start the background sweeper of login handoff codes (every 10 minutes)
+	go app.loginHandoffs.StartSweeper(ctx, 10*time.Minute)
+
 	// Start the background CAS Backend checker for DEFAULT backends (every 30 minutes)
 	if app.casBackendChecker != nil {
 		go app.casBackendChecker.Start(ctx, &biz.CASBackendCheckerOpts{
@@ -229,6 +232,8 @@ type app struct {
 	casBackendChecker *biz.CASBackendChecker
 	// Background sweeper that auto-revokes stale API tokens
 	apiTokenStaleRevoker *biz.APITokenStaleRevoker
+	// Background sweeper that deletes used and expired login handoff codes
+	loginHandoffs *biz.LoginHandoffUseCase
 }
 
 // newNatsConfig converts the proto config to a plain natsconn.Config.
@@ -269,6 +274,8 @@ func filterSensitiveArgs(_ log.Level, keyvals ...interface{}) bool {
 			case "/controlplane.v1.CASBackendService/Create", "/controlplane.v1.CASBackendService/Update":
 				maskArgs(keyvals)
 			case "/controlplane.v1.AttestationStateService/Save":
+				maskArgs(keyvals)
+			case "/controlplane.v1.AuthService/ExchangeHandoff":
 				maskArgs(keyvals)
 			}
 		}

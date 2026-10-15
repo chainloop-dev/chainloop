@@ -28,6 +28,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
@@ -37,7 +38,10 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
 	sl "github.com/chainloop-dev/chainloop/pkg/servicelogger"
+	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"golang.org/x/oauth2"
 )
 
@@ -49,6 +53,7 @@ const (
 	cookieOauthStateName = "oauthState"
 	cookieCallback       = "oauthCallback"
 	cookieLongLived      = "longLived"
+	cookieCodeChallenge  = "oauthCodeChallenge"
 
 	// Auth paths
 	AuthLoginPath    = "/auth/login"
@@ -63,6 +68,24 @@ const (
 	// dev only
 	devUserDuration = 30 * 24 * time.Hour
 )
+
+// legacyCallbackDeliveries counts the logins that sent the session token in the callback URL
+var legacyCallbackDeliveries = promauto.NewCounter(prometheus.CounterOpts{
+	Name: "chainloop_controlplane_auth_legacy_callback_deliveries_total",
+	Help: "Logins that delivered the session token in the callback URL instead of a handoff code.",
+})
+
+// errLegacyCallbackDenied is shown to a user whose client does not send a code challenge
+var errLegacyCallbackDenied = errors.New("this client is not supported by the server anymore, please upgrade it and log in again")
+
+// errLoginHandoffExchange is the only error a client gets from a failed exchange, the reason goes to the server log
+var errLoginHandoffExchange = kerrors.Unauthorized("LOGIN_HANDOFF_INVALID", "invalid login code, please log in again")
+
+// loginHandoffs issues and exchanges the single-use codes a login delivers to the client callback
+type loginHandoffs interface {
+	Issue(ctx context.Context, userID string, tokenTTL time.Duration, codeChallenge, callback string) (string, error)
+	Exchange(ctx context.Context, code, codeVerifier, callback string) (*biz.LoginHandoff, error)
+}
 
 type oauthResp struct {
 	code          int
@@ -117,12 +140,13 @@ type AuthService struct {
 	orgInvitesUseCase *biz.OrgInvitationUseCase
 	AuthURLs          *AuthURLs
 	auditorUseCase    *biz.AuditorUseCase
+	loginHandoffs     loginHandoffs
 	devMode           bool
 	// scheme://host destinations the post-login redirect may target
 	allowedCallbackOrigins []string
 }
 
-func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, authConfig *conf.Auth, bootstrapConfig *conf.Bootstrap, auc *biz.AuditorUseCase, opts ...NewOpt) (*AuthService, error) {
+func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC *biz.MembershipUseCase, inviteUC *biz.OrgInvitationUseCase, handoffUC *biz.LoginHandoffUseCase, authConfig *conf.Auth, bootstrapConfig *conf.Bootstrap, auc *biz.AuditorUseCase, opts ...NewOpt) (*AuthService, error) {
 	oidcConfig := authConfig.GetOidc()
 	if oidcConfig == nil {
 		return nil, errors.New("oauth configuration missing")
@@ -162,6 +186,7 @@ func NewAuthService(userUC *biz.UserUseCase, orgUC *biz.OrganizationUseCase, mUC
 		membershipUseCase: mUC,
 		orgInvitesUseCase: inviteUC,
 		auditorUseCase:    auc,
+		loginHandoffs:     handoffUC,
 		allowedCallbackOrigins: append(originsOf(authURLs.Login, bootstrapConfig.GetServer().GetHttp().GetExternalUrl(),
 			bootstrapConfig.GetUiDashboardUrl()), extraOrigins...),
 	}, nil
@@ -256,6 +281,89 @@ func callbackAllowed(callback string, allowedOrigins []string) error {
 	return fmt.Errorf("callback URL not allowed: %s", originOf(u))
 }
 
+var errInvalidReturnTo = errors.New("invalid post-login redirect, it must be a relative path")
+
+// returnToAllowed rejects a callback whose post-login redirect is not a relative path, so the
+// destination stays on the origin of the callback
+func returnToAllowed(callback string) error {
+	if callback == "" {
+		return nil
+	}
+
+	u, err := url.Parse(callback)
+	if err != nil {
+		return errInvalidCallback
+	}
+
+	for _, v := range u.Query()[oauth.QueryParamReturnTo] {
+		if v != "" && !isRelativePath(v) {
+			return errInvalidReturnTo
+		}
+	}
+
+	return nil
+}
+
+// isRelativePath accepts only a path that starts with a single "/"
+func isRelativePath(p string) bool {
+	// "//host" is scheme-relative, and browsers fold "\" into "/"
+	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") || strings.Contains(p, `\`) {
+		return false
+	}
+
+	// Browsers strip tabs and newlines, so "/<tab>/host" would become "//host"
+	if strings.ContainsFunc(p, unicode.IsControl) {
+		return false
+	}
+
+	u, err := url.Parse(p)
+	return err == nil && u.Scheme == "" && u.Host == ""
+}
+
+// LegacyCallbackAllowed tells if a login with no code challenge still gets the token in the callback URL
+func LegacyCallbackAllowed(authConfig *conf.Auth) bool {
+	// Phase 1 of the deprecation: allowed unless the operator denies it
+	return authConfig == nil || authConfig.AllowLegacyLoginCallback == nil || authConfig.GetAllowLegacyLoginCallback()
+}
+
+// checkLegacyCallback rejects a login that would put the token in an external callback URL when the
+// operator denied it. A relative callback is the same-origin download flow, which is not affected
+func (svc *AuthService) checkLegacyCallback(callback, codeChallenge string) error {
+	if callback == "" || codeChallenge != "" || isRelativeRef(callback) || LegacyCallbackAllowed(svc.authConfig) {
+		return nil
+	}
+
+	return errLegacyCallbackDenied
+}
+
+// isRelativeRef tells if the URL has no scheme and no host
+func isRelativeRef(raw string) bool {
+	u, err := url.Parse(raw)
+	return err == nil && u.Scheme == "" && u.Host == ""
+}
+
+// codeChallengeFromQuery returns the S256 code challenge of a login request, if any
+func codeChallengeFromQuery(q url.Values) (string, error) {
+	challenge := q.Get(oauth.QueryParamCodeChallenge)
+	if challenge == "" {
+		return "", nil
+	}
+
+	if q.Get(oauth.QueryParamCallback) == "" {
+		return "", errors.New("a code challenge requires a callback")
+	}
+
+	if q.Get(oauth.QueryParamCodeChallengeMethod) != oauth.CodeChallengeMethodS256 {
+		return "", fmt.Errorf("unsupported code challenge method, only %s is supported", oauth.CodeChallengeMethodS256)
+	}
+
+	if !oauth.ValidS256Challenge(challenge) {
+		return "", errors.New("invalid code challenge")
+	}
+
+	return challenge, nil
+}
+
 type AuthURLs struct {
 	Login, callback   string
 	loginIsOverridden bool
@@ -324,14 +432,28 @@ func (h oauthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oauthResp {
 	// The final destination where the auth token will be pushed to, i.e the CLI.
 	// Rejected upfront so a crafted callback never starts the OIDC dance
-	callback := r.URL.Query().Get(oauth.QueryParamCallback)
+	query := r.URL.Query()
+	callback := query.Get(oauth.QueryParamCallback)
 	if err := callbackAllowed(callback, svc.allowedCallbackOrigins); err != nil {
 		return newOauthResp(http.StatusBadRequest, err, true)
 	}
 
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
+	if err := returnToAllowed(callback); err != nil {
+		return newOauthResp(http.StatusBadRequest, err, true)
+	}
+
+	// A client that sends a code challenge gets a handoff code instead of the token
+	codeChallenge, err := codeChallengeFromQuery(query)
 	if err != nil {
+		return newOauthResp(http.StatusBadRequest, err, true)
+	}
+
+	if err := svc.checkLegacyCallback(callback, codeChallenge); err != nil {
+		return newOauthResp(http.StatusBadRequest, err, true)
+	}
+
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
 		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to generate random string: %w", err), false)
 	}
 
@@ -340,16 +462,17 @@ func loginHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *oau
 	svc.setOauthCookie(w, cookieOauthStateName, state)
 
 	svc.setOauthCookie(w, cookieCallback, callback)
+	svc.setOauthCookie(w, cookieCodeChallenge, codeChallenge)
 
 	// Wether the token should be short lived or not
-	svc.setOauthCookie(w, cookieLongLived, r.URL.Query().Get(oauth.QueryParamLongLived))
+	svc.setOauthCookie(w, cookieLongLived, query.Get(oauth.QueryParamLongLived))
 
 	authorizationURI := svc.authenticator.AuthCodeURL(state)
 
 	// Add the connection parameter to the authorization URL if needed
 	// ?connection is useful for example in auth0 to know which connection to use
 	// https://auth0.com/docs/api/authentication#login
-	connectionStr := r.URL.Query().Get(oauth.QueryParamAuth0Connection)
+	connectionStr := query.Get(oauth.QueryParamAuth0Connection)
 	if connectionStr != "" {
 		uri, err := url.Parse(authorizationURI)
 		if err != nil {
@@ -435,6 +558,12 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to accept pending invitations: %w", err), false)
 	}
 
+	return svc.deliverLogin(ctx, w, r, u.ID)
+}
+
+// deliverLogin hands the session of the user over to the client that started the login: a
+// handoff code when it sent a code challenge, otherwise the token itself
+func (svc *AuthService) deliverLogin(ctx context.Context, w http.ResponseWriter, r *http.Request, userID string) *oauthResp {
 	// Set the expiration
 	expiration := shortLivedDuration
 	longLived, err := r.Cookie(cookieLongLived)
@@ -444,12 +573,6 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 
 	if longLived.Value == "true" {
 		expiration = longLivedDuration
-	}
-
-	// Generate user token
-	userToken, err := generateUserJWT(u.ID, svc.authConfig.GeneratedJwsHmacSecret, expiration)
-	if err != nil {
-		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to generate user token: %w", err), false)
 	}
 
 	// Either redirect or render the token if fallback is specified
@@ -463,6 +586,11 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 
 	// There is no callback, render the token in an HTML page with a copy button
 	if callbackValue == "" {
+		userToken, err := generateUserJWT(userID, svc.authConfig.GeneratedJwsHmacSecret, expiration)
+		if err != nil {
+			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to generate user token: %w", err), false)
+		}
+
 		if err := renderTokenPage(w, userToken); err != nil {
 			return newOauthResp(http.StatusInternalServerError, err, false)
 		}
@@ -475,9 +603,48 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 		return newOauthResp(http.StatusBadRequest, err, true)
 	}
 
-	callbackURL, err := crafCallbackURL(callbackValue, userToken)
-	if err != nil {
-		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to craft callback URL: %w", err), false)
+	if err := returnToAllowed(callbackValue); err != nil {
+		return newOauthResp(http.StatusBadRequest, err, true)
+	}
+
+	// A login started before an upgrade has no challenge cookie, it is a legacy login
+	var codeChallenge string
+	if c, err := r.Cookie(cookieCodeChallenge); err == nil {
+		codeChallenge = c.Value
+	}
+
+	if err := svc.checkLegacyCallback(callbackValue, codeChallenge); err != nil {
+		return newOauthResp(http.StatusBadRequest, err, true)
+	}
+
+	var callbackURL string
+	if codeChallenge != "" {
+		handoff, err := svc.loginHandoffs.Issue(ctx, userID, expiration, codeChallenge, callbackValue)
+		if err != nil {
+			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to issue login handoff code: %w", err), false)
+		}
+
+		callbackURL, err = crafCallbackURL(callbackValue, oauth.QueryParamHandoff, handoff)
+		if err != nil {
+			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to craft callback URL: %w", err), false)
+		}
+	} else {
+		userToken, err := generateUserJWT(userID, svc.authConfig.GeneratedJwsHmacSecret, expiration)
+		if err != nil {
+			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to generate user token: %w", err), false)
+		}
+
+		// The same-origin download flow (relative callback) stays on the token callback, it is not part of the deprecation
+		if !isRelativeRef(callbackValue) {
+			legacyCallbackDeliveries.Inc()
+			svc.log.WithContext(ctx).Warnw("msg", "login delivered the token in the callback URL, the client does not use the code exchange",
+				"callback_origin", strings.Join(originsOf(callbackValue), ""))
+		}
+
+		callbackURL, err = crafCallbackURL(callbackValue, oauth.QueryParamLegacyToken, userToken)
+		if err != nil {
+			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to craft callback URL: %w", err), false)
+		}
 	}
 
 	setTokenLeakHeaders(w)
@@ -485,14 +652,14 @@ func callbackHandler(svc *AuthService, w http.ResponseWriter, r *http.Request) *
 	return newOauthResp(http.StatusTemporaryRedirect, nil, false)
 }
 
-func crafCallbackURL(callback, userToken string) (string, error) {
+func crafCallbackURL(callback, param, value string) (string, error) {
 	callbackURL, err := url.Parse(callback)
 	if err != nil {
 		return "", fmt.Errorf("invalid callback URL: %w", err)
 	}
 
 	q := callbackURL.Query()
-	q.Set("t", userToken)
+	q.Set(param, value)
 	callbackURL.RawQuery = q.Encode()
 
 	return callbackURL.String(), nil
@@ -591,6 +758,28 @@ func generateAndLogDevUser(userUC *biz.UserUseCase, log *log.Helper, authConfig 
 	log.Infof("Use chainloop 'auth login --skip-browser' and paste this token to start a headless session: %s", userToken)
 
 	return nil
+}
+
+// ExchangeHandoff trades a login handoff code for the session token. Every failure returns the
+// same error, the specific reason only goes to the server log
+func (svc *AuthService) ExchangeHandoff(ctx context.Context, req *pb.AuthServiceExchangeHandoffRequest) (*pb.AuthServiceExchangeHandoffResponse, error) {
+	h, err := svc.loginHandoffs.Exchange(ctx, req.GetHandoff(), req.GetCodeVerifier(), req.GetCallback())
+	if err != nil {
+		var exchangeErr biz.ErrLoginHandoffExchange
+		if errors.As(err, &exchangeErr) {
+			svc.log.WithContext(ctx).Warnw("msg", "login handoff exchange failed", "reason", exchangeErr.Reason)
+			return nil, errLoginHandoffExchange
+		}
+
+		return nil, handleUseCaseErr(ctx, err, svc.log)
+	}
+
+	token, err := generateUserJWT(h.UserID.String(), svc.authConfig.GeneratedJwsHmacSecret, h.TokenTTL)
+	if err != nil {
+		return nil, sl.LogAndMaskErr(ctx, fmt.Errorf("generating user token: %w", err), svc.log)
+	}
+
+	return &pb.AuthServiceExchangeHandoffResponse{Token: token}, nil
 }
 
 // DeleteAccount deletes an account

@@ -179,7 +179,9 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase, orgInvitationUseCase, orgInvitationRepo, authzUseCase)
 	v5 := serviceOpts(logger, authzUseCase, projectUseCase, groupUseCase)
 	workflowService := service.NewWorkflowService(workflowUseCase, workflowContractUseCase, projectUseCase, organizationUseCase, userUseCase, v5...)
-	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, auth, bootstrap, auditorUseCase, v5...)
+	loginHandoffRepo := data.NewLoginHandoffRepo(dataData, logger)
+	loginHandoffUseCase := biz.NewLoginHandoffUseCase(loginHandoffRepo, logger)
+	authService, err := service.NewAuthService(userUseCase, organizationUseCase, membershipUseCase, orgInvitationUseCase, loginHandoffUseCase, auth, bootstrap, auditorUseCase, v5...)
 	if err != nil {
 		cleanup3()
 		cleanup2()
@@ -403,7 +405,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	distributedLock := data.NewPostgresLock(dataData, logger)
 	casBackendChecker := biz.NewCASBackendChecker(logger, casBackendRepo, casBackendUseCase, distributedLock)
 	apiTokenStaleRevoker := biz.NewAPITokenStaleRevoker(organizationRepo, apiTokenRepo, apiTokenUseCase, logger)
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, userAccessSyncerUseCase, casBackendChecker, apiTokenStaleRevoker, bootstrap)
+	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, userAccessSyncerUseCase, casBackendChecker, apiTokenStaleRevoker, loginHandoffUseCase, bootstrap)
 	return mainApp, func() {
 		cleanup3()
 		cleanup2()

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,6 +57,9 @@ func (s *StatusService) Infoz(_ context.Context, _ *pb.InfozRequest) (*pb.InfozR
 		Version:               s.version,
 		ChartVersion:          os.Getenv("CHART_VERSION"),
 		RestrictedOrgCreation: s.bootstrap.RestrictOrgCreation,
+		// Clients send a code challenge only when the server reports the exchange
+		LoginCodeExchangeSupported: true,
+		LoginLegacyCallbackAllowed: LegacyCallbackAllowed(s.bootstrap.GetAuth()),
 	}, nil
 }
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,6 +33,9 @@ func TestRequireCurrentUserMatcher(t *testing.T) {
 		{"/controlplane.v1.StatusService/Statusz", false},
 		{"/controlplane.v1.AttestationService/Init", false},
 		{"/controlplane.v1.AttestationService/Store", false},
+		{"/controlplane.v1.AuthService/ExchangeHandoff", false},
+		{"/controlplane.v1.AuthService/ExchangeHandoffX", true},
+		{"/controlplane.v1.AuthService/DeleteAccount", true},
 	}
 
 	matchFunc := requireCurrentUserMatcher()
