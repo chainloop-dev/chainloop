@@ -215,6 +215,13 @@ Same error to the client for every failure. The specific reason goes to the serv
   - Uniform error with no server reason: hard to debug.
 - Source: drafting
 
+### D-013: Exchange endpoint is gRPC only
+Supersedes the HTTP POST mapping of D-003. The exchange is a gRPC RPC with no HTTP mapping.
+- Why: the CLI uses gRPC and the web UI uses gRPC-web, so no client needs a plain HTTP route. The endpoint is unauthenticated, and no HTTP route keeps that public surface smaller and avoids a cross-origin preflight from the web UI.
+- Alternatives considered:
+  - Keep the HTTP mapping for a future non-gRPC client: no such client exists today. A mapping can be added when one does.
+- Source: PR #3630 review
+
 ## Open Questions
 
 None.
