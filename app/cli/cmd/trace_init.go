@@ -61,9 +61,10 @@ func newTraceInitCmd() *cobra.Command {
 create Chainloop attestations when you push.
 
 It installs the managed git hooks plus the hooks of the selected harnesses
-(Claude Code when none is given), and creates the Chainloop workflow the
-attestations target. Nothing is written to the repository until that workflow
-exists, so you need to be logged in.
+(Claude Code when none is given). In control-plane mode, it also creates the
+Chainloop workflow the attestations target. Nothing is written to the
+repository until that workflow exists, so you need to be logged in. Local mode
+(--local) needs no workflow and no login.
 
 On a terminal it asks which organization and project to use, offering what
 .chainloop.yml already holds so pressing Enter keeps it. A new project can be

@@ -119,6 +119,12 @@ func RunTraceLocalStore(ctx context.Context, log zerolog.Logger, opts RunTraceLo
 		finalizePush(store, repoRoot, aiCommits, log)
 	}
 
+	// A skipped session is a failure, so the pre-push hook can warn, or block
+	// the push when traceRequired is set.
+	if stored < len(sessions) {
+		return stored, tracePath, fmt.Errorf("stored %d of %d AI coding sessions, the next push tries the others again", stored, len(sessions))
+	}
+
 	return stored, tracePath, nil
 }
 

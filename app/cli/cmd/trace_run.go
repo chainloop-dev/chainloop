@@ -32,21 +32,23 @@ Chainloop attestation for the session once the command exits successfully.
 Sessions without git commits are still attested.
 
 trace run does not read the attestation identity from .chainloop.yml. The
---org, --project and --workflow flags (mandatory) and the optional --version
-flag set it.
+--org, --project and --workflow flags and the optional --version flag set it.
+The --org, --project and --workflow flags are required in control-plane mode.
 
-trace run reads one value from .chainloop.yml: traceStorage. In a local-mode
-repository (traceStorage: LOCAL), trace run writes the session to disk when the
-command exits. It does not connect to a control plane, and the --org, --project
-and --workflow flags are optional.
+trace run reads two values from .chainloop.yml: traceStorage and the optional
+tracePath. tracePath sets the trace directory. In a local-mode repository
+(traceStorage: LOCAL), trace run writes the session to disk when the command
+exits. It does not connect to a control plane, and the --org, --project and
+--workflow flags are optional.
 
 When the wrapped command exits, trace run removes the temporary hooks and the
 trace state. It keeps the stored local session evidence. Thus no setup from one
 session stays for the next session.
 
-The workflow is created before the command runs. That part is best-effort: the
-session runs either way and the attestation creates the workflow if this did
-not, except with --contract, which trace run cannot honor later.`
+In control-plane mode, the workflow is created before the command runs. That
+part is best-effort: the session runs either way and the attestation creates
+the workflow if this did not, except with --contract, which trace run cannot
+honor later.`
 
 // newTraceRunCmd creates the `trace run` subcommand.
 func newTraceRunCmd() *cobra.Command {

@@ -203,3 +203,52 @@ func materialByName(t *testing.T, m localManifest, name string) storedMaterial {
 	require.Failf(t, "material not found", "material %q not found in manifest", name)
 	return storedMaterial{}
 }
+
+// TestRunTraceLocalStorePartialFailure covers a session that cannot be stored.
+// The store returns an error, so the pre-push hook can warn, or block the push
+// when traceRequired is set. The commit stays untracked, so the next push
+// tries the session again.
+func TestRunTraceLocalStorePartialFailure(t *testing.T) {
+	const sessionID = "5d2b9e7a-1c3f-4a6b-8d9e-0f1a2b3c4d5e"
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	repoDir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+	t.Chdir(repoDir)
+
+	projectDir := claudeProjectDir(home, repoDir)
+	require.NoError(t, os.MkdirAll(projectDir, 0o700))
+	tr := transcript{t: t, path: filepath.Join(projectDir, sessionID+".jsonl")}
+	tr.append(`{"type":"user","uuid":"u1","timestamp":"2026-10-15T10:00:00.000Z","sessionId":"` + sessionID + `","message":{"role":"user","content":"Add a hello world."}}`)
+
+	payload, err := json.Marshal(struct {
+		SessionID      string `json:"session_id"`
+		HookEventName  string `json:"hook_event_name"`
+		TranscriptPath string `json:"transcript_path"`
+		Cwd            string `json:"cwd"`
+	}{sessionID, "SessionStart", tr.path, repoDir})
+	require.NoError(t, err)
+	withStdin(t, string(payload))
+	captureStdout(t, func() { require.NoError(t, HandleAgentSessionStart(claude.New(), zerolog.Nop())) })
+
+	sha := headSHA(t, repoDir)
+	require.NoError(t, store.SaveCommitRecord(&state.CommitRecord{
+		SHA:        sha,
+		Message:    "initial",
+		SessionIDs: []string{sessionID},
+		Timestamp:  state.NowTimestamp(),
+	}))
+
+	// A file where the session directory must go makes the store of this
+	// session fail.
+	require.NoError(t, os.MkdirAll(store.LocalSessionsDir(), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(store.LocalSessionsDir(), state.SanitizeID(sessionID)), nil, 0o600))
+
+	stored, _, err := RunTraceLocalStore(t.Context(), zerolog.Nop(), RunTraceLocalStoreOpts{Mode: aicodingsession.ModeCoding})
+	require.ErrorContains(t, err, "stored 0 of 1")
+	assert.Zero(t, stored)
+	assert.False(t, mustLoadRecord(t, store, sha).Tracked, "the commit stays for the next push")
+}

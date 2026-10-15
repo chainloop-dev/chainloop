@@ -3303,9 +3303,10 @@ Initialize git hooks that automatically trace AI coding sessions and
 create Chainloop attestations when you push.
 
 It installs the managed git hooks plus the hooks of the selected harnesses
-(Claude Code when none is given), and creates the Chainloop workflow the
-attestations target. Nothing is written to the repository until that workflow
-exists, so you need to be logged in.
+(Claude Code when none is given). In control-plane mode, it also creates the
+Chainloop workflow the attestations target. Nothing is written to the
+repository until that workflow exists, so you need to be logged in. Local mode
+(--local) needs no workflow and no login.
 
 On a terminal it asks which organization and project to use, offering what
 .chainloop.yml already holds so pressing Enter keeps it. A new project can be
@@ -3383,21 +3384,23 @@ Chainloop attestation for the session once the command exits successfully.
 Sessions without git commits are still attested.
 
 trace run does not read the attestation identity from .chainloop.yml. The
---org, --project and --workflow flags (mandatory) and the optional --version
-flag set it.
+--org, --project and --workflow flags and the optional --version flag set it.
+The --org, --project and --workflow flags are required in control-plane mode.
 
-trace run reads one value from .chainloop.yml: traceStorage. In a local-mode
-repository (traceStorage: LOCAL), trace run writes the session to disk when the
-command exits. It does not connect to a control plane, and the --org, --project
-and --workflow flags are optional.
+trace run reads two values from .chainloop.yml: traceStorage and the optional
+tracePath. tracePath sets the trace directory. In a local-mode repository
+(traceStorage: LOCAL), trace run writes the session to disk when the command
+exits. It does not connect to a control plane, and the --org, --project and
+--workflow flags are optional.
 
 When the wrapped command exits, trace run removes the temporary hooks and the
 trace state. It keeps the stored local session evidence. Thus no setup from one
 session stays for the next session.
 
-The workflow is created before the command runs. That part is best-effort: the
-session runs either way and the attestation creates the workflow if this did
-not, except with --contract, which trace run cannot honor later.
+In control-plane mode, the workflow is created before the command runs. That
+part is best-effort: the session runs either way and the attestation creates
+the workflow if this did not, except with --contract, which trace run cannot
+honor later.
 
 ```
 chainloop trace run -- <command> [args...] [flags]
