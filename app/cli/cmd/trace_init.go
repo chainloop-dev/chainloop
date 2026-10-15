@@ -142,12 +142,12 @@ cannot use them with --local. You can use --require-trace with --local.`,
 			var executor *action.AttestationExecutor
 			if !localFlag {
 				if err := ensureActionOpts(cmd); err != nil {
-					return err
+					return withLocalModeTip(err)
 				}
 
 				executor, err = resolveTraceIdentity(cmd.Context(), cfg, repoRoot)
 				if err != nil {
-					return stopIfAborted(err)
+					return withLocalModeTip(stopIfAborted(err))
 				}
 				defer func() { _ = executor.Close() }()
 			}
@@ -170,7 +170,7 @@ cannot use them with --local. You can use --require-trace with --local.`,
 			// Local mode has no control plane to create the workflow in.
 			if !localFlag {
 				if err := ensureTraceInitWorkflow(cmd.Context(), executor, cfg, contract); err != nil {
-					return err
+					return withLocalModeTip(err)
 				}
 			}
 
@@ -292,6 +292,26 @@ cannot use them with --local. You can use --require-trace with --local.`,
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
 	return cmd
+}
+
+// localModeTip is added to a control-plane init error when the user is not
+// authenticated, because local mode needs no login.
+const localModeTip = `Tip: run "chainloop trace init --local" to configure it in local mode`
+
+// withLocalModeTip adds localModeTip to an authentication error. The message
+// keeps the text the CLI shows for that error everywhere else. Any other error
+// is returned unchanged.
+func withLocalModeTip(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	msg, ok := action.AuthErrorMessage(err)
+	if !ok {
+		return err
+	}
+
+	return fmt.Errorf("%s\n%s", msg, localModeTip)
 }
 
 // traceDocsURL is the guide covering what this command set up and what can be

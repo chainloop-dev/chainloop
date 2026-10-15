@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,8 +26,11 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
+	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func gitInit(t *testing.T, dir string) {
@@ -233,4 +238,50 @@ func TestTraceStorageToPersist(t *testing.T) {
 			assert.Equal(t, tc.wantValue, value)
 		})
 	}
+}
+
+// TestWithLocalModeTip covers the tip a control-plane init adds when the user
+// is not authenticated: local mode needs no login.
+func TestWithLocalModeTip(t *testing.T) {
+	const tip = `Tip: run "chainloop trace init --local" to configure it in local mode`
+
+	testCases := []struct {
+		name    string
+		err     error
+		want    string
+		wantTip bool
+	}{
+		{
+			name:    "missing token",
+			err:     fmt.Errorf("resolve organization: %w", status.Error(codes.Unauthenticated, jwtMiddleware.ErrMissingJwtToken.Message)),
+			want:    `authentication required, please run "chainloop auth login"`,
+			wantTip: true,
+		},
+		{
+			name:    "expired token",
+			err:     status.Error(codes.Unauthenticated, jwtMiddleware.ErrTokenExpired.Message),
+			want:    `your authentication token has expired, please run "chainloop auth login" again`,
+			wantTip: true,
+		},
+		{
+			name: "any other error is unchanged",
+			err:  errors.New("boom"),
+			want: "boom",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := withLocalModeTip(tc.err)
+			require.Error(t, got)
+			assert.Contains(t, got.Error(), tc.want)
+			if tc.wantTip {
+				assert.Contains(t, got.Error(), tip)
+			} else {
+				assert.Equal(t, tc.err, got)
+			}
+		})
+	}
+
+	assert.NoError(t, withLocalModeTip(nil))
 }
