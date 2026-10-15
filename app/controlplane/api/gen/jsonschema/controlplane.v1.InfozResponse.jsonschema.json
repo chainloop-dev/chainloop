@@ -7,6 +7,14 @@
       "description": "Version of the helm chart used during deployment",
       "type": "string"
     },
+    "^(login_code_exchange_supported)$": {
+      "description": "Whether the login can deliver a handoff code to be exchanged for the session token",
+      "type": "boolean"
+    },
+    "^(login_legacy_callback_allowed)$": {
+      "description": "Whether a login without a code challenge still receives the session token in the callback URL",
+      "type": "boolean"
+    },
     "^(login_url)$": {
       "type": "string"
     },
@@ -23,6 +31,14 @@
     "chartVersion": {
       "description": "Version of the helm chart used during deployment",
       "type": "string"
+    },
+    "loginCodeExchangeSupported": {
+      "description": "Whether the login can deliver a handoff code to be exchanged for the session token",
+      "type": "boolean"
+    },
+    "loginLegacyCallbackAllowed": {
+      "description": "Whether a login without a code challenge still receives the session token in the callback URL",
+      "type": "boolean"
     },
     "loginURL": {
       "type": "string"

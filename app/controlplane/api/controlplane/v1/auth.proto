@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,10 +17,21 @@ syntax = "proto3";
 
 package controlplane.v1;
 
+import "buf/validate/validate.proto";
+import "google/api/annotations.proto";
+
 option go_package = "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1";
 
 service AuthService {
   rpc DeleteAccount(AuthServiceDeleteAccountRequest) returns (AuthServiceDeleteAccountResponse);
+  // ExchangeHandoff trades the single-use handoff code that a login delivered to the client
+  // callback for the user session token. It does not require an existing session.
+  rpc ExchangeHandoff(AuthServiceExchangeHandoffRequest) returns (AuthServiceExchangeHandoffResponse) {
+    option (google.api.http) = {
+      post: "/auth/exchange"
+      body: "*"
+    };
+  }
 }
 
 // AuthServiceDeleteAccountResponse is the response for the DeleteAccount method.
@@ -28,3 +39,26 @@ message AuthServiceDeleteAccountRequest {}
 
 // AuthServiceDeleteAccountResponse is the response for the DeleteAccount method.
 message AuthServiceDeleteAccountResponse {}
+
+message AuthServiceExchangeHandoffRequest {
+  // The handoff code received in the callback URL
+  string handoff = 1 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+  // The PKCE verifier whose S256 challenge was sent when the login started
+  string code_verifier = 2 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 256
+  }];
+  // The callback URL the login was started with
+  string callback = 3 [(buf.validate.field).string = {
+    min_len: 1
+    max_len: 2048
+  }];
+}
+
+message AuthServiceExchangeHandoffResponse {
+  // User session token
+  string token = 1;
+}

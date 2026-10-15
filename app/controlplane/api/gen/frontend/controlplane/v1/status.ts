@@ -26,6 +26,10 @@ export interface InfozResponse {
   restrictedOrgCreation: boolean;
   /** Link to the platform UI, if available */
   uiDashboardUrl: string;
+  /** Whether the login can deliver a handoff code to be exchanged for the session token */
+  loginCodeExchangeSupported: boolean;
+  /** Whether a login without a code challenge still receives the session token in the callback URL */
+  loginLegacyCallbackAllowed: boolean;
 }
 
 export interface StatuszResponse {
@@ -132,7 +136,15 @@ export const StatuszRequest = {
 };
 
 function createBaseInfozResponse(): InfozResponse {
-  return { loginUrl: "", version: "", chartVersion: "", restrictedOrgCreation: false, uiDashboardUrl: "" };
+  return {
+    loginUrl: "",
+    version: "",
+    chartVersion: "",
+    restrictedOrgCreation: false,
+    uiDashboardUrl: "",
+    loginCodeExchangeSupported: false,
+    loginLegacyCallbackAllowed: false,
+  };
 }
 
 export const InfozResponse = {
@@ -151,6 +163,12 @@ export const InfozResponse = {
     }
     if (message.uiDashboardUrl !== "") {
       writer.uint32(42).string(message.uiDashboardUrl);
+    }
+    if (message.loginCodeExchangeSupported === true) {
+      writer.uint32(48).bool(message.loginCodeExchangeSupported);
+    }
+    if (message.loginLegacyCallbackAllowed === true) {
+      writer.uint32(56).bool(message.loginLegacyCallbackAllowed);
     }
     return writer;
   },
@@ -197,6 +215,20 @@ export const InfozResponse = {
 
           message.uiDashboardUrl = reader.string();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.loginCodeExchangeSupported = reader.bool();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.loginLegacyCallbackAllowed = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -213,6 +245,12 @@ export const InfozResponse = {
       chartVersion: isSet(object.chartVersion) ? String(object.chartVersion) : "",
       restrictedOrgCreation: isSet(object.restrictedOrgCreation) ? Boolean(object.restrictedOrgCreation) : false,
       uiDashboardUrl: isSet(object.uiDashboardUrl) ? String(object.uiDashboardUrl) : "",
+      loginCodeExchangeSupported: isSet(object.loginCodeExchangeSupported)
+        ? Boolean(object.loginCodeExchangeSupported)
+        : false,
+      loginLegacyCallbackAllowed: isSet(object.loginLegacyCallbackAllowed)
+        ? Boolean(object.loginLegacyCallbackAllowed)
+        : false,
     };
   },
 
@@ -223,6 +261,10 @@ export const InfozResponse = {
     message.chartVersion !== undefined && (obj.chartVersion = message.chartVersion);
     message.restrictedOrgCreation !== undefined && (obj.restrictedOrgCreation = message.restrictedOrgCreation);
     message.uiDashboardUrl !== undefined && (obj.uiDashboardUrl = message.uiDashboardUrl);
+    message.loginCodeExchangeSupported !== undefined &&
+      (obj.loginCodeExchangeSupported = message.loginCodeExchangeSupported);
+    message.loginLegacyCallbackAllowed !== undefined &&
+      (obj.loginLegacyCallbackAllowed = message.loginLegacyCallbackAllowed);
     return obj;
   },
 
@@ -237,6 +279,8 @@ export const InfozResponse = {
     message.chartVersion = object.chartVersion ?? "";
     message.restrictedOrgCreation = object.restrictedOrgCreation ?? false;
     message.uiDashboardUrl = object.uiDashboardUrl ?? "";
+    message.loginCodeExchangeSupported = object.loginCodeExchangeSupported ?? false;
+    message.loginLegacyCallbackAllowed = object.loginLegacyCallbackAllowed ?? false;
     return message;
   },
 };

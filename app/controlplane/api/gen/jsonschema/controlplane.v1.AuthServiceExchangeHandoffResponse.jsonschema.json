@@ -1,0 +1,13 @@
+{
+  "$id": "controlplane.v1.AuthServiceExchangeHandoffResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "token": {
+      "description": "User session token",
+      "type": "string"
+    }
+  },
+  "title": "Auth Service Exchange Handoff Response",
+  "type": "object"
+}

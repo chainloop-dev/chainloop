@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -130,8 +130,12 @@ type InfozResponse struct {
 	RestrictedOrgCreation bool `protobuf:"varint,4,opt,name=restricted_org_creation,json=restrictedOrgCreation,proto3" json:"restricted_org_creation,omitempty"`
 	// Link to the platform UI, if available
 	UiDashboardUrl string `protobuf:"bytes,5,opt,name=ui_dashboard_url,json=uiDashboardUrl,proto3" json:"ui_dashboard_url,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Whether the login can deliver a handoff code to be exchanged for the session token
+	LoginCodeExchangeSupported bool `protobuf:"varint,6,opt,name=login_code_exchange_supported,json=loginCodeExchangeSupported,proto3" json:"login_code_exchange_supported,omitempty"`
+	// Whether a login without a code challenge still receives the session token in the callback URL
+	LoginLegacyCallbackAllowed bool `protobuf:"varint,7,opt,name=login_legacy_callback_allowed,json=loginLegacyCallbackAllowed,proto3" json:"login_legacy_callback_allowed,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *InfozResponse) Reset() {
@@ -199,6 +203,20 @@ func (x *InfozResponse) GetUiDashboardUrl() string {
 	return ""
 }
 
+func (x *InfozResponse) GetLoginCodeExchangeSupported() bool {
+	if x != nil {
+		return x.LoginCodeExchangeSupported
+	}
+	return false
+}
+
+func (x *InfozResponse) GetLoginLegacyCallbackAllowed() bool {
+	if x != nil {
+		return x.LoginLegacyCallbackAllowed
+	}
+	return false
+}
+
 type StatuszResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -242,13 +260,15 @@ const file_controlplane_v1_status_proto_rawDesc = "" +
 	"\x1ccontrolplane/v1/status.proto\x12\x0fcontrolplane.v1\x1a\x1cgoogle/api/annotations.proto\"\x0e\n" +
 	"\fInfozRequest\".\n" +
 	"\x0eStatuszRequest\x12\x1c\n" +
-	"\treadiness\x18\x01 \x01(\bR\treadiness\"\xcd\x01\n" +
+	"\treadiness\x18\x01 \x01(\bR\treadiness\"\xd3\x02\n" +
 	"\rInfozResponse\x12\x1b\n" +
 	"\tlogin_url\x18\x01 \x01(\tR\bloginURL\x12\x18\n" +
 	"\aversion\x18\x02 \x01(\tR\aversion\x12#\n" +
 	"\rchart_version\x18\x03 \x01(\tR\fchartVersion\x126\n" +
 	"\x17restricted_org_creation\x18\x04 \x01(\bR\x15restrictedOrgCreation\x12(\n" +
-	"\x10ui_dashboard_url\x18\x05 \x01(\tR\x0euiDashboardUrl\"\x11\n" +
+	"\x10ui_dashboard_url\x18\x05 \x01(\tR\x0euiDashboardUrl\x12A\n" +
+	"\x1dlogin_code_exchange_supported\x18\x06 \x01(\bR\x1aloginCodeExchangeSupported\x12A\n" +
+	"\x1dlogin_legacy_callback_allowed\x18\a \x01(\bR\x1aloginLegacyCallbackAllowed\"\x11\n" +
 	"\x0fStatuszResponse2\xc7\x01\n" +
 	"\rStatusService\x12V\n" +
 	"\x05Infoz\x12\x1d.controlplane.v1.InfozRequest\x1a\x1e.controlplane.v1.InfozResponse\"\x0e\x82\xd3\xe4\x93\x02\b\x12\x06/infoz\x12^\n" +

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -110,15 +112,133 @@ func (*AuthServiceDeleteAccountResponse) Descriptor() ([]byte, []int) {
 	return file_controlplane_v1_auth_proto_rawDescGZIP(), []int{1}
 }
 
+type AuthServiceExchangeHandoffRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The handoff code received in the callback URL
+	Handoff string `protobuf:"bytes,1,opt,name=handoff,proto3" json:"handoff,omitempty"`
+	// The PKCE verifier whose S256 challenge was sent when the login started
+	CodeVerifier string `protobuf:"bytes,2,opt,name=code_verifier,json=codeVerifier,proto3" json:"code_verifier,omitempty"`
+	// The callback URL the login was started with
+	Callback      string `protobuf:"bytes,3,opt,name=callback,proto3" json:"callback,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuthServiceExchangeHandoffRequest) Reset() {
+	*x = AuthServiceExchangeHandoffRequest{}
+	mi := &file_controlplane_v1_auth_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthServiceExchangeHandoffRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthServiceExchangeHandoffRequest) ProtoMessage() {}
+
+func (x *AuthServiceExchangeHandoffRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_auth_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthServiceExchangeHandoffRequest.ProtoReflect.Descriptor instead.
+func (*AuthServiceExchangeHandoffRequest) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_auth_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AuthServiceExchangeHandoffRequest) GetHandoff() string {
+	if x != nil {
+		return x.Handoff
+	}
+	return ""
+}
+
+func (x *AuthServiceExchangeHandoffRequest) GetCodeVerifier() string {
+	if x != nil {
+		return x.CodeVerifier
+	}
+	return ""
+}
+
+func (x *AuthServiceExchangeHandoffRequest) GetCallback() string {
+	if x != nil {
+		return x.Callback
+	}
+	return ""
+}
+
+type AuthServiceExchangeHandoffResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// User session token
+	Token         string `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuthServiceExchangeHandoffResponse) Reset() {
+	*x = AuthServiceExchangeHandoffResponse{}
+	mi := &file_controlplane_v1_auth_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthServiceExchangeHandoffResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthServiceExchangeHandoffResponse) ProtoMessage() {}
+
+func (x *AuthServiceExchangeHandoffResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_auth_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthServiceExchangeHandoffResponse.ProtoReflect.Descriptor instead.
+func (*AuthServiceExchangeHandoffResponse) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_auth_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AuthServiceExchangeHandoffResponse) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
 var File_controlplane_v1_auth_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x1acontrolplane/v1/auth.proto\x12\x0fcontrolplane.v1\"!\n" +
+	"\x1acontrolplane/v1/auth.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\"!\n" +
 	"\x1fAuthServiceDeleteAccountRequest\"\"\n" +
-	" AuthServiceDeleteAccountResponse2\x83\x01\n" +
+	" AuthServiceDeleteAccountResponse\"\xa2\x01\n" +
+	"!AuthServiceExchangeHandoffRequest\x12$\n" +
+	"\ahandoff\x18\x01 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\x80\x02R\ahandoff\x12/\n" +
+	"\rcode_verifier\x18\x02 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\x80\x02R\fcodeVerifier\x12&\n" +
+	"\bcallback\x18\x03 \x01(\tB\n" +
+	"\xbaH\ar\x05\x10\x01\x18\x80\x10R\bcallback\":\n" +
+	"\"AuthServiceExchangeHandoffResponse\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token2\x9b\x02\n" +
 	"\vAuthService\x12t\n" +
-	"\rDeleteAccount\x120.controlplane.v1.AuthServiceDeleteAccountRequest\x1a1.controlplane.v1.AuthServiceDeleteAccountResponseBLZJgithub.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1b\x06proto3"
+	"\rDeleteAccount\x120.controlplane.v1.AuthServiceDeleteAccountRequest\x1a1.controlplane.v1.AuthServiceDeleteAccountResponse\x12\x95\x01\n" +
+	"\x0fExchangeHandoff\x122.controlplane.v1.AuthServiceExchangeHandoffRequest\x1a3.controlplane.v1.AuthServiceExchangeHandoffResponse\"\x19\x82\xd3\xe4\x93\x02\x13:\x01*\"\x0e/auth/exchangeBLZJgithub.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1b\x06proto3"
 
 var (
 	file_controlplane_v1_auth_proto_rawDescOnce sync.Once
@@ -132,16 +252,20 @@ func file_controlplane_v1_auth_proto_rawDescGZIP() []byte {
 	return file_controlplane_v1_auth_proto_rawDescData
 }
 
-var file_controlplane_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_controlplane_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_controlplane_v1_auth_proto_goTypes = []any{
-	(*AuthServiceDeleteAccountRequest)(nil),  // 0: controlplane.v1.AuthServiceDeleteAccountRequest
-	(*AuthServiceDeleteAccountResponse)(nil), // 1: controlplane.v1.AuthServiceDeleteAccountResponse
+	(*AuthServiceDeleteAccountRequest)(nil),    // 0: controlplane.v1.AuthServiceDeleteAccountRequest
+	(*AuthServiceDeleteAccountResponse)(nil),   // 1: controlplane.v1.AuthServiceDeleteAccountResponse
+	(*AuthServiceExchangeHandoffRequest)(nil),  // 2: controlplane.v1.AuthServiceExchangeHandoffRequest
+	(*AuthServiceExchangeHandoffResponse)(nil), // 3: controlplane.v1.AuthServiceExchangeHandoffResponse
 }
 var file_controlplane_v1_auth_proto_depIdxs = []int32{
 	0, // 0: controlplane.v1.AuthService.DeleteAccount:input_type -> controlplane.v1.AuthServiceDeleteAccountRequest
-	1, // 1: controlplane.v1.AuthService.DeleteAccount:output_type -> controlplane.v1.AuthServiceDeleteAccountResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	2, // 1: controlplane.v1.AuthService.ExchangeHandoff:input_type -> controlplane.v1.AuthServiceExchangeHandoffRequest
+	1, // 2: controlplane.v1.AuthService.DeleteAccount:output_type -> controlplane.v1.AuthServiceDeleteAccountResponse
+	3, // 3: controlplane.v1.AuthService.ExchangeHandoff:output_type -> controlplane.v1.AuthServiceExchangeHandoffResponse
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -158,7 +282,7 @@ func file_controlplane_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_controlplane_v1_auth_proto_rawDesc), len(file_controlplane_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

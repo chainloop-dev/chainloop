@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,7 +34,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AuthService_DeleteAccount_FullMethodName = "/controlplane.v1.AuthService/DeleteAccount"
+	AuthService_DeleteAccount_FullMethodName   = "/controlplane.v1.AuthService/DeleteAccount"
+	AuthService_ExchangeHandoff_FullMethodName = "/controlplane.v1.AuthService/ExchangeHandoff"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -42,6 +43,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthServiceClient interface {
 	DeleteAccount(ctx context.Context, in *AuthServiceDeleteAccountRequest, opts ...grpc.CallOption) (*AuthServiceDeleteAccountResponse, error)
+	// ExchangeHandoff trades the single-use handoff code that a login delivered to the client
+	// callback for the user session token. It does not require an existing session.
+	ExchangeHandoff(ctx context.Context, in *AuthServiceExchangeHandoffRequest, opts ...grpc.CallOption) (*AuthServiceExchangeHandoffResponse, error)
 }
 
 type authServiceClient struct {
@@ -61,11 +65,23 @@ func (c *authServiceClient) DeleteAccount(ctx context.Context, in *AuthServiceDe
 	return out, nil
 }
 
+func (c *authServiceClient) ExchangeHandoff(ctx context.Context, in *AuthServiceExchangeHandoffRequest, opts ...grpc.CallOption) (*AuthServiceExchangeHandoffResponse, error) {
+	out := new(AuthServiceExchangeHandoffResponse)
+	err := c.cc.Invoke(ctx, AuthService_ExchangeHandoff_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility
 type AuthServiceServer interface {
 	DeleteAccount(context.Context, *AuthServiceDeleteAccountRequest) (*AuthServiceDeleteAccountResponse, error)
+	// ExchangeHandoff trades the single-use handoff code that a login delivered to the client
+	// callback for the user session token. It does not require an existing session.
+	ExchangeHandoff(context.Context, *AuthServiceExchangeHandoffRequest) (*AuthServiceExchangeHandoffResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -75,6 +91,9 @@ type UnimplementedAuthServiceServer struct {
 
 func (UnimplementedAuthServiceServer) DeleteAccount(context.Context, *AuthServiceDeleteAccountRequest) (*AuthServiceDeleteAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAccount not implemented")
+}
+func (UnimplementedAuthServiceServer) ExchangeHandoff(context.Context, *AuthServiceExchangeHandoffRequest) (*AuthServiceExchangeHandoffResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExchangeHandoff not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 
@@ -107,6 +126,24 @@ func _AuthService_DeleteAccount_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_ExchangeHandoff_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthServiceExchangeHandoffRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ExchangeHandoff(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ExchangeHandoff_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ExchangeHandoff(ctx, req.(*AuthServiceExchangeHandoffRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -117,6 +154,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteAccount",
 			Handler:    _AuthService_DeleteAccount_Handler,
+		},
+		{
+			MethodName: "ExchangeHandoff",
+			Handler:    _AuthService_ExchangeHandoff_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
