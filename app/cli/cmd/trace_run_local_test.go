@@ -24,6 +24,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Fixture values for the flag tests of trace init and trace run.
+const (
+	flagWorkflowArg = "--workflow"
+	fixtureProject  = "my-project"
+	fixtureVersion  = "v1.0.0"
+)
+
 // runTraceRun executes `trace run` with the given args in dir. It returns the
 // RunE error.
 func runTraceRun(t *testing.T, dir string, args ...string) error {
@@ -43,9 +50,9 @@ func TestTraceRunLocalFlag(t *testing.T) {
 	t.Run("control-plane flags are rejected with --local", func(t *testing.T) {
 		for _, flag := range [][]string{
 			{"--org", "acme"},
-			{"--project", "my-project"},
-			{"--workflow", "my-workflow"},
-			{"--version", "v1.0.0"},
+			{"--project", fixtureProject},
+			{flagWorkflowArg, "my-workflow"},
+			{"--version", fixtureVersion},
 			{"--contract", "my-contract"},
 		} {
 			repoDir := t.TempDir()

@@ -124,8 +124,8 @@ func TestTraceInitLocal(t *testing.T) {
 	t.Run("control-plane flags are rejected with --local", func(t *testing.T) {
 		for _, flag := range [][]string{
 			{"--contract", "my-contract"},
-			{"--workflow", "my-workflow"},
-			{"--project", "my-project"}, //nolint:goconst // test fixture value
+			{flagWorkflowArg, "my-workflow"},
+			{"--project", fixtureProject},
 		} {
 			repoDir := t.TempDir()
 			gitInit(t, repoDir)
