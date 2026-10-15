@@ -32,6 +32,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// sessionStartNoToken is HandleAgentSessionStart with no CLI token, in the
+// signature that the other agent hooks share.
+func sessionStartNoToken(p trace.Provider, log zerolog.Logger) error {
+	return HandleAgentSessionStart(p, nil, log)
+}
+
 // PFM-7412: a Claude Code session started in a traced repository forks its
 // work into two git worktrees and commits/pushes each one as its own PR.
 //
@@ -91,7 +97,7 @@ func TestClaudeSessionForkedIntoWorktrees(t *testing.T) {
 				require.NoError(t, handler(p, zerolog.Nop()))
 			}
 
-			hook("SessionStart", `,"source":"startup"`, HandleAgentSessionStart)
+			hook("SessionStart", `,"source":"startup"`, sessionStartNoToken)
 
 			// The agent forks the work into two worktrees, one per PR.
 			worktrees := map[string]string{}
@@ -223,7 +229,7 @@ func TestClaudeTranscriptFoundFromWorktreeCwd(t *testing.T) {
 				require.NoError(t, handler(p, zerolog.Nop()))
 			}
 
-			hook(mainRoot, "SessionStart", `,"source":"startup"`, HandleAgentSessionStart)
+			hook(mainRoot, "SessionStart", `,"source":"startup"`, sessionStartNoToken)
 
 			wt := filepath.Join(mainRoot, ".claude", "worktrees", "agent-abc123")
 			runGit(t, mainRoot, "worktree", "add", "-b", "feat-wt", wt)
@@ -287,7 +293,7 @@ func TestEnsureSessionTracked_BackfillsTranscriptPath(t *testing.T) {
 	p := claude.New()
 
 	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"SessionStart"}`, sid, root))
-	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+	require.NoError(t, HandleAgentSessionStart(p, nil, zerolog.Nop()))
 
 	rec, err := store.LoadSessionRecord(sid)
 	require.NoError(t, err)
@@ -319,7 +325,7 @@ func TestHandleAgentSessionEnd_BackfillsTranscriptPath(t *testing.T) {
 	p := claude.New()
 
 	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"SessionStart"}`, sid, root))
-	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+	require.NoError(t, HandleAgentSessionStart(p, nil, zerolog.Nop()))
 
 	transcript := filepath.Join(claudeProjectDir(home, "/elsewhere"), sid+".jsonl")
 	withStdin(t, fmt.Sprintf(`{"session_id":%q,"transcript_path":%q,"cwd":%q,"hook_event_name":"SessionEnd"}`, sid, transcript, root))

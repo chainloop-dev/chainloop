@@ -258,7 +258,7 @@ func TestRunTraceLocalStorePartialFailure(t *testing.T) {
 	}{sessionID, "SessionStart", tr.path, repoDir})
 	require.NoError(t, err)
 	withStdin(t, string(payload))
-	captureStdout(t, func() { require.NoError(t, HandleAgentSessionStart(claude.New(), zerolog.Nop())) })
+	captureStdout(t, func() { require.NoError(t, HandleAgentSessionStart(claude.New(), nil, zerolog.Nop())) })
 
 	sha := headSHA(t, repoDir)
 	require.NoError(t, store.SaveCommitRecord(&state.CommitRecord{

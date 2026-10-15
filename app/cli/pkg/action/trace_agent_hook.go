@@ -170,8 +170,68 @@ func localSessionStartBanner(tracePath string, traceRunActive bool) string {
 	return banner
 }
 
-// HandleAgentSessionStart handles the agent session-start hook.
-func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error {
+// TraceAuthCheck asks the control plane whether the CLI credentials are
+// accepted for the organization. An empty organization uses the default one.
+type TraceAuthCheck func(ctx context.Context, organization string) error
+
+// sessionAuthProblem runs checkAuth and returns the message the CLI shows for
+// an authentication failure, or an empty string. The control plane decides
+// whether the credentials are valid. Any other failure, for example an
+// unreachable control plane or a check that takes longer than the timeout,
+// returns an empty string: the hook does not guess.
+func sessionAuthProblem(checkAuth TraceAuthCheck, organization string, log zerolog.Logger) string {
+	if checkAuth == nil {
+		return ""
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), hookAuthCheckTimeout)
+	defer cancel()
+
+	// The check can ignore ctx, so it runs in its own goroutine. The hook
+	// process exits soon after, so an abandoned check stops with it.
+	done := make(chan error, 1)
+	go func() { done <- checkAuth(ctx, organization) }()
+
+	var err error
+	select {
+	case err = <-done:
+	case <-ctx.Done():
+		log.Debug().Msg("session-start: the auth check timed out")
+		return ""
+	}
+
+	msg, isAuth := AuthErrorMessage(err)
+	if !isAuth {
+		if err != nil {
+			log.Debug().Err(err).Msg("session-start: the auth check failed")
+		}
+
+		return ""
+	}
+
+	return msg
+}
+
+// authProblemBanner tells the developer that the session will not be uploaded
+// because the control plane does not accept the credentials. The push is the
+// first step that uses them, and it comes after the session work is done.
+func authProblemBanner(authMsg string) string {
+	return "Chainloop Trace cannot upload this session when you push: " + authMsg + "."
+}
+
+// authProblemInstruction is the authProblemBanner for an agent that has no
+// banner. The model is the only channel to the developer.
+func authProblemInstruction(authMsg string) string {
+	return "Chainloop Trace cannot upload this session when the user pushes, because the Chainloop CLI credentials are not accepted: " +
+		authMsg + ". Tell the user now, in one line, to fix this before they push."
+}
+
+// HandleAgentSessionStart handles the agent session-start hook. In
+// control-plane mode, checkAuth asks the control plane whether the credentials
+// that the pre-push hook will use are accepted, so that the developer knows
+// about a problem before the session work is done. A nil checkAuth skips the
+// check.
+func HandleAgentSessionStart(provider trace.Provider, checkAuth TraceAuthCheck, log zerolog.Logger) error {
 	input, err := provider.ReadHookInput(os.Stdin)
 	if err != nil || !state.ValidSessionID(input.SessionID) {
 		log.Debug().Err(err).Msg("session-start: no valid input")
@@ -201,18 +261,29 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	// discards it would make the developer pay the wait for nothing.
 	var msg trace.SessionStartMessage
 
+	// A `trace run` session takes its mode from the run. Other sessions take
+	// it from traceStorage in .chainloop.yml.
+	local := config.IsLocalStorage(repoRoot)
+	if store.IsTraceRunActive() {
+		local = store.IsTraceRunLocal()
+	}
+
+	// Local mode uploads nothing, so only the control-plane mode needs
+	// credentials.
+	var authMsg string
+	if !local {
+		authMsg = sessionAuthProblem(checkAuth, config.LoadOrganizationFromYML(repoRoot), log)
+	}
+
 	if provider.SupportsSessionStartInstruction() {
 		msg.Instruction = sessionSpecInstruction(repoRoot, input.SessionID, provider.SupportsPromptReminder(), log)
+		// An agent with a banner tells the developer directly.
+		if authMsg != "" && !provider.SupportsSessionStartBanner() {
+			msg.Instruction = strings.TrimSpace(authProblemInstruction(authMsg) + "\n\n" + msg.Instruction)
+		}
 	}
 
 	if provider.SupportsSessionStartBanner() {
-		// A `trace run` session takes its mode from the run. Other sessions
-		// take it from traceStorage in .chainloop.yml.
-		local := config.IsLocalStorage(repoRoot)
-		if store.IsTraceRunActive() {
-			local = store.IsTraceRunLocal()
-		}
-
 		var banner string
 		if local {
 			// Local mode reaches no control plane, so the banner names the
@@ -227,6 +298,9 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 				config.LoadOrganizationFromYML(repoRoot),
 				repositoryconfig.LoadProjectFromYML(repoRoot),
 			)
+			if authMsg != "" {
+				banner += "\n\n" + authProblemBanner(authMsg)
+			}
 		}
 		msg.Banner = "\n\n" + banner + "\n"
 	}

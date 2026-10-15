@@ -16,16 +16,22 @@
 package action
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
+	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // bannerProvider is a real provider with its session-start capability forced,
@@ -177,7 +183,7 @@ func TestSessionStartChannelGate(t *testing.T) {
 			withStdin(t, `{"session_id":"abc-123"}`)
 
 			p := &bannerProvider{Provider: claude.New(), banner: tc.banner, instruction: tc.instruction}
-			require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+			require.NoError(t, HandleAgentSessionStart(p, nil, zerolog.Nop()))
 
 			assert.Equal(t, tc.wantSent, p.sysCalls)
 			if tc.wantBanner {
@@ -193,4 +199,79 @@ func TestSessionStartChannelGate(t *testing.T) {
 			assert.True(t, store.SessionRecordExists("abc-123"), "the session is tracked either way")
 		})
 	}
+}
+
+// TestSessionStartAuthProblem checks that credentials that the control plane
+// does not accept are reported at the start of the session. Otherwise the
+// developer learns about it only when the push does not upload the session.
+func TestSessionStartAuthProblem(t *testing.T) {
+	expired := func(context.Context, string) error {
+		return status.Error(codes.Unauthenticated, jwtMiddleware.ErrTokenExpired.Message)
+	}
+	const wantMsg = `your authentication token has expired, please run "chainloop auth login" again`
+
+	testCases := []struct {
+		name        string
+		checkAuth   TraceAuthCheck
+		local       bool
+		banner      bool
+		wantWarning bool
+	}{
+		{name: "an auth failure is reported in the banner", checkAuth: expired, banner: true, wantWarning: true},
+		{name: "an auth failure is reported in the instruction when there is no banner", checkAuth: expired, wantWarning: true},
+		{name: "accepted credentials are not reported", checkAuth: func(context.Context, string) error { return nil }, banner: true},
+		{name: "an unreachable control plane is not reported", checkAuth: func(context.Context, string) error {
+			return status.Error(codes.Unavailable, "connection refused")
+		}, banner: true},
+		{name: "no check is not reported", banner: true},
+		{name: "local mode does not check", checkAuth: func(context.Context, string) error {
+			return status.Error(codes.Unauthenticated, jwtMiddleware.ErrTokenExpired.Message)
+		}, local: true, banner: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repoDir := initTempGitRepo(t)
+			store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+			require.NoError(t, store.InitTraceDir())
+			if tc.local {
+				require.NoError(t, config.SaveTraceStorageToYML(repoDir, config.TraceStorageLocal))
+			}
+			t.Chdir(repoDir)
+
+			withStdin(t, `{"session_id":"abc-123"}`)
+
+			p := &bannerProvider{Provider: claude.New(), banner: tc.banner, instruction: true}
+			require.NoError(t, HandleAgentSessionStart(p, tc.checkAuth, zerolog.Nop()))
+
+			if !tc.wantWarning {
+				assert.NotContains(t, p.last.Banner, wantMsg)
+				assert.NotContains(t, p.last.Instruction, wantMsg)
+				return
+			}
+
+			if tc.banner {
+				assert.Contains(t, p.last.Banner, wantMsg)
+				assert.NotContains(t, p.last.Instruction, wantMsg, "the banner already tells the developer")
+			} else {
+				assert.Contains(t, p.last.Instruction, wantMsg)
+			}
+		})
+	}
+}
+
+// TestSessionAuthProblemTimeout checks that a slow auth check does not hold
+// the session start, and shows no warning.
+func TestSessionAuthProblemTimeout(t *testing.T) {
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+
+	slow := func(context.Context, string) error {
+		<-release
+		return status.Error(codes.Unauthenticated, jwtMiddleware.ErrTokenExpired.Message)
+	}
+
+	start := time.Now()
+	assert.Empty(t, sessionAuthProblem(slow, "", zerolog.Nop()))
+	assert.Less(t, time.Since(start), hookAuthCheckTimeout+time.Second)
 }

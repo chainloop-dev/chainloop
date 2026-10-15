@@ -83,7 +83,7 @@ func TestClaudeSessionCommitsInClonedCheckoutThroughShell(t *testing.T) {
 	}
 
 	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"SessionStart","source":"startup"}`, sid, mainRoot))
-	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+	require.NoError(t, HandleAgentSessionStart(p, nil, zerolog.Nop()))
 
 	// 1. The agent writes a file in a folder that is not a git repository.
 	const specBody = "# Spec\n\nline\n"
@@ -199,7 +199,7 @@ func TestShellCommandInOtherCheckout(t *testing.T) {
 			command := fmt.Sprintf("cd %s && sed -i '' s/a/b/ notes.md", other)
 
 			withStdin(t, tc.start)
-			captureStdout(t, func() { require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop())) })
+			captureStdout(t, func() { require.NoError(t, HandleAgentSessionStart(p, nil, zerolog.Nop())) })
 
 			withStdin(t, tc.pre(command))
 			captureStdout(t, func() { require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop())) })
