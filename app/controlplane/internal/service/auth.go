@@ -261,8 +261,12 @@ func callbackAllowed(callback string, allowedOrigins []string) error {
 		return errInvalidCallback
 	}
 
-	// Relative path. Both parts must be empty, otherwise "//evil.example" would pass as a path
+	// Relative reference. It must be a single-slash path: "////evil.example" parses with no host,
+	// but browsers resolve it off-origin
 	if u.Scheme == "" && u.Host == "" {
+		if !isRelativePath(callback) {
+			return errInvalidCallback
+		}
 		return nil
 	}
 
@@ -304,19 +308,21 @@ func returnToAllowed(callback string) error {
 	return nil
 }
 
-// isRelativePath accepts only a path that starts with a single "/"
+// isRelativePath accepts only a path on the current origin, one that starts with a single "/"
 func isRelativePath(p string) bool {
-	// "//host" is scheme-relative
+	// "//host" (or any number of slashes) is scheme-relative
 	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") {
 		return false
 	}
 
-	// Browsers strip tabs and newlines, so "/<tab>/host" would become "//host"
-	if strings.ContainsFunc(p, unicode.IsControl) {
+	// Browsers fold "\" into "/", so "/\evil.example" would escape a seemingly relative path. They also
+	// strip tabs and newlines, so "/<tab>/host" would become "//host"
+	if strings.Contains(p, `\`) || strings.ContainsFunc(p, unicode.IsControl) {
 		return false
 	}
 
-	return isRelativeRef(p)
+	u, err := url.Parse(p)
+	return err == nil && u.Scheme == "" && u.Host == ""
 }
 
 // LegacyCallbackAllowed tells if a login with no code challenge still gets the token in the callback URL
@@ -328,7 +334,7 @@ func LegacyCallbackAllowed(authConfig *conf.Auth) bool {
 // isLegacyDelivery tells if a login would put the token in an external callback URL. A relative
 // callback is the same-origin download flow, which is not part of the deprecation
 func isLegacyDelivery(callback, codeChallenge string) bool {
-	return callback != "" && codeChallenge == "" && !isRelativeRef(callback)
+	return callback != "" && codeChallenge == "" && !isRelativePath(callback)
 }
 
 // checkLegacyCallback rejects a legacy delivery when the operator denied it
@@ -338,17 +344,6 @@ func (svc *AuthService) checkLegacyCallback(callback, codeChallenge string) erro
 	}
 
 	return nil
-}
-
-// isRelativeRef tells if the URL has no scheme and no host. A backslash is refused, browsers fold
-// it into "/", so "/\evil.example" would escape a seemingly relative path
-func isRelativeRef(raw string) bool {
-	if strings.Contains(raw, `\`) {
-		return false
-	}
-
-	u, err := url.Parse(raw)
-	return err == nil && u.Scheme == "" && u.Host == ""
 }
 
 // userToken creates the session token of a login, the same for every delivery method

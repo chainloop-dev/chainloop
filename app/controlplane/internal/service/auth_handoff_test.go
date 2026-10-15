@@ -46,6 +46,8 @@ const (
 	testHMACSecret = "test-secret"
 	testCLIBack    = "http://localhost:1234/auth/callback"
 	testAppBack    = "https://app.chainloop.dev/login/callback"
+	// parses with no host, but browsers resolve it off-origin
+	testMultiSlashBack = "////evil.example/cb"
 )
 
 var testChallenge = oauth2.S256ChallengeFromVerifier("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
@@ -185,6 +187,13 @@ func TestLoginHandlerCodeChallenge(t *testing.T) {
 			wantCode:    http.StatusTemporaryRedirect,
 		},
 		{
+			// It parses with no host, but browsers resolve it off-origin
+			name:     "multi-slash callback posing as the download flow",
+			params:   map[string]string{oauth.QueryParamCallback: testMultiSlashBack},
+			wantCode: http.StatusBadRequest,
+			wantErr:  errInvalidCallback.Error(),
+		},
+		{
 			name:     "plain challenge method",
 			params:   map[string]string{oauth.QueryParamCallback: testCLIBack, oauth.QueryParamCodeChallenge: testChallenge, oauth.QueryParamCodeChallengeMethod: "plain"},
 			wantCode: http.StatusBadRequest,
@@ -268,6 +277,8 @@ func TestDeliverLogin(t *testing.T) {
 		{name: "legacy login", callback: testCLIBack, wantCode: http.StatusTemporaryRedirect, wantToken: true, wantLegacyInc: 1},
 		{name: "legacy login denied", callback: testCLIBack, allowLegacy: proto.Bool(false), wantCode: http.StatusBadRequest},
 		{name: "download flow", callback: "/download/sha256:abc", allowLegacy: proto.Bool(false), wantCode: http.StatusTemporaryRedirect, wantToken: true},
+		{name: "multi-slash callback cookie", callback: testMultiSlashBack, allowLegacy: proto.Bool(false), wantCode: http.StatusBadRequest},
+		{name: "multi-slash callback cookie with legacy allowed", callback: testMultiSlashBack, wantCode: http.StatusBadRequest},
 		{name: "headless", callback: "", wantCode: http.StatusOK},
 		{name: "off-origin returnTo", callback: testAppBack + "?returnTo=%2F%2Fevil.example", challenge: testChallenge, wantCode: http.StatusBadRequest},
 		{name: "foreign callback", callback: "https://evil.example/cb", challenge: testChallenge, wantCode: http.StatusBadRequest},
