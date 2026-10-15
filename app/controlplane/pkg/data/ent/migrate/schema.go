@@ -361,7 +361,6 @@ var (
 		{Name: "token_ttl_seconds", Type: field.TypeInt64},
 		{Name: "code_challenge", Type: field.TypeString},
 		{Name: "callback", Type: field.TypeString},
-		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
 		{Name: "expires_at", Type: field.TypeTime},
 		{Name: "used_at", Type: field.TypeTime, Nullable: true},
 		{Name: "user_id", Type: field.TypeUUID},
@@ -374,7 +373,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "login_handoffs_users_user",
-				Columns:    []*schema.Column{LoginHandoffsColumns[8]},
+				Columns:    []*schema.Column{LoginHandoffsColumns[7]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -383,7 +382,7 @@ var (
 			{
 				Name:    "loginhandoff_expires_at",
 				Unique:  false,
-				Columns: []*schema.Column{LoginHandoffsColumns[6]},
+				Columns: []*schema.Column{LoginHandoffsColumns[5]},
 			},
 		},
 	}

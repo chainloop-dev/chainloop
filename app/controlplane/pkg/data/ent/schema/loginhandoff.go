@@ -16,8 +16,6 @@
 package schema
 
 import (
-	"time"
-
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
@@ -43,10 +41,6 @@ func (LoginHandoff) Fields() []ent.Field {
 		// PKCE S256 challenge sent when the login started
 		field.String("code_challenge").Immutable(),
 		field.String("callback").Immutable(),
-		field.Time("created_at").
-			Default(time.Now).
-			Immutable().
-			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
 		field.Time("expires_at").Immutable(),
 		field.Time("used_at").Optional().Nillable(),
 	}

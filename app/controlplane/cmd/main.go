@@ -180,8 +180,8 @@ func main() {
 		InitialDelay:  initialDelay,
 	})
 
-	// Start the background sweeper of login handoff codes (every 10 minutes)
-	go app.loginHandoffs.StartSweeper(ctx, 10*time.Minute)
+	// Start the background sweeper of expired login handoff codes
+	go app.loginHandoffs.StartSweeper(ctx)
 
 	// Start the background CAS Backend checker for DEFAULT backends (every 30 minutes)
 	if app.casBackendChecker != nil {
@@ -232,7 +232,7 @@ type app struct {
 	casBackendChecker *biz.CASBackendChecker
 	// Background sweeper that auto-revokes stale API tokens
 	apiTokenStaleRevoker *biz.APITokenStaleRevoker
-	// Background sweeper that deletes used and expired login handoff codes
+	// Background sweeper that deletes expired login handoff codes
 	loginHandoffs *biz.LoginHandoffUseCase
 }
 

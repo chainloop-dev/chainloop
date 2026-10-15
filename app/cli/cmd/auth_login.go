@@ -33,6 +33,7 @@ import (
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
 )
 
 type app struct {
@@ -133,9 +134,7 @@ func interactiveAuth(forceHeadless bool) error {
 
 	// Ask for a login code instead of the token when the control plane supports it
 	if info.GetLoginCodeExchangeSupported() {
-		if a.callback.codeVerifier, err = addCodeChallenge(serverLoginURL); err != nil {
-			return fmt.Errorf("creating the login code challenge: %w", err)
-		}
+		a.callback.codeVerifier = addCodeChallenge(serverLoginURL)
 	}
 
 	err = openbrowser(serverLoginURL.String())
@@ -168,18 +167,15 @@ func interactiveAuth(forceHeadless bool) error {
 }
 
 // addCodeChallenge adds a S256 code challenge to the login URL and returns its verifier
-func addCodeChallenge(loginURL *url.URL) (string, error) {
-	verifier, err := oauth.NewCodeVerifier()
-	if err != nil {
-		return "", err
-	}
+func addCodeChallenge(loginURL *url.URL) string {
+	verifier := oauth2.GenerateVerifier()
 
 	q := loginURL.Query()
-	q.Set(oauth.QueryParamCodeChallenge, oauth.CodeChallengeS256(verifier))
+	q.Set(oauth.QueryParamCodeChallenge, oauth2.S256ChallengeFromVerifier(verifier))
 	q.Set(oauth.QueryParamCodeChallengeMethod, oauth.CodeChallengeMethodS256)
 	loginURL.RawQuery = q.Encode()
 
-	return verifier, nil
+	return verifier
 }
 
 // exchangeHandoff trades the login code for the session token

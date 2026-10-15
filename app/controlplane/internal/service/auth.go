@@ -306,8 +306,8 @@ func returnToAllowed(callback string) error {
 
 // isRelativePath accepts only a path that starts with a single "/"
 func isRelativePath(p string) bool {
-	// "//host" is scheme-relative, and browsers fold "\" into "/"
-	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") || strings.Contains(p, `\`) {
+	// "//host" is scheme-relative
+	if !strings.HasPrefix(p, "/") || strings.HasPrefix(p, "//") {
 		return false
 	}
 
@@ -316,8 +316,7 @@ func isRelativePath(p string) bool {
 		return false
 	}
 
-	u, err := url.Parse(p)
-	return err == nil && u.Scheme == "" && u.Host == ""
+	return isRelativeRef(p)
 }
 
 // LegacyCallbackAllowed tells if a login with no code challenge still gets the token in the callback URL
@@ -326,20 +325,35 @@ func LegacyCallbackAllowed(authConfig *conf.Auth) bool {
 	return authConfig == nil || authConfig.AllowLegacyLoginCallback == nil || authConfig.GetAllowLegacyLoginCallback()
 }
 
-// checkLegacyCallback rejects a login that would put the token in an external callback URL when the
-// operator denied it. A relative callback is the same-origin download flow, which is not affected
-func (svc *AuthService) checkLegacyCallback(callback, codeChallenge string) error {
-	if callback == "" || codeChallenge != "" || isRelativeRef(callback) || LegacyCallbackAllowed(svc.authConfig) {
-		return nil
-	}
-
-	return errLegacyCallbackDenied
+// isLegacyDelivery tells if a login would put the token in an external callback URL. A relative
+// callback is the same-origin download flow, which is not part of the deprecation
+func isLegacyDelivery(callback, codeChallenge string) bool {
+	return callback != "" && codeChallenge == "" && !isRelativeRef(callback)
 }
 
-// isRelativeRef tells if the URL has no scheme and no host
+// checkLegacyCallback rejects a legacy delivery when the operator denied it
+func (svc *AuthService) checkLegacyCallback(callback, codeChallenge string) error {
+	if isLegacyDelivery(callback, codeChallenge) && !LegacyCallbackAllowed(svc.authConfig) {
+		return errLegacyCallbackDenied
+	}
+
+	return nil
+}
+
+// isRelativeRef tells if the URL has no scheme and no host. A backslash is refused, browsers fold
+// it into "/", so "/\evil.example" would escape a seemingly relative path
 func isRelativeRef(raw string) bool {
+	if strings.Contains(raw, `\`) {
+		return false
+	}
+
 	u, err := url.Parse(raw)
 	return err == nil && u.Scheme == "" && u.Host == ""
+}
+
+// userToken creates the session token of a login, the same for every delivery method
+func (svc *AuthService) userToken(userID string, ttl time.Duration) (string, error) {
+	return generateUserJWT(userID, svc.authConfig.GeneratedJwsHmacSecret, ttl)
 }
 
 // codeChallengeFromQuery returns the S256 code challenge of a login request, if any
@@ -586,7 +600,7 @@ func (svc *AuthService) deliverLogin(ctx context.Context, w http.ResponseWriter,
 
 	// There is no callback, render the token in an HTML page with a copy button
 	if callbackValue == "" {
-		userToken, err := generateUserJWT(userID, svc.authConfig.GeneratedJwsHmacSecret, expiration)
+		userToken, err := svc.userToken(userID, expiration)
 		if err != nil {
 			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to generate user token: %w", err), false)
 		}
@@ -597,8 +611,9 @@ func (svc *AuthService) deliverLogin(ctx context.Context, w http.ResponseWriter,
 		return newOauthResp(http.StatusOK, nil, false)
 	}
 
-	// Redirect to the callback URL. The cookie was validated at login time, re-check it here
-	// so a stale or tampered cookie can't turn this into an open redirect either
+	// Redirect to the callback URL. The cookies were validated at login time, re-check them here
+	// so a stale or tampered cookie, or a login started before an upgrade, can't turn this into
+	// an open redirect or skip the legacy setting
 	if err := callbackAllowed(callbackValue, svc.allowedCallbackOrigins); err != nil {
 		return newOauthResp(http.StatusBadRequest, err, true)
 	}
@@ -617,34 +632,27 @@ func (svc *AuthService) deliverLogin(ctx context.Context, w http.ResponseWriter,
 		return newOauthResp(http.StatusBadRequest, err, true)
 	}
 
-	var callbackURL string
+	param, value := oauth.QueryParamHandoff, ""
 	if codeChallenge != "" {
-		handoff, err := svc.loginHandoffs.Issue(ctx, userID, expiration, codeChallenge, callbackValue)
-		if err != nil {
+		if value, err = svc.loginHandoffs.Issue(ctx, userID, expiration, codeChallenge, callbackValue); err != nil {
 			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to issue login handoff code: %w", err), false)
 		}
-
-		callbackURL, err = crafCallbackURL(callbackValue, oauth.QueryParamHandoff, handoff)
-		if err != nil {
-			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to craft callback URL: %w", err), false)
-		}
 	} else {
-		userToken, err := generateUserJWT(userID, svc.authConfig.GeneratedJwsHmacSecret, expiration)
-		if err != nil {
+		param = oauth.QueryParamLegacyToken
+		if value, err = svc.userToken(userID, expiration); err != nil {
 			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to generate user token: %w", err), false)
 		}
 
-		// The same-origin download flow (relative callback) stays on the token callback, it is not part of the deprecation
-		if !isRelativeRef(callbackValue) {
+		if isLegacyDelivery(callbackValue, codeChallenge) {
 			legacyCallbackDeliveries.Inc()
 			svc.log.WithContext(ctx).Warnw("msg", "login delivered the token in the callback URL, the client does not use the code exchange",
 				"callback_origin", strings.Join(originsOf(callbackValue), ""))
 		}
+	}
 
-		callbackURL, err = crafCallbackURL(callbackValue, oauth.QueryParamLegacyToken, userToken)
-		if err != nil {
-			return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to craft callback URL: %w", err), false)
-		}
+	callbackURL, err := crafCallbackURL(callbackValue, param, value)
+	if err != nil {
+		return newOauthResp(http.StatusInternalServerError, fmt.Errorf("failed to craft callback URL: %w", err), false)
 	}
 
 	setTokenLeakHeaders(w)
@@ -774,7 +782,7 @@ func (svc *AuthService) ExchangeHandoff(ctx context.Context, req *pb.AuthService
 		return nil, handleUseCaseErr(ctx, err, svc.log)
 	}
 
-	token, err := generateUserJWT(h.UserID.String(), svc.authConfig.GeneratedJwsHmacSecret, h.TokenTTL)
+	token, err := svc.userToken(h.UserID.String(), h.TokenTTL)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(ctx, fmt.Errorf("generating user token: %w", err), svc.log)
 	}

@@ -26,17 +26,17 @@ import (
 	"github.com/chainloop-dev/chainloop/internal/oauth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 func TestAddCodeChallenge(t *testing.T) {
 	loginURL, err := url.Parse("https://cp.example/auth/login?callback=http%3A%2F%2Flocalhost%3A1234%2Fauth%2Fcallback")
 	require.NoError(t, err)
 
-	verifier, err := addCodeChallenge(loginURL)
-	require.NoError(t, err)
+	verifier := addCodeChallenge(loginURL)
 
 	q := loginURL.Query()
-	assert.Equal(t, oauth.CodeChallengeS256(verifier), q.Get(oauth.QueryParamCodeChallenge))
+	assert.Equal(t, oauth2.S256ChallengeFromVerifier(verifier), q.Get(oauth.QueryParamCodeChallenge))
 	assert.Equal(t, oauth.CodeChallengeMethodS256, q.Get(oauth.QueryParamCodeChallengeMethod))
 	// Existing parameters are kept, and the verifier never goes in the URL
 	assert.Equal(t, "http://localhost:1234/auth/callback", q.Get(oauth.QueryParamCallback))
@@ -44,7 +44,12 @@ func TestAddCodeChallenge(t *testing.T) {
 }
 
 func TestLoginCallbackToken(t *testing.T) {
-	const callbackURL = "http://localhost:1234/auth/callback"
+	const (
+		callbackURL  = "http://localhost:1234/auth/callback"
+		handoffQuery = "handoff=the-code"
+		legacyQuery  = "t=legacy-token"
+		testVerifier = "verifier"
+	)
 
 	testCases := []struct {
 		name string
@@ -60,48 +65,48 @@ func TestLoginCallbackToken(t *testing.T) {
 	}{
 		{
 			name:         "code exchange",
-			query:        "handoff=the-code",
-			codeVerifier: "verifier",
+			query:        handoffQuery,
+			codeVerifier: testVerifier,
 			wantToken:    "exchanged-token",
 			wantExchange: true,
 		},
 		{
 			name:         "failed exchange",
-			query:        "handoff=the-code",
-			codeVerifier: "verifier",
+			query:        handoffQuery,
+			codeVerifier: testVerifier,
 			exchangeErr:  errors.New("invalid login code"),
 			wantExchange: true,
 			wantErr:      true,
 		},
 		{
 			name:          "legacy callback while allowed",
-			query:         "t=legacy-token",
-			codeVerifier:  "verifier",
+			query:         legacyQuery,
+			codeVerifier:  testVerifier,
 			legacyAllowed: true,
 			wantToken:     "legacy-token",
 			wantWarning:   true,
 		},
 		{
 			name:          "legacy callback while denied",
-			query:         "t=legacy-token",
-			codeVerifier:  "verifier",
+			query:         legacyQuery,
+			codeVerifier:  testVerifier,
 			legacyAllowed: false,
 			wantErr:       true,
 		},
 		{
 			name:      "older control plane",
-			query:     "t=legacy-token",
+			query:     legacyQuery,
 			wantToken: "legacy-token",
 		},
 		{
 			name:    "handoff from an older control plane is not expected",
-			query:   "handoff=the-code",
+			query:   handoffQuery,
 			wantErr: true,
 		},
 		{
 			name:         "no credentials",
 			query:        "",
-			codeVerifier: "verifier",
+			codeVerifier: testVerifier,
 			wantErr:      true,
 		},
 	}

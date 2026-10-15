@@ -17,11 +17,8 @@ package biz
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"time"
 
@@ -29,16 +26,15 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
 )
 
 var loginHandoffTracer = otelx.Tracer("chainloop-controlplane", "biz/loginhandoff")
 
 const (
 	// LoginHandoffTTL is how long a handoff code can be exchanged after it is issued
-	LoginHandoffTTL = 60 * time.Second
-	// 256 bits of entropy
-	loginHandoffCodeSize           = 32
-	defaultLoginHandoffSweepPeriod = 10 * time.Minute
+	LoginHandoffTTL         = 60 * time.Second
+	loginHandoffSweepPeriod = 10 * time.Minute
 )
 
 // Reasons why a handoff exchange fails. They are meant for the server log only,
@@ -53,7 +49,6 @@ const (
 
 // LoginHandoff is a single-use code a login delivers to the client callback instead of the session token
 type LoginHandoff struct {
-	ID     uuid.UUID
 	UserID uuid.UUID
 	// Lifetime of the session token created at exchange time
 	TokenTTL      time.Duration
@@ -67,8 +62,9 @@ type LoginHandoffRepo interface {
 	// Consume marks the code used in one atomic step. It returns the handoff and whether this
 	// call is the one that consumed it. It returns ErrNotFound if there is no such code
 	Consume(ctx context.Context, codeHash string, at time.Time) (*LoginHandoff, bool, error)
-	// DeleteExpiredOrUsed removes the codes that expired before the given time or were used
-	DeleteExpiredOrUsed(ctx context.Context, before time.Time) (int, error)
+	// DeleteExpired removes the codes that expired before the given time. A used code is
+	// inert, it goes when it expires
+	DeleteExpired(ctx context.Context, before time.Time) (int, error)
 }
 
 // ErrLoginHandoffExchange is returned by a failed exchange. Reason is for the server log only
@@ -78,10 +74,6 @@ type ErrLoginHandoffExchange struct {
 
 func (e ErrLoginHandoffExchange) Error() string {
 	return "login handoff exchange failed: " + e.Reason
-}
-
-func IsErrLoginHandoffExchange(err error) bool {
-	return errors.As(err, &ErrLoginHandoffExchange{})
 }
 
 type LoginHandoffUseCase struct {
@@ -117,12 +109,8 @@ func (uc *LoginHandoffUseCase) Issue(ctx context.Context, userID string, tokenTT
 		return "", NewErrValidationStr("callback is required")
 	}
 
-	b := make([]byte, loginHandoffCodeSize)
-	if _, err := rand.Read(b); err != nil {
-		return "", fmt.Errorf("generating handoff code: %w", err)
-	}
-
-	code := base64.RawURLEncoding.EncodeToString(b)
+	// 256 bits from crypto/rand, base64url encoded
+	code := oauth2.GenerateVerifier()
 	if err := uc.repo.Create(ctx, hashLoginHandoffCode(code), &LoginHandoff{
 		UserID:        userUUID,
 		TokenTTL:      tokenTTL,
@@ -166,30 +154,26 @@ func (uc *LoginHandoffUseCase) Exchange(ctx context.Context, code, codeVerifier,
 	return h, nil
 }
 
-// Sweep deletes the expired and used handoff codes
+// Sweep deletes the expired handoff codes
 func (uc *LoginHandoffUseCase) Sweep(ctx context.Context) error {
 	ctx, span := otelx.Start(ctx, loginHandoffTracer, "LoginHandoffUseCase.Sweep")
 	defer span.End()
 
-	n, err := uc.repo.DeleteExpiredOrUsed(ctx, uc.now())
+	n, err := uc.repo.DeleteExpired(ctx, uc.now())
 	if err != nil {
 		return fmt.Errorf("deleting expired login handoff codes: %w", err)
 	}
 
 	if n > 0 {
-		uc.logger.Debugw("msg", "deleted expired or used login handoff codes", "count", n)
+		uc.logger.Debugw("msg", "deleted expired login handoff codes", "count", n)
 	}
 
 	return nil
 }
 
 // StartSweeper runs Sweep periodically until the context is done
-func (uc *LoginHandoffUseCase) StartSweeper(ctx context.Context, interval time.Duration) {
-	if interval <= 0 {
-		interval = defaultLoginHandoffSweepPeriod
-	}
-
-	ticker := time.NewTicker(interval)
+func (uc *LoginHandoffUseCase) StartSweeper(ctx context.Context) {
+	ticker := time.NewTicker(loginHandoffSweepPeriod)
 	defer ticker.Stop()
 
 	for {

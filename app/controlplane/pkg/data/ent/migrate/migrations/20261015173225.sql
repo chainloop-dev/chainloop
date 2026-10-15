@@ -5,7 +5,6 @@ CREATE TABLE "login_handoffs" (
   "token_ttl_seconds" bigint NOT NULL,
   "code_challenge" character varying NOT NULL,
   "callback" character varying NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "expires_at" timestamptz NOT NULL,
   "used_at" timestamptz NULL,
   "user_id" uuid NOT NULL,

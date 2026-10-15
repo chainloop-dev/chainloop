@@ -3,8 +3,6 @@
 package loginhandoff
 
 import (
-	"time"
-
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
@@ -25,8 +23,6 @@ const (
 	FieldCodeChallenge = "code_challenge"
 	// FieldCallback holds the string denoting the callback field in the database.
 	FieldCallback = "callback"
-	// FieldCreatedAt holds the string denoting the created_at field in the database.
-	FieldCreatedAt = "created_at"
 	// FieldExpiresAt holds the string denoting the expires_at field in the database.
 	FieldExpiresAt = "expires_at"
 	// FieldUsedAt holds the string denoting the used_at field in the database.
@@ -52,7 +48,6 @@ var Columns = []string{
 	FieldTokenTTLSeconds,
 	FieldCodeChallenge,
 	FieldCallback,
-	FieldCreatedAt,
 	FieldExpiresAt,
 	FieldUsedAt,
 }
@@ -68,8 +63,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
-	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -105,11 +98,6 @@ func ByCodeChallenge(opts ...sql.OrderTermOption) OrderOption {
 // ByCallback orders the results by the callback field.
 func ByCallback(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCallback, opts...).ToFunc()
-}
-
-// ByCreatedAt orders the results by the created_at field.
-func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
 // ByExpiresAt orders the results by the expires_at field.

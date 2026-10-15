@@ -48,7 +48,7 @@ const (
 	testAppBack    = "https://app.chainloop.dev/login/callback"
 )
 
-var testChallenge = oauth.CodeChallengeS256("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
+var testChallenge = oauth2.S256ChallengeFromVerifier("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
 
 type fakeLoginHandoffs struct {
 	issued struct {
@@ -150,71 +150,71 @@ func TestLoginHandlerCodeChallenge(t *testing.T) {
 	}{
 		{
 			name:          "code exchange",
-			params:        map[string]string{"callback": testCLIBack, "code_challenge": testChallenge, "code_challenge_method": "S256"},
+			params:        map[string]string{oauth.QueryParamCallback: testCLIBack, oauth.QueryParamCodeChallenge: testChallenge, oauth.QueryParamCodeChallengeMethod: oauth.CodeChallengeMethodS256},
 			wantCode:      http.StatusTemporaryRedirect,
 			wantChallenge: testChallenge,
 		},
 		{
 			name:          "code exchange with legacy denied",
-			params:        map[string]string{"callback": testCLIBack, "code_challenge": testChallenge, "code_challenge_method": "S256"},
+			params:        map[string]string{oauth.QueryParamCallback: testCLIBack, oauth.QueryParamCodeChallenge: testChallenge, oauth.QueryParamCodeChallengeMethod: oauth.CodeChallengeMethodS256},
 			allowLegacy:   proto.Bool(false),
 			wantCode:      http.StatusTemporaryRedirect,
 			wantChallenge: testChallenge,
 		},
 		{
 			name:     "legacy login allowed by default",
-			params:   map[string]string{"callback": testCLIBack},
+			params:   map[string]string{oauth.QueryParamCallback: testCLIBack},
 			wantCode: http.StatusTemporaryRedirect,
 		},
 		{
 			name:     "legacy login denied",
-			params:   map[string]string{"callback": testCLIBack},
+			params:   map[string]string{oauth.QueryParamCallback: testCLIBack},
 			wantCode: http.StatusBadRequest, allowLegacy: proto.Bool(false),
 			wantErr: "upgrade",
 		},
 		{
 			name:        "headless login not affected by the legacy setting",
-			params:      map[string]string{"callback": ""},
+			params:      map[string]string{oauth.QueryParamCallback: ""},
 			allowLegacy: proto.Bool(false),
 			wantCode:    http.StatusTemporaryRedirect,
 		},
 		{
 			name:        "download flow not affected by the legacy setting",
-			params:      map[string]string{"callback": "/download/sha256:abc"},
+			params:      map[string]string{oauth.QueryParamCallback: "/download/sha256:abc"},
 			allowLegacy: proto.Bool(false),
 			wantCode:    http.StatusTemporaryRedirect,
 		},
 		{
 			name:     "plain challenge method",
-			params:   map[string]string{"callback": testCLIBack, "code_challenge": testChallenge, "code_challenge_method": "plain"},
+			params:   map[string]string{oauth.QueryParamCallback: testCLIBack, oauth.QueryParamCodeChallenge: testChallenge, oauth.QueryParamCodeChallengeMethod: "plain"},
 			wantCode: http.StatusBadRequest,
 			wantErr:  "unsupported code challenge method",
 		},
 		{
 			name:     "missing challenge method",
-			params:   map[string]string{"callback": testCLIBack, "code_challenge": testChallenge},
+			params:   map[string]string{oauth.QueryParamCallback: testCLIBack, oauth.QueryParamCodeChallenge: testChallenge},
 			wantCode: http.StatusBadRequest,
 		},
 		{
 			name:     "malformed challenge",
-			params:   map[string]string{"callback": testCLIBack, "code_challenge": "short", "code_challenge_method": "S256"},
+			params:   map[string]string{oauth.QueryParamCallback: testCLIBack, oauth.QueryParamCodeChallenge: "short", oauth.QueryParamCodeChallengeMethod: oauth.CodeChallengeMethodS256},
 			wantCode: http.StatusBadRequest,
 			wantErr:  "invalid code challenge",
 		},
 		{
 			name:     "challenge without callback",
-			params:   map[string]string{"code_challenge": testChallenge, "code_challenge_method": "S256"},
+			params:   map[string]string{oauth.QueryParamCodeChallenge: testChallenge, oauth.QueryParamCodeChallengeMethod: oauth.CodeChallengeMethodS256},
 			wantCode: http.StatusBadRequest,
 		},
 		{
 			name:     "absolute returnTo",
-			params:   map[string]string{"callback": testAppBack + "?returnTo=https%3A%2F%2Fevil.example"},
+			params:   map[string]string{oauth.QueryParamCallback: testAppBack + "?returnTo=https%3A%2F%2Fevil.example"},
 			wantCode: http.StatusBadRequest,
 			wantErr:  errInvalidReturnTo.Error(),
 		},
 		{
 			name:     "relative returnTo",
-			params:   map[string]string{"callback": testAppBack + "?returnTo=%2Fprojects"},
+			params:   map[string]string{oauth.QueryParamCallback: testAppBack + "?returnTo=%2Fprojects"},
 			wantCode: http.StatusTemporaryRedirect,
 		},
 	}
@@ -279,10 +279,10 @@ func TestDeliverLogin(t *testing.T) {
 			svc := newHandoffTestService(tc.allowLegacy, handoffs, nil)
 
 			r := httptest.NewRequest(http.MethodGet, "/auth/callback", nil)
-			r.AddCookie(&http.Cookie{Name: cookieLongLived, Value: "true"})
-			r.AddCookie(&http.Cookie{Name: cookieCallback, Value: tc.callback})
+			r.AddCookie(&http.Cookie{Name: cookieLongLived, Value: "true"})     //nolint:gosec // cookies of a test request
+			r.AddCookie(&http.Cookie{Name: cookieCallback, Value: tc.callback}) //nolint:gosec // cookies of a test request
 			if tc.challenge != "" {
-				r.AddCookie(&http.Cookie{Name: cookieCodeChallenge, Value: tc.challenge})
+				r.AddCookie(&http.Cookie{Name: cookieCodeChallenge, Value: tc.challenge}) //nolint:gosec // cookies of a test request
 			}
 			w := httptest.NewRecorder()
 

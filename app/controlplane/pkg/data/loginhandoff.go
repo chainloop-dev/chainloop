@@ -79,18 +79,15 @@ func (r *LoginHandoffRepo) Consume(ctx context.Context, codeHash string, at time
 	return entLoginHandoffToBiz(h), n == 1, nil
 }
 
-func (r *LoginHandoffRepo) DeleteExpiredOrUsed(ctx context.Context, before time.Time) (int, error) {
-	ctx, span := otelx.Start(ctx, loginHandoffRepoTracer, "LoginHandoffRepo.DeleteExpiredOrUsed")
+func (r *LoginHandoffRepo) DeleteExpired(ctx context.Context, before time.Time) (int, error) {
+	ctx, span := otelx.Start(ctx, loginHandoffRepoTracer, "LoginHandoffRepo.DeleteExpired")
 	defer span.End()
 
-	return r.data.DB.LoginHandoff.Delete().
-		Where(loginhandoff.Or(loginhandoff.ExpiresAtLT(before), loginhandoff.UsedAtNotNil())).
-		Exec(ctx)
+	return r.data.DB.LoginHandoff.Delete().Where(loginhandoff.ExpiresAtLT(before)).Exec(ctx)
 }
 
 func entLoginHandoffToBiz(h *ent.LoginHandoff) *biz.LoginHandoff {
 	return &biz.LoginHandoff{
-		ID:            h.ID,
 		UserID:        h.UserID,
 		TokenTTL:      time.Duration(h.TokenTTLSeconds) * time.Second,
 		CodeChallenge: h.CodeChallenge,

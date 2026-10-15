@@ -55,20 +55,6 @@ func (_c *LoginHandoffCreate) SetCallback(v string) *LoginHandoffCreate {
 	return _c
 }
 
-// SetCreatedAt sets the "created_at" field.
-func (_c *LoginHandoffCreate) SetCreatedAt(v time.Time) *LoginHandoffCreate {
-	_c.mutation.SetCreatedAt(v)
-	return _c
-}
-
-// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (_c *LoginHandoffCreate) SetNillableCreatedAt(v *time.Time) *LoginHandoffCreate {
-	if v != nil {
-		_c.SetCreatedAt(*v)
-	}
-	return _c
-}
-
 // SetExpiresAt sets the "expires_at" field.
 func (_c *LoginHandoffCreate) SetExpiresAt(v time.Time) *LoginHandoffCreate {
 	_c.mutation.SetExpiresAt(v)
@@ -143,10 +129,6 @@ func (_c *LoginHandoffCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *LoginHandoffCreate) defaults() {
-	if _, ok := _c.mutation.CreatedAt(); !ok {
-		v := loginhandoff.DefaultCreatedAt()
-		_c.mutation.SetCreatedAt(v)
-	}
 	if _, ok := _c.mutation.ID(); !ok {
 		v := loginhandoff.DefaultID()
 		_c.mutation.SetID(v)
@@ -169,9 +151,6 @@ func (_c *LoginHandoffCreate) check() error {
 	}
 	if _, ok := _c.mutation.Callback(); !ok {
 		return &ValidationError{Name: "callback", err: errors.New(`ent: missing required field "LoginHandoff.callback"`)}
-	}
-	if _, ok := _c.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "LoginHandoff.created_at"`)}
 	}
 	if _, ok := _c.mutation.ExpiresAt(); !ok {
 		return &ValidationError{Name: "expires_at", err: errors.New(`ent: missing required field "LoginHandoff.expires_at"`)}
@@ -230,10 +209,6 @@ func (_c *LoginHandoffCreate) createSpec() (*LoginHandoff, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.Callback(); ok {
 		_spec.SetField(loginhandoff.FieldCallback, field.TypeString, value)
 		_node.Callback = value
-	}
-	if value, ok := _c.mutation.CreatedAt(); ok {
-		_spec.SetField(loginhandoff.FieldCreatedAt, field.TypeTime, value)
-		_node.CreatedAt = value
 	}
 	if value, ok := _c.mutation.ExpiresAt(); ok {
 		_spec.SetField(loginhandoff.FieldExpiresAt, field.TypeTime, value)
@@ -361,9 +336,6 @@ func (u *LoginHandoffUpsertOne) UpdateNewValues() *LoginHandoffUpsertOne {
 		}
 		if _, exists := u.create.mutation.Callback(); exists {
 			s.SetIgnore(loginhandoff.FieldCallback)
-		}
-		if _, exists := u.create.mutation.CreatedAt(); exists {
-			s.SetIgnore(loginhandoff.FieldCreatedAt)
 		}
 		if _, exists := u.create.mutation.ExpiresAt(); exists {
 			s.SetIgnore(loginhandoff.FieldExpiresAt)
@@ -617,9 +589,6 @@ func (u *LoginHandoffUpsertBulk) UpdateNewValues() *LoginHandoffUpsertBulk {
 			}
 			if _, exists := b.mutation.Callback(); exists {
 				s.SetIgnore(loginhandoff.FieldCallback)
-			}
-			if _, exists := b.mutation.CreatedAt(); exists {
-				s.SetIgnore(loginhandoff.FieldCreatedAt)
 			}
 			if _, exists := b.mutation.ExpiresAt(); exists {
 				s.SetIgnore(loginhandoff.FieldExpiresAt)

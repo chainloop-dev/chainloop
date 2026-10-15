@@ -20,20 +20,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
-func TestPKCE(t *testing.T) {
-	verifier, err := NewCodeVerifier()
-	require.NoError(t, err)
-	assert.Len(t, verifier, 43)
-
-	other, err := NewCodeVerifier()
-	require.NoError(t, err)
-	assert.NotEqual(t, verifier, other)
-
-	challenge := CodeChallengeS256(verifier)
-	assert.True(t, ValidS256Challenge(challenge))
+func TestVerifyS256(t *testing.T) {
+	verifier := oauth2.GenerateVerifier()
+	other := oauth2.GenerateVerifier()
+	challenge := oauth2.S256ChallengeFromVerifier(verifier)
+	long := strings.Repeat("a", 129)
 
 	testCases := []struct {
 		name      string
@@ -43,10 +37,10 @@ func TestPKCE(t *testing.T) {
 	}{
 		{"matching verifier", verifier, challenge, true},
 		{"other verifier", other, challenge, false},
-		{"empty verifier", "", CodeChallengeS256(""), false},
-		{"verifier too short", "abc", CodeChallengeS256("abc"), false},
-		{"verifier too long", strings.Repeat("a", 129), CodeChallengeS256(strings.Repeat("a", 129)), false},
-		{"verifier with invalid characters", verifier[:42] + "/", CodeChallengeS256(verifier[:42] + "/"), false},
+		{"empty verifier", "", oauth2.S256ChallengeFromVerifier(""), false},
+		{"verifier too short", "abc", oauth2.S256ChallengeFromVerifier("abc"), false},
+		{"verifier too long", long, oauth2.S256ChallengeFromVerifier(long), false},
+		{"verifier with invalid characters", verifier[:42] + "/", oauth2.S256ChallengeFromVerifier(verifier[:42] + "/"), false},
 		{"plain challenge", verifier, verifier, false},
 		{"empty challenge", verifier, "", false},
 		// RFC 7636 appendix B
@@ -66,6 +60,7 @@ func TestValidS256Challenge(t *testing.T) {
 		want      bool
 	}{
 		{"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM", true},
+		{oauth2.S256ChallengeFromVerifier(oauth2.GenerateVerifier()), true},
 		{"", false},
 		{"short", false},
 		{"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM=", false},

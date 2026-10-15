@@ -24,9 +24,8 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
-	"github.com/chainloop-dev/chainloop/internal/oauth"
-	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/oauth2"
 )
 
 const handoffTestCallback = "http://localhost:1234/auth/callback"
@@ -48,9 +47,8 @@ func (s *loginHandoffTestSuite) SetupTest() {
 	s.user, err = s.User.UpsertByEmail(context.Background(), "handoff@test.com", nil)
 	s.Require().NoError(err)
 
-	s.verifier, err = oauth.NewCodeVerifier()
-	s.Require().NoError(err)
-	s.challenge = oauth.CodeChallengeS256(s.verifier)
+	s.verifier = oauth2.GenerateVerifier()
+	s.challenge = oauth2.S256ChallengeFromVerifier(s.verifier)
 }
 
 func (s *loginHandoffTestSuite) issue() string {
@@ -110,8 +108,7 @@ func (s *loginHandoffTestSuite) TestExchange() {
 
 func (s *loginHandoffTestSuite) TestExchangeFailures() {
 	ctx := context.Background()
-	otherVerifier, err := oauth.NewCodeVerifier()
-	s.Require().NoError(err)
+	otherVerifier := oauth2.GenerateVerifier()
 
 	testCases := []struct {
 		name     string
@@ -183,7 +180,7 @@ func (s *loginHandoffTestSuite) TestConcurrentExchangeOnlyOneWins() {
 				mu.Unlock()
 				return
 			}
-			s.True(biz.IsErrLoginHandoffExchange(err), "unexpected error %v", err)
+			s.ErrorAs(err, &biz.ErrLoginHandoffExchange{})
 		})
 	}
 
@@ -198,11 +195,11 @@ func (s *loginHandoffTestSuite) TestSweep() {
 	_, err := s.LoginHandoff.Exchange(ctx, used, s.verifier, handoffTestCallback)
 	s.Require().NoError(err)
 
-	// The used code goes, the pending one stays
+	// Nothing expired yet
 	s.Require().NoError(s.LoginHandoff.Sweep(ctx))
-	s.Equal(1, s.Data.DB.LoginHandoff.Query().CountX(ctx))
+	s.Equal(2, s.Data.DB.LoginHandoff.Query().CountX(ctx))
 
-	// After expiry, the pending one goes too
+	// After expiry, both the used and the pending codes go
 	s.LoginHandoff.SetNow(func() time.Time { return time.Now().Add(biz.LoginHandoffTTL + time.Second) })
 	s.Require().NoError(s.LoginHandoff.Sweep(ctx))
 	s.Equal(0, s.Data.DB.LoginHandoff.Query().CountX(ctx))
@@ -214,5 +211,5 @@ func (s *loginHandoffTestSuite) TestDeletedUserDeletesCodes() {
 	s.Require().NoError(s.User.DeleteUser(ctx, s.user.ID))
 
 	_, err := s.LoginHandoff.Exchange(ctx, code, s.verifier, handoffTestCallback)
-	require.True(s.T(), biz.IsErrLoginHandoffExchange(err))
+	s.requireReason(err, biz.LoginHandoffReasonUnknown)
 }

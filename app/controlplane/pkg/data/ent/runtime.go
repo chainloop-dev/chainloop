@@ -174,10 +174,6 @@ func init() {
 	integrationattachment.DefaultID = integrationattachmentDescID.Default.(func() uuid.UUID)
 	loginhandoffFields := schema.LoginHandoff{}.Fields()
 	_ = loginhandoffFields
-	// loginhandoffDescCreatedAt is the schema descriptor for created_at field.
-	loginhandoffDescCreatedAt := loginhandoffFields[6].Descriptor()
-	// loginhandoff.DefaultCreatedAt holds the default value on creation for the created_at field.
-	loginhandoff.DefaultCreatedAt = loginhandoffDescCreatedAt.Default.(func() time.Time)
 	// loginhandoffDescID is the schema descriptor for id field.
 	loginhandoffDescID := loginhandoffFields[0].Descriptor()
 	// loginhandoff.DefaultID holds the default value on creation for the id field.

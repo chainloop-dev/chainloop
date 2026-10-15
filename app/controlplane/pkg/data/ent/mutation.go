@@ -7326,7 +7326,6 @@ type LoginHandoffMutation struct {
 	addtoken_ttl_seconds *int64
 	code_challenge       *string
 	callback             *string
-	created_at           *time.Time
 	expires_at           *time.Time
 	used_at              *time.Time
 	clearedFields        map[string]struct{}
@@ -7641,42 +7640,6 @@ func (m *LoginHandoffMutation) ResetCallback() {
 	m.callback = nil
 }
 
-// SetCreatedAt sets the "created_at" field.
-func (m *LoginHandoffMutation) SetCreatedAt(t time.Time) {
-	m.created_at = &t
-}
-
-// CreatedAt returns the value of the "created_at" field in the mutation.
-func (m *LoginHandoffMutation) CreatedAt() (r time.Time, exists bool) {
-	v := m.created_at
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldCreatedAt returns the old "created_at" field's value of the LoginHandoff entity.
-// If the LoginHandoff object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *LoginHandoffMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
-	}
-	return oldValue.CreatedAt, nil
-}
-
-// ResetCreatedAt resets all changes to the "created_at" field.
-func (m *LoginHandoffMutation) ResetCreatedAt() {
-	m.created_at = nil
-}
-
 // SetExpiresAt sets the "expires_at" field.
 func (m *LoginHandoffMutation) SetExpiresAt(t time.Time) {
 	m.expires_at = &t
@@ -7823,7 +7786,7 @@ func (m *LoginHandoffMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *LoginHandoffMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 7)
 	if m.code_hash != nil {
 		fields = append(fields, loginhandoff.FieldCodeHash)
 	}
@@ -7838,9 +7801,6 @@ func (m *LoginHandoffMutation) Fields() []string {
 	}
 	if m.callback != nil {
 		fields = append(fields, loginhandoff.FieldCallback)
-	}
-	if m.created_at != nil {
-		fields = append(fields, loginhandoff.FieldCreatedAt)
 	}
 	if m.expires_at != nil {
 		fields = append(fields, loginhandoff.FieldExpiresAt)
@@ -7866,8 +7826,6 @@ func (m *LoginHandoffMutation) Field(name string) (ent.Value, bool) {
 		return m.CodeChallenge()
 	case loginhandoff.FieldCallback:
 		return m.Callback()
-	case loginhandoff.FieldCreatedAt:
-		return m.CreatedAt()
 	case loginhandoff.FieldExpiresAt:
 		return m.ExpiresAt()
 	case loginhandoff.FieldUsedAt:
@@ -7891,8 +7849,6 @@ func (m *LoginHandoffMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldCodeChallenge(ctx)
 	case loginhandoff.FieldCallback:
 		return m.OldCallback(ctx)
-	case loginhandoff.FieldCreatedAt:
-		return m.OldCreatedAt(ctx)
 	case loginhandoff.FieldExpiresAt:
 		return m.OldExpiresAt(ctx)
 	case loginhandoff.FieldUsedAt:
@@ -7940,13 +7896,6 @@ func (m *LoginHandoffMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCallback(v)
-		return nil
-	case loginhandoff.FieldCreatedAt:
-		v, ok := value.(time.Time)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetCreatedAt(v)
 		return nil
 	case loginhandoff.FieldExpiresAt:
 		v, ok := value.(time.Time)
@@ -8049,9 +7998,6 @@ func (m *LoginHandoffMutation) ResetField(name string) error {
 		return nil
 	case loginhandoff.FieldCallback:
 		m.ResetCallback()
-		return nil
-	case loginhandoff.FieldCreatedAt:
-		m.ResetCreatedAt()
 		return nil
 	case loginhandoff.FieldExpiresAt:
 		m.ResetExpiresAt()

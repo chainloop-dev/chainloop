@@ -29,8 +29,6 @@ type LoginHandoff struct {
 	CodeChallenge string `json:"code_challenge,omitempty"`
 	// Callback holds the value of the "callback" field.
 	Callback string `json:"callback,omitempty"`
-	// CreatedAt holds the value of the "created_at" field.
-	CreatedAt time.Time `json:"created_at,omitempty"`
 	// ExpiresAt holds the value of the "expires_at" field.
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
 	// UsedAt holds the value of the "used_at" field.
@@ -70,7 +68,7 @@ func (*LoginHandoff) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case loginhandoff.FieldCodeHash, loginhandoff.FieldCodeChallenge, loginhandoff.FieldCallback:
 			values[i] = new(sql.NullString)
-		case loginhandoff.FieldCreatedAt, loginhandoff.FieldExpiresAt, loginhandoff.FieldUsedAt:
+		case loginhandoff.FieldExpiresAt, loginhandoff.FieldUsedAt:
 			values[i] = new(sql.NullTime)
 		case loginhandoff.FieldID, loginhandoff.FieldUserID:
 			values[i] = new(uuid.UUID)
@@ -124,12 +122,6 @@ func (_m *LoginHandoff) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field callback", values[i])
 			} else if value.Valid {
 				_m.Callback = value.String
-			}
-		case loginhandoff.FieldCreatedAt:
-			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field created_at", values[i])
-			} else if value.Valid {
-				_m.CreatedAt = value.Time
 			}
 		case loginhandoff.FieldExpiresAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -199,9 +191,6 @@ func (_m *LoginHandoff) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("callback=")
 	builder.WriteString(_m.Callback)
-	builder.WriteString(", ")
-	builder.WriteString("created_at=")
-	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("expires_at=")
 	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))

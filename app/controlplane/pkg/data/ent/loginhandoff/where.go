@@ -81,11 +81,6 @@ func Callback(v string) predicate.LoginHandoff {
 	return predicate.LoginHandoff(sql.FieldEQ(FieldCallback, v))
 }
 
-// CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
-func CreatedAt(v time.Time) predicate.LoginHandoff {
-	return predicate.LoginHandoff(sql.FieldEQ(FieldCreatedAt, v))
-}
-
 // ExpiresAt applies equality check predicate on the "expires_at" field. It's identical to ExpiresAtEQ.
 func ExpiresAt(v time.Time) predicate.LoginHandoff {
 	return predicate.LoginHandoff(sql.FieldEQ(FieldExpiresAt, v))
@@ -349,46 +344,6 @@ func CallbackEqualFold(v string) predicate.LoginHandoff {
 // CallbackContainsFold applies the ContainsFold predicate on the "callback" field.
 func CallbackContainsFold(v string) predicate.LoginHandoff {
 	return predicate.LoginHandoff(sql.FieldContainsFold(FieldCallback, v))
-}
-
-// CreatedAtEQ applies the EQ predicate on the "created_at" field.
-func CreatedAtEQ(v time.Time) predicate.LoginHandoff {
-	return predicate.LoginHandoff(sql.FieldEQ(FieldCreatedAt, v))
-}
-
-// CreatedAtNEQ applies the NEQ predicate on the "created_at" field.
-func CreatedAtNEQ(v time.Time) predicate.LoginHandoff {
-	return predicate.LoginHandoff(sql.FieldNEQ(FieldCreatedAt, v))
-}
-
-// CreatedAtIn applies the In predicate on the "created_at" field.
-func CreatedAtIn(vs ...time.Time) predicate.LoginHandoff {
-	return predicate.LoginHandoff(sql.FieldIn(FieldCreatedAt, vs...))
-}
-
-// CreatedAtNotIn applies the NotIn predicate on the "created_at" field.
-func CreatedAtNotIn(vs ...time.Time) predicate.LoginHandoff {
-	return predicate.LoginHandoff(sql.FieldNotIn(FieldCreatedAt, vs...))
-}
-
-// CreatedAtGT applies the GT predicate on the "created_at" field.
-func CreatedAtGT(v time.Time) predicate.LoginHandoff {
-	return predicate.LoginHandoff(sql.FieldGT(FieldCreatedAt, v))
-}
-
-// CreatedAtGTE applies the GTE predicate on the "created_at" field.
-func CreatedAtGTE(v time.Time) predicate.LoginHandoff {
-	return predicate.LoginHandoff(sql.FieldGTE(FieldCreatedAt, v))
-}
-
-// CreatedAtLT applies the LT predicate on the "created_at" field.
-func CreatedAtLT(v time.Time) predicate.LoginHandoff {
-	return predicate.LoginHandoff(sql.FieldLT(FieldCreatedAt, v))
-}
-
-// CreatedAtLTE applies the LTE predicate on the "created_at" field.
-func CreatedAtLTE(v time.Time) predicate.LoginHandoff {
-	return predicate.LoginHandoff(sql.FieldLTE(FieldCreatedAt, v))
 }
 
 // ExpiresAtEQ applies the EQ predicate on the "expires_at" field.

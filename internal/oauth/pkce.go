@@ -16,36 +16,19 @@
 package oauth
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
 	"crypto/subtle"
-	"encoding/base64"
 	"regexp"
+
+	"golang.org/x/oauth2"
 )
 
 // RFC 7636: a verifier is 43 to 128 unreserved characters. A S256 challenge is the
-// unpadded base64url encoding of a SHA-256 digest, so always 43 characters
+// unpadded base64url encoding of a SHA-256 digest, so always 43 characters.
+// Verifiers and challenges are created with oauth2.GenerateVerifier and oauth2.S256ChallengeFromVerifier
 var (
-	codeVerifierRegexp   = regexp.MustCompile(`^[A-Za-z0-9\-._~]{43,128}$`)
-	s256ChallengeRegexp  = regexp.MustCompile(`^[A-Za-z0-9\-_]{43}$`)
-	codeVerifierRandSize = 32
+	codeVerifierRegexp  = regexp.MustCompile(`^[A-Za-z0-9\-._~]{43,128}$`)
+	s256ChallengeRegexp = regexp.MustCompile(`^[A-Za-z0-9\-_]{43}$`)
 )
-
-// NewCodeVerifier returns a random PKCE verifier with 256 bits of entropy
-func NewCodeVerifier() (string, error) {
-	b := make([]byte, codeVerifierRandSize)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-
-	return base64.RawURLEncoding.EncodeToString(b), nil
-}
-
-// CodeChallengeS256 returns the S256 challenge of the given verifier
-func CodeChallengeS256(verifier string) string {
-	sum := sha256.Sum256([]byte(verifier))
-	return base64.RawURLEncoding.EncodeToString(sum[:])
-}
 
 // ValidS256Challenge tells if the value has the shape of a S256 challenge
 func ValidS256Challenge(challenge string) bool {
@@ -58,5 +41,5 @@ func VerifyS256(verifier, challenge string) bool {
 		return false
 	}
 
-	return subtle.ConstantTimeCompare([]byte(CodeChallengeS256(verifier)), []byte(challenge)) == 1
+	return subtle.ConstantTimeCompare([]byte(oauth2.S256ChallengeFromVerifier(verifier)), []byte(challenge)) == 1
 }
