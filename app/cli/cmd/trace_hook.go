@@ -123,9 +123,9 @@ func newTraceHookGitPrePushCmd() *cobra.Command {
 		// action.PrePushFailure in Execute.
 		//
 		// skipActionOptsInit keeps root from building the control-plane
-		// connection (and probing the current org) up front: an offline-only
+		// connection (and probing the current org) up front: a LOCAL-mode
 		// repository must reach no control plane, so the connection is built
-		// lazily below, only when the online mode is enabled.
+		// lazily below, only when the storage mode is CONTROL_PLANE.
 		Annotations: map[string]string{
 			prePushHookAnnotation: trueString,
 			skipActionOptsInit:    trueString,
@@ -135,27 +135,25 @@ func newTraceHookGitPrePushCmd() *cobra.Command {
 
 			// The hook runs at the repository root, so "." resolves the nearest
 			// .chainloop.yml the same way the push identity does.
-			modes, err := config.LoadTraceModesFromYML(".")
+			mode, err := config.LoadTraceStorageFromYML(".")
 			if err != nil {
 				return err
 			}
 
-			// Online: build ActionOpts lazily, since this command is
-			// skipActionOptsInit and root did not. The offline mode alone
-			// reaches no control plane.
-			if modes.Online {
-				if err := ensureActionOpts(cmd); err != nil {
-					return err
-				}
+			if mode == config.TraceStorageLocal {
+				return action.HandlePrePushHookLocal(cmd.Context(), logger)
 			}
 
-			return action.HandlePrePushHook(cmd.Context(), logger, action.RunTraceStoreOpts{
-				Modes: modes,
-				Push: action.RunTracePushOpts{
-					ActionOpts: ActionOpts,
-					CLIVersion: Version,
-					Mode:       aicodingsession.ModeCoding,
-				},
+			// Control plane: build ActionOpts lazily, since this command is
+			// skipActionOptsInit and root did not.
+			if err := ensureActionOpts(cmd); err != nil {
+				return err
+			}
+
+			return action.HandlePrePushHook(cmd.Context(), logger, action.RunTracePushOpts{
+				ActionOpts: ActionOpts,
+				CLIVersion: Version,
+				Mode:       aicodingsession.ModeCoding,
 			})
 		},
 	}

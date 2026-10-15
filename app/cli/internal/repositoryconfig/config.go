@@ -41,13 +41,12 @@ type ChainloopYML struct {
 	Organization   string `yaml:"organization,omitempty"`
 	WorkflowName   string `yaml:"workflowName,omitempty"`
 
-	// TraceModes selects where Chainloop Trace sends a session's evidence:
-	// "online" attests it to the control plane, "offline" writes the evidence
-	// set to disk with no control plane. Both can be set at once. Absent means
-	// online only. It is a committed, shared repository policy, so every clone
-	// of the repository records the same way.
-	TraceModes []string `yaml:"traceModes,omitempty"`
-	// TracePath names where sessions are stored in offline mode. Empty falls
+	// TraceStorage selects where Chainloop Trace stores a session's evidence:
+	// "CONTROL_PLANE" (the default) uploads a signed attestation, "LOCAL" writes
+	// the evidence set to disk with no control plane. It is a committed, shared
+	// repository policy, so a local-trace repository is the same for every clone.
+	TraceStorage string `yaml:"traceStorage,omitempty"`
+	// TracePath names where local sessions are stored in LOCAL mode. Empty falls
 	// back to a per-clone default under the trace state directory.
 	TracePath string `yaml:"tracePath,omitempty"`
 	// TraceRequired blocks a push when a required trace is missing. It replaces

@@ -44,7 +44,7 @@ const (
 	traceDirCommits    = "commits"
 	traceDirSnapshots  = "snapshots"
 	traceDirAILines    = "ai-lines"
-	// traceDirLocalSessions holds the evidence sets written by the offline trace
+	// traceDirLocalSessions holds the evidence sets written by LOCAL trace
 	// storage: one subdirectory per session, each with its materials and a
 	// manifest. Unlike raw/ and snapshots/ it is durable user data, so it is
 	// never touched by WipeTraceDir, GCOrphans, or RemoveTraceDir.
@@ -105,7 +105,7 @@ func (s *Store) SpecRedactionDir(sessionID string) string {
 	return filepath.Join(s.traceDirPath(), traceDirSpecRedactions, SanitizeID(sessionID))
 }
 
-// LocalSessionsDir returns the default directory the offline trace mode writes its
+// LocalSessionsDir returns the default directory LOCAL trace storage writes its
 // evidence sets to when .chainloop.yml sets no tracePath. It sits beside the
 // other trace state inside .git/chainloop-trace, so it is never committed, and
 // it is durable: the per-push WipeTraceDir and GCOrphans do not touch it.
@@ -349,7 +349,7 @@ func (s *Store) staleSessionIDs(unattested map[string]struct{}) map[string]struc
 
 // RemoveTraceDir removes the trace state but preserves local-sessions/ and any
 // preservePaths that resolve inside the trace directory, the durable evidence
-// sets an offline-mode push or `trace run` wrote. A developer keeps those as they
+// sets a LOCAL-mode push or `trace run` wrote. A developer keeps those as they
 // keep any working copy of a session, so trace uninstall and the trace-run
 // teardown must not delete them. A configured tracePath can point at a folder
 // inside the trace directory under a name other than local-sessions, so the

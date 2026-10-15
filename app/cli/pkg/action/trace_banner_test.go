@@ -22,7 +22,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -57,7 +56,7 @@ func (p *bannerProvider) AnnounceSessionStart(msg trace.SessionStartMessage) err
 // evidence goes without assuming any Chainloop vocabulary.
 func TestSessionStartBanner(t *testing.T) {
 	const (
-		recording   = "Chainloop Trace is recording this session in online mode."
+		recording   = "Chainloop Trace is recording this session."
 		testProject = "chainloop-cli"
 	)
 
@@ -122,12 +121,7 @@ func TestSessionStartBanner(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := sessionStartBanner(config.TraceModes{Online: true}, bannerDestination{
-				dashboardURL: tc.dashboardURL,
-				org:          tc.org,
-				project:      tc.project,
-			})
-			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tc.want, sessionStartBanner(tc.dashboardURL, tc.org, tc.project))
 		})
 	}
 }
@@ -187,7 +181,7 @@ func TestSessionStartChannelGate(t *testing.T) {
 
 			assert.Equal(t, tc.wantSent, p.sysCalls)
 			if tc.wantBanner {
-				assert.Contains(t, p.last.Banner, "Chainloop Trace is recording this session in online mode.")
+				assert.Contains(t, p.last.Banner, "Chainloop Trace is recording this session.")
 			} else {
 				assert.Empty(t, p.last.Banner)
 			}

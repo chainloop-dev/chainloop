@@ -47,7 +47,7 @@ What the user sees in the agent.
 
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
-| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, in which trace modes, and where the evidence goes: the Chainloop project in the online mode, and the on-disk path in the offline mode (spec issue-3582). | Yes | No | No | No |
+| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No |
 | Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop. | Yes | No | No | No |
 
 Why not Yes:
@@ -99,24 +99,17 @@ How the sessions are linked to the commits and attested.
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
 | Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes |
-| Attestation at push | In the online trace mode (the default), the `pre-push` hook attests the sessions of the pushed commits to the control plane. | Yes | Yes | Yes | Yes |
-| Offline storage at push | In the offline trace mode (`traceModes: [offline]` in `.chainloop.yml`), the `pre-push` hook runs the same assembly but writes the session evidence set to disk under `tracePath` (default `.git/chainloop-trace/local-sessions`), so it needs no control plane, login, or network. The stored set equals what a push would upload, apart from the signature, and a `manifest.json` marks it unsigned and not an attestation. With `traceModes: [online, offline]` the hook does both: it stores the set on disk first, then attests it. `trace init --offline` sets the mode up; `trace run` honors it. Redaction is on by default, with the `CHAINLOOP_TRACE_NO_REDACT` opt-out for a trusted local store (spec issue-3582). | Yes | Yes | Yes | Yes |
+| Attestation at push | In the default control-plane storage mode, the `pre-push` hook attests the sessions of the pushed commits to the control plane. | Yes | Yes | Yes | Yes |
+| Local storage at push | In a repository with `traceStorage: LOCAL` in `.chainloop.yml`, the `pre-push` hook runs the same assembly but writes the session evidence set to disk under `tracePath` (default `.git/chainloop-trace/local-sessions`) instead of attesting, so it needs no control plane, login, or network. The stored set equals what a push would upload, apart from the signature, and a `manifest.json` marks it unsigned and not an attestation. `trace init --local` sets the mode up; `trace run` honors it. Redaction is on by default, with the `CHAINLOOP_TRACE_NO_REDACT` opt-out for a trusted local store (spec issue-3582). | Yes | Yes | Yes | Yes |
 
-### Trace modes
+### Switching storage modes
 
-`traceModes` in `.chainloop.yml` selects where a session's evidence goes. `online` attests it to the control plane. `offline` stores it on disk. A repository can use one mode or both. With no `traceModes`, the mode is `online`.
+`traceStorage` in `.chainloop.yml` is a committed repository policy, so it is the same for every clone: once a repository is `LOCAL`, every session every user records is stored on disk. To change the mode:
 
-`traceModes` is a committed repository policy, so it is the same for every clone. To change it, run `chainloop trace init` with the modes you want, then commit `.chainloop.yml`:
+- **To local:** run `chainloop trace init --local`. It writes `traceStorage: LOCAL` (and `tracePath` with `--trace-path`), installs the hooks, and contacts no control plane. Commit `.chainloop.yml` to share the choice.
+- **Back to the control plane:** run `chainloop trace init` (without `--local`). It writes `traceStorage: CONTROL_PLANE`, clearing the local policy, and sets up the workflow as usual. The command tells you it switched. Commit `.chainloop.yml`.
 
-- **Offline only:** `chainloop trace init --offline`. It installs the hooks and contacts no control plane.
-- **Online only:** `chainloop trace init --online`. It sets up the workflow as usual.
-- **Both:** `chainloop trace init --online --offline`.
-
-`chainloop trace init` with no mode flag keeps the modes in `.chainloop.yml`. The command tells you when the modes change.
-
-Run `chainloop trace init` once per repository. The git hooks live under `.git` and are not cloned, but in a clone the first traced session installs them, so a teammate does not run init again.
-
-When the online mode fails at push time, for example because the control plane is not available, the offline copy is still stored. The session stays in the trace state, and the next push tries the online mode again.
+The git hooks live under `.git` and are not cloned, so each teammate runs `chainloop trace init` (or `chainloop trace init --local`) once after cloning to install their own.
 
 ## How each agent is hooked in
 

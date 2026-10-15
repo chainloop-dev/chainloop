@@ -25,9 +25,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/rs/zerolog"
 )
@@ -54,7 +56,74 @@ const (
 	materialsDirName = "materials"
 )
 
-// ResolveTracePath returns where the offline trace mode writes its evidence sets:
+// RunTraceLocalStoreOpts configures a disk store of the recorded session
+// evidence.
+type RunTraceLocalStoreOpts struct {
+	// NoRedact disables secret redaction. Off by default: the store redacts
+	// secrets exactly as a push does. The opt-out is for a trusted local run,
+	// and the output can then hold secrets (R-004).
+	NoRedact bool
+	// Mode records how the session was driven, one of the aicodingsession.Mode*
+	// constants. Empty means ModeCoding.
+	Mode string
+	// AllowEmpty assembles active sessions that produced no commit on this
+	// branch, as `chainloop trace run` does. The pre-push path leaves it off, so
+	// a push with no AI commits stores nothing.
+	AllowEmpty bool
+}
+
+// RunTraceLocalStore runs the same push-time assembly that RunTracePush drives
+// but writes the resulting evidence to disk instead of uploading a signed
+// attestation. It makes no call to the control plane and needs no credentials:
+// every material is crafted offline with an inline CAS backend, so the evidence
+// record and the material digests equal what a push would upload, apart from the
+// signature (R-001/R-002). It reuses gatherPushSessions and finalizePush, so the
+// assembly cannot drift from a push and a repeated `git push` does not re-store
+// (D-001).
+//
+// It returns the number of sessions stored and the directory they were written
+// under (resolved even when nothing was stored, so the caller can report it).
+func RunTraceLocalStore(ctx context.Context, log zerolog.Logger, opts RunTraceLocalStoreOpts) (stored int, tracePath string, err error) {
+	store, repoRoot, err := state.Locate()
+	if err != nil {
+		return 0, "", err
+	}
+
+	tracePath = ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot))
+	sessionMode := aicodingsession.ResolveMode(opts.Mode)
+
+	log.Debug().Str("state_dir", store.Dir()).Str("repo_root", repoRoot).
+		Str("trace_path", tracePath).Bool("no_redact", opts.NoRedact).Str("mode", sessionMode).
+		Bool("allow_empty", opts.AllowEmpty).Msg("trace local store invoked")
+
+	sessions, aiCommits, err := gatherPushSessions(ctx, store, repoRoot, sessionMode, opts.AllowEmpty, log)
+	if err != nil {
+		return 0, tracePath, err
+	}
+	if len(sessions) == 0 {
+		return 0, tracePath, nil
+	}
+
+	stored, err = storeSessionsLocally(ctx, log, store, sessions, tracePath, opts.NoRedact)
+	if err != nil {
+		return stored, tracePath, err
+	}
+
+	// Prune the single-use state only when every gathered session was stored.
+	// finalizePush marks all of aiCommits tracked and wipes their retry state,
+	// so finalizing while one session failed to store would strand that
+	// session's evidence with no way back. A run that stored nothing, or only
+	// some sessions, leaves the recorded sessions in place for a later push to
+	// retry. Re-storing a session that already succeeded is harmless: the store
+	// is content-addressed and rewrites the same bytes.
+	if stored == len(sessions) && stored > 0 {
+		finalizePush(store, repoRoot, aiCommits, log)
+	}
+
+	return stored, tracePath, nil
+}
+
+// ResolveTracePath returns where LOCAL trace storage writes its evidence sets:
 // the persisted tracePath when set (absolute, or relative to the repository
 // root), otherwise the per-clone default under the trace state directory.
 func ResolveTracePath(repoRoot string, store *state.Store, persisted string) string {

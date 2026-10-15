@@ -127,7 +127,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 		})
 
 		assert.Contains(t, stdout, `"systemMessage"`)
-		assert.Contains(t, stdout, "Chainloop Trace is recording this session in online mode.")
+		assert.Contains(t, stdout, "Chainloop Trace is recording this session.")
 	})
 
 	t.Run("carries the banner and the spec instruction in one document", func(t *testing.T) {
@@ -152,7 +152,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 		require.NoError(t, dec.Decode(&got))
 		require.ErrorIs(t, dec.Decode(&map[string]any{}), io.EOF, "stdout must carry exactly one JSON document")
 
-		assert.Contains(t, got["systemMessage"], "Chainloop Trace is recording this session in online mode.")
+		assert.Contains(t, got["systemMessage"], "Chainloop Trace is recording this session.")
 
 		hookOut, ok := got["hookSpecificOutput"].(map[string]any)
 		require.True(t, ok)
@@ -184,7 +184,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 		hookOut, ok := got["hookSpecificOutput"].(map[string]any)
 		require.True(t, ok)
 		assert.NotContains(t, hookOut, "additionalContext", "the instruction is not worth repeating")
-		assert.Contains(t, got["systemMessage"], "Chainloop Trace is recording this session in online mode.", "the banner still goes out")
+		assert.Contains(t, got["systemMessage"], "Chainloop Trace is recording this session.", "the banner still goes out")
 	})
 
 	t.Run("ignores malformed stdin", func(t *testing.T) {

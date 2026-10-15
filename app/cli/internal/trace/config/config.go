@@ -86,87 +86,62 @@ func SaveRequireTraceToYML(dir string, val bool) error {
 }
 
 const (
-	// TraceModeOnline attests each session to the Chainloop control plane. It
-	// is the mode when traceModes is unset.
-	TraceModeOnline = "online"
-	// TraceModeOffline writes each session's evidence set to disk, with no
+	// TraceStorageControlPlane uploads a signed attestation to the control
+	// plane. It is the mode when traceStorage is unset.
+	TraceStorageControlPlane = "CONTROL_PLANE"
+	// TraceStorageLocal writes the session evidence set to disk, with no
 	// control plane.
-	TraceModeOffline = "offline"
+	TraceStorageLocal = "LOCAL"
 )
 
-// TraceModes is where Chainloop Trace sends a session's evidence. The modes are
-// independent, so a repository can attest to the control plane and keep a copy
-// on disk at the same time.
-type TraceModes struct {
-	Online  bool
-	Offline bool
+// ResolveTraceStorage canonicalizes a traceStorage value: surrounding space is
+// trimmed and the name upper-cased, an empty value is CONTROL_PLANE, and any
+// value other than the two known modes is an error, so a committed typo surfaces
+// instead of silently falling back to the control plane (and pushing to a
+// backend a LOCAL repository means to avoid).
+func ResolveTraceStorage(persisted string) (string, error) {
+	switch v := strings.ToUpper(strings.TrimSpace(persisted)); v {
+	case "":
+		return TraceStorageControlPlane, nil
+	case TraceStorageControlPlane, TraceStorageLocal:
+		return v, nil
+	default:
+		return "", fmt.Errorf("unknown traceStorage %q in .chainloop.yml: want %s or %s", persisted, TraceStorageControlPlane, TraceStorageLocal)
+	}
 }
 
-// Names lists the enabled modes in a fixed order, online first, as they are
-// written to .chainloop.yml and shown to the user.
-func (m TraceModes) Names() []string {
-	names := make([]string, 0, 2)
-	if m.Online {
-		names = append(names, TraceModeOnline)
-	}
-	if m.Offline {
-		names = append(names, TraceModeOffline)
-	}
-
-	return names
-}
-
-// String renders the enabled modes for the user, for example "online, offline".
-func (m TraceModes) String() string {
-	return strings.Join(m.Names(), ", ")
-}
-
-// ParseTraceModes canonicalizes a traceModes list: each entry is trimmed and
-// lower-cased, and a repeated entry counts once. An absent or empty list is
-// online only. Any entry other than the two known modes is an error, so a
-// committed typo surfaces instead of silently falling back to online (and
-// pushing to a backend an offline repository means to avoid).
-func ParseTraceModes(values []string) (TraceModes, error) {
-	if len(values) == 0 {
-		return TraceModes{Online: true}, nil
-	}
-
-	var modes TraceModes
-	for _, v := range values {
-		switch strings.ToLower(strings.TrimSpace(v)) {
-		case TraceModeOnline:
-			modes.Online = true
-		case TraceModeOffline:
-			modes.Offline = true
-		default:
-			return TraceModes{}, fmt.Errorf("unknown trace mode %q in traceModes of .chainloop.yml: want %s or %s", v, TraceModeOnline, TraceModeOffline)
-		}
-	}
-
-	return modes, nil
-}
-
-// LoadTraceModesFromYML reads and canonicalizes the traceModes list from the
-// nearest .chainloop.yml. A missing config or field is online only, but a
+// LoadTraceStorageFromYML reads and canonicalizes the traceStorage mode from the
+// nearest .chainloop.yml. A missing config or field is CONTROL_PLANE, but a
 // config that exists and cannot be read or parsed is an error, never a silent
-// online. An offline repository whose config broke must not have its pre-push
-// hook fall back to the control plane and upload an offline-only session.
-func LoadTraceModesFromYML(dir string) (TraceModes, error) {
+// CONTROL_PLANE. A LOCAL repository whose config broke must not have its
+// pre-push hook fall back to the control plane and upload a local-only session.
+func LoadTraceStorageFromYML(dir string) (string, error) {
 	cfg, _, err := repositoryconfig.LoadChainloopYML(dir)
 	if errors.Is(err, repositoryconfig.ErrChainloopYMLNotFound) {
-		return TraceModes{Online: true}, nil
+		return TraceStorageControlPlane, nil
 	}
 	if err != nil {
-		return TraceModes{}, err
+		return "", err
 	}
 
-	return ParseTraceModes(cfg.TraceModes)
+	return ResolveTraceStorage(cfg.TraceStorage)
 }
 
-// SaveTraceModesToYML writes (or updates) the traceModes field in
+// IsLocalStorage reports whether the repository is configured for LOCAL trace
+// storage. It is best-effort: a missing config, or an invalid value, is treated
+// as not-local, so a caller that only shapes local-mode behavior (a banner, a
+// self-heal) falls back to the control-plane path. The pre-push hook calls
+// LoadTraceStorageFromYML directly instead, so an invalid value blocks the push
+// rather than being ignored.
+func IsLocalStorage(dir string) bool {
+	mode, err := LoadTraceStorageFromYML(dir)
+	return err == nil && mode == TraceStorageLocal
+}
+
+// SaveTraceStorageToYML writes (or updates) the traceStorage field in
 // .chainloop.yml at the given directory, preserving any other fields.
-func SaveTraceModesToYML(dir string, modes TraceModes) error {
-	return updateChainloopYMLField(dir, "traceModes", modes.Names())
+func SaveTraceStorageToYML(dir, mode string) error {
+	return updateChainloopYMLField(dir, "traceStorage", mode)
 }
 
 // SaveTracePathToYML writes (or updates) the tracePath field in .chainloop.yml

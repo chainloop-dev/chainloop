@@ -112,61 +112,16 @@ func setSessionActive(store *state.Store, sessionID string, active bool, log zer
 	}
 }
 
-// bannerDestination is what the session-start banner knows about where the
-// evidence goes. The online fields name the control plane, the offline fields
-// the directory on disk. Each one is left empty when it is unknown.
-type bannerDestination struct {
-	dashboardURL, org, project string
-	tracePath                  string
-	// traceRunActive tells that `trace run` drives the session, so the evidence
-	// is stored when the run finishes, not on a push.
-	traceRunActive bool
-}
-
 // sessionStartBanner is what the developer sees at the top of a traced
 // session. Its audience includes someone who cloned the repository and never
-// ran init, so it says in plain words which trace modes record the session
-// and, when we know it, where the evidence goes. "Attested" is deliberately
-// absent: it does not tell a newcomer whether something is recorded, uploaded,
-// or signed, let alone to where.
+// ran init, so it says what is happening in plain words and, when we know it,
+// where the evidence goes. Chainloop's own vocabulary is deliberately absent:
+// "attested" does not tell a newcomer whether something is recorded,
+// uploaded, or signed, let alone to where.
 //
 // Each fact is dropped rather than guessed at when it is unknown, so the
 // banner never promises a destination that was not confirmed.
-func sessionStartBanner(modes config.TraceModes, dest bannerDestination) string {
-	var banner string
-	switch {
-	case modes.Online && modes.Offline:
-		banner = "Chainloop Trace is recording this session in online and offline modes."
-	case modes.Offline:
-		banner = "Chainloop Trace is recording this session in offline mode."
-	default:
-		banner = "Chainloop Trace is recording this session in online mode."
-	}
-
-	if modes.Online {
-		if where := onlineDestination(dest.dashboardURL, dest.org, dest.project); where != "" {
-			banner += "\n" + where
-		}
-	}
-
-	// R-012: the offline mode says where the evidence lands on disk.
-	if modes.Offline && dest.tracePath != "" {
-		// A git-hook session stores its evidence on the next push. A `trace run`
-		// session stores it as soon as the wrapped command exits, so the timing
-		// has to match how the session is driven, not always claim a push.
-		when := "when you push"
-		if dest.traceRunActive {
-			when = "when this run finishes"
-		}
-		banner += "\nEvidence will be stored on disk at " + dest.tracePath + " " + when + "."
-	}
-
-	return banner
-}
-
-// onlineDestination names where the online mode sends the evidence: the
-// dashboard, qualified by the organization and project when they are known.
-func onlineDestination(dashboardURL, org, project string) string {
+func sessionStartBanner(dashboardURL, org, project string) string {
 	var identity []string
 	if org != "" {
 		identity = append(identity, "organization: "+org)
@@ -187,7 +142,32 @@ func onlineDestination(dashboardURL, org, project string) string {
 		where = "Evidence will be sent to " + strings.TrimRight(dashboardURL, "/")
 	}
 
-	return where
+	banner := "Chainloop Trace is recording this session."
+	if where != "" {
+		banner += "\n" + where
+	}
+
+	return banner
+}
+
+// localSessionStartBanner is the session-start banner for a local-mode
+// repository. It names the local mode outright and says where the evidence
+// lands, with no dashboard or attestation vocabulary and no control-plane round
+// trip: local mode has no dashboard to point at (R-012).
+func localSessionStartBanner(tracePath string, traceRunActive bool) string {
+	banner := "Chainloop Trace is recording this session in local mode."
+	if tracePath != "" {
+		// A git-hook session stores its evidence on the next push. A `trace run`
+		// session stores it as soon as the wrapped command exits, so the timing
+		// has to match how the session is driven, not always claim a push.
+		when := "when you push"
+		if traceRunActive {
+			when = "when this run finishes"
+		}
+		banner += "\nIts evidence will be stored on disk at " + tracePath + " " + when + "."
+	}
+
+	return banner
 }
 
 // HandleAgentSessionStart handles the agent session-start hook.
@@ -226,27 +206,21 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	}
 
 	if provider.SupportsSessionStartBanner() {
-		// An unreadable traceModes falls back to the online banner: the banner
-		// only informs, and the pre-push hook reports the broken value.
-		modes, err := config.LoadTraceModesFromYML(repoRoot)
-		if err != nil {
-			log.Debug().Err(err).Msg("session-start: could not read traceModes")
-			modes = config.TraceModes{Online: true}
+		var banner string
+		if config.IsLocalStorage(repoRoot) {
+			// Local mode reaches no control plane, so the banner names the
+			// on-disk destination and makes no dashboard round trip (R-012).
+			banner = localSessionStartBanner(
+				ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot)),
+				store.IsTraceRunActive(),
+			)
+		} else {
+			banner = sessionStartBanner(
+				hookDashboardURL(log),
+				config.LoadOrganizationFromYML(repoRoot),
+				repositoryconfig.LoadProjectFromYML(repoRoot),
+			)
 		}
-
-		dest := bannerDestination{traceRunActive: store.IsTraceRunActive()}
-		// Only the online mode makes the dashboard round trip; the offline mode
-		// reaches no control plane.
-		if modes.Online {
-			dest.dashboardURL = hookDashboardURL(log)
-			dest.org = config.LoadOrganizationFromYML(repoRoot)
-			dest.project = repositoryconfig.LoadProjectFromYML(repoRoot)
-		}
-		if modes.Offline {
-			dest.tracePath = ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot))
-		}
-
-		banner := sessionStartBanner(modes, dest)
 		msg.Banner = "\n\n" + banner + "\n"
 	}
 
@@ -800,13 +774,6 @@ func recordRootChanges(store *state.Store, repoRoot string, before map[string]st
 // .git/chainloop-trace/, which is robust to whatever environment each
 // agent happens to propagate to its hook subprocesses.
 // Only meaningful for a store inside a repository; GitDir is empty otherwise.
-// offlineModeEnabled reports whether the repository's traceModes include the
-// offline mode. An unreadable value counts as not enabled.
-func offlineModeEnabled(repoRoot string) bool {
-	modes, err := config.LoadTraceModesFromYML(repoRoot)
-	return err == nil && modes.Offline
-}
-
 func autoInstallGitHooks(store *state.Store, repoRoot string, log zerolog.Logger) {
 	gitDir := store.GitDir()
 	skipPrePush := store.IsTraceRunActive()
@@ -816,10 +783,10 @@ func autoInstallGitHooks(store *state.Store, repoRoot string, log zerolog.Logger
 	}
 
 	// Auto-install needs a repository that is set up for trace: a control-plane
-	// project name, or the offline mode. An offline-only repository writes no
-	// projectName, so without the offline check its hooks would never be
-	// installed in a fresh clone, and every teammate would have to run init.
-	if repositoryconfig.LoadProjectFromYML(repoRoot) == "" && !offlineModeEnabled(repoRoot) {
+	// project name, or local storage mode. A local-mode repository writes no
+	// projectName, so without the local check its hooks would never self-heal
+	// after a re-clone or a manual delete.
+	if repositoryconfig.LoadProjectFromYML(repoRoot) == "" && !config.IsLocalStorage(repoRoot) {
 		return
 	}
 

@@ -3322,20 +3322,13 @@ turn the questions off on a terminal too.
 The organization, project, workflow and require-trace values are saved to
 .chainloop.yml, and every push reads them from there.
 
-The trace modes select where a session's evidence goes. --online (the default)
-attests it to the Chainloop control plane. --offline stores it on disk, under
-.git/chainloop-trace/local-sessions or the --trace-path directory, and needs no
-login and no control plane. Pass both to do both. With no mode flag, init keeps
-the modes in .chainloop.yml, or uses --online on a first run. The modes are
-saved to .chainloop.yml as traceModes, so every clone records the same way.
-
-With --offline alone, init installs the same hooks but creates no workflow,
-needs no login, and reaches no control plane. --contract, --workflow, --org and
---project are control-plane settings and need --online; --require-trace does
-not.
-
-Run init once per repository. In a clone of an initialized repository, the
-first traced session installs the git hooks.
+With --local, the repository is set up for local mode: it installs the same
+hooks but creates no workflow, needs no login, and reaches no control plane. It
+writes traceStorage: LOCAL to .chainloop.yml (and tracePath when --trace-path is
+given), so every clone records sessions on disk. The pre-push hook then stores a
+session's evidence under the path instead of pushing an attestation. --contract,
+--workflow, --org and --project are control-plane settings and cannot be used
+with --local; --require-trace can.
 
 ```
 chainloop trace init [flags]
@@ -3348,12 +3341,11 @@ Options
 --contract string     workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor              install Cursor hooks
 -h, --help                help for init
---offline             store sessions on disk, with no control plane, login or workflow; combine with --online to do both
---online              attest sessions to the Chainloop control plane (the default when no mode flag is set and .chainloop.yml has no traceModes)
+--local               set up local mode: no control plane, no login, no workflow; the pre-push hook stores session evidence on disk
 --opencode            install opencode hooks
 --project string      chainloop project name
 --require-trace       block pushes when a required trace is missing
---trace-path string   where the offline mode stores sessions (default: .git/chainloop-trace/local-sessions)
+--trace-path string   where local-mode sessions are stored (default: under .git/chainloop-trace/local-sessions); implies --local
 --workflow string     chainloop workflow name used for trace attestations (defaults to "ai-coding-session")
 ```
 
@@ -3387,12 +3379,11 @@ Sessions without git commits are still attested.
 trace run keeps its identity isolated from .chainloop.yml: the attestation
 --org, --project and --workflow come from the flags (mandatory) and the
 optional --version flag, never from the file. It does read the repository's
-traceModes, though: in an offline repository (traceModes: [offline]) the
+traceStorage mode, though: in a local-mode repository (traceStorage: LOCAL) the
 session is written to disk when the command exits, with no control plane, and
-the --org, --project and --workflow flags are not required. With both modes,
-the session is written to disk and attested. Either way it
+the --org, --project and --workflow flags are not required. Either way it
 removes the temporary hooks and trace state when the wrapped command exits while
-preserving stored offline session evidence, so a session never leaks setup into
+preserving stored local session evidence, so a session never leaks setup into
 the next one.
 
 The workflow is created before the command runs. That part is best-effort: the
@@ -3411,9 +3402,9 @@ Options
 --cursor            install Cursor hooks
 -h, --help              help for run
 --opencode          install opencode hooks
---project string    chainloop project name (required unless the repository is offline only; .chainloop.yml identity is ignored)
+--project string    chainloop project name (required unless the repository is in local mode; .chainloop.yml identity is ignored)
 --version string    chainloop project version (optional; defaults to the latest version)
---workflow string   chainloop workflow name used for trace attestations (required unless the repository is offline only; .chainloop.yml identity is ignored)
+--workflow string   chainloop workflow name used for trace attestations (required unless the repository is in local mode; .chainloop.yml identity is ignored)
 ```
 
 Options inherited from parent commands

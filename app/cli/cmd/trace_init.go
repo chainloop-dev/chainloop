@@ -35,8 +35,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // newTraceInitCmd creates the trace init subcommand.
@@ -44,8 +42,7 @@ func newTraceInitCmd() *cobra.Command {
 	var (
 		project       string
 		contract      string
-		onlineFlag    bool
-		offlineFlag   bool
+		localFlag     bool
 		tracePathFlag string
 		claudeFlag    bool
 		cursorFlag    bool
@@ -56,8 +53,8 @@ func newTraceInitCmd() *cobra.Command {
 		Use: "init", //nolint:goconst // cobra verb, kept literal like the other init subcommands
 		// skipActionOptsInit keeps root from building the control-plane
 		// connection up front. Control-plane mode builds it lazily with
-		// ensureActionOpts below; the offline mode alone never does, so it
-		// reaches no control plane at all (R-008).
+		// ensureActionOpts below; local mode never does, so it reaches no
+		// control plane at all (R-008).
 		Annotations: map[string]string{skipActionOptsInit: trueString},
 		Short:       "Initialize git hooks for automatic AI session tracing",
 		Long: `Initialize git hooks that automatically trace AI coding sessions and
@@ -83,49 +80,32 @@ turn the questions off on a terminal too.
 The organization, project, workflow and require-trace values are saved to
 .chainloop.yml, and every push reads them from there.
 
-The trace modes select where a session's evidence goes. --online (the default)
-attests it to the Chainloop control plane. --offline stores it on disk, under
-.git/chainloop-trace/local-sessions or the --trace-path directory, and needs no
-login and no control plane. Pass both to do both. With no mode flag, init keeps
-the modes in .chainloop.yml, or uses --online on a first run. The modes are
-saved to .chainloop.yml as traceModes, so every clone records the same way.
-
-With --offline alone, init installs the same hooks but creates no workflow,
-needs no login, and reaches no control plane. --contract, --workflow, --org and
---project are control-plane settings and need --online; --require-trace does
-not.
-
-Run init once per repository. In a clone of an initialized repository, the
-first traced session installs the git hooks.`,
+With --local, the repository is set up for local mode: it installs the same
+hooks but creates no workflow, needs no login, and reaches no control plane. It
+writes traceStorage: LOCAL to .chainloop.yml (and tracePath when --trace-path is
+given), so every clone records sessions on disk. The pre-push hook then stores a
+session's evidence under the path instead of pushing an attestation. --contract,
+--workflow, --org and --project are control-plane settings and cannot be used
+with --local; --require-trace can.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			gitDir, repoRoot, err := tracegit.FindGitDirAndRoot()
 			if err != nil {
 				return err
 			}
 
-			// An explicit mode flag overrides the modes in .chainloop.yml, also
-			// an unreadable value. With no mode flag, an unreadable value is an
-			// error before anything is installed: every pre-push would fail on
-			// it, so init must not report success over it.
-			existingModes, existingErr := config.LoadTraceModesFromYML(repoRoot)
-			modes, saveModes, err := resolveTraceModes(traceModeFlags{
-				online:     onlineFlag,
-				onlineSet:  cmd.Flags().Changed("online"),
-				offline:    offlineFlag,
-				offlineSet: cmd.Flags().Changed("offline"),
-			}, existingModes, existingErr)
-			if err != nil {
-				return err
+			// A tracePath only has meaning in local mode, so naming one turns it
+			// on rather than being silently ignored.
+			if tracePathFlag != "" {
+				localFlag = true
 			}
 
-			// The offline mode alone contacts no control plane, so the
-			// control-plane identity and workflow flags are contradictions
-			// rather than extra configuration. --require-trace is orthogonal and
-			// allowed.
-			if !modes.Online {
+			// Local mode contacts no control plane, so the control-plane
+			// identity and workflow flags are contradictions rather than extra
+			// configuration. --require-trace is orthogonal and allowed.
+			if localFlag {
 				for _, name := range []string{"contract", "workflow", "org", "project"} { //nolint:goconst // flag names, kept literal like the other flag references
 					if cmd.Flags().Changed(name) {
-						return fmt.Errorf("--%s cannot be used without --online: the offline mode contacts no control plane and creates no workflow", name)
+						return fmt.Errorf("--%s cannot be used with --local: local mode contacts no control plane and creates no workflow", name)
 					}
 				}
 			}
@@ -134,24 +114,38 @@ first traced session installs the git hooks.`,
 			if err != nil {
 				return err
 			}
-			cfg.modes = modes
-			cfg.saveModes = saveModes
+			cfg.local = localFlag
 			cfg.tracePath = tracePathFlag
-			cfg.saveTracePath = tracePathFlag != ""
+			cfg.saveTracePath = localFlag && tracePathFlag != ""
 
-			// The online mode fills in the identity and opens an executor,
-			// building the connection lazily (the command is
-			// skipActionOptsInit). The offline mode alone resolves no identity
-			// and opens no executor.
+			// A control-plane init over a repository previously set to LOCAL has
+			// to clear the stale policy, or the pre-push hook keeps storing on
+			// disk while init configured the control plane, and the two
+			// disagree. A fresh control-plane repository writes nothing and keeps
+			// relying on the CONTROL_PLANE default.
+			existingMode, err := config.LoadTraceStorageFromYML(repoRoot)
+			if err != nil && !localFlag {
+				// An invalid traceStorage already in .chainloop.yml would make
+				// every pre-push fail. A control-plane init cannot pick a mode
+				// for a value it cannot read, so surface it now rather than
+				// install hooks over a config that only errors. An explicit
+				// --local run overrides the value and is let through.
+				return fmt.Errorf("existing .chainloop.yml: %w", err)
+			}
+			cfg.traceStorage, cfg.saveTraceStorage = traceStorageToPersist(localFlag, existingMode)
+
+			// Control-plane mode fills in the identity and opens an executor,
+			// building the connection lazily (the command is skipActionOptsInit).
+			// Local mode resolves no identity and opens no executor.
 			var executor *action.AttestationExecutor
-			if modes.Online {
+			if !localFlag {
 				if err := ensureActionOpts(cmd); err != nil {
-					return withOfflineHint(err)
+					return err
 				}
 
 				executor, err = resolveTraceIdentity(cmd.Context(), cfg, repoRoot)
 				if err != nil {
-					return withOfflineHint(stopIfAborted(err))
+					return stopIfAborted(err)
 				}
 				defer func() { _ = executor.Close() }()
 			}
@@ -171,10 +165,10 @@ first traced session installs the git hooks.`,
 				return fmt.Errorf("no trace providers selected")
 			}
 
-			// The offline mode has no control plane to create the workflow in.
-			if modes.Online {
+			// Local mode has no control plane to create the workflow in.
+			if !localFlag {
 				if err := ensureTraceInitWorkflow(cmd.Context(), executor, cfg, contract); err != nil {
-					return withOfflineHint(err)
+					return err
 				}
 			}
 
@@ -238,10 +232,6 @@ first traced session installs the git hooks.`,
 			// local, but a failure part-way through it would leave a repository
 			// half set up: harness hooks calling a configuration that is not
 			// there, or a configuration with nothing recording into it.
-			// Read before writeTraceInitState marks the repository initialized:
-			// a change of modes is news only to a repository that was set up.
-			wasInitialized := state.NewGitStore(gitDir).IsTraceInitialized()
-
 			if err := writeTraceInitState(cfg, repoRoot, gitDir); err != nil {
 				for _, snapshot := range before {
 					if rerr := snapshot.restore(); rerr != nil {
@@ -262,29 +252,28 @@ first traced session installs the git hooks.`,
 
 			// What the run produced, and what to do with it. Every step above logs
 			// at debug, so this is what the user is left with.
-			summary := traceInitSummary{modes: modes, harnesses: providerNames(installed)}
-			if modes.Online {
-				// Nothing pinned an organization when cfg has none, so the
-				// workflow went to the one the CLI points at. That is the one to
-				// report: it is what the connection used, not a guess.
-				summary.organization = cmp.Or(cfg.organization, viper.GetString(confOptions.organization.viperKey))
-				summary.project = cfg.project
-				summary.workflow = cfg.workflow
-			}
-			if modes.Offline {
-				summary.sessionsPath = traceSessionsPathForDisplay(repoRoot, gitDir, workDir)
+			if cfg.local {
+				writeTraceInitLocalSummary(os.Stdout, repoRoot, providerNames(installed))
+				writeTraceLocalNextSteps(os.Stdout, repoRoot, workDir, installed)
+
+				return nil
 			}
 
-			writeTraceInitSummary(os.Stdout, summary)
+			// Nothing pinned an organization when cfg has none, so the workflow
+			// went to the one the CLI points at. That is the one to report: it is
+			// what the connection used, not a guess.
+			organization := cmp.Or(cfg.organization, viper.GetString(confOptions.organization.viperKey))
 
-			// A change of modes in a repository that was already set up changes
+			writeTraceInitSummary(os.Stdout, organization, cfg.project, cfg.workflow, providerNames(installed))
+
+			// A control-plane init that cleared a previous LOCAL policy changed
 			// how every push behaves, so say it rather than leave it to a debug
 			// log the user never sees.
-			if saveModes && existingErr == nil && (wasInitialized || existingModes != (config.TraceModes{Online: true})) {
-				writeTraceModesChangedNote(os.Stdout, existingModes, modes, config.ChainloopYMLName(repoRoot))
+			if existingMode == config.TraceStorageLocal {
+				writeTraceStorageSwitchedNote(os.Stdout, config.ChainloopYMLName(repoRoot))
 			}
 
-			writeTraceNextSteps(os.Stdout, modes, repoRoot, workDir, installed)
+			writeTraceNextSteps(os.Stdout, repoRoot, workDir, installed)
 
 			return nil
 		},
@@ -292,9 +281,8 @@ first traced session installs the git hooks.`,
 
 	cmd.Flags().StringVar(&project, "project", "", "chainloop project name")
 	cmd.Flags().StringVar(&contract, "contract", "", traceContractFlagDesc)
-	cmd.Flags().BoolVar(&onlineFlag, "online", false, "attest sessions to the Chainloop control plane (the default when no mode flag is set and .chainloop.yml has no traceModes)")
-	cmd.Flags().BoolVar(&offlineFlag, "offline", false, "store sessions on disk, with no control plane, login or workflow; combine with --online to do both")
-	cmd.Flags().StringVar(&tracePathFlag, "trace-path", "", "where the offline mode stores sessions (default: .git/chainloop-trace/local-sessions)")
+	cmd.Flags().BoolVar(&localFlag, "local", false, "set up local mode: no control plane, no login, no workflow; the pre-push hook stores session evidence on disk")
+	cmd.Flags().StringVar(&tracePathFlag, "trace-path", "", "where local-mode sessions are stored (default: under .git/chainloop-trace/local-sessions); implies --local")
 	cmd.Flags().String("workflow", "", "chainloop workflow name used for trace attestations (defaults to \"ai-coding-session\")")
 	cmd.Flags().Bool("require-trace", false, "block pushes when a required trace is missing")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no harness flag is set)")
@@ -308,82 +296,35 @@ first traced session installs the git hooks.`,
 // done with it, which is more than belongs in a command's own output.
 const traceDocsURL = "https://docs.chainloop.dev/ai-sessions"
 
-// traceInitSummary is what init reports it set up. The online fields are empty
-// for the offline mode alone, and sessionsPath is empty without the offline
-// mode.
-type traceInitSummary struct {
-	modes                           config.TraceModes
-	organization, project, workflow string
-	sessionsPath                    string
-	harnesses                       []string
-}
-
 // writeTraceInitSummary reports what the repository was set up with. It goes to
 // stdout rather than through the logger because it is the command's result,
 // not a note about something that happened on the way there.
-func writeTraceInitSummary(w io.Writer, s traceInitSummary) {
+func writeTraceInitSummary(w io.Writer, organization, project, workflow string, harnesses []string) {
 	fmt.Fprint(w, "\nCongratulations, your repository is initialized\n\n")
 
-	if s.modes.Online {
-		fmt.Fprintf(w, "  modes         %s\n", s.modes)
-
-		// Empty only when the CLI has no organization configured either,
-		// which leaves nothing truthful to name.
-		if s.organization != "" {
-			fmt.Fprintf(w, "  organization  %s\n", s.organization)
-		}
-
-		fmt.Fprintf(w, "  project       %s\n", s.project)
-		fmt.Fprintf(w, "  workflow      %s\n", s.workflow)
-	} else {
-		fmt.Fprintf(w, "  modes         %s (no control plane)\n", s.modes)
+	// Empty only when the CLI has no organization configured either, which
+	// leaves nothing truthful to name.
+	if organization != "" {
+		fmt.Fprintf(w, "  organization  %s\n", organization)
 	}
 
-	if s.modes.Offline {
-		fmt.Fprintf(w, "  sessions      stored on disk under %s on push\n", s.sessionsPath)
-	}
-
-	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(s.harnesses, ", "))
-
-	// The offline mode alone leaves the control plane out. Say how to bring
-	// it in, so the choice does not look final.
-	if !s.modes.Online {
-		fmt.Fprint(w, "\nTo also send sessions to a Chainloop control plane later, run:\n       chainloop trace init --online --offline\n")
-	}
-}
-
-// writeTraceModesChangedNote tells the user that this init changed the trace
-// modes of a repository that was already set up. The change affects how every
-// push behaves, so it is stated plainly here rather than left to a debug log,
-// and the user is reminded to commit it like any other repository policy
-// change.
-func writeTraceModesChangedNote(w io.Writer, from, to config.TraceModes, ymlName string) {
-	fmt.Fprintf(w, "\nTrace modes changed from %s to %s. Commit %s so every clone\nrecords the same way.\n", from, to, ymlName)
-}
-
-// traceSessionsPathForDisplay names where the offline mode stores sessions,
-// relative to where the user ran init when that is shorter to read.
-func traceSessionsPathForDisplay(repoRoot, gitDir, workDir string) string {
-	path := action.ResolveTracePath(repoRoot, state.NewGitStore(gitDir), config.LoadTracePathFromYML(repoRoot))
-	if rel, err := filepath.Rel(workDir, path); err == nil {
-		return rel
-	}
-
-	return path
+	fmt.Fprintf(w, "  project       %s\n", project)
+	fmt.Fprintf(w, "  workflow      %s\n", workflow)
+	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
 }
 
 // writeTraceNextSteps says what is left for the user to do. Committing comes
 // first: what init wrote into the repository is shared, and until it is
 // committed this setup exists in one working copy only.
 //
-// With the online mode it stops short of promising that a teammate who pulls
-// is set up: a teammate needs their own login. The offline mode needs nothing
-// of the kind, and the first traced session in a clone installs the git hooks,
-// so a teammate does not run init at all.
+// It stops short of promising that a teammate who pulls is set up: the git
+// hooks live in .git/hooks, which git does not carry between clones, so they
+// still have to run init themselves. What they gain is having nothing to answer
+// when they do.
 //
 // workDir is where the user ran the command, which is what `git add` resolves
 // its arguments against; it is not always the repository root.
-func writeTraceNextSteps(w io.Writer, modes config.TraceModes, repoRoot, workDir string, installed []trace.Provider) {
+func writeTraceNextSteps(w io.Writer, repoRoot, workDir string, installed []trace.Provider) {
 	files := make([]string, 0, len(installed)+1)
 	add := func(absolute string) {
 		// An absolute path stages just as well, so it is the fallback for the
@@ -402,35 +343,82 @@ func writeTraceNextSteps(w io.Writer, modes config.TraceModes, repoRoot, workDir
 		add(p.SettingsFile(repoRoot))
 	}
 
-	commit := "Commit these files. Teammates then only need to run chainloop trace init:"
-	if !modes.Online {
-		commit = "Commit these files so every clone records the same way:"
+	fmt.Fprintf(w, `
+What's next
+
+  1. Commit these files. Teammates then only need to run chainloop trace init:
+       git add %s
+  2. Start %s and write some code
+  3. Commit and push as usual. The AI coding sessions behind those commits are
+     recorded and stored automatically
+
+Learn more: %s
+`, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
+}
+
+// writeTraceInitLocalSummary reports what a local init set up. It names no
+// organization, project or workflow, because local mode has none: it records
+// sessions and writes their evidence to disk, with no control plane.
+func writeTraceInitLocalSummary(w io.Writer, repoRoot string, harnesses []string) {
+	fmt.Fprint(w, "\nCongratulations, your repository is initialized in local mode\n\n")
+	fmt.Fprint(w, "  storage       local (no control plane)\n")
+
+	if path := config.LoadTracePathFromYML(repoRoot); path != "" {
+		fmt.Fprintf(w, "  sessions      stored under %s on push\n", path)
+	} else {
+		fmt.Fprint(w, "  sessions      stored under .git/chainloop-trace/local-sessions on push\n")
 	}
 
-	var push string
-	switch {
-	case modes.Online && modes.Offline:
-		push = `The AI coding sessions behind those commits are
-     recorded in Chainloop and written to disk automatically; the push tells
-     you where`
-	case modes.Offline:
-		push = `The session evidence is written to disk, with no
-     control plane; the push tells you where`
-	default:
-		push = `The AI coding sessions behind those commits are
-     recorded and stored automatically`
+	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
+}
+
+// writeTraceStorageSwitchedNote tells the user that this control-plane init
+// cleared a previous local-mode policy. The switch changes how every push
+// behaves, so it is stated plainly here rather than left to a debug log, and the
+// user is reminded to commit it like any other repository policy change.
+func writeTraceStorageSwitchedNote(w io.Writer, ymlName string) {
+	fmt.Fprintf(w, "\nThis repository was in local mode. Trace now attests sessions to the control\nplane. Commit %s so every clone switches too.\n", ymlName)
+}
+
+// writeTraceLocalNextSteps says what is left after a local init. Committing
+// .chainloop.yml shares the choice: traceStorage: LOCAL is a repository policy a
+// clone inherits. The git hooks that record a session live under .git and are
+// not cloned, though, so each teammate installs their own by running chainloop
+// trace init --local once after cloning. Unlike the control-plane path there is
+// nothing to push to a backend; the evidence lands on disk when the session's
+// commits are pushed.
+func writeTraceLocalNextSteps(w io.Writer, repoRoot, workDir string, installed []trace.Provider) {
+	files := make([]string, 0, len(installed)+1)
+	add := func(absolute string) {
+		if rel, err := filepath.Rel(workDir, absolute); err == nil {
+			files = append(files, rel)
+			return
+		}
+
+		files = append(files, absolute)
+	}
+
+	add(filepath.Join(repoRoot, config.ChainloopYMLName(repoRoot)))
+
+	for _, p := range installed {
+		add(p.SettingsFile(repoRoot))
 	}
 
 	fmt.Fprintf(w, `
 What's next
 
-  1. %s
+  1. Commit these files so the local-mode policy is shared:
        git add %s
   2. Start %s and write some code
-  3. Commit and push as usual. %s
+  3. Commit and push as usual. The session evidence is written to disk, with no
+     control plane; the push tells you where
+
+Each teammate installs their own git hooks once after cloning, since the hooks
+live under .git and are not cloned:
+       chainloop trace init --local
 
 Learn more: %s
-`, commit, strings.Join(files, " "), joinWithOr(providerNames(installed)), push, traceDocsURL)
+`, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
 }
 
 // providerNames names the harnesses, in the order they were installed.
@@ -619,70 +607,37 @@ type traceInitConfig struct {
 	organization string
 	requireTrace bool
 
-	// modes are the trace modes of the repository after this run, written
-	// when saveModes is set. tracePath is the optional override for where the
-	// offline mode stores sessions.
-	modes     config.TraceModes
+	// local records that this is a local-mode init: it writes traceStorage:
+	// LOCAL and reaches no control plane. tracePath is the optional override for
+	// where local sessions are stored.
+	local     bool
 	tracePath string
+	// traceStorage is the value written when saveTraceStorage is set. Local init
+	// writes LOCAL. A control-plane init writes CONTROL_PLANE only to clear a
+	// stale LOCAL left by an earlier local init.
+	traceStorage string
 
 	// The save* fields mark the values the user set on this run. Only those
 	// are written back to .chainloop.yml, leaving the rest of the file alone.
 	saveProject, saveWorkflow, saveOrganization, saveRequireTrace bool
-	saveModes, saveTracePath                                      bool
+	saveTraceStorage, saveTracePath                               bool
 }
 
-// traceModeFlags are the --online and --offline flags, and whether the user
-// passed each one.
-type traceModeFlags struct {
-	online, onlineSet   bool
-	offline, offlineSet bool
-}
-
-// resolveTraceModes decides the trace modes init sets up and whether it writes
-// them to .chainloop.yml. A mode flag sets the modes outright: the passed flags
-// are the modes. With no mode flag, init keeps the existing modes, which are
-// online only when .chainloop.yml has none. The modes are written only when
-// they change, so a fresh online repository keeps its config minimal.
-// existingErr is the error from reading the existing modes: a mode flag
-// overrides the unreadable value, and with no mode flag it is returned.
-func resolveTraceModes(flags traceModeFlags, existing config.TraceModes, existingErr error) (config.TraceModes, bool, error) {
-	if !flags.onlineSet && !flags.offlineSet {
-		if existingErr != nil {
-			return config.TraceModes{}, false, fmt.Errorf("existing .chainloop.yml: %w", existingErr)
-		}
-
-		return existing, false, nil
+// traceStorageToPersist decides which traceStorage value trace init writes and
+// whether it writes one at all. Local init always records LOCAL. A control-plane
+// init writes CONTROL_PLANE only to clear a stale LOCAL an earlier local init
+// left behind, so the pre-push hook never keeps storing on disk after a
+// control-plane re-init. A fresh control-plane repository writes nothing and
+// keeps its config minimal, relying on the CONTROL_PLANE default.
+func traceStorageToPersist(localFlag bool, existingMode string) (value string, save bool) {
+	switch {
+	case localFlag:
+		return config.TraceStorageLocal, true
+	case existingMode == config.TraceStorageLocal:
+		return config.TraceStorageControlPlane, true
+	default:
+		return "", false
 	}
-
-	modes := config.TraceModes{Online: flags.online, Offline: flags.offline}
-	if !modes.Online && !modes.Offline {
-		return config.TraceModes{}, false, errors.New("set at least one trace mode: --online, --offline, or both")
-	}
-
-	return modes, existingErr != nil || modes != existing, nil
-}
-
-// offlineHint is added to an online init error when the control plane cannot
-// be used, because the offline mode needs no control plane.
-const offlineHint = `To trace without a Chainloop control plane, run "chainloop trace init --offline"`
-
-// withOfflineHint adds offlineHint to an error that tells the control plane is
-// not available: the credentials are missing or rejected, or the control plane
-// cannot be reached. Any other error is returned unchanged.
-func withOfflineHint(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	if msg, ok := action.AuthErrorMessage(err); ok {
-		return fmt.Errorf("%s\n%s", msg, offlineHint)
-	}
-
-	if st, ok := status.FromError(err); ok && st.Code() == codes.Unavailable {
-		return fmt.Errorf("%w\n%s", err, offlineHint)
-	}
-
-	return err
 }
 
 // resolveTraceInitConfig reads the trace settings from the flags, falling back
@@ -740,13 +695,13 @@ func resolveTraceInitConfig(cmd *cobra.Command, repoRoot, projectFlag string) (*
 // save persists the values the user passed to .chainloop.yml so the trace
 // hooks target the same organization, project and workflow on every push.
 func (c *traceInitConfig) save(repoRoot string) error {
-	// Trace modes first: the offline mode is what makes the push hook store
-	// on disk, so it must land even if nothing else is written.
-	if c.saveModes {
-		if err := config.SaveTraceModesToYML(repoRoot, c.modes); err != nil {
+	// Storage mode first: in local mode it is the field that makes the push
+	// hook store on disk, so it must land even if nothing else is written.
+	if c.saveTraceStorage {
+		if err := config.SaveTraceStorageToYML(repoRoot, c.traceStorage); err != nil {
 			return err
 		}
-		logger.Debug().Str("traceModes", c.modes.String()).Msg("traceModes saved to .chainloop.yml")
+		logger.Debug().Str("traceStorage", c.traceStorage).Msg("traceStorage saved to .chainloop.yml")
 	}
 
 	if c.saveTracePath {
