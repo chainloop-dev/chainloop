@@ -1,0 +1,35 @@
+{
+  "$id": "controlplane.v1.AuthServiceExchangeHandoffRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(code_verifier)$": {
+      "description": "The PKCE verifier whose S256 challenge was sent when the login started",
+      "maxLength": 256,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "properties": {
+    "callback": {
+      "description": "The callback URL the login was started with",
+      "maxLength": 2048,
+      "minLength": 1,
+      "type": "string"
+    },
+    "codeVerifier": {
+      "description": "The PKCE verifier whose S256 challenge was sent when the login started",
+      "maxLength": 256,
+      "minLength": 1,
+      "type": "string"
+    },
+    "handoff": {
+      "description": "The handoff code received in the callback URL",
+      "maxLength": 256,
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "title": "Auth Service Exchange Handoff Request",
+  "type": "object"
+}

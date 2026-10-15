@@ -77,6 +77,7 @@ type TestingUseCases struct {
 	Project                *biz.ProjectUseCase
 	OrgMetrics             *biz.OrgMetricsUseCase
 	Group                  *biz.GroupUseCase
+	LoginHandoff           *biz.LoginHandoffUseCase
 	// Repositories that can be used for custom crafting of use-cases
 	Repos *TestingRepos
 }
@@ -91,6 +92,7 @@ type TestingRepos struct {
 	GroupRepo         biz.GroupRepo
 	OrgInvitationRepo biz.OrgInvitationRepo
 	APITokenRepo      biz.APITokenRepo
+	LoginHandoffRepo  biz.LoginHandoffRepo
 }
 
 type newTestingOpts struct {

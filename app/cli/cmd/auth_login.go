@@ -33,10 +33,55 @@ import (
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
 )
 
 type app struct {
 	serverChan chan error
+	callback   *loginCallback
+}
+
+// loginCallback turns the callback of a browser login into the session token
+type loginCallback struct {
+	callbackURL string
+	// codeVerifier is set when the login uses the code exchange
+	codeVerifier string
+	// whether the control plane still allows the token in the callback URL
+	legacyAllowed bool
+	exchange      func(ctx context.Context, handoff, codeVerifier, callbackURL string) (string, error)
+	warn          func(msg string)
+}
+
+var errNoCallbackCredentials = errors.New("the login callback did not carry a login code")
+
+// token returns the session token for the callback request
+func (c *loginCallback) token(r *http.Request) (string, error) {
+	q := r.URL.Query()
+	if handoff := q.Get(oauth.QueryParamHandoff); handoff != "" && c.codeVerifier != "" {
+		token, err := c.exchange(r.Context(), handoff, c.codeVerifier, c.callbackURL)
+		if err != nil {
+			return "", fmt.Errorf("exchanging the login code: %w", err)
+		}
+		return token, nil
+	}
+
+	token := q.Get(oauth.QueryParamLegacyToken)
+	if token == "" {
+		return "", errNoCallbackCredentials
+	}
+
+	// An older control plane, the token in the callback URL is the only method it has
+	if c.codeVerifier == "" {
+		return token, nil
+	}
+
+	// The control plane supports the exchange, but the login page did not forward the code challenge
+	if !c.legacyAllowed {
+		return "", errors.New("the login returned the session token in the callback URL, which the control plane does not allow, refusing it")
+	}
+
+	c.warn("the login returned the session token in the callback URL instead of a login code. This method is deprecated, make sure the login page forwards the code challenge to the control plane")
+	return token, nil
 }
 
 func newAuthLoginCmd() *cobra.Command {
@@ -61,12 +106,12 @@ func interactiveAuth(forceHeadless bool) error {
 		return err
 	}
 	// Get the auth login from the control plane directly
-	authURL, err := retrieveLoginURL()
+	info, err := retrieveLoginInfo()
 	if err != nil {
 		return err
 	}
 
-	serverLoginURL, err := url.Parse(authURL)
+	serverLoginURL, err := url.Parse(info.GetLoginUrl())
 	if err != nil {
 		return err
 	}
@@ -78,6 +123,18 @@ func interactiveAuth(forceHeadless bool) error {
 
 	if forceHeadless || isRemoteSession() {
 		return headlessAuth(serverLoginURL)
+	}
+
+	a.callback = &loginCallback{
+		callbackURL:   callbackURL.String(),
+		legacyAllowed: info.GetLoginLegacyCallbackAllowed(),
+		exchange:      exchangeHandoff,
+		warn:          func(msg string) { logger.Warn().Msg(msg) },
+	}
+
+	// Ask for a login code instead of the token when the control plane supports it
+	if info.GetLoginCodeExchangeSupported() {
+		a.callback.codeVerifier = addCodeChallenge(serverLoginURL)
 	}
 
 	err = openbrowser(serverLoginURL.String())
@@ -109,11 +166,44 @@ func interactiveAuth(forceHeadless bool) error {
 	return nil
 }
 
-func headlessAuth(loginURL *url.URL) error {
-	// Remove cli-callback query parameter to indicate the server to show it inline
+// addCodeChallenge adds a S256 code challenge to the login URL and returns its verifier
+func addCodeChallenge(loginURL *url.URL) string {
+	verifier := oauth2.GenerateVerifier()
+
 	q := loginURL.Query()
-	q.Set("callback", "")
+	q.Set(oauth.QueryParamCodeChallenge, oauth2.S256ChallengeFromVerifier(verifier))
+	q.Set(oauth.QueryParamCodeChallengeMethod, oauth.CodeChallengeMethodS256)
 	loginURL.RawQuery = q.Encode()
+
+	return verifier
+}
+
+// exchangeHandoff trades the login code for the session token
+func exchangeHandoff(ctx context.Context, handoff, codeVerifier, callbackURL string) (string, error) {
+	resp, err := pb.NewAuthServiceClient(ActionOpts.CPConnection).ExchangeHandoff(ctx, &pb.AuthServiceExchangeHandoffRequest{
+		Handoff:      handoff,
+		CodeVerifier: codeVerifier,
+		Callback:     callbackURL,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.GetToken(), nil
+}
+
+// toHeadlessLoginURL removes the callback, so the server shows the token inline. The code
+// challenge goes too: the headless page has no code to exchange, and a challenge needs a callback
+func toHeadlessLoginURL(loginURL *url.URL) {
+	q := loginURL.Query()
+	q.Set(oauth.QueryParamCallback, "")
+	q.Del(oauth.QueryParamCodeChallenge)
+	q.Del(oauth.QueryParamCodeChallengeMethod)
+	loginURL.RawQuery = q.Encode()
+}
+
+func headlessAuth(loginURL *url.URL) error {
+	toHeadlessLoginURL(loginURL)
 	fmt.Printf("To authenticate, click on the following link and paste the result back here\n\n  %s\n\n", loginURL.String())
 
 	fmt.Print("Enter Token: ")
@@ -145,18 +235,19 @@ func saveAuthToken(token string) error {
 }
 
 func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
-	token := r.URL.Query().Get("t")
-
+	var err error
 	defer func() {
-		a.serverChan <- nil
+		a.serverChan <- err
 	}()
 
-	if token == "" {
+	token, err := a.callback.token(r)
+	if err != nil {
 		w.WriteHeader(http.StatusExpectationFailed)
+		fmt.Fprintln(w, "login failed, please check the terminal")
 		return
 	}
 
-	if err := saveAuthToken(token); err != nil {
+	if err = saveAuthToken(token); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -197,14 +288,10 @@ func isRemoteSession() bool {
 	return false
 }
 
-// Retrieve loginURL from the control plane
-func retrieveLoginURL() (string, error) {
+// Retrieve the login URL and the login capabilities from the control plane
+func retrieveLoginInfo() (*pb.InfozResponse, error) {
 	client := pb.NewStatusServiceClient(ActionOpts.CPConnection)
-	resp, err := client.Infoz(context.Background(), &pb.InfozRequest{})
-	if err != nil {
-		return "", err
-	}
-	return resp.LoginUrl, nil
+	return client.Infoz(context.Background(), &pb.InfozRequest{})
 }
 
 // Create a local HTTP listener with a random available port

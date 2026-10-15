@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/loginhandoff"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
@@ -59,6 +60,8 @@ type Client struct {
 	Integration *IntegrationClient
 	// IntegrationAttachment is the client for interacting with the IntegrationAttachment builders.
 	IntegrationAttachment *IntegrationAttachmentClient
+	// LoginHandoff is the client for interacting with the LoginHandoff builders.
+	LoginHandoff *LoginHandoffClient
 	// Membership is the client for interacting with the Membership builders.
 	Membership *MembershipClient
 	// OrgInvitation is the client for interacting with the OrgInvitation builders.
@@ -102,6 +105,7 @@ func (c *Client) init() {
 	c.GroupMembership = NewGroupMembershipClient(c.config)
 	c.Integration = NewIntegrationClient(c.config)
 	c.IntegrationAttachment = NewIntegrationAttachmentClient(c.config)
+	c.LoginHandoff = NewLoginHandoffClient(c.config)
 	c.Membership = NewMembershipClient(c.config)
 	c.OrgInvitation = NewOrgInvitationClient(c.config)
 	c.Organization = NewOrganizationClient(c.config)
@@ -214,6 +218,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		GroupMembership:         NewGroupMembershipClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
 		IntegrationAttachment:   NewIntegrationAttachmentClient(cfg),
+		LoginHandoff:            NewLoginHandoffClient(cfg),
 		Membership:              NewMembershipClient(cfg),
 		OrgInvitation:           NewOrgInvitationClient(cfg),
 		Organization:            NewOrganizationClient(cfg),
@@ -253,6 +258,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		GroupMembership:         NewGroupMembershipClient(cfg),
 		Integration:             NewIntegrationClient(cfg),
 		IntegrationAttachment:   NewIntegrationAttachmentClient(cfg),
+		LoginHandoff:            NewLoginHandoffClient(cfg),
 		Membership:              NewMembershipClient(cfg),
 		OrgInvitation:           NewOrgInvitationClient(cfg),
 		Organization:            NewOrganizationClient(cfg),
@@ -295,9 +301,9 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIToken, c.Attestation, c.CASBackend, c.CASMapping, c.Group,
-		c.GroupMembership, c.Integration, c.IntegrationAttachment, c.Membership,
-		c.OrgInvitation, c.Organization, c.Project, c.ProjectVersion, c.Referrer,
-		c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
+		c.GroupMembership, c.Integration, c.IntegrationAttachment, c.LoginHandoff,
+		c.Membership, c.OrgInvitation, c.Organization, c.Project, c.ProjectVersion,
+		c.Referrer, c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
 		c.WorkflowContractVersion, c.WorkflowRun,
 	} {
 		n.Use(hooks...)
@@ -309,9 +315,9 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIToken, c.Attestation, c.CASBackend, c.CASMapping, c.Group,
-		c.GroupMembership, c.Integration, c.IntegrationAttachment, c.Membership,
-		c.OrgInvitation, c.Organization, c.Project, c.ProjectVersion, c.Referrer,
-		c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
+		c.GroupMembership, c.Integration, c.IntegrationAttachment, c.LoginHandoff,
+		c.Membership, c.OrgInvitation, c.Organization, c.Project, c.ProjectVersion,
+		c.Referrer, c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
 		c.WorkflowContractVersion, c.WorkflowRun,
 	} {
 		n.Intercept(interceptors...)
@@ -337,6 +343,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Integration.mutate(ctx, m)
 	case *IntegrationAttachmentMutation:
 		return c.IntegrationAttachment.mutate(ctx, m)
+	case *LoginHandoffMutation:
+		return c.LoginHandoff.mutate(ctx, m)
 	case *MembershipMutation:
 		return c.Membership.mutate(ctx, m)
 	case *OrgInvitationMutation:
@@ -1699,6 +1707,155 @@ func (c *IntegrationAttachmentClient) mutate(ctx context.Context, m *Integration
 		return (&IntegrationAttachmentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown IntegrationAttachment mutation op: %q", m.Op())
+	}
+}
+
+// LoginHandoffClient is a client for the LoginHandoff schema.
+type LoginHandoffClient struct {
+	config
+}
+
+// NewLoginHandoffClient returns a client for the LoginHandoff from the given config.
+func NewLoginHandoffClient(c config) *LoginHandoffClient {
+	return &LoginHandoffClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `loginhandoff.Hooks(f(g(h())))`.
+func (c *LoginHandoffClient) Use(hooks ...Hook) {
+	c.hooks.LoginHandoff = append(c.hooks.LoginHandoff, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `loginhandoff.Intercept(f(g(h())))`.
+func (c *LoginHandoffClient) Intercept(interceptors ...Interceptor) {
+	c.inters.LoginHandoff = append(c.inters.LoginHandoff, interceptors...)
+}
+
+// Create returns a builder for creating a LoginHandoff entity.
+func (c *LoginHandoffClient) Create() *LoginHandoffCreate {
+	mutation := newLoginHandoffMutation(c.config, OpCreate)
+	return &LoginHandoffCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of LoginHandoff entities.
+func (c *LoginHandoffClient) CreateBulk(builders ...*LoginHandoffCreate) *LoginHandoffCreateBulk {
+	return &LoginHandoffCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *LoginHandoffClient) MapCreateBulk(slice any, setFunc func(*LoginHandoffCreate, int)) *LoginHandoffCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &LoginHandoffCreateBulk{err: fmt.Errorf("calling to LoginHandoffClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*LoginHandoffCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &LoginHandoffCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for LoginHandoff.
+func (c *LoginHandoffClient) Update() *LoginHandoffUpdate {
+	mutation := newLoginHandoffMutation(c.config, OpUpdate)
+	return &LoginHandoffUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *LoginHandoffClient) UpdateOne(_m *LoginHandoff) *LoginHandoffUpdateOne {
+	mutation := newLoginHandoffMutation(c.config, OpUpdateOne, withLoginHandoff(_m))
+	return &LoginHandoffUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *LoginHandoffClient) UpdateOneID(id uuid.UUID) *LoginHandoffUpdateOne {
+	mutation := newLoginHandoffMutation(c.config, OpUpdateOne, withLoginHandoffID(id))
+	return &LoginHandoffUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for LoginHandoff.
+func (c *LoginHandoffClient) Delete() *LoginHandoffDelete {
+	mutation := newLoginHandoffMutation(c.config, OpDelete)
+	return &LoginHandoffDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *LoginHandoffClient) DeleteOne(_m *LoginHandoff) *LoginHandoffDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *LoginHandoffClient) DeleteOneID(id uuid.UUID) *LoginHandoffDeleteOne {
+	builder := c.Delete().Where(loginhandoff.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &LoginHandoffDeleteOne{builder}
+}
+
+// Query returns a query builder for LoginHandoff.
+func (c *LoginHandoffClient) Query() *LoginHandoffQuery {
+	return &LoginHandoffQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeLoginHandoff},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a LoginHandoff entity by its id.
+func (c *LoginHandoffClient) Get(ctx context.Context, id uuid.UUID) (*LoginHandoff, error) {
+	return c.Query().Where(loginhandoff.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *LoginHandoffClient) GetX(ctx context.Context, id uuid.UUID) *LoginHandoff {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a LoginHandoff.
+func (c *LoginHandoffClient) QueryUser(_m *LoginHandoff) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(loginhandoff.Table, loginhandoff.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, loginhandoff.UserTable, loginhandoff.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *LoginHandoffClient) Hooks() []Hook {
+	return c.hooks.LoginHandoff
+}
+
+// Interceptors returns the client interceptors.
+func (c *LoginHandoffClient) Interceptors() []Interceptor {
+	return c.inters.LoginHandoff
+}
+
+func (c *LoginHandoffClient) mutate(ctx context.Context, m *LoginHandoffMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&LoginHandoffCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&LoginHandoffUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&LoginHandoffUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&LoginHandoffDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown LoginHandoff mutation op: %q", m.Op())
 	}
 }
 
@@ -4006,14 +4163,14 @@ func (c *WorkflowRunClient) mutate(ctx context.Context, m *WorkflowRunMutation) 
 type (
 	hooks struct {
 		APIToken, Attestation, CASBackend, CASMapping, Group, GroupMembership,
-		Integration, IntegrationAttachment, Membership, OrgInvitation, Organization,
-		Project, ProjectVersion, Referrer, RobotAccount, User, Workflow,
+		Integration, IntegrationAttachment, LoginHandoff, Membership, OrgInvitation,
+		Organization, Project, ProjectVersion, Referrer, RobotAccount, User, Workflow,
 		WorkflowContract, WorkflowContractVersion, WorkflowRun []ent.Hook
 	}
 	inters struct {
 		APIToken, Attestation, CASBackend, CASMapping, Group, GroupMembership,
-		Integration, IntegrationAttachment, Membership, OrgInvitation, Organization,
-		Project, ProjectVersion, Referrer, RobotAccount, User, Workflow,
+		Integration, IntegrationAttachment, LoginHandoff, Membership, OrgInvitation,
+		Organization, Project, ProjectVersion, Referrer, RobotAccount, User, Workflow,
 		WorkflowContract, WorkflowContractVersion, WorkflowRun []ent.Interceptor
 	}
 )

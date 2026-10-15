@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,6 +48,10 @@ message InfozResponse {
   bool restricted_org_creation = 4;
   // Link to the platform UI, if available
   string ui_dashboard_url = 5;
+  // Whether the login can deliver a handoff code to be exchanged for the session token
+  bool login_code_exchange_supported = 6;
+  // Whether a login without a code challenge still receives the session token in the callback URL
+  bool login_legacy_callback_allowed = 7;
 }
 
 message StatuszResponse {}

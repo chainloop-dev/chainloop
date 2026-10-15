@@ -28,6 +28,8 @@ type Tx struct {
 	Integration *IntegrationClient
 	// IntegrationAttachment is the client for interacting with the IntegrationAttachment builders.
 	IntegrationAttachment *IntegrationAttachmentClient
+	// LoginHandoff is the client for interacting with the LoginHandoff builders.
+	LoginHandoff *LoginHandoffClient
 	// Membership is the client for interacting with the Membership builders.
 	Membership *MembershipClient
 	// OrgInvitation is the client for interacting with the OrgInvitation builders.
@@ -191,6 +193,7 @@ func (tx *Tx) init() {
 	tx.GroupMembership = NewGroupMembershipClient(tx.config)
 	tx.Integration = NewIntegrationClient(tx.config)
 	tx.IntegrationAttachment = NewIntegrationAttachmentClient(tx.config)
+	tx.LoginHandoff = NewLoginHandoffClient(tx.config)
 	tx.Membership = NewMembershipClient(tx.config)
 	tx.OrgInvitation = NewOrgInvitationClient(tx.config)
 	tx.Organization = NewOrganizationClient(tx.config)

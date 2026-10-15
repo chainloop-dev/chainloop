@@ -303,6 +303,9 @@ controlplane:
     #      selectedRoutes: []
     #      customMessage: ""
 
+    ## @extra controlplane.auth.allowLegacyLoginCallback Whether a login from a client that does not use the login code exchange still receives the session token in the callback URL. Allowed when not set. Set it to false to require the code exchange
+    # allowLegacyLoginCallback: true
+
   ## @section Control Plane Networking
   service:
     ## @param controlplane.service.type Service type

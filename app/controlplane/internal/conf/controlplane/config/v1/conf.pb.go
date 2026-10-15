@@ -735,9 +735,13 @@ type Auth struct {
 	CasRobotAccountPrivateKeyPath string         `protobuf:"bytes,4,opt,name=cas_robot_account_private_key_path,json=casRobotAccountPrivateKeyPath,proto3" json:"cas_robot_account_private_key_path,omitempty"`
 	Oidc                          *Auth_OIDC     `protobuf:"bytes,6,opt,name=oidc,proto3" json:"oidc,omitempty"`
 	// Generates an initial user. Use only for development purposes
-	DevUser       string `protobuf:"bytes,7,opt,name=dev_user,json=devUser,proto3" json:"dev_user,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	DevUser string `protobuf:"bytes,7,opt,name=dev_user,json=devUser,proto3" json:"dev_user,omitempty"`
+	// Whether a login that sends no code challenge still receives the session token in the
+	// callback URL (legacy ?t= callback). Allowed when not set. Denying it requires clients
+	// that use the login code exchange.
+	AllowLegacyLoginCallback *bool `protobuf:"varint,8,opt,name=allow_legacy_login_callback,json=allowLegacyLoginCallback,proto3,oneof" json:"allow_legacy_login_callback,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *Auth) Reset() {
@@ -803,6 +807,13 @@ func (x *Auth) GetDevUser() string {
 		return x.DevUser
 	}
 	return ""
+}
+
+func (x *Auth) GetAllowLegacyLoginCallback() bool {
+	if x != nil && x.AllowLegacyLoginCallback != nil {
+		return *x.AllowLegacyLoginCallback
+	}
+	return false
 }
 
 type TSA struct {
@@ -1958,19 +1969,21 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12$\n" +
 	"\x0emin_open_conns\x18\x03 \x01(\x05R\fminOpenConns\x12$\n" +
 	"\x0emax_open_conns\x18\x04 \x01(\x05R\fmaxOpenConns\x12F\n" +
-	"\x12max_conn_idle_time\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x0fmaxConnIdleTime\"\xb1\x03\n" +
+	"\x12max_conn_idle_time\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x0fmaxConnIdleTime\"\x95\x04\n" +
 	"\x04Auth\x129\n" +
 	"\x19generated_jws_hmac_secret\x18\x02 \x01(\tR\x16generatedJwsHmacSecret\x12@\n" +
 	"\n" +
 	"allow_list\x18\x03 \x01(\v2!.controlplane.config.v1.AllowListR\tallowList\x12I\n" +
 	"\"cas_robot_account_private_key_path\x18\x04 \x01(\tR\x1dcasRobotAccountPrivateKeyPath\x125\n" +
 	"\x04oidc\x18\x06 \x01(\v2!.controlplane.config.v1.Auth.OIDCR\x04oidc\x12\x19\n" +
-	"\bdev_user\x18\a \x01(\tR\adevUser\x1a\x8e\x01\n" +
+	"\bdev_user\x18\a \x01(\tR\adevUser\x12B\n" +
+	"\x1ballow_legacy_login_callback\x18\b \x01(\bH\x00R\x18allowLegacyLoginCallback\x88\x01\x01\x1a\x8e\x01\n" +
 	"\x04OIDC\x12\x16\n" +
 	"\x06domain\x18\x01 \x01(\tR\x06domain\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
 	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12,\n" +
-	"\x12login_url_override\x18\x05 \x01(\tR\x10loginUrlOverride\"W\n" +
+	"\x12login_url_override\x18\x05 \x01(\tR\x10loginUrlOverrideB\x1e\n" +
+	"\x1c_allow_legacy_login_callback\"W\n" +
 	"\x03TSA\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12&\n" +
 	"\x0fcert_chain_path\x18\x02 \x01(\tR\rcertChainPath\x12\x16\n" +
@@ -2088,6 +2101,7 @@ func file_controlplane_config_v1_conf_proto_init() {
 		return
 	}
 	file_controlplane_config_v1_conf_proto_msgTypes[2].OneofWrappers = []any{}
+	file_controlplane_config_v1_conf_proto_msgTypes[8].OneofWrappers = []any{}
 	file_controlplane_config_v1_conf_proto_msgTypes[10].OneofWrappers = []any{
 		(*CA_FileCa)(nil),
 		(*CA_EjbcaCa)(nil),

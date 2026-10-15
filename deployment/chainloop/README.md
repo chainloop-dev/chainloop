@@ -619,6 +619,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.auth.allowList.rules`          | List of domains or emails to allow                                                                     |       |
 | `controlplane.auth.allowList.selectedRoutes` | List of selected routes to allow. If not set it applies to all routes                                  |       |
 | `controlplane.auth.allowList.customMessage`  | Custom message to display when a user is not allowed                                                   |       |
+| `controlplane.auth.allowLegacyLoginCallback` | Whether a login from a client that does not use the login code exchange still receives the session token in the callback URL. Allowed when not set. Set it to false to require the code exchange |       |
 
 ### Control Plane Networking
 

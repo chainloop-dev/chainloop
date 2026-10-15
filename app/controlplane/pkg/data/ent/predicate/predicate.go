@@ -30,6 +30,9 @@ type Integration func(*sql.Selector)
 // IntegrationAttachment is the predicate function for integrationattachment builders.
 type IntegrationAttachment func(*sql.Selector)
 
+// LoginHandoff is the predicate function for loginhandoff builders.
+type LoginHandoff func(*sql.Selector)
+
 // Membership is the predicate function for membership builders.
 type Membership func(*sql.Selector)
 

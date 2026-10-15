@@ -66,10 +66,13 @@ var authzExemptProcedures = map[string]struct{}{
 	"/controlplane.v1.AttestationStateService/Read":            {},
 	"/controlplane.v1.AttestationStateService/Reset":           {},
 	"/controlplane.v1.AttestationStateService/Save":            {},
-	"/controlplane.v1.SigningService/GenerateSigningCert":      {},
-	"/controlplane.v1.SigningService/GetTrustedRoot":           {},
-	"/controlplane.v1.StatusService/Infoz":                     {},
-	"/controlplane.v1.StatusService/Statusz":                   {},
+	// AuthService/ExchangeHandoff — unauthenticated, skipped by requireCurrentUserMatcher. The
+	// handoff code and its verifier are the credentials.
+	"/controlplane.v1.AuthService/ExchangeHandoff":        {},
+	"/controlplane.v1.SigningService/GenerateSigningCert": {},
+	"/controlplane.v1.SigningService/GetTrustedRoot":      {},
+	"/controlplane.v1.StatusService/Infoz":                {},
+	"/controlplane.v1.StatusService/Statusz":              {},
 }
 
 // adminOnlyProcedures lists controlplane.v1 procedures that reach the authorization middleware but

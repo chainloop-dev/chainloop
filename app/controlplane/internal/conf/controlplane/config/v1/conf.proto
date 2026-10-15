@@ -273,6 +273,11 @@ message Auth {
   // Generates an initial user. Use only for development purposes
   string dev_user = 7;
 
+  // Whether a login that sends no code challenge still receives the session token in the
+  // callback URL (legacy ?t= callback). Allowed when not set. Denying it requires clients
+  // that use the login code exchange.
+  optional bool allow_legacy_login_callback = 8;
+
   message OIDC {
     string domain = 1;
     string client_id = 2;

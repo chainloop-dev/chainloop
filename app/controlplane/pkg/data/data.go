@@ -60,6 +60,7 @@ var ProviderSet = wire.NewSet(
 	NewProjectVersionRepo,
 	NewProjectsRepo,
 	NewGroupRepo,
+	NewLoginHandoffRepo,
 	NewPostgresLock,
 )
 

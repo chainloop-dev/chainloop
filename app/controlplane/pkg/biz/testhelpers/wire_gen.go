@@ -170,6 +170,8 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 	projectVersionUseCase := biz.NewProjectVersionUseCase(projectVersionRepo, auditorUseCase, logger)
 	groupUseCase := biz.NewGroupUseCase(logger, groupRepo, membershipRepo, userRepo, orgInvitationUseCase, auditorUseCase, orgInvitationRepo, authzUseCase, membershipUseCase)
 	projectUseCase := biz.NewProjectsUseCase(logger, projectsRepo, membershipRepo, auditorUseCase, groupUseCase, membershipUseCase, orgInvitationUseCase, orgInvitationRepo, authzUseCase)
+	loginHandoffRepo := data.NewLoginHandoffRepo(dataData, logger)
+	loginHandoffUseCase := biz.NewLoginHandoffUseCase(loginHandoffRepo, logger)
 	testingRepos := &TestingRepos{
 		Membership:        membershipRepo,
 		Referrer:          referrerRepo,
@@ -180,6 +182,7 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		GroupRepo:         groupRepo,
 		OrgInvitationRepo: orgInvitationRepo,
 		APITokenRepo:      apiTokenRepo,
+		LoginHandoffRepo:  loginHandoffRepo,
 	}
 	testingUseCases := &TestingUseCases{
 		DB:                     testDatabase,
@@ -206,6 +209,7 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		Project:                projectUseCase,
 		OrgMetrics:             orgMetricsUseCase,
 		Group:                  groupUseCase,
+		LoginHandoff:           loginHandoffUseCase,
 		Repos:                  testingRepos,
 	}
 	return testingUseCases, func() {

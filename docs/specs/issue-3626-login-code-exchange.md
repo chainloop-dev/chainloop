@@ -145,12 +145,14 @@ PKCE-style challenge (S256) from the client, plus the callback URL.
   - Require the OIDC state cookie at exchange: the CLI and a cross-origin web app do not have it.
 - Source: drafting
 
-### D-003: Exchange endpoint
-Unauthenticated RPC on the auth service with an HTTP POST mapping.
-- Why: the CLI already has a gRPC connection, and other clients use HTTP.
-- Alternatives considered:
-  - Plain HTTP handler next to the login and callback handlers: the CLI would need a second client.
-- Source: drafting
+### ~~D-003: Exchange endpoint~~
+Superseded by D-013.
+
+~~Unauthenticated RPC on the auth service with an HTTP POST mapping.~~
+- ~~Why: the CLI already has a gRPC connection, and other clients use HTTP.~~
+- ~~Alternatives considered:~~
+  - ~~Plain HTTP handler next to the login and callback handlers: the CLI would need a second client.~~
+- ~~Source: drafting~~
 
 ### D-004: Code store
 Database table with the code hash, the user, the expiry, and an atomic consume. No token at rest: the control plane creates the token at exchange.
@@ -214,6 +216,13 @@ Same error to the client for every failure. The specific reason goes to the serv
 - Alternatives considered:
   - Uniform error with no server reason: hard to debug.
 - Source: drafting
+
+### D-013: Exchange endpoint is gRPC only
+Supersedes D-003. Unauthenticated RPC on the auth service, with no HTTP mapping.
+- Why: the CLI uses gRPC and the web UI uses gRPC-web, so no client needs a plain HTTP route. The endpoint is unauthenticated, and no HTTP route keeps that public surface smaller and avoids a cross-origin preflight from the web UI.
+- Alternatives considered:
+  - Keep the HTTP mapping of D-003 for a future non-gRPC client: no such client exists today. A mapping can be added when one does.
+- Source: PR #3630 review
 
 ## Open Questions
 

@@ -19,6 +19,11 @@ data:
       allow_list:
         {{- toYaml .Values.controlplane.auth.allowList | nindent 8 }}
   {{- end }}
+  {{- if hasKey .Values.controlplane.auth "allowLegacyLoginCallback" }}
+  login.yaml: |
+    auth:
+      allow_legacy_login_callback: {{ .Values.controlplane.auth.allowLegacyLoginCallback }}
+  {{- end }}
   config.yaml: |
     enable_profiler: {{ .Values.controlplane.enableProfiler }}
     server:

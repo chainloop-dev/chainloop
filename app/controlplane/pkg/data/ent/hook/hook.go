@@ -105,6 +105,18 @@ func (f IntegrationAttachmentFunc) Mutate(ctx context.Context, m ent.Mutation) (
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IntegrationAttachmentMutation", m)
 }
 
+// The LoginHandoffFunc type is an adapter to allow the use of ordinary
+// function as LoginHandoff mutator.
+type LoginHandoffFunc func(context.Context, *ent.LoginHandoffMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f LoginHandoffFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.LoginHandoffMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.LoginHandoffMutation", m)
+}
+
 // The MembershipFunc type is an adapter to allow the use of ordinary
 // function as Membership mutator.
 type MembershipFunc func(context.Context, *ent.MembershipMutation) (ent.Value, error)
