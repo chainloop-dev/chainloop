@@ -823,3 +823,19 @@ func TestGCOrphansDropsSpecRedactions(t *testing.T) {
 	assert.FileExists(t, filepath.Join(store.SpecRedactionDir("sess-live"), "copy"))
 	assert.NoDirExists(t, store.SpecRedactionDir("sess-orphan"))
 }
+
+// TestTraceRunLocalSentinel covers the marker that tells the agent hooks a
+// `trace run` session stores its evidence locally.
+func TestTraceRunLocalSentinel(t *testing.T) {
+	store := NewGitStore(t.TempDir())
+	require.NoError(t, store.InitTraceDir())
+	assert.False(t, store.IsTraceRunLocal())
+
+	require.NoError(t, store.MarkTraceRunActive())
+	require.NoError(t, store.MarkTraceRunLocal())
+	assert.True(t, store.IsTraceRunLocal())
+
+	require.NoError(t, store.ClearTraceRunActive())
+	assert.False(t, store.IsTraceRunActive())
+	assert.False(t, store.IsTraceRunLocal(), "clearing the run also clears its local marker")
+}

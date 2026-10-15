@@ -206,8 +206,15 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 	}
 
 	if provider.SupportsSessionStartBanner() {
+		// A `trace run` session takes its mode from the run. Other sessions
+		// take it from traceStorage in .chainloop.yml.
+		local := config.IsLocalStorage(repoRoot)
+		if store.IsTraceRunActive() {
+			local = store.IsTraceRunLocal()
+		}
+
 		var banner string
-		if config.IsLocalStorage(repoRoot) {
+		if local {
 			// Local mode reaches no control plane, so the banner names the
 			// on-disk destination and makes no dashboard round trip (R-012).
 			banner = localSessionStartBanner(

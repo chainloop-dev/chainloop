@@ -39,11 +39,14 @@ const (
 	// detect trace-run mode without depending on environment-variable
 	// inheritance from the agent.
 	traceRunActiveFile = "run-active"
-	traceDirSessions   = "sessions"
-	traceDirRaw        = "raw"
-	traceDirCommits    = "commits"
-	traceDirSnapshots  = "snapshots"
-	traceDirAILines    = "ai-lines"
+	// traceRunLocalFile marks a `chainloop trace run --local` session, so
+	// the agent hooks know it stores its evidence on disk.
+	traceRunLocalFile = "run-local"
+	traceDirSessions  = "sessions"
+	traceDirRaw       = "raw"
+	traceDirCommits   = "commits"
+	traceDirSnapshots = "snapshots"
+	traceDirAILines   = "ai-lines"
 	// traceDirLocalSessions holds the evidence sets written by LOCAL trace
 	// storage: one subdirectory per session, each with its materials and a
 	// manifest. Unlike raw/ and snapshots/ it is durable user data, so it is
@@ -429,9 +432,33 @@ func (s *Store) MarkTraceRunActive() error {
 	return os.WriteFile(filepath.Join(base, traceRunActiveFile), nil, 0600)
 }
 
-// ClearTraceRunActive removes the trace-run-active sentinel.
+// ClearTraceRunActive removes the trace-run-active sentinel and the local
+// marker of the run.
 func (s *Store) ClearTraceRunActive() error {
+	if err := removeIfExists(filepath.Join(s.traceDirPath(), traceRunLocalFile)); err != nil {
+		return err
+	}
+
 	return removeIfExists(filepath.Join(s.traceDirPath(), traceRunActiveFile))
+}
+
+// MarkTraceRunLocal marks the running `chainloop trace run` session as local:
+// it stores its evidence on disk. ClearTraceRunActive removes the marker.
+func (s *Store) MarkTraceRunLocal() error {
+	base := s.traceDirPath()
+	if err := os.MkdirAll(base, 0755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(filepath.Join(base, traceRunLocalFile), nil, 0600)
+}
+
+// IsTraceRunLocal reports whether the running `chainloop trace run` session
+// stores its evidence locally.
+func (s *Store) IsTraceRunLocal() bool {
+	_, err := os.Stat(filepath.Join(s.traceDirPath(), traceRunLocalFile))
+
+	return err == nil
 }
 
 // IsTraceRunActive reports whether a `chainloop trace run` session owns

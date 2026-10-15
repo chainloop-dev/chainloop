@@ -83,9 +83,9 @@ type TraceRunOpts struct {
 	// predicate.
 	CLIVersion string
 
-	// Local runs in local storage mode (traceStorage: LOCAL): the session is
-	// written to disk at session end instead of attested, and no control plane
-	// is contacted. The identity fields above are then unused.
+	// Local runs in local mode (--local): the session is written to disk at
+	// session end instead of attested, and no control plane is contacted. The
+	// identity fields above are then unused.
 	Local bool
 }
 
@@ -177,6 +177,14 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 
 	if err := opts.Store.MarkTraceRunActive(); err != nil {
 		return fmt.Errorf("mark trace run active: %w", err)
+	}
+
+	// The agent hooks read the mode of the run from here, not from
+	// .chainloop.yml.
+	if opts.Local {
+		if err := opts.Store.MarkTraceRunLocal(); err != nil {
+			return fmt.Errorf("mark trace run local: %w", err)
+		}
 	}
 
 	// The wrapped command is supplied by the user on their own machine

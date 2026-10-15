@@ -31,15 +31,18 @@ const traceRunLong = `Wrap an external command (typically an AI coding agent) an
 Chainloop attestation for the session once the command exits successfully.
 Sessions without git commits are still attested.
 
-trace run does not read the attestation identity from .chainloop.yml. The
---org, --project and --workflow flags and the optional --version flag set it.
-The --org, --project and --workflow flags are required in control-plane mode.
+trace run takes its settings from its flags, not from .chainloop.yml. The
+--org, --project and --workflow flags and the optional --version flag set the
+attestation identity. The --org, --project and --workflow flags are required in
+control-plane mode.
 
-trace run reads two values from .chainloop.yml: traceStorage and the optional
-tracePath. tracePath sets the trace directory. In a local-mode repository
-(traceStorage: LOCAL), trace run writes the session to disk when the command
-exits. It does not connect to a control plane, and the --org, --project and
---workflow flags are optional.
+With --local, trace run writes the session to disk when the command exits,
+also when the command fails. It does not connect to a control plane. You
+cannot use --org, --project, --workflow, --version or --contract with --local.
+
+The one value trace run takes from .chainloop.yml is tracePath, when the
+repository sets one. The agent hooks keep the session in that directory, so
+trace run must use it too.
 
 When the wrapped command exits, trace run removes the temporary hooks and the
 trace state. It keeps the stored local session evidence. Thus no setup from one
@@ -57,6 +60,7 @@ func newTraceRunCmd() *cobra.Command {
 		workflowFlag string
 		versionFlag  string
 		contractFlag string
+		localFlag    bool
 		claudeFlag   bool
 		cursorFlag   bool
 		opencodeFlag bool
@@ -101,14 +105,20 @@ func newTraceRunCmd() *cobra.Command {
 				store = state.NewRepoStore(gitDir, repoRoot)
 			}
 
-			// The storage mode is a repository policy, read even though trace
-			// run keeps its identity flag-only: a LOCAL repository stores to
-			// disk and needs no identity and no control plane.
-			storageMode, err := config.LoadTraceStorageFromYML(repoRoot)
-			if err != nil {
-				return err
+			// The mode comes from --local only. trace run does not read
+			// traceStorage from .chainloop.yml.
+			local := localFlag
+
+			// Local mode contacts no control plane, so the control-plane
+			// identity flags are contradictions rather than extra
+			// configuration.
+			if local {
+				for _, name := range []string{"org", "project", "workflow", "version", "contract"} { //nolint:goconst // flag names, kept literal like the other flag references
+					if cmd.Flags().Changed(name) {
+						return fmt.Errorf("you cannot use --%s with --local: local mode does not connect to a control plane", name)
+					}
+				}
 			}
-			local := storageMode == config.TraceStorageLocal
 
 			var (
 				organization     string
@@ -170,10 +180,11 @@ func newTraceRunCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required, except in local mode). trace run does not read it from .chainloop.yml")
-	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name for the trace attestations (required, except in local mode). trace run does not read it from .chainloop.yml")
+	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required, except with --local). trace run does not read it from .chainloop.yml")
+	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name for the trace attestations (required, except with --local). trace run does not read it from .chainloop.yml")
 	cmd.Flags().StringVar(&versionFlag, "version", "", "chainloop project version (optional; defaults to the latest version)")
 	cmd.Flags().StringVar(&contractFlag, "contract", "", traceContractFlagDesc)
+	cmd.Flags().BoolVar(&localFlag, "local", false, "store the session on disk, with no control plane, login or workflow")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no provider flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")

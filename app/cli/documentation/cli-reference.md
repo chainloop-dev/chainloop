@@ -3383,15 +3383,18 @@ Wrap an external command (typically an AI coding agent) and emit a
 Chainloop attestation for the session once the command exits successfully.
 Sessions without git commits are still attested.
 
-trace run does not read the attestation identity from .chainloop.yml. The
---org, --project and --workflow flags and the optional --version flag set it.
-The --org, --project and --workflow flags are required in control-plane mode.
+trace run takes its settings from its flags, not from .chainloop.yml. The
+--org, --project and --workflow flags and the optional --version flag set the
+attestation identity. The --org, --project and --workflow flags are required in
+control-plane mode.
 
-trace run reads two values from .chainloop.yml: traceStorage and the optional
-tracePath. tracePath sets the trace directory. In a local-mode repository
-(traceStorage: LOCAL), trace run writes the session to disk when the command
-exits. It does not connect to a control plane, and the --org, --project and
---workflow flags are optional.
+With --local, trace run writes the session to disk when the command exits,
+also when the command fails. It does not connect to a control plane. You
+cannot use --org, --project, --workflow, --version or --contract with --local.
+
+The one value trace run takes from .chainloop.yml is tracePath, when the
+repository sets one. The agent hooks keep the session in that directory, so
+trace run must use it too.
 
 When the wrapped command exits, trace run removes the temporary hooks and the
 trace state. It keeps the stored local session evidence. Thus no setup from one
@@ -3413,10 +3416,11 @@ Options
 --contract string   workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor            install Cursor hooks
 -h, --help              help for run
+--local             store the session on disk, with no control plane, login or workflow
 --opencode          install opencode hooks
---project string    chainloop project name (required, except in local mode). trace run does not read it from .chainloop.yml
+--project string    chainloop project name (required, except with --local). trace run does not read it from .chainloop.yml
 --version string    chainloop project version (optional; defaults to the latest version)
---workflow string   chainloop workflow name for the trace attestations (required, except in local mode). trace run does not read it from .chainloop.yml
+--workflow string   chainloop workflow name for the trace attestations (required, except with --local). trace run does not read it from .chainloop.yml
 ```
 
 Options inherited from parent commands
