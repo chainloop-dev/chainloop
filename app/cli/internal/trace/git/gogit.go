@@ -22,6 +22,7 @@ import (
 	"io"
 	iofs "io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -268,28 +269,13 @@ func (c *GoGitClient) GeneratedMatcher(repoRoot string) func(path string) bool {
 
 // StagedFiles returns repo-relative paths of files staged for the current commit.
 func (c *GoGitClient) StagedFiles(repoRoot string) ([]string, error) {
-	repo, err := openRepo(repoRoot)
+	output, err := commandOutput(exec.Command("git", "-C", repoRoot, "diff", "--cached",
+		"--no-ext-diff", "--no-textconv", "--no-renames", "--name-only", "-z", "--"))
 	if err != nil {
-		return nil, fmt.Errorf("open repo: %w", err)
+		return nil, fmt.Errorf("list staged files: %w", err)
 	}
 
-	wt, err := repo.Worktree()
-	if err != nil {
-		return nil, fmt.Errorf("get worktree: %w", err)
-	}
-
-	status, err := wt.Status()
-	if err != nil {
-		return nil, fmt.Errorf("get status: %w", err)
-	}
-
-	var files []string
-	for path, s := range status {
-		if s.Staging != gogit.Unmodified && s.Staging != gogit.Untracked {
-			files = append(files, path)
-		}
-	}
-
+	files := nullDelimitedPaths(output)
 	sort.Strings(files)
 
 	return files, nil
@@ -362,19 +348,14 @@ func snapshotWorktree(repoRoot string) (map[string]string, error) {
 // recorded in the git index. Best-effort: returns nil when the repository or
 // its index cannot be read, in which case ignore rules apply to every file.
 func trackedPaths(repoRoot string) map[string]bool {
-	repo, err := openRepo(repoRoot)
+	entries, err := loadIndexEntries(repoRoot)
 	if err != nil {
 		return nil
 	}
 
-	idx, err := repo.Storer.Index()
-	if err != nil {
-		return nil
-	}
-
-	tracked := make(map[string]bool, len(idx.Entries))
-	for _, e := range idx.Entries {
-		tracked[e.Name] = true
+	tracked := make(map[string]bool, len(entries))
+	for _, entry := range entries {
+		tracked[entry.path] = true
 	}
 
 	return tracked
