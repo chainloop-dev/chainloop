@@ -43,6 +43,22 @@ func TestAddCodeChallenge(t *testing.T) {
 	assert.NotContains(t, loginURL.String(), verifier)
 }
 
+// The browser fallback switches to headless after the challenge was added
+func TestToHeadlessLoginURL(t *testing.T) {
+	loginURL, err := url.Parse("https://cp.example/auth/login?callback=http%3A%2F%2Flocalhost%3A1234%2Fauth%2Fcallback&long-lived=true")
+	require.NoError(t, err)
+	addCodeChallenge(loginURL)
+
+	toHeadlessLoginURL(loginURL)
+
+	q := loginURL.Query()
+	assert.True(t, q.Has(oauth.QueryParamCallback))
+	assert.Empty(t, q.Get(oauth.QueryParamCallback))
+	assert.False(t, q.Has(oauth.QueryParamCodeChallenge))
+	assert.False(t, q.Has(oauth.QueryParamCodeChallengeMethod))
+	assert.Equal(t, "true", q.Get(oauth.QueryParamLongLived))
+}
+
 func TestLoginCallbackToken(t *testing.T) {
 	const (
 		callbackURL  = "http://localhost:1234/auth/callback"

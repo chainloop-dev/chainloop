@@ -192,11 +192,18 @@ func exchangeHandoff(ctx context.Context, handoff, codeVerifier, callbackURL str
 	return resp.GetToken(), nil
 }
 
-func headlessAuth(loginURL *url.URL) error {
-	// Remove cli-callback query parameter to indicate the server to show it inline
+// toHeadlessLoginURL removes the callback, so the server shows the token inline. The code
+// challenge goes too: the headless page has no code to exchange, and a challenge needs a callback
+func toHeadlessLoginURL(loginURL *url.URL) {
 	q := loginURL.Query()
 	q.Set(oauth.QueryParamCallback, "")
+	q.Del(oauth.QueryParamCodeChallenge)
+	q.Del(oauth.QueryParamCodeChallengeMethod)
 	loginURL.RawQuery = q.Encode()
+}
+
+func headlessAuth(loginURL *url.URL) error {
+	toHeadlessLoginURL(loginURL)
 	fmt.Printf("To authenticate, click on the following link and paste the result back here\n\n  %s\n\n", loginURL.String())
 
 	fmt.Print("Enter Token: ")
