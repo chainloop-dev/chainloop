@@ -57,6 +57,7 @@ On its single port, each service MUST serve gRPC (HTTP/2), gRPC-Web, and plain H
   - the OIDC login and the status probes
   - the referrer discovery and the OpenAPI document
   - CAS browser downloads
+- Done when: the same checks pass through nginx ingress and through Traefik ingress.
 
 ### R-005: Existing configuration keeps working
 An installation that does not change its configuration MUST keep working after the upgrade. The single port MUST be the current gRPC address, so existing CLI configurations and the control plane connection to the CAS work as before.
@@ -104,12 +105,14 @@ After the upgrade, nothing changes for the operator. The gRPC port now also answ
 
 Each service opens one listener on its current gRPC address. A small classifier reads the start of each new connection, without consuming it:
 
-- An HTTP/2 connection whose first request has `content-type: application/grpc` goes to the native gRPC server. This server is the same one that runs today, with its middleware, interceptors, message size limits, and streaming transport.
+- An HTTP/2 connection whose first request has a content type that starts with `application/grpc` goes to the native gRPC server. This includes `application/grpc+proto` and content types with parameters. gRPC-Web (`application/grpc-web`) is not in this family and stays on the HTTP server. This server is the same one that runs today, with its middleware, interceptors, message size limits, and streaming transport.
 - All other connections go to the HTTP server that runs today. These are HTTP/1.1, HTTP/2 without gRPC, and gRPC-Web. The HTTP server keeps its routes, its middleware, the gRPC-Web wrapper, and the CORS rules of the CAS.
 
 Both servers keep their own lifecycle. They read from the classifier instead of from their own port. When the operator configures TLS, the listener terminates TLS before the classifier, and it offers HTTP/2 and HTTP/1.1 through ALPN. One certificate then covers all protocols.
 
-Some proxies send gRPC and plain HTTP requests over one shared upstream connection. The classifier sees only the first request of such a connection. As a safety net, the HTTP server gives any gRPC request that it receives to the gRPC server. The gRPC-Web wrapper already works in this way. The request gets the right result but takes the slower path. The chart configures the supported ingress controllers so that they do not share connections (see Risks).
+The classifier decides once per connection, from its first request. A connection that starts with gRPC carries only gRPC: the native gRPC server cannot serve a later plain HTTP request on it. The other direction works. When a gRPC request arrives on a connection that the HTTP server owns, the HTTP server gives it to the gRPC server. The gRPC-Web wrapper already works in this way. The request gets the right result but takes the slower path.
+
+Thus the single port supports clients and proxies that keep gRPC and plain HTTP on separate HTTP/2 connections. These include direct clients such as the CLI, nginx ingress, and Traefik with HTTP/1.1 for the HTTP path. A proxy that sends both on one shared upstream connection is not supported (see D-010 and Open Questions).
 
 CAS streams on the single port use the same native gRPC transport as today, so uploads keep their disk spill and their throughput (R-003). Browser downloads stay on HTTP/1.1 through the ingress, so the kernel copy path stays.
 
@@ -206,9 +209,18 @@ The Helm chart change stays in this spec, as milestone 2.
   - A separate spec for the chart: the server change alone does not delete the second hostname.
 - Source: drafting
 
+### D-010: Proxies that share one connection for gRPC and HTTP
+The single port routes each connection once. It supports only clients and proxies that keep gRPC and plain HTTP on separate HTTP/2 connections.
+- Why: a connection that the native gRPC server owns cannot pass single requests to the HTTP server. Native gRPC transport for CAS streams (R-003) needs the connection split of D-001.
+- Alternatives considered:
+  - Route each request on one HTTP/2 server: it supports every proxy. But all gRPC calls then use the slower HTTP adapter of the gRPC server, which puts R-003 at risk.
+- Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927)
+
 ## Open Questions
 
-None open. D-007 and D-008 record the answers to the questions from drafting.
+- [ ] **Must the single port support proxies that share one upstream connection for gRPC and plain HTTP?** Examples: Envoy-based proxies, service meshes. Proposed: not in this spec. Until the legacy HTTP port is gone, those setups can keep using it. Revisit before the release that deletes it. Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927).
+
+D-007 and D-008 record the answers to the questions from drafting.
 
 ## Milestones
 
@@ -220,7 +232,7 @@ None open. D-007 and D-008 record the answers to the questions from drafting.
 
 | Risk | Mitigation |
 |------|------------|
-| A proxy shares one upstream connection between gRPC and HTTP requests. A plain HTTP request then lands on a connection that the classifier gave to gRPC. | The chart routes gRPC and HTTP to separate backend protocols on nginx, and keeps HTTP/1.1 for the HTTP path on other controllers. Document the requirement. The HTTP server safety net handles the reverse case. |
+| A proxy shares one upstream connection between gRPC and HTTP requests, for example an Envoy-based proxy or a service mesh. A plain HTTP request then lands on a connection that the classifier gave to gRPC, and fails. | The chart configures nginx and Traefik to use separate upstream connections. The documentation lists the supported setups. The legacy HTTP port stays available during the deprecation period. The open question on mixing proxies gets an answer before the legacy HTTP port is deleted. |
 | A gRPC client waits for the server before it sends anything, so the classifier cannot read the first request. | The classifier sends the server's HTTP/2 settings frame first when it sees an HTTP/2 preface, then reads the first request. |
 | A slow or idle client holds a connection before the classifier decides. | Put a short read deadline on classification only, and clear it when the classifier hands over the connection. Long CAS streams are not affected. |
 | A middleware behaves differently on the single port, for example an authentication step that does not run. | The server-level tests in R-002 merge first and record the current behavior. The same tests then run against the single port. |
