@@ -100,14 +100,16 @@ How the sessions are linked to the commits and attested.
 |---------|---------------|-------------|--------|--------------|------------|
 | Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes |
 | Attestation at push | In the default control-plane storage mode, the `pre-push` hook attests the sessions of the pushed commits to the control plane. | Yes | Yes | Yes | Yes |
-| Local storage at push | In a repository with `traceStorage: LOCAL` in `.chainloop.yml`, the `pre-push` hook runs the same assembly as an attestation. It writes the session evidence set to `tracePath` (default `.git/chainloop-trace/local-sessions`) and sends no attestation. It needs no control plane, login, or network. The stored set is equal to the upload of a push, except for the signature. A `manifest.json` file marks the set as unsigned and not an attestation. `trace init --local` sets up the mode, and `trace run` uses it too. Redaction is on by default. Set `CHAINLOOP_TRACE_NO_REDACT` to turn it off, for a trusted local store only (spec issue-3582). | Yes | Yes | Yes | Yes |
+| Local storage at push | In a repository with `traceStorage: LOCAL` in `.chainloop.yml`, the `pre-push` hook runs the same assembly as an attestation. It writes the session evidence set to the `local-sessions` folder of the trace directory and sends no attestation. It needs no control plane, login, or network. The stored set is equal to the upload of a push, except for the signature. A `manifest.json` file marks the set as unsigned and not an attestation. `trace init --local` sets up the mode, and `trace run` uses it too. Redaction is on by default. Set `CHAINLOOP_TRACE_NO_REDACT` to turn it off, for a trusted local store only (spec issue-3582). | Yes | Yes | Yes | Yes |
 
 ### Switching storage modes
 
 `traceStorage` in `.chainloop.yml` is a committed repository policy. It is the same for every clone. When a repository uses `LOCAL`, Trace stores every session of every user on disk. To change the mode:
 
-- **To local:** run `chainloop trace init --local`. It writes `traceStorage: LOCAL`, and `tracePath` when you give `--trace-path`. It installs the hooks and does not connect to a control plane. Commit `.chainloop.yml` to share the change.
+- **To local:** run `chainloop trace init --local`. It writes `traceStorage: LOCAL`, installs the hooks, and does not connect to a control plane. Commit `.chainloop.yml` to share the change.
 - **Back to the control plane:** run `chainloop trace init` without `--local`. It writes `traceStorage: CONTROL_PLANE` and sets up the workflow. The command tells you about the change. Commit `.chainloop.yml`.
+
+`tracePath` in `.chainloop.yml` sets the trace directory, where Chainloop Trace keeps its data in every mode. The default is `.git/chainloop-trace`. A relative path starts at the repository root. `chainloop trace init --trace-path <dir>` writes it. A directory in the working tree must be in `.gitignore`.
 
 Run `chainloop trace init` one time for each repository. Git does not clone the git hooks in `.git`. In a clone, the first traced session installs them, so a teammate does not run init.
 

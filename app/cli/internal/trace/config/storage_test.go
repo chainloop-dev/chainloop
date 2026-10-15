@@ -106,12 +106,12 @@ func TestTraceStorageRoundTrip(t *testing.T) {
 	require.NoError(t, SaveTracePathToYML(dir, "evidence/sessions"))
 
 	assert.True(t, IsLocalStorage(dir))
-	assert.Equal(t, "evidence/sessions", LoadTracePathFromYML(dir))
 
 	// Other fields survive.
 	data, err := os.ReadFile(filepath.Join(dir, ".chainloop.yml"))
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "projectName: p")
+	assert.Contains(t, string(data), "tracePath: evidence/sessions")
 	assert.Contains(t, string(data), "projectVersion: v1.0.0")
 }
 

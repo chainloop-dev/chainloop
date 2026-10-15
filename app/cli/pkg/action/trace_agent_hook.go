@@ -211,7 +211,7 @@ func HandleAgentSessionStart(provider trace.Provider, log zerolog.Logger) error 
 			// Local mode reaches no control plane, so the banner names the
 			// on-disk destination and makes no dashboard round trip (R-012).
 			banner = localSessionStartBanner(
-				ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot)),
+				store.LocalSessionsDir(),
 				store.IsTraceRunActive(),
 			)
 		} else {

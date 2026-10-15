@@ -25,7 +25,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
@@ -89,7 +88,7 @@ func RunTraceLocalStore(ctx context.Context, log zerolog.Logger, opts RunTraceLo
 		return 0, "", err
 	}
 
-	tracePath = ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot))
+	tracePath = store.LocalSessionsDir()
 	sessionMode := aicodingsession.ResolveMode(opts.Mode)
 
 	log.Debug().Str("state_dir", store.Dir()).Str("repo_root", repoRoot).
@@ -121,20 +120,6 @@ func RunTraceLocalStore(ctx context.Context, log zerolog.Logger, opts RunTraceLo
 	}
 
 	return stored, tracePath, nil
-}
-
-// ResolveTracePath returns where LOCAL trace storage writes its evidence sets:
-// the persisted tracePath when set (absolute, or relative to the repository
-// root), otherwise the per-clone default under the trace state directory.
-func ResolveTracePath(repoRoot string, store *state.Store, persisted string) string {
-	switch {
-	case persisted == "":
-		return store.LocalSessionsDir()
-	case filepath.IsAbs(persisted):
-		return persisted
-	default:
-		return filepath.Join(repoRoot, persisted)
-	}
 }
 
 // storeSessionsLocally writes each assembled session under tracePath in its own

@@ -158,17 +158,6 @@ func TestRunTraceLocalStoreNoSessions(t *testing.T) {
 	assert.True(t, os.IsNotExist(statErr), "no output directory is created when there is nothing to store")
 }
 
-// TestResolveTracePath covers the path resolver: a persisted absolute or
-// repo-relative path wins, and an empty one falls back to the store default.
-func TestResolveTracePath(t *testing.T) {
-	store := state.NewGitStore(filepath.Join(t.TempDir(), ".git"))
-	repoRoot := "/repo"
-
-	assert.Equal(t, store.LocalSessionsDir(), ResolveTracePath(repoRoot, store, ""))
-	assert.Equal(t, "/abs/sessions", ResolveTracePath(repoRoot, store, "/abs/sessions"))
-	assert.Equal(t, filepath.Join(repoRoot, "evidence"), ResolveTracePath(repoRoot, store, "evidence"))
-}
-
 func TestLocalSessionStartBanner(t *testing.T) {
 	t.Run("names the on-disk destination and the push timing", func(t *testing.T) {
 		got := localSessionStartBanner("/repo/.git/chainloop-trace/local-sessions", false)

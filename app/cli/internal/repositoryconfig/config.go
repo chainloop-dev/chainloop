@@ -46,8 +46,10 @@ type ChainloopYML struct {
 	// the evidence set to disk with no control plane. It is a committed, shared
 	// repository policy, so a local-trace repository is the same for every clone.
 	TraceStorage string `yaml:"traceStorage,omitempty"`
-	// TracePath names where local sessions are stored in LOCAL mode. Empty falls
-	// back to a per-clone default under the trace state directory.
+	// TracePath names the trace state directory, where Chainloop Trace keeps
+	// its data in every storage mode. LOCAL mode writes the sessions to its
+	// local-sessions folder. A relative path resolves against the repository
+	// root. Empty means <git dir>/chainloop-trace.
 	TracePath string `yaml:"tracePath,omitempty"`
 	// TraceRequired blocks a push when a required trace is missing. It replaces
 	// the deprecated RequireTrace with the same meaning.

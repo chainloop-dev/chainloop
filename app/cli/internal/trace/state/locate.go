@@ -58,7 +58,7 @@ func LocateFrom(start string) (store *Store, root string, err error) {
 	gitDir, repoRoot, err := tracegit.FindGitDirAndRootFrom(start)
 	switch {
 	case err == nil:
-		return NewGitStore(gitDir), repoRoot, nil
+		return NewRepoStore(gitDir, repoRoot), repoRoot, nil
 	case !errors.Is(err, tracegit.ErrNotARepository):
 		return nil, "", err
 	}

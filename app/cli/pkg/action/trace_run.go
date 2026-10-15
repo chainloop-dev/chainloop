@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
@@ -415,11 +414,7 @@ func CleanupTrace(store *state.Store, repoRoot string, log zerolog.Logger) error
 		}
 	}
 
-	// Preserve the configured storage path too: a custom tracePath can resolve
-	// inside the trace directory, and RemoveTraceDir would otherwise delete the
-	// stored evidence it is not named local-sessions.
-	storagePath := ResolveTracePath(repoRoot, store, config.LoadTracePathFromYML(repoRoot))
-	if err := store.RemoveTraceDir(storagePath); err != nil {
+	if err := store.RemoveTraceDir(); err != nil {
 		log.Warn().Err(err).Msg("could not remove trace directory")
 		errs = append(errs, fmt.Errorf("remove trace directory: %w", err))
 	}

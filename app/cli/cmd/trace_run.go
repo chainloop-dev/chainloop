@@ -96,7 +96,7 @@ func newTraceRunCmd() *cobra.Command {
 				store, repoRoot = state.NewOutOfTreeStore(stateDir), cwd
 				logger.Info().Msg("no git repository found; recording the session without commit attribution")
 			default:
-				store = state.NewGitStore(gitDir)
+				store = state.NewRepoStore(gitDir, repoRoot)
 			}
 
 			// The storage mode is a repository policy, read even though trace

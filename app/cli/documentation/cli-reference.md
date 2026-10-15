@@ -3324,10 +3324,14 @@ The organization, project, workflow and require-trace values are saved to
 
 With --local, init sets up the repository for local mode. It installs the same
 hooks, but it creates no workflow, needs no login, and does not connect to a
-control plane. It writes traceStorage: LOCAL to .chainloop.yml. It also writes
-tracePath when you give --trace-path. Every clone then records sessions on
-disk. On each push, the pre-push hook writes the session evidence to that path.
-It does not send an attestation.
+control plane. It writes traceStorage: LOCAL to .chainloop.yml. Every clone
+then records sessions on disk. On each push, the pre-push hook writes the
+session evidence to the local-sessions folder of the trace directory. It does
+not send an attestation.
+
+--trace-path sets the trace directory, where Chainloop Trace keeps its data.
+The default is .git/chainloop-trace. It works in every mode, and init writes it
+to .chainloop.yml as tracePath. A relative path starts at the repository root.
 
 --contract, --workflow, --org and --project are control-plane settings. You
 cannot use them with --local. You can use --require-trace with --local.
@@ -3347,7 +3351,7 @@ Options
 --opencode            install opencode hooks
 --project string      chainloop project name
 --require-trace       block pushes when a required trace is missing
---trace-path string   the directory where local mode writes the sessions (default: .git/chainloop-trace/local-sessions). This flag also sets --local
+--trace-path string   the directory where Chainloop Trace keeps its data, in every mode (default: .git/chainloop-trace). Local mode writes the sessions to its local-sessions folder
 --workflow string     chainloop workflow name used for trace attestations (defaults to "ai-coding-session")
 ```
 

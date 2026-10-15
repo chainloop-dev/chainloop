@@ -15,7 +15,11 @@
 
 package state
 
-import "path/filepath"
+import (
+	"path/filepath"
+
+	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
+)
 
 // Store reads and writes the chainloop-trace state under a single parent
 // directory: the .git directory inside a repository, or the out-of-tree
@@ -26,12 +30,39 @@ import "path/filepath"
 type Store struct {
 	dir   string
 	isGit bool
+	// traceDir, when set, replaces <dir>/chainloop-trace as the trace state
+	// directory. It comes from tracePath in .chainloop.yml.
+	traceDir string
 }
 
 // NewGitStore returns a Store over a repository's .git directory.
 // Nothing is created or validated here.
 func NewGitStore(gitDir string) *Store {
 	return &Store{dir: gitDir, isGit: true}
+}
+
+// NewRepoStore returns a Store over a repository's .git directory that honors
+// tracePath in the repository's .chainloop.yml. tracePath moves the trace state
+// directory, in every storage mode. A relative path resolves against repoRoot.
+// With no tracePath, the state stays in <gitDir>/chainloop-trace. The git hooks
+// stay in gitDir either way.
+//
+// Every git store of a repository must come from here, so the hooks, the
+// pre-push and the agent hooks all read and write the same directory.
+func NewRepoStore(gitDir, repoRoot string) *Store {
+	store := NewGitStore(gitDir)
+
+	cfg := repositoryconfig.FindChainloopYML(repoRoot)
+	if cfg == nil || cfg.TracePath == "" {
+		return store
+	}
+
+	store.traceDir = cfg.TracePath
+	if !filepath.IsAbs(store.traceDir) {
+		store.traceDir = filepath.Join(repoRoot, store.traceDir)
+	}
+
+	return store
 }
 
 // NewOutOfTreeStore returns a Store over the directory that holds trace state
@@ -65,7 +96,17 @@ func (s *Store) Dir() string {
 	return s.dir
 }
 
-// traceDirPath returns the path to <dir>/chainloop-trace/.
+// TraceDir returns the trace state directory: tracePath when the repository
+// sets one, otherwise <dir>/chainloop-trace.
+func (s *Store) TraceDir() string {
+	return s.traceDirPath()
+}
+
+// traceDirPath returns the trace state directory. See TraceDir.
 func (s *Store) traceDirPath() string {
+	if s.traceDir != "" {
+		return s.traceDir
+	}
+
 	return filepath.Join(s.dir, traceDir)
 }

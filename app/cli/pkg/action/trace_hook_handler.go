@@ -87,7 +87,7 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 		log.Debug().Strs("session_ids", sessionIDs).Msg("amending HEAD, keeping its trace sessions")
 	}
 
-	attrs, err := state.NewGitStore(gitDir).LoadAllAILineAttributions()
+	attrs, err := state.NewRepoStore(gitDir, repoRoot).LoadAllAILineAttributions()
 	if err != nil {
 		return fmt.Errorf("load AI line attributions: %w", err)
 	}
@@ -266,7 +266,7 @@ func handlePostCommit(_ context.Context, log zerolog.Logger) error {
 
 	// Prefer the trailer's session IDs when present — they survive rebase
 	// and cherry-pick verbatim. Fall back to file-based derivation otherwise.
-	store := state.NewGitStore(gitDir)
+	store := state.NewRepoStore(gitDir, repoRoot)
 
 	sessionIDs := state.ParseSessionIDsFromTrailer(message)
 	if len(sessionIDs) == 0 {
@@ -327,14 +327,14 @@ func HandlePostRewriteHook(_ context.Context, log zerolog.Logger) error {
 // Only records that post-commit already wrote are updated: the rewrite hook
 // carries sessions forward, it does not decide which commits are recorded.
 func handlePostRewrite(r io.Reader, log zerolog.Logger) error {
-	gitDir, _, err := tracegit.FindGitDirAndRoot()
+	gitDir, repoRoot, err := tracegit.FindGitDirAndRoot()
 	if err != nil {
 		return err
 	}
 
 	log.Debug().Str("git_dir", gitDir).Msg("post-rewrite hook invoked")
 
-	store := state.NewGitStore(gitDir)
+	store := state.NewRepoStore(gitDir, repoRoot)
 	records, err := store.LoadAllCommitRecords()
 	if err != nil {
 		return fmt.Errorf("load commit records: %w", err)

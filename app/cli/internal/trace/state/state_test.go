@@ -142,30 +142,73 @@ func TestRemoveTraceDirPreservesLocalSessions(t *testing.T) {
 		_, err := os.Stat(plain.LocalSessionsDir())
 		assert.True(t, os.IsNotExist(err))
 	})
+}
 
-	t.Run("a custom tracePath inside the trace dir is preserved", func(t *testing.T) {
-		s := NewGitStore(t.TempDir())
-		require.NoError(t, s.InitTraceDir())
+// TestNewRepoStore covers tracePath in .chainloop.yml: it moves the whole
+// trace state directory, in every storage mode. A relative path resolves
+// against the repository root. With no tracePath, the state stays in
+// .git/chainloop-trace.
+func TestNewRepoStore(t *testing.T) {
+	testCases := []struct {
+		name string
+		yml  string
+		// want returns the expected trace directory for the repository root
+		// and the .git directory.
+		want func(repoRoot, gitDir string) string
+	}{
+		{
+			name: "no config keeps the default",
+			want: func(_, gitDir string) string { return filepath.Join(gitDir, "chainloop-trace") },
+		},
+		{
+			name: "no tracePath keeps the default",
+			yml:  "projectName: p\n",
+			want: func(_, gitDir string) string { return filepath.Join(gitDir, "chainloop-trace") },
+		},
+		{
+			name: "a relative tracePath resolves against the repository root",
+			yml:  "tracePath: .trace-state\n",
+			want: func(repoRoot, _ string) string { return filepath.Join(repoRoot, ".trace-state") },
+		},
+		{
+			name: "an absolute tracePath is used as is",
+			yml:  "tracePath: /var/lib/trace\n",
+			want: func(_, _ string) string { return "/var/lib/trace" },
+		},
+	}
 
-		// A configured tracePath that lands inside the trace directory under a
-		// name other than local-sessions. Without being passed to
-		// RemoveTraceDir it would be deleted with the rest of the state.
-		base := filepath.Join(s.Dir(), "chainloop-trace")
-		custom := filepath.Join(base, "my-sessions", "sess-9")
-		require.NoError(t, os.MkdirAll(custom, 0o700))
-		require.NoError(t, os.WriteFile(filepath.Join(custom, "manifest.json"), []byte("{}"), 0o600))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repoRoot := t.TempDir()
+			gitDir := filepath.Join(repoRoot, ".git")
+			require.NoError(t, os.MkdirAll(gitDir, 0o700))
+			if tc.yml != "" {
+				require.NoError(t, os.WriteFile(filepath.Join(repoRoot, ".chainloop.yml"), []byte(tc.yml), 0o600))
+			}
 
-		// A sibling entry that is neither local-sessions nor the custom path
-		// must still be removed.
-		stale := filepath.Join(base, "sessions", "sess-stale")
-		require.NoError(t, os.MkdirAll(stale, 0o700))
+			store := NewRepoStore(gitDir, repoRoot)
+			want := tc.want(repoRoot, gitDir)
+			assert.Equal(t, want, store.TraceDir())
+			assert.Equal(t, filepath.Join(want, "local-sessions"), store.LocalSessionsDir())
+			assert.Equal(t, gitDir, store.GitDir(), "the git hooks stay in the .git directory")
+		})
+	}
 
-		require.NoError(t, s.RemoveTraceDir(filepath.Join(base, "my-sessions")))
+	t.Run("the state is written under the tracePath", func(t *testing.T) {
+		repoRoot := t.TempDir()
+		gitDir := filepath.Join(repoRoot, ".git")
+		require.NoError(t, os.MkdirAll(gitDir, 0o700))
+		require.NoError(t, os.WriteFile(filepath.Join(repoRoot, ".chainloop.yml"), []byte("tracePath: .trace-state\n"), 0o600))
 
-		_, err := os.Stat(filepath.Join(custom, "manifest.json"))
-		assert.NoError(t, err, "the configured storage path survives")
-		_, err = os.Stat(stale)
-		assert.True(t, os.IsNotExist(err), "unrelated state is still removed")
+		store := NewRepoStore(gitDir, repoRoot)
+		require.NoError(t, store.InitTraceDir())
+		require.NoError(t, store.MarkTraceInitialized())
+
+		_, err := os.Stat(filepath.Join(repoRoot, ".trace-state"))
+		require.NoError(t, err)
+		_, err = os.Stat(filepath.Join(gitDir, "chainloop-trace"))
+		assert.True(t, os.IsNotExist(err), "nothing is written to the default directory")
+		assert.True(t, NewRepoStore(gitDir, repoRoot).IsTraceInitialized())
 	})
 }
 

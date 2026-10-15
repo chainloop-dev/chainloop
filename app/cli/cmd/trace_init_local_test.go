@@ -75,17 +75,37 @@ func TestTraceInitLocal(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("--trace-path implies local and is written", func(t *testing.T) {
+	t.Run("--trace-path is written and moves the trace state", func(t *testing.T) {
 		repoDir := t.TempDir()
 		gitInit(t, repoDir)
 
-		require.NoError(t, runTraceInit(t, repoDir, "--trace-path", "evidence/sessions", "--claude"))
+		require.NoError(t, runTraceInit(t, repoDir, "--local", "--trace-path", ".trace-state", "--claude"))
 
 		data, err := os.ReadFile(filepath.Join(repoDir, chainloopYMLName))
 		require.NoError(t, err)
 		got := string(data)
 		assert.Contains(t, got, "traceStorage: LOCAL")
-		assert.Contains(t, got, "tracePath: evidence/sessions")
+		assert.Contains(t, got, "tracePath: .trace-state")
+
+		// The trace state is in the tracePath, not in .git/chainloop-trace.
+		_, err = os.Stat(filepath.Join(repoDir, ".trace-state"))
+		require.NoError(t, err)
+		_, err = os.Stat(filepath.Join(repoDir, ".git", "chainloop-trace"))
+		assert.True(t, os.IsNotExist(err))
+	})
+
+	t.Run("--trace-path does not turn on local mode", func(t *testing.T) {
+		// An invalid traceStorage stops a control-plane init before it
+		// connects, and --local overrides it. So the error shows that
+		// --trace-path alone left the init in control-plane mode.
+		repoDir := t.TempDir()
+		gitInit(t, repoDir)
+		require.NoError(t, os.WriteFile(filepath.Join(repoDir, chainloopYMLName),
+			[]byte("traceStorage: bogus\n"), 0600))
+
+		err := runTraceInit(t, repoDir, "--trace-path", ".trace-state", "--claude")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "traceStorage")
 	})
 
 	t.Run("--require-trace is allowed and written as traceRequired", func(t *testing.T) {
@@ -162,9 +182,10 @@ func TestWriteTraceStorageSwitchedNote(t *testing.T) {
 
 func TestWriteTraceInitLocalSummary(t *testing.T) {
 	out := &bytes.Buffer{}
-	writeTraceInitLocalSummary(out, t.TempDir(), []string{providerClaudeCode, "cursor"}) //nolint:goconst // provider wire name, kept literal like the other provider tests
+	writeTraceInitLocalSummary(out, ".trace-state/local-sessions", []string{providerClaudeCode, "cursor"}) //nolint:goconst // provider wire name, kept literal like the other provider tests
 
 	got := out.String()
+	assert.Contains(t, got, "written to .trace-state/local-sessions on each push")
 	assert.Contains(t, got, "local mode")
 	assert.Contains(t, got, "no control plane")
 	assert.Contains(t, got, "claude-code, cursor")

@@ -150,17 +150,6 @@ func SaveTracePathToYML(dir, path string) error {
 	return updateChainloopYMLField(dir, "tracePath", path)
 }
 
-// LoadTracePathFromYML looks for .chainloop.yml starting from dir and returns
-// the tracePath value. Returns empty string when the field is absent.
-func LoadTracePathFromYML(dir string) string {
-	cfg := repositoryconfig.FindChainloopYML(dir)
-	if cfg == nil {
-		return ""
-	}
-
-	return cfg.TracePath
-}
-
 // SaveTraceRequiredToYML writes (or updates) the traceRequired field in
 // .chainloop.yml at the given directory, preserving any other fields.
 func SaveTraceRequiredToYML(dir string, val bool) error {

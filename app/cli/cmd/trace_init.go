@@ -82,10 +82,14 @@ The organization, project, workflow and require-trace values are saved to
 
 With --local, init sets up the repository for local mode. It installs the same
 hooks, but it creates no workflow, needs no login, and does not connect to a
-control plane. It writes traceStorage: LOCAL to .chainloop.yml. It also writes
-tracePath when you give --trace-path. Every clone then records sessions on
-disk. On each push, the pre-push hook writes the session evidence to that path.
-It does not send an attestation.
+control plane. It writes traceStorage: LOCAL to .chainloop.yml. Every clone
+then records sessions on disk. On each push, the pre-push hook writes the
+session evidence to the local-sessions folder of the trace directory. It does
+not send an attestation.
+
+--trace-path sets the trace directory, where Chainloop Trace keeps its data.
+The default is .git/chainloop-trace. It works in every mode, and init writes it
+to .chainloop.yml as tracePath. A relative path starts at the repository root.
 
 --contract, --workflow, --org and --project are control-plane settings. You
 cannot use them with --local. You can use --require-trace with --local.`,
@@ -93,12 +97,6 @@ cannot use them with --local. You can use --require-trace with --local.`,
 			gitDir, repoRoot, err := tracegit.FindGitDirAndRoot()
 			if err != nil {
 				return err
-			}
-
-			// A tracePath only has meaning in local mode, so naming one turns it
-			// on rather than being silently ignored.
-			if tracePathFlag != "" {
-				localFlag = true
 			}
 
 			// Local mode contacts no control plane, so the control-plane
@@ -118,7 +116,7 @@ cannot use them with --local. You can use --require-trace with --local.`,
 			}
 			cfg.local = localFlag
 			cfg.tracePath = tracePathFlag
-			cfg.saveTracePath = localFlag && tracePathFlag != ""
+			cfg.saveTracePath = tracePathFlag != ""
 
 			// A control-plane init over a repository previously set to LOCAL has
 			// to clear the stale policy, or the pre-push hook keeps storing on
@@ -255,7 +253,12 @@ cannot use them with --local. You can use --require-trace with --local.`,
 			// What the run produced, and what to do with it. Every step above logs
 			// at debug, so this is what the user is left with.
 			if cfg.local {
-				writeTraceInitLocalSummary(os.Stdout, repoRoot, providerNames(installed))
+				sessionsDir := state.NewRepoStore(gitDir, repoRoot).LocalSessionsDir()
+				if rel, err := filepath.Rel(workDir, sessionsDir); err == nil {
+					sessionsDir = rel
+				}
+
+				writeTraceInitLocalSummary(os.Stdout, sessionsDir, providerNames(installed))
 				writeTraceLocalNextSteps(os.Stdout, repoRoot, workDir, installed)
 
 				return nil
@@ -284,7 +287,7 @@ cannot use them with --local. You can use --require-trace with --local.`,
 	cmd.Flags().StringVar(&project, "project", "", "chainloop project name")
 	cmd.Flags().StringVar(&contract, "contract", "", traceContractFlagDesc)
 	cmd.Flags().BoolVar(&localFlag, "local", false, "set up local mode, with no control plane, login or workflow. The pre-push hook writes the session evidence to disk")
-	cmd.Flags().StringVar(&tracePathFlag, "trace-path", "", "the directory where local mode writes the sessions (default: .git/chainloop-trace/local-sessions). This flag also sets --local")
+	cmd.Flags().StringVar(&tracePathFlag, "trace-path", "", "the directory where Chainloop Trace keeps its data, in every mode (default: .git/chainloop-trace). Local mode writes the sessions to its local-sessions folder")
 	cmd.Flags().String("workflow", "", "chainloop workflow name used for trace attestations (defaults to \"ai-coding-session\")")
 	cmd.Flags().Bool("require-trace", false, "block pushes when a required trace is missing")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no harness flag is set)")
@@ -381,15 +384,13 @@ Learn more: %s
 // writeTraceInitLocalSummary reports what a local init set up. It names no
 // organization, project or workflow, because local mode has none: it records
 // sessions and writes their evidence to disk, with no control plane.
-func writeTraceInitLocalSummary(w io.Writer, repoRoot string, harnesses []string) {
+//
+// sessionsDir is the directory the sessions are written to, as the user should
+// read it.
+func writeTraceInitLocalSummary(w io.Writer, sessionsDir string, harnesses []string) {
 	fmt.Fprint(w, "\nCongratulations, your repository is initialized in local mode\n\n")
 	fmt.Fprint(w, "  storage       local (no control plane)\n")
-
-	if path := config.LoadTracePathFromYML(repoRoot); path != "" {
-		fmt.Fprintf(w, "  sessions      written to %s on each push\n", path)
-	} else {
-		fmt.Fprint(w, "  sessions      written to .git/chainloop-trace/local-sessions on each push\n")
-	}
+	fmt.Fprintf(w, "  sessions      written to %s on each push\n", sessionsDir)
 
 	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
 }
@@ -562,7 +563,8 @@ func writeTraceInitState(cfg *traceInitConfig, repoRoot, gitDir string) error {
 		return err
 	}
 
-	store := state.NewGitStore(gitDir)
+	// Read after cfg.save, so a tracePath written on this run applies.
+	store := state.NewRepoStore(gitDir, repoRoot)
 	if err := store.InitTraceDir(); err != nil {
 		return fmt.Errorf("create trace directory: %w", err)
 	}
