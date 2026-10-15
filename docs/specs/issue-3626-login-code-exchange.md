@@ -10,8 +10,10 @@ AGENT INSTRUCTIONS. Keep this comment. Read it before you change this file.
 This spec records a design that humans reviewed and approved. Do not change it as part of other work. Find the status of the parent ticket (the `ticket:` field) before you change anything. If you cannot find the status, or you are not sure which case below applies, do not change the spec. Ask the human first.
 
 - Ticket in design, and the spec PR is open: change the spec only through the br:eng-spec skill (`--revise`). Never renumber or reuse an R-xxx or D-xxx ID.
-- Ticket in progress: do not rewrite the requirements, the Proposal, or existing Decision Record rows. Record a changed decision as a new Decision Record row. The owner records the differences with the shipped work through br:eng-spec (`--done`).
+- Ticket in progress: do not rewrite the requirements, the Proposal, or existing Decision Record entries. Record a changed decision as a new Decision Record entry. The owner records the differences with the shipped work through br:eng-spec (`--done`).
 - Ticket done or canceled: the spec is frozen. Do not change, delete, or strike through any text. The only allowed edits are typo fixes, broken links, and the "Superseded by" line under the title. For a design change, write a new spec with br:eng-spec that supersedes this one.
+
+When you review this spec, or before you add scope to it, check three things. No requirement contradicts another requirement, a Non-Goal, a Constraint, or a Decision Record entry. The most important requirements come first. The spec solves one problem: when a part can ship or be decided on its own, propose a separate spec instead of extending this one. Report each issue to the human. Do not fix it by yourself.
 
 Do not answer an open question or a review comment on this spec by yourself. The answer is a design decision, and a human makes it. You can propose an answer and discuss it with a human. Change the spec or reply only after the human agrees.
 
@@ -34,7 +36,7 @@ At the end of an OIDC login, the control plane sends the user session token to t
 
 - Goal: a client that supports the exchange never receives the session token in a URL.
 - Goal: a callback link that another person started cannot sign a user in.
-- Goal: CLIs that are already installed keep logging in, unchanged, during the transition.
+- Goal: CLIs that are already installed keep logging in, unchanged, while the legacy callback is allowed. Phase 1 allows it by default, and phase 2 when the operator allows it.
 - Goal: operators can see legacy use and turn it off.
 - Non-goal: change the token itself, its lifetime, or its revocation. A long-lived CLI token still lives seven days.
 - Non-goal: change the headless CLI login. It shows the token on a page and never puts it in a URL.
@@ -58,14 +60,14 @@ The exchange endpoint MUST return the session token only in the response body. T
 While the legacy callback is allowed, a login request with no code challenge MUST keep the current `?t=` behavior. The control plane MUST log and count each legacy delivery.
 - Done when: a CLI released before this change logs in against the new control plane with no change.
 
-### R-005: Capability discovery
+### R-005: CLI uses the exchange
+The CLI login MUST use the code exchange when the control plane reports support. While the control plane reports that legacy is allowed, the CLI MUST accept a legacy `?t=` callback and print a deprecation warning. When the control plane reports that legacy is denied, the CLI MUST reject a `?t=` callback. Against an older control plane, the CLI MUST use the legacy flow.
+
+### R-006: Capability discovery
 The public info endpoint (the one that gives the login URL) MUST report that the control plane supports the code exchange. It MUST also report if the legacy callback is allowed.
 
-### R-006: Operator switch for the legacy callback
+### R-007: Operator switch for the legacy callback
 An operator MUST be able to deny the legacy callback with a configuration setting. When legacy is denied, a login with a callback and no code challenge MUST fail. The error message MUST tell the user to upgrade the client. The headless login and the same-origin download flow (D-008) are not affected.
-
-### R-007: CLI uses the exchange
-The CLI login MUST use the code exchange when the control plane reports support. While the control plane reports that legacy is allowed, the CLI MUST accept a legacy `?t=` callback and print a deprecation warning. When the control plane reports that legacy is denied, the CLI MUST reject a `?t=` callback. Against an older control plane, the CLI MUST use the legacy flow.
 
 ### R-008: Relative-only post-login redirect
 The control plane MUST reject a login whose callback carries a post-login redirect (`returnTo`) that is not a relative path on the same origin. A value MUST start with a single `/`. Absolute URLs, scheme-relative values (`//host`), and values with a backslash MUST fail.
@@ -73,8 +75,8 @@ The control plane MUST reject a login whose callback carries a post-login redire
 ## Constraints
 
 - Public, self-hosted product: no new external dependency. The code store uses the existing database, so it works with more than one control plane replica.
-- Backward compatibility: no released CLI may break before phase 3 (see Proposal).
-- A deployment that sets the login URL override to its own login page must forward the new login parameters to the control plane. If it does not, the login falls back to the legacy callback (R-004, R-007).
+- Backward compatibility: no released CLI breaks in phase 1. In phase 2, an operator can keep old CLIs working with the setting until phase 3 (see Proposal).
+- A deployment that sets the login URL override to its own login page must forward the new login parameters to the control plane. If it does not, the login falls back to the legacy callback (R-004, R-005).
 
 ## Proposal
 
@@ -97,7 +99,7 @@ Why this stops fixation: a person who starts a login gets a code that is bound t
 **Rollout and deprecation.**
 
 1. Phase 1, control plane release: the exchange endpoint, the code store, the info flags, and the `returnTo` check ship. Legacy is allowed by default. Nothing breaks.
-2. Phase 1, CLI release: the CLI uses the exchange (R-007). Clients that use the login URL override forward the new parameters.
+2. Phase 1, CLI release: the CLI uses the exchange (R-005). Deployments that use the login URL override can then forward the new parameters.
 3. Phase 2, a later control plane release: the default changes to "legacy denied". Operators that still have old clients can allow it again with the setting. The release notes name the oldest CLI version that works.
 4. Phase 3, deletion: the project deletes the legacy callback and the setting when both conditions are true. The oldest CLI version that the project supports uses the exchange. The legacy counter shows no use in the project's own deployments for one full release cycle.
 
@@ -116,30 +118,102 @@ sequenceDiagram
     B->>CP: Login request (callback, returnTo, challenge checked)
     CP->>I: OIDC login
     I-->>CP: Auth result (state cookie checked)
-    CP->>CP: Store hashed code with user, challenge and callback (60s, single use)
+    CP->>CP: Store hashed handoff code with user, challenge and callback (60s, single use)
     CP-->>B: Redirect to callback with handoff code only
     B->>C: Callback with handoff code
-    C->>CP: Exchange(code, verifier, callback)
+    C->>CP: Exchange(handoff code, verifier, callback)
     CP->>CP: Consume code, check expiry, verifier, callback, create token
     CP-->>C: Token in response body
 ```
 
 ## Decision Record
 
-| ID | Decision | Choice | Why (and what we rejected) | Source |
-|----|----------|--------|----------------------------|--------|
-| D-001 | Token delivery | Single-use handoff code, exchanged by the client for the token | Takes the token out of the URL. Rejected: keep `?t=` and add checks (the token is still in the URL). Rejected: token in the URL fragment (still in history, and fixation stays). Rejected: a full OAuth server with refresh tokens (much larger change). | drafting |
-| D-002 | Code binding | PKCE-style challenge (S256) from the client, plus the callback URL | Works for the CLI and for a browser app, and needs no cookie at exchange time. Rejected: bind to the callback URL only (a web app has a fixed callback, so fixation stays). Rejected: require the OIDC state cookie at exchange (the CLI and a cross-origin web app do not have it). | drafting |
-| D-003 | Exchange endpoint | Unauthenticated RPC on the auth service with an HTTP POST mapping | The CLI already has a gRPC connection, and other clients use HTTP. Rejected: a plain HTTP handler next to the login and callback handlers (the CLI would need a second client). | drafting |
-| D-004 | Code store | Database table with the code hash, the user, expiry, and an atomic consume. No token at rest: the token is created at exchange | Works with many replicas and enforces single use. Rejected: store the created token with the code (a token at rest in the database). Rejected: memory (fails with more than one replica). Rejected: a signed code with no store (cannot enforce single use). | drafting |
-| D-005 | Detection | Opt-in per request with a challenge, plus flags on the info endpoint | Old CLIs need no change. A new CLI knows what to expect and can detect a downgrade. Rejected: opt-in with no flag (the CLI cannot tell a downgrade from an old server). Rejected: version check (fails with forks and development builds). | drafting |
-| D-006 | Deprecation | Three phases: allowed by default, then denied by default with an operator setting, then deleted | Gives operators time and a measured deletion condition. Rejected: delete in a fixed release with no setting (no way out for slow upgrades). Rejected: setting only, with no default change (legacy never goes away). | drafting |
-| D-007 | CLI with a legacy callback | Accept `?t=` with a warning while the server reports legacy allowed. Reject it when legacy is denied | A login page that does not forward the new parameters yet must not break login. The loopback listener has a random port and a short life, so the fixation risk is low. Rejected: reject `?t=` from the first CLI release. | drafting |
-| D-008 | Browser artifact download flow | No change. It stays on the legacy callback and the legacy switch does not cover it | Its callback is a relative path on the control plane itself. The token it gets is not long-lived and expires after 10 seconds. A separate change can move it to the exchange. | drafting |
-| D-009 | Headless login and code life | Headless login does not change. The code lives 60 seconds | The headless page never puts the token in a URL. 60 seconds is enough for a browser redirect. | drafting |
-| D-010 | Post-login redirect | The control plane checks `returnTo` inside the callback and accepts only a single-slash relative path | Closes the open redirect at the server, where the client cannot skip it. The callback origin check stays. Rejected: leave it to each client. | drafting |
-| D-011 | Callback parameter name | `handoff`, not `code` | A client callback can also be an OAuth client that already gets `code` from its own identity provider. A different name prevents a collision. Rejected: `code` (the standard OAuth name, but it is ambiguous on such a callback). | drafting |
-| D-012 | Exchange failure detail | Same error to the client for every failure. The specific reason goes to the server log only | A uniform client error gives no hint to a person who guesses codes. The server log reason helps operators debug failed logins. Rejected: a uniform error with no server reason (hard to debug). | drafting |
+### D-001: Token delivery
+Single-use handoff code, exchanged by the client for the token.
+- Why: takes the token out of the URL.
+- Alternatives considered:
+  - Keep `?t=` and add checks: the token is still in the URL.
+  - Token in the URL fragment: still in history, and fixation stays.
+  - Full OAuth server with refresh tokens: much larger change.
+- Source: drafting
+
+### D-002: Code binding
+PKCE-style challenge (S256) from the client, plus the callback URL.
+- Why: works for the CLI and for a browser app, and needs no cookie at exchange time.
+- Alternatives considered:
+  - Bind to the callback URL only: a web app has a fixed callback, so fixation stays.
+  - Require the OIDC state cookie at exchange: the CLI and a cross-origin web app do not have it.
+- Source: drafting
+
+### D-003: Exchange endpoint
+Unauthenticated RPC on the auth service with an HTTP POST mapping.
+- Why: the CLI already has a gRPC connection, and other clients use HTTP.
+- Alternatives considered:
+  - Plain HTTP handler next to the login and callback handlers: the CLI would need a second client.
+- Source: drafting
+
+### D-004: Code store
+Database table with the code hash, the user, the expiry, and an atomic consume. No token at rest: the control plane creates the token at exchange.
+- Why: works with many replicas and enforces single use.
+- Alternatives considered:
+  - Store the created token with the code: a token at rest in the database.
+  - Memory: fails with more than one replica.
+  - Signed code with no store: cannot enforce single use.
+- Source: drafting
+
+### D-005: Detection
+Opt-in per request with a challenge, plus flags on the info endpoint.
+- Why: old CLIs need no change. A new CLI knows what to expect and can detect a downgrade.
+- Alternatives considered:
+  - Opt-in with no flag: the CLI cannot tell a downgrade from an old server.
+  - Version check: fails with forks and development builds.
+- Source: drafting
+
+### D-006: Deprecation
+Three phases: allowed by default, then denied by default with an operator setting, then deleted.
+- Why: gives operators time and a measured deletion condition.
+- Alternatives considered:
+  - Delete in a fixed release with no setting: no way out for slow upgrades.
+  - Setting only, with no default change: legacy never goes away.
+- Source: drafting
+
+### D-007: CLI with a legacy callback
+Accept `?t=` with a warning while the server reports legacy allowed. Reject it when legacy is denied.
+- Why: a login page that does not forward the new parameters yet must not break login. The loopback listener has a random port and a short life, so the fixation risk is low.
+- Alternatives considered:
+  - Reject `?t=` from the first CLI release: breaks login behind such a login page.
+- Source: drafting
+
+### D-008: Browser artifact download flow
+No change. It stays on the legacy callback, and the legacy switch does not cover it.
+- Why: its callback is a relative path on the control plane itself. The token it gets is not long-lived and expires after 10 seconds. A separate change can move it to the exchange.
+- Source: drafting
+
+### D-009: Headless login and code life
+Headless login does not change. The handoff code lives 60 seconds.
+- Why: the headless page never puts the token in a URL. 60 seconds is enough for a browser redirect.
+- Source: drafting
+
+### D-010: Post-login redirect
+The control plane checks `returnTo` inside the callback and accepts only a single-slash relative path.
+- Why: closes the open redirect at the server, where the client cannot skip it. The callback origin check stays.
+- Alternatives considered:
+  - Leave it to each client: a client can skip the check.
+- Source: drafting
+
+### D-011: Callback parameter name
+`handoff`, not `code`.
+- Why: a client callback can also be an OAuth client that already gets `code` from its own identity provider. A different name prevents a collision.
+- Alternatives considered:
+  - `code`: the standard OAuth name, but it is ambiguous on such a callback.
+- Source: drafting
+
+### D-012: Exchange failure detail
+Same error to the client for every failure. The specific reason goes to the server log only.
+- Why: a uniform client error gives no hint to a person who guesses codes. The server log reason helps operators debug failed logins.
+- Alternatives considered:
+  - Uniform error with no server reason: hard to debug.
+- Source: drafting
 
 ## Open Questions
 
