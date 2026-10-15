@@ -61,7 +61,7 @@ func TestRego_ParseErrorOmitsSource(t *testing.T) {
 		{
 			name: "matches evaluation",
 			run: func() error {
-				_, err := r.MatchesEvaluation(context.TODO(), policy, nil, nil)
+				_, err := r.MatchesEvaluation(context.TODO(), policy, nil, nil, nil)
 				return err
 			},
 		},
@@ -448,7 +448,7 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 	t.Run("evaluation with violations and high severity does not match", func(t *testing.T) {
 		violations := []string{"test violation"}
 		evaluationParams := map[string]string{"severity": "high"}
-		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, nil, evaluationParams)
 		require.NoError(t, err)
 		assert.False(t, matches)
 	})
@@ -456,7 +456,7 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 	t.Run("evaluation without violations does matches", func(t *testing.T) {
 		violations := []string{}
 		evaluationParams := map[string]string{"severity": "high"}
-		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, nil, evaluationParams)
 		require.NoError(t, err)
 		assert.False(t, matches)
 	})
@@ -464,14 +464,14 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 	t.Run("evaluation with violations but wrong severity does match", func(t *testing.T) {
 		violations := []string{"test violation"}
 		evaluationParams := map[string]string{"severity": "low"}
-		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, nil, evaluationParams)
 		require.NoError(t, err)
 		assert.False(t, matches)
 	})
 
 	t.Run("nil evaluation matches", func(t *testing.T) {
 		evaluationParams := map[string]string{"severity": "high"}
-		matches, err := r.MatchesEvaluation(context.TODO(), policy, nil, evaluationParams)
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, nil, nil, evaluationParams)
 		require.NoError(t, err)
 		assert.False(t, matches)
 	})
@@ -479,10 +479,128 @@ func TestRego_MatchesEvaluation(t *testing.T) {
 	t.Run("empty evaluation params", func(t *testing.T) {
 		violations := []string{"test violation"}
 		evaluationParams := map[string]string{}
-		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, evaluationParams)
+		matches, err := r.MatchesEvaluation(context.TODO(), policy, violations, nil, evaluationParams)
 		require.NoError(t, err)
 		assert.False(t, matches)
 	})
+}
+
+func TestRego_MatchesEvaluationFindings(t *testing.T) {
+	findingsRule, err := os.ReadFile("testfiles/matches_evaluation_findings.rego")
+	require.NoError(t, err)
+
+	// Matches only when input.findings is an empty array. A null value does not match.
+	emptyArrayRule := []byte(`package test_findings_shape
+
+import rego.v1
+
+default matches_evaluation := false
+
+matches_evaluation if {
+	is_array(input.findings)
+	count(input.findings) == 0
+}
+`)
+
+	// Reads only the messages, as every rule written before findings reached the input.
+	violationsOnlyRule := []byte(`package test_violations_only
+
+import rego.v1
+
+default matches_evaluation := true
+
+matches_evaluation := false if {
+	count(input.violations) > 0
+	every v in input.violations {
+		not contains(v, "HIGH")
+	}
+}
+`)
+
+	const score = "score"
+	scoreThreshold := map[string]string{score: "7.0"}
+	oneViolation := []string{"first"}
+	twoViolations := []string{"first", "second"}
+
+	testCases := []struct {
+		name       string
+		source     []byte
+		violations []string
+		findings   []map[string]any
+		expected   map[string]string
+		want       bool
+	}{
+		{
+			name:       "a finding at the expected score matches",
+			source:     findingsRule,
+			violations: twoViolations,
+			findings: []map[string]any{
+				{score: 3.0},
+				{score: 9.8, "location": map[string]any{"file": "main.go", "line": 7}},
+			},
+			expected: scoreThreshold,
+			want:     true,
+		},
+		{
+			name:       "findings below the expected score do not match",
+			source:     findingsRule,
+			violations: twoViolations,
+			findings:   []map[string]any{{score: 3.0}, {score: 6.5}},
+			expected:   scoreThreshold,
+			want:       false,
+		},
+		{
+			name:       "nil findings raise no strict builtin error",
+			source:     findingsRule,
+			violations: oneViolation,
+			expected:   scoreThreshold,
+			want:       true,
+		},
+		{
+			name:       "empty findings raise no strict builtin error",
+			source:     findingsRule,
+			violations: oneViolation,
+			findings:   []map[string]any{},
+			expected:   scoreThreshold,
+			want:       true,
+		},
+		{
+			name:       "nil findings reach the rule as an empty array",
+			source:     emptyArrayRule,
+			violations: oneViolation,
+			want:       true,
+		},
+		{
+			name:       "findings reach the rule as an array",
+			source:     emptyArrayRule,
+			violations: oneViolation,
+			findings:   []map[string]any{{score: 9.8}},
+			want:       false,
+		},
+		{
+			name:       "a rule that reads only the messages ignores the findings",
+			source:     violationsOnlyRule,
+			violations: []string{"LOW issue"},
+			findings:   []map[string]any{{score: 9.8}},
+			want:       false,
+		},
+		{
+			name:       "a rule that reads only the messages still matches on them",
+			source:     violationsOnlyRule,
+			violations: []string{"HIGH issue"},
+			want:       true,
+		},
+	}
+
+	r := NewEngine()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			policy := &engine.Policy{Name: "matches-evaluation-findings", Source: tc.source}
+			matches, err := r.MatchesEvaluation(context.TODO(), policy, tc.violations, tc.findings, tc.expected)
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, matches)
+		})
+	}
 }
 
 func TestRego_CustomBuiltinsPermissiveMode(t *testing.T) {

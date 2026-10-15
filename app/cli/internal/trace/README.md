@@ -34,12 +34,12 @@ Which lines of a commit the AI wrote.
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
 | Line attribution | Each changed line of a commit is attributed to the AI or to a human, from a snapshot of each file before and after the agent edits it. | Yes | Partial | Yes | Yes |
-| Shell changes attribution | Changes that the agent makes with shell commands (for example `sed`) are attributed to the AI too, not only changes made with the file tools. | Yes | No | Yes | Yes |
+| Shell changes attribution | Changes that the agent makes with shell commands (for example `sed`) are attributed to the AI too, not only changes made with the file tools. | Yes | Partial | Yes | Yes |
 
 Why not Yes:
 
 - **Line attribution, Cursor:** Cursor has only the `afterFileEdit` hook, which gives the edits but no snapshot before the edit. The provider rebuilds the content before the edit from the edits.
-- **Shell changes attribution, Cursor:** Cursor has no hook before and after a shell command.
+- **Shell changes attribution, Cursor:** the provider installs the `preToolUse` and `postToolUse` hooks for the `Shell` tool. These hooks are verified for the Cursor IDE only. It is not verified that the Cursor CLI sends them.
 
 ## User experience
 
@@ -53,7 +53,7 @@ What the user sees in the agent.
 Why not Yes:
 
 - **Welcome message, Cursor and OpenCode:** the provider gives the session-start context to the model only. It has no channel that shows a message to the user at session start, so the welcome message is dropped.
-- **Session link after push, Cursor:** Cursor has no hook after a shell command, so there is no point at which to show the link.
+- **Session link after push, Cursor:** the `postToolUse` hook runs after a shell command, but its response has no field that Cursor shows to the user. The link stays pending until it expires.
 - **Session link after push, OpenCode:** the plugin hook fires after a shell command, but the response that shows a message to the user is not verified yet. The link stays pending until it expires.
 
 ## Specs and skills
@@ -101,6 +101,7 @@ How the sessions are linked to the commits and attested.
 | Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes |
 | Attestation at push | In the default control-plane storage mode, the `pre-push` hook attests the sessions of the pushed commits to the control plane. | Yes | Yes | Yes | Yes |
 | Local storage at push | In a repository with `traceStorage: LOCAL` in `.chainloop.yml`, the `pre-push` hook runs the same assembly as an attestation. It writes the session evidence set to the `local-sessions` folder of the trace directory and sends no attestation. It needs no control plane, login, or network. The stored set is equal to the upload of a push, except for the signature. A `manifest.json` file marks the set as unsigned and not an attestation. `trace init --local` sets up the mode. `trace run --local` stores one wrapped session the same way, with no `.chainloop.yml` setting. Redaction is on by default. Set `CHAINLOOP_TRACE_NO_REDACT` to turn it off, for a trusted local store only (spec issue-3582). | Yes | Yes | Yes | Yes |
+| Shell commands in another checkout | A session can work in a checkout other than the one it started in through shell commands only, for example in a fresh clone. The checkout is found from the command text: the target of `cd` or `pushd`, the path of `git -C`, and the folder that `git clone` or `gh repo clone` creates. The git hooks are installed there and the session is recorded there, the same as for a file tool edit in that checkout. A clone gets the git hooks only after the command that created it, so a commit in that same command does not carry the session. For OpenCode, a plugin installed by an earlier version does not send the command text: install the hooks again to update it. | Yes | Partial | Yes | Yes |
 
 ### Switching storage modes
 
@@ -113,12 +114,15 @@ How the sessions are linked to the commits and attested.
 
 Run `chainloop trace init` one time for each repository. Git does not clone the git hooks in `.git`. In a clone, the first traced session installs them, so a teammate does not run init.
 
+Why not Yes:
+
+- **Shell commands in another checkout, Cursor:** the shell hooks are verified for the Cursor IDE only. A relative path in the command resolves against the first workspace root, not against the folder where the shell runs.
 ## How each agent is hooked in
 
 | Agent | Hook installation | Hooks |
 |-------|-------------------|-------|
 | Claude Code | `.claude/settings.json` | Session start and end, user prompt, and before and after each file and shell tool and the Skill tool. |
-| Cursor | `.cursor/hooks.json` | Session start and end, and `afterFileEdit`. There is no shell hook and no prompt hook. |
+| Cursor | `.cursor/hooks.json` | Session start and end, `afterFileEdit`, and `preToolUse` and `postToolUse` for the `Shell` tool. The `preToolUse` hook always allows the command. The provider installs no prompt hook. |
 | OpenCode | `.opencode/plugins/chainloop-trace.ts` | Session start and end, user prompt, and before and after each tool. One plugin covers both versions: `server()` for 1.x (1.3.4 or later) and `setup()` for 2. The provider picks the export command from `opencode --version`. |
 
 All agents share the git hooks `commit-msg`, `post-commit` and `pre-push`.

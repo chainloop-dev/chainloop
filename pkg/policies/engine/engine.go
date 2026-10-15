@@ -179,8 +179,10 @@ type PolicyEngine interface {
 	Verify(ctx context.Context, policy *Policy, input []byte, args map[string]any) (*EvaluationResult, error)
 	// MatchesParameters evaluates the matches_parameters rule to determine if evaluation parameters match expected parameters
 	MatchesParameters(ctx context.Context, policy *Policy, evaluationParams, expectedParams map[string]string) (bool, error)
-	// MatchesEvaluation evaluates the matches_evaluation rule using policy violations and expected parameters
-	MatchesEvaluation(ctx context.Context, policy *Policy, violations []string, expectedParams map[string]string) (bool, error)
+	// MatchesEvaluation evaluates the matches_evaluation rule using the policy violation messages,
+	// the structured findings of those violations and the expected parameters.
+	// findings is nil when the violations carry no structured findings.
+	MatchesEvaluation(ctx context.Context, policy *Policy, violations []string, findings []map[string]any, expectedParams map[string]string) (bool, error)
 }
 
 type EvaluationResult struct {

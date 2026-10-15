@@ -320,7 +320,9 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 	switch {
 	case provider.IsCommandTool(input.ToolName):
 		// Shell command: snapshot the whole worktree so the post hook can diff
-		// it and attribute the command's file changes to the AI.
+		// it and attribute the command's file changes to the AI. Register the
+		// checkouts the command names first, so the snapshot covers them.
+		registerCommandCheckouts(provider, input, repoRoot, log)
 		captureWorktreeSnapshot(store, repoRoot, shellCallKey(input), log)
 	case provider.IsFileWritingTool(input.ToolName):
 		if input.FilePath == "" {
@@ -425,6 +427,41 @@ func registerSessionCheckout(sessionID, fileRoot string, log zerolog.Logger) {
 	slices.Sort(rec.Checkouts)
 	if err := homeStore.SaveSessionRecord(rec); err != nil {
 		log.Debug().Err(err).Str("root", fileRoot).Msg("register session checkout failed")
+	}
+}
+
+// registerCommandCheckouts handles each checkout that a shell command names as
+// a file tool edit there is handled: it installs the git hooks, writes the
+// session record, and adds the checkout to the session's checkout list
+// (PFM-7614). Shell hooks run in the session's directory, so without this a
+// session that works in another checkout through the shell only, for example
+// in a fresh clone, never reaches it, and its commits there carry no session.
+// homeRoot is the session's own checkout, which needs none of this.
+func registerCommandCheckouts(provider trace.Provider, input *trace.HookInput, homeRoot string, log zerolog.Logger) {
+	if input.Command == "" {
+		return
+	}
+
+	cwd := input.Cwd
+	if cwd == "" {
+		cwd, _ = os.Getwd()
+	}
+
+	for _, dir := range commandCheckoutDirs(input.Command, cwd) {
+		// A directory that does not exist yet (the target of a clone, at the
+		// pre hook) must not resolve to a repository above it.
+		if _, err := os.Stat(dir); err != nil {
+			continue
+		}
+
+		store, root, err := state.LocateFrom(dir)
+		if err != nil || !store.IsGit() || sameDir(root, homeRoot) {
+			continue
+		}
+
+		log.Debug().Str("root", root).Msg("shell command works in another checkout")
+		ensureSessionTracked(provider, store, root, input, log)
+		registerSessionCheckout(input.SessionID, root, log)
 	}
 }
 
@@ -642,13 +679,17 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 	}
 
 	// Guarantees session tracking + git-hook install when afterFileEdit is
-	// the first hook we see (Cursor has no pre-tool-use).
+	// the first hook we see (Cursor has no pre hook for file edits).
 	ensureSessionTracked(provider, store, repoRoot, input, log)
 
 	if isCommand {
 		// Shell command: diff the before/after worktree snapshots and attribute
 		// every file the command changed to the AI.
 		recordCommandLineRanges(provider, input, store, repoRoot, log)
+
+		// A checkout that the command created (`git clone`) did not exist
+		// at the pre hook.
+		registerCommandCheckouts(provider, input, repoRoot, log)
 
 		// The command may have been a `git push`, whose pre-push hook attested
 		// a session and left its link behind. Show it now: the pre-push output
@@ -662,7 +703,8 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 		return nil
 	}
 
-	// Cursor has no pre-tool-use, so the post hook registers the checkout too.
+	// Cursor has no pre hook for file edits, so the post hook registers the
+	// checkout too.
 	registerSessionCheckout(sessionID, repoRoot, log)
 
 	after, err := os.ReadFile(input.FilePath)

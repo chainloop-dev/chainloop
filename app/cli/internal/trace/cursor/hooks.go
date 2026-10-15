@@ -42,23 +42,35 @@ const (
 	eventSessionStart  = "sessionStart"
 	eventSessionEnd    = "sessionEnd"
 	eventAfterFileEdit = "afterFileEdit"
+	eventPreToolUse    = "preToolUse"
+	eventPostToolUse   = "postToolUse"
 
 	// syntheticEditToolName is the synthetic tool name set on HookInput for
 	// afterFileEdit events so generic handlers can treat them like
 	// Claude-style file-writing tool invocations.
 	syntheticEditToolName = "edit"
+
+	// shellToolName is the Cursor tool that runs shell commands. It is also
+	// the matcher of the preToolUse and postToolUse hooks, so Cursor runs
+	// them for shell commands only.
+	shellToolName = "Shell"
 )
 
 type cursorHookEvent struct {
 	event   string
 	command string
+	// matcher limits a tool hook to the tools whose name it matches. Empty
+	// for hooks that are not tool hooks.
+	matcher string
 }
 
 // cursorHookEvents is the full list of hooks installed by InstallHooks.
 var cursorHookEvents = []cursorHookEvent{
-	{eventSessionStart, "chainloop trace hook cursor session-start"},
-	{eventSessionEnd, "chainloop trace hook cursor session-end"},
-	{eventAfterFileEdit, "chainloop trace hook cursor after-file-edit"},
+	{event: eventSessionStart, command: "chainloop trace hook cursor session-start"},
+	{event: eventSessionEnd, command: "chainloop trace hook cursor session-end"},
+	{event: eventAfterFileEdit, command: "chainloop trace hook cursor after-file-edit"},
+	{event: eventPreToolUse, command: "chainloop trace hook cursor pre-tool-use", matcher: shellToolName},
+	{event: eventPostToolUse, command: "chainloop trace hook cursor post-tool-use", matcher: shellToolName},
 }
 
 // SettingsFile returns the absolute path to .cursor/hooks.json for the given repo.
@@ -100,7 +112,7 @@ func (p *Provider) installHookEvents(repoRoot string, events []cursorHookEvent) 
 
 	changed := false
 	for _, h := range events {
-		if addHookEntry(hooks, h.event, h.command) {
+		if addHookEntry(hooks, h) {
 			changed = true
 		}
 	}
@@ -195,6 +207,14 @@ type cursorHookInput struct {
 	WorkspaceRoots []string         `json:"workspace_roots"`
 	FilePath       string           `json:"file_path"`
 	Edits          []cursorHookEdit `json:"edits"`
+	// Cwd, ToolName, ToolUseID and ToolInput are set on preToolUse and
+	// postToolUse only.
+	Cwd       string `json:"cwd"`
+	ToolName  string `json:"tool_name"`
+	ToolUseID string `json:"tool_use_id"`
+	ToolInput struct {
+		Command string `json:"command"`
+	} `json:"tool_input"`
 }
 
 type cursorHookEdit struct {
@@ -228,12 +248,17 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	input := &trace.HookInput{
 		SessionID:     sessionID,
 		HookEventName: raw.HookEventName,
+		ToolName:      raw.ToolName,
+		ToolUseID:     raw.ToolUseID,
 		FilePath:      raw.FilePath,
+		Command:       raw.ToolInput.Command,
+		Cwd:           raw.Cwd,
 		AgentVersion:  raw.CursorVersion,
 		Model:         raw.Model,
 	}
 
-	// Cursor files transcripts under the workspace it was opened on. A
+	// Cursor files transcripts under the workspace it was opened on, which
+	// is not the shell's cwd when a command runs in a subdirectory. A
 	// multi-root workspace has no single answer; the first root is the one
 	// Cursor lists first and the best guess available.
 	if len(raw.WorkspaceRoots) > 0 {
@@ -254,8 +279,8 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	return input, nil
 }
 
-func addHookEntry(hooks map[string]any, event, command string) bool {
-	entries, _ := hooks[event].([]any)
+func addHookEntry(hooks map[string]any, h cursorHookEvent) bool {
+	entries, _ := hooks[h.event].([]any)
 
 	for i, entry := range entries {
 		if !entryContainsChainloopHook(entry) {
@@ -263,16 +288,17 @@ func addHookEntry(hooks map[string]any, event, command string) bool {
 		}
 		m, _ := entry.(map[string]any)
 		existingCmd, _ := m["command"].(string)
-		if existingCmd == command {
+		existingMatcher, _ := m["matcher"].(string)
+		if existingCmd == h.command && existingMatcher == h.matcher {
 			return false
 		}
-		entries[i] = buildHookEntry(command)
-		hooks[event] = entries
+		entries[i] = buildHookEntry(h)
+		hooks[h.event] = entries
 
 		return true
 	}
 
-	hooks[event] = append(entries, buildHookEntry(command))
+	hooks[h.event] = append(entries, buildHookEntry(h))
 
 	return true
 }
@@ -303,11 +329,16 @@ func removeHookEntry(hooks map[string]any, event string) bool {
 	return true
 }
 
-func buildHookEntry(command string) map[string]any {
-	return map[string]any{
-		"command": command,
+func buildHookEntry(h cursorHookEvent) map[string]any {
+	entry := map[string]any{
+		"command": h.command,
 		"timeout": defaultHookTimeoutSeconds,
 	}
+	if h.matcher != "" {
+		entry["matcher"] = h.matcher
+	}
+
+	return entry
 }
 
 func entryContainsChainloopHook(entry any) bool {

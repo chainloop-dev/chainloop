@@ -133,6 +133,15 @@ func TestHandleUseCaseErr(t *testing.T) {
 			wantCode:    codes.NotFound,
 			wantMessage: "failed to find membership: organization chainloop not found",
 		},
+		{
+			// An attestation resumed with a different token cannot be decrypted.
+			// It is a client-side condition, so it must reach the user as a
+			// FailedPrecondition naming the cause instead of a masked 500.
+			name:        "invalid passphrase maps to failed precondition",
+			err:         fmt.Errorf("failed to decrypt attestation state: %w", biz.NewErrInvalidPassphrase()),
+			wantCode:    codes.FailedPrecondition,
+			wantMessage: "failed to decrypt attestation state: " + biz.NewErrInvalidPassphrase().Error(),
+		},
 	}
 
 	for _, tc := range testCases {

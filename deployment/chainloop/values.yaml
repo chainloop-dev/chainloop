@@ -138,7 +138,7 @@ controlplane:
   image:
     registry: ghcr.io
     repository: chainloop-dev/chainloop/control-plane
-    tag: "v1.122.2"
+    tag: "v1.123.0"
 
 
   ## @param controlplane.grpcMaxRecvMsgSize Maximum size in bytes of received gRPC messages. Increase to allow larger attestations. Defaults to the gRPC standard 4MB (4194304) if not set.
@@ -200,6 +200,9 @@ controlplane:
   ## @param controlplane.uiDashboardURL Optional external URL for the dashboard UI. If set, CLI will display attestation view links after push
   uiDashboardURL: ""
 
+  ## @param controlplane.allowedCallbackOrigins Additional HTTP(S) origins (http(s)://host[:port]) the OIDC login callback may redirect to, on top of the control plane external URL and the dashboard UI URL. Matched exactly, other schemes, wildcards and paths are rejected at startup
+  allowedCallbackOrigins: []
+
   ## @extra controlplane.nats optional NATS configuration for events publishing.
   ## @param controlplane.nats.enabled Enable events publishing through a Nats stream
   ## @param controlplane.nats.host NATS Host
@@ -238,7 +241,7 @@ controlplane:
     image:
       registry: ghcr.io
       repository: chainloop-dev/chainloop/control-plane-migrations
-      tag: "v1.122.2"
+      tag: "v1.123.0"
     # Run the migration job forcing SSL, required in AWS RDS for PostgreSQL 15
     ssl: false
 
@@ -1048,7 +1051,7 @@ cas:
   image:
     registry: ghcr.io
     repository: chainloop-dev/chainloop/artifact-cas
-    tag: "v1.122.2"
+    tag: "v1.123.0"
 
   ## @param cas.containerPorts.http controlplane HTTP container port
   ## @param cas.containerPorts.grpc controlplane gRPC container port
@@ -1755,7 +1758,7 @@ postgresql:
   auth:
     enablePostgresUser: false
     username: "chainloop"
-    password: "chainlooppwd"
+    password: "chainlooppwd" # checkov:skip=CKV_SECRET_6: default for the bundled development PostgreSQL, override in production
     database: "chainloop-cp"
     existingSecret: ""
 

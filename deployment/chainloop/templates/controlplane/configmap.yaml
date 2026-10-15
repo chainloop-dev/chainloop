@@ -58,6 +58,10 @@ data:
     {{- if .Values.controlplane.uiDashboardURL }}
     ui_dashboard_url: {{ .Values.controlplane.uiDashboardURL | quote }}
     {{- end }}
+    {{- with .Values.controlplane.allowedCallbackOrigins }}
+    allowed_callback_origins:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
     {{ if .Values.controlplane.onboarding }}
     onboarding:
       {{- toYaml .Values.controlplane.onboarding | nindent 6 }}

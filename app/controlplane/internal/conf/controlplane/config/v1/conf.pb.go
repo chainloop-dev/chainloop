@@ -84,8 +84,12 @@ type Bootstrap struct {
 	Attestations *Attestations `protobuf:"bytes,21,opt,name=attestations,proto3" json:"attestations,omitempty"`
 	// Outbound network policy applied to the integration plugins
 	PluginsNetworkPolicy *PluginsNetworkPolicy `protobuf:"bytes,22,opt,name=plugins_network_policy,json=pluginsNetworkPolicy,proto3" json:"plugins_network_policy,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Additional origins (scheme://host[:port]) the post-login callback may redirect to,
+	// on top of the control plane external URL, the login URL and the UI dashboard URL.
+	// Matched exactly, wildcards, paths, queries and fragments are not allowed
+	AllowedCallbackOrigins []string `protobuf:"bytes,23,rep,name=allowed_callback_origins,json=allowedCallbackOrigins,proto3" json:"allowed_callback_origins,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *Bootstrap) Reset() {
@@ -262,6 +266,13 @@ func (x *Bootstrap) GetAttestations() *Attestations {
 func (x *Bootstrap) GetPluginsNetworkPolicy() *PluginsNetworkPolicy {
 	if x != nil {
 		return x.PluginsNetworkPolicy
+	}
+	return nil
+}
+
+func (x *Bootstrap) GetAllowedCallbackOrigins() []string {
+	if x != nil {
+		return x.AllowedCallbackOrigins
 	}
 	return nil
 }
@@ -1843,7 +1854,7 @@ var File_controlplane_config_v1_conf_proto protoreflect.FileDescriptor
 
 const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\n" +
-	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\x95\x12\n" +
+	"!controlplane/config/v1/conf.proto\x12\x16controlplane.config.v1\x1a\x1bbuf/validate/validate.proto\x1a#controlplane/config/v1/config.proto\x1a\x1bcredentials/v1/config.proto\x1a\x1egoogle/protobuf/duration.proto\"\xcf\x12\n" +
 	"\tBootstrap\x126\n" +
 	"\x06server\x18\x01 \x01(\v2\x1e.controlplane.config.v1.ServerR\x06server\x120\n" +
 	"\x04data\x18\x02 \x01(\v2\x1c.controlplane.config.v1.DataR\x04data\x120\n" +
@@ -1871,7 +1882,8 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\x10ui_dashboard_url\x18\x13 \x01(\tR\x0euiDashboardUrl\x12\x80\x01\n" +
 	" operation_authorization_provider\x18\x14 \x01(\v26.controlplane.config.v1.OperationAuthorizationProviderR\x1eoperationAuthorizationProvider\x12H\n" +
 	"\fattestations\x18\x15 \x01(\v2$.controlplane.config.v1.AttestationsR\fattestations\x12b\n" +
-	"\x16plugins_network_policy\x18\x16 \x01(\v2,.controlplane.config.v1.PluginsNetworkPolicyR\x14pluginsNetworkPolicy\x1a\x8d\x03\n" +
+	"\x16plugins_network_policy\x18\x16 \x01(\v2,.controlplane.config.v1.PluginsNetworkPolicyR\x14pluginsNetworkPolicy\x128\n" +
+	"\x18allowed_callback_origins\x18\x17 \x03(\tR\x16allowedCallbackOrigins\x1a\x8d\x03\n" +
 	"\rObservability\x12N\n" +
 	"\x06sentry\x18\x01 \x01(\v26.controlplane.config.v1.Bootstrap.Observability.SentryR\x06sentry\x12Q\n" +
 	"\atracing\x18\x02 \x01(\v27.controlplane.config.v1.Bootstrap.Observability.TracingR\atracing\x1a<\n" +

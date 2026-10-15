@@ -216,7 +216,8 @@ func TestReadHookInputParsesValidInput(t *testing.T) {
 
 // TestPluginSendsShellCallID pins that both entry points send the tool call ID
 // as tool_use_id on shell hooks, so that the pre and post hooks of one command
-// pair their snapshots. OpenCode 1.x names it callID, and OpenCode 2 id.
+// pair their snapshots, and the command line, which names the checkouts that
+// the command works in (PFM-7614). OpenCode 1.x names it callID, and OpenCode 2 id.
 func TestPluginSendsShellCallID(t *testing.T) {
 	repoRoot := t.TempDir()
 	require.NoError(t, New().InstallHooks(repoRoot))
@@ -225,7 +226,7 @@ func TestPluginSendsShellCallID(t *testing.T) {
 	require.NoError(t, err)
 	content := string(data)
 
-	assert.Contains(t, content, "{ ...payload, tool_use_id: callID }")
+	assert.Contains(t, content, `{ ...payload, tool_use_id: callID, command: args?.command ?? "" }`)
 	// OpenCode 1.x.
 	assert.Contains(t, content, `toolEvent(directory, "pre-tool-use", "tool.execute.before", input.sessionID, input.tool, input.callID, output.args)`)
 	assert.Contains(t, content, `toolEvent(directory, "post-tool-use", "tool.execute.after", input.sessionID, input.tool, input.callID, input.args, input.tool === skillTool ? skillDirFrom(output) : "")`)
@@ -281,13 +282,15 @@ func TestReadHookInputParsesSkillDir(t *testing.T) {
 }
 
 // The plugin sends opencode's callID as tool_use_id on shell hooks, so that
-// the pre and post hooks of one command pair their snapshots.
-func TestReadHookInputParsesToolUseID(t *testing.T) {
-	r := bytes.NewBufferString(`{"session_id":"ses_1","hook_event_name":"tool.execute.before","tool_name":"bash","tool_use_id":"call_01"}`)
+// the pre and post hooks of one command pair their snapshots. It also sends
+// the command line.
+func TestReadHookInputParsesShellCall(t *testing.T) {
+	r := bytes.NewBufferString(`{"session_id":"ses_1","hook_event_name":"tool.execute.before","tool_name":"bash","tool_use_id":"call_01","command":"cd /tmp/repo-b && git commit -m x"}`)
 	p := New()
 	input, err := p.ReadHookInput(r)
 	require.NoError(t, err)
 	assert.Equal(t, "call_01", input.ToolUseID)
+	assert.Equal(t, "cd /tmp/repo-b && git commit -m x", input.Command)
 }
 
 func TestReadHookInputApplyPatchSingleFile(t *testing.T) {
