@@ -354,6 +354,39 @@ var (
 			},
 		},
 	}
+	// LoginHandoffsColumns holds the columns for the "login_handoffs" table.
+	LoginHandoffsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "code_hash", Type: field.TypeString, Unique: true},
+		{Name: "token_ttl_seconds", Type: field.TypeInt64},
+		{Name: "code_challenge", Type: field.TypeString},
+		{Name: "callback", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "used_at", Type: field.TypeTime, Nullable: true},
+		{Name: "user_id", Type: field.TypeUUID},
+	}
+	// LoginHandoffsTable holds the schema information for the "login_handoffs" table.
+	LoginHandoffsTable = &schema.Table{
+		Name:       "login_handoffs",
+		Columns:    LoginHandoffsColumns,
+		PrimaryKey: []*schema.Column{LoginHandoffsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "login_handoffs_users_user",
+				Columns:    []*schema.Column{LoginHandoffsColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "loginhandoff_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{LoginHandoffsColumns[6]},
+			},
+		},
+	}
 	// MembershipsColumns holds the columns for the "memberships" table.
 	MembershipsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -1007,6 +1040,7 @@ var (
 		GroupMembershipsTable,
 		IntegrationsTable,
 		IntegrationAttachmentsTable,
+		LoginHandoffsTable,
 		MembershipsTable,
 		OrgInvitationsTable,
 		OrganizationsTable,
@@ -1040,6 +1074,7 @@ func init() {
 	IntegrationsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	IntegrationAttachmentsTable.ForeignKeys[0].RefTable = IntegrationsTable
 	IntegrationAttachmentsTable.ForeignKeys[1].RefTable = WorkflowsTable
+	LoginHandoffsTable.ForeignKeys[0].RefTable = UsersTable
 	MembershipsTable.ForeignKeys[0].RefTable = MembershipsTable
 	MembershipsTable.ForeignKeys[1].RefTable = OrganizationsTable
 	MembershipsTable.ForeignKeys[2].RefTable = UsersTable

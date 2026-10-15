@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,4 +21,15 @@ const (
 	QueryParamCallback        = "callback"
 	QueryParamLongLived       = "long-lived"
 	QueryParamAuth0Connection = "connection"
+	// PKCE-style challenge that opts a login into the handoff code exchange
+	QueryParamCodeChallenge       = "code_challenge"
+	QueryParamCodeChallengeMethod = "code_challenge_method"
+	// Callback parameter that carries the handoff code
+	QueryParamHandoff = "handoff"
+	// Callback parameter that carries the session token in the legacy flow
+	QueryParamLegacyToken = "t"
+	// Post-login redirect inside a callback URL
+	QueryParamReturnTo = "returnTo"
+
+	CodeChallengeMethodS256 = "S256"
 )

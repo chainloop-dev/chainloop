@@ -13,6 +13,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/groupmembership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integration"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/loginhandoff"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/membership"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/orginvitation"
@@ -171,6 +172,16 @@ func init() {
 	integrationattachmentDescID := integrationattachmentFields[0].Descriptor()
 	// integrationattachment.DefaultID holds the default value on creation for the id field.
 	integrationattachment.DefaultID = integrationattachmentDescID.Default.(func() uuid.UUID)
+	loginhandoffFields := schema.LoginHandoff{}.Fields()
+	_ = loginhandoffFields
+	// loginhandoffDescCreatedAt is the schema descriptor for created_at field.
+	loginhandoffDescCreatedAt := loginhandoffFields[6].Descriptor()
+	// loginhandoff.DefaultCreatedAt holds the default value on creation for the created_at field.
+	loginhandoff.DefaultCreatedAt = loginhandoffDescCreatedAt.Default.(func() time.Time)
+	// loginhandoffDescID is the schema descriptor for id field.
+	loginhandoffDescID := loginhandoffFields[0].Descriptor()
+	// loginhandoff.DefaultID holds the default value on creation for the id field.
+	loginhandoff.DefaultID = loginhandoffDescID.Default.(func() uuid.UUID)
 	membershipFields := schema.Membership{}.Fields()
 	_ = membershipFields
 	// membershipDescCurrent is the schema descriptor for current field.
