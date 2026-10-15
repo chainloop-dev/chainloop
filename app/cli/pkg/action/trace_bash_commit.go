@@ -124,15 +124,16 @@ func checkpointActiveShellAttribution(store *state.Store, repoRoot string, stage
 				}
 				afterContent = content
 				indexBefore[relPath] = hash
+				if _, hasUnstaged := unstaged[relPath]; !hasUnstaged {
+					if hash, exists := afterWorktree[relPath]; exists {
+						worktreeBefore[relPath] = hash
+					} else {
+						delete(worktreeBefore, relPath)
+					}
+				}
 			} else {
 				delete(indexBefore, relPath)
-			}
-			if _, hasUnstaged := unstaged[relPath]; !hasUnstaged {
-				if hash, exists := afterWorktree[relPath]; exists {
-					worktreeBefore[relPath] = hash
-				} else {
-					delete(worktreeBefore, relPath)
-				}
+				delete(worktreeBefore, relPath)
 			}
 
 			edit := attribution.DropOpen(attribution.ComputeEdit(beforeContent, afterContent), open[relPath])
