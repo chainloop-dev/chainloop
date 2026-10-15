@@ -31,15 +31,18 @@ const traceRunLong = `Wrap an external command (typically an AI coding agent) an
 Chainloop attestation for the session once the command exits successfully.
 Sessions without git commits are still attested.
 
-trace run keeps its identity isolated from .chainloop.yml: the attestation
---org, --project and --workflow come from the flags (mandatory) and the
-optional --version flag, never from the file. It does read the repository's
-traceStorage mode, though: in a local-mode repository (traceStorage: LOCAL) the
-session is written to disk when the command exits, with no control plane, and
-the --org, --project and --workflow flags are not required. Either way it
-removes the temporary hooks and trace state when the wrapped command exits while
-preserving stored local session evidence, so a session never leaks setup into
-the next one.
+trace run does not read the attestation identity from .chainloop.yml. The
+--org, --project and --workflow flags (mandatory) and the optional --version
+flag set it.
+
+trace run reads one value from .chainloop.yml: traceStorage. In a local-mode
+repository (traceStorage: LOCAL), trace run writes the session to disk when the
+command exits. It does not connect to a control plane, and the --org, --project
+and --workflow flags are optional.
+
+When the wrapped command exits, trace run removes the temporary hooks and the
+trace state. It keeps the stored local session evidence. Thus no setup from one
+session stays for the next session.
 
 The workflow is created before the command runs. That part is best-effort: the
 session runs either way and the attestation creates the workflow if this did
@@ -165,8 +168,8 @@ func newTraceRunCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required unless the repository is in local mode; .chainloop.yml identity is ignored)")
-	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name used for trace attestations (required unless the repository is in local mode; .chainloop.yml identity is ignored)")
+	cmd.Flags().StringVar(&projectFlag, "project", "", "chainloop project name (required, except in local mode). trace run does not read it from .chainloop.yml")
+	cmd.Flags().StringVar(&workflowFlag, "workflow", "", "chainloop workflow name for the trace attestations (required, except in local mode). trace run does not read it from .chainloop.yml")
 	cmd.Flags().StringVar(&versionFlag, "version", "", "chainloop project version (optional; defaults to the latest version)")
 	cmd.Flags().StringVar(&contractFlag, "contract", "", traceContractFlagDesc)
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no provider flag is set)")

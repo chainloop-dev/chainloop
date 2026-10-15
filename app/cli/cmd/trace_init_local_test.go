@@ -106,7 +106,7 @@ func TestTraceInitLocal(t *testing.T) {
 			gitInit(t, repoDir)
 			args := append([]string{"--local", "--claude"}, flag...)
 			err := runTraceInit(t, repoDir, args...)
-			assert.ErrorContains(t, err, "cannot be used with --local", "flag %v", flag)
+			assert.ErrorContains(t, err, "cannot use", "flag %v", flag)
 		}
 	})
 }
@@ -174,7 +174,8 @@ func TestWriteTraceLocalNextSteps(t *testing.T) {
 	got := out.String()
 	assert.Contains(t, got, chainloopYMLName)
 	assert.Contains(t, got, claudeSettings)
-	assert.Contains(t, got, "written to disk")
+	assert.Contains(t, got, "writes the session evidence to disk")
+	assert.NotContains(t, got, "the push tells you where")
 	assert.Contains(t, got, traceDocsURL)
 	// In a clone, the first traced session installs the git hooks, so the
 	// steps must not tell a teammate to run init again.

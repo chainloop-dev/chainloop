@@ -209,7 +209,7 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		case storeErr != nil:
 			log.Warn().Err(storeErr).Msg("could not store session evidence")
 		case stored == 0:
-			log.Warn().Msg("no AI coding session was recorded, so nothing was stored")
+			log.Warn().Msg("trace recorded no AI coding session, so it stored nothing")
 		default:
 			log.Info().Int("sessions", stored).Msgf("AI coding session evidence stored at %s", tracePath)
 		}

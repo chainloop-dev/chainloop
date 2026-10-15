@@ -164,7 +164,7 @@ func localSessionStartBanner(tracePath string, traceRunActive bool) string {
 		if traceRunActive {
 			when = "when this run finishes"
 		}
-		banner += "\nIts evidence will be stored on disk at " + tracePath + " " + when + "."
+		banner += "\nChainloop Trace writes the session evidence to " + tracePath + " " + when + "."
 	}
 
 	return banner

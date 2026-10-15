@@ -193,7 +193,7 @@ func TestLocalSessionStartBanner(t *testing.T) {
 		got := localSessionStartBanner("", false)
 		assert.Contains(t, got, "recording this session")
 		assert.Contains(t, got, "local mode")
-		assert.NotContains(t, got, "stored on disk at")
+		assert.NotContains(t, got, "writes the session evidence")
 	})
 }
 

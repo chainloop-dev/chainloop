@@ -106,7 +106,7 @@ func ResolveTraceStorage(persisted string) (string, error) {
 	case TraceStorageControlPlane, TraceStorageLocal:
 		return v, nil
 	default:
-		return "", fmt.Errorf("unknown traceStorage %q in .chainloop.yml: want %s or %s", persisted, TraceStorageControlPlane, TraceStorageLocal)
+		return "", fmt.Errorf("unknown traceStorage %q in .chainloop.yml: use %s or %s", persisted, TraceStorageControlPlane, TraceStorageLocal)
 	}
 }
 

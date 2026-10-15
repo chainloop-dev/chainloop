@@ -558,7 +558,7 @@ func HandlePrePushHookLocal(ctx context.Context, log zerolog.Logger) error {
 	}
 
 	if stored == 0 {
-		log.Info().Msg("no new AI coding session evidence, nothing stored")
+		log.Info().Msg("no new AI coding session evidence to store")
 
 		return nil
 	}
@@ -608,7 +608,7 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 		return err
 	}
 	if len(sessions) == 0 {
-		log.Info().Msg("no new AI coding session evidence, skipping attestation")
+		log.Info().Msg("no new AI coding session evidence to attest")
 
 		return nil
 	}

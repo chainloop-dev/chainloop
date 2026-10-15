@@ -3322,13 +3322,15 @@ turn the questions off on a terminal too.
 The organization, project, workflow and require-trace values are saved to
 .chainloop.yml, and every push reads them from there.
 
-With --local, the repository is set up for local mode: it installs the same
-hooks but creates no workflow, needs no login, and reaches no control plane. It
-writes traceStorage: LOCAL to .chainloop.yml (and tracePath when --trace-path is
-given), so every clone records sessions on disk. The pre-push hook then stores a
-session's evidence under the path instead of pushing an attestation. --contract,
---workflow, --org and --project are control-plane settings and cannot be used
-with --local; --require-trace can.
+With --local, init sets up the repository for local mode. It installs the same
+hooks, but it creates no workflow, needs no login, and does not connect to a
+control plane. It writes traceStorage: LOCAL to .chainloop.yml. It also writes
+tracePath when you give --trace-path. Every clone then records sessions on
+disk. On each push, the pre-push hook writes the session evidence to that path.
+It does not send an attestation.
+
+--contract, --workflow, --org and --project are control-plane settings. You
+cannot use them with --local. You can use --require-trace with --local.
 
 ```
 chainloop trace init [flags]
@@ -3341,11 +3343,11 @@ Options
 --contract string     workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor              install Cursor hooks
 -h, --help                help for init
---local               set up local mode: no control plane, no login, no workflow; the pre-push hook stores session evidence on disk
+--local               set up local mode, with no control plane, login or workflow. The pre-push hook writes the session evidence to disk
 --opencode            install opencode hooks
 --project string      chainloop project name
 --require-trace       block pushes when a required trace is missing
---trace-path string   where local-mode sessions are stored (default: under .git/chainloop-trace/local-sessions); implies --local
+--trace-path string   the directory where local mode writes the sessions (default: .git/chainloop-trace/local-sessions). This flag also sets --local
 --workflow string     chainloop workflow name used for trace attestations (defaults to "ai-coding-session")
 ```
 
@@ -3376,15 +3378,18 @@ Wrap an external command (typically an AI coding agent) and emit a
 Chainloop attestation for the session once the command exits successfully.
 Sessions without git commits are still attested.
 
-trace run keeps its identity isolated from .chainloop.yml: the attestation
---org, --project and --workflow come from the flags (mandatory) and the
-optional --version flag, never from the file. It does read the repository's
-traceStorage mode, though: in a local-mode repository (traceStorage: LOCAL) the
-session is written to disk when the command exits, with no control plane, and
-the --org, --project and --workflow flags are not required. Either way it
-removes the temporary hooks and trace state when the wrapped command exits while
-preserving stored local session evidence, so a session never leaks setup into
-the next one.
+trace run does not read the attestation identity from .chainloop.yml. The
+--org, --project and --workflow flags (mandatory) and the optional --version
+flag set it.
+
+trace run reads one value from .chainloop.yml: traceStorage. In a local-mode
+repository (traceStorage: LOCAL), trace run writes the session to disk when the
+command exits. It does not connect to a control plane, and the --org, --project
+and --workflow flags are optional.
+
+When the wrapped command exits, trace run removes the temporary hooks and the
+trace state. It keeps the stored local session evidence. Thus no setup from one
+session stays for the next session.
 
 The workflow is created before the command runs. That part is best-effort: the
 session runs either way and the attestation creates the workflow if this did
@@ -3402,9 +3407,9 @@ Options
 --cursor            install Cursor hooks
 -h, --help              help for run
 --opencode          install opencode hooks
---project string    chainloop project name (required unless the repository is in local mode; .chainloop.yml identity is ignored)
+--project string    chainloop project name (required, except in local mode). trace run does not read it from .chainloop.yml
 --version string    chainloop project version (optional; defaults to the latest version)
---workflow string   chainloop workflow name used for trace attestations (required unless the repository is in local mode; .chainloop.yml identity is ignored)
+--workflow string   chainloop workflow name for the trace attestations (required, except in local mode). trace run does not read it from .chainloop.yml
 ```
 
 Options inherited from parent commands

@@ -157,7 +157,7 @@ func storeSessionsLocally(ctx context.Context, log zerolog.Logger, store *state.
 		// crosses between sessions.
 		attested, _ := attachSessionEvidence(ctx, sink, store, []sessionEvidence{se}, log, noRedact)
 		if len(attested) == 0 {
-			log.Warn().Str("session", se.sessionID).Msg("no evidence stored for this session")
+			log.Warn().Str("session", se.sessionID).Msg("could not store the evidence of this session")
 			continue
 		}
 

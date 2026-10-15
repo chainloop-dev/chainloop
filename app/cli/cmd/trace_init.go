@@ -80,13 +80,15 @@ turn the questions off on a terminal too.
 The organization, project, workflow and require-trace values are saved to
 .chainloop.yml, and every push reads them from there.
 
-With --local, the repository is set up for local mode: it installs the same
-hooks but creates no workflow, needs no login, and reaches no control plane. It
-writes traceStorage: LOCAL to .chainloop.yml (and tracePath when --trace-path is
-given), so every clone records sessions on disk. The pre-push hook then stores a
-session's evidence under the path instead of pushing an attestation. --contract,
---workflow, --org and --project are control-plane settings and cannot be used
-with --local; --require-trace can.`,
+With --local, init sets up the repository for local mode. It installs the same
+hooks, but it creates no workflow, needs no login, and does not connect to a
+control plane. It writes traceStorage: LOCAL to .chainloop.yml. It also writes
+tracePath when you give --trace-path. Every clone then records sessions on
+disk. On each push, the pre-push hook writes the session evidence to that path.
+It does not send an attestation.
+
+--contract, --workflow, --org and --project are control-plane settings. You
+cannot use them with --local. You can use --require-trace with --local.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			gitDir, repoRoot, err := tracegit.FindGitDirAndRoot()
 			if err != nil {
@@ -105,7 +107,7 @@ with --local; --require-trace can.`,
 			if localFlag {
 				for _, name := range []string{"contract", "workflow", "org", "project"} { //nolint:goconst // flag names, kept literal like the other flag references
 					if cmd.Flags().Changed(name) {
-						return fmt.Errorf("--%s cannot be used with --local: local mode contacts no control plane and creates no workflow", name)
+						return fmt.Errorf("you cannot use --%s with --local: local mode does not connect to a control plane and does not create a workflow", name)
 					}
 				}
 			}
@@ -281,8 +283,8 @@ with --local; --require-trace can.`,
 
 	cmd.Flags().StringVar(&project, "project", "", "chainloop project name")
 	cmd.Flags().StringVar(&contract, "contract", "", traceContractFlagDesc)
-	cmd.Flags().BoolVar(&localFlag, "local", false, "set up local mode: no control plane, no login, no workflow; the pre-push hook stores session evidence on disk")
-	cmd.Flags().StringVar(&tracePathFlag, "trace-path", "", "where local-mode sessions are stored (default: under .git/chainloop-trace/local-sessions); implies --local")
+	cmd.Flags().BoolVar(&localFlag, "local", false, "set up local mode, with no control plane, login or workflow. The pre-push hook writes the session evidence to disk")
+	cmd.Flags().StringVar(&tracePathFlag, "trace-path", "", "the directory where local mode writes the sessions (default: .git/chainloop-trace/local-sessions). This flag also sets --local")
 	cmd.Flags().String("workflow", "", "chainloop workflow name used for trace attestations (defaults to \"ai-coding-session\")")
 	cmd.Flags().Bool("require-trace", false, "block pushes when a required trace is missing")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no harness flag is set)")
@@ -364,9 +366,9 @@ func writeTraceInitLocalSummary(w io.Writer, repoRoot string, harnesses []string
 	fmt.Fprint(w, "  storage       local (no control plane)\n")
 
 	if path := config.LoadTracePathFromYML(repoRoot); path != "" {
-		fmt.Fprintf(w, "  sessions      stored under %s on push\n", path)
+		fmt.Fprintf(w, "  sessions      written to %s on each push\n", path)
 	} else {
-		fmt.Fprint(w, "  sessions      stored under .git/chainloop-trace/local-sessions on push\n")
+		fmt.Fprint(w, "  sessions      written to .git/chainloop-trace/local-sessions on each push\n")
 	}
 
 	fmt.Fprintf(w, "  harnesses     %s\n", strings.Join(harnesses, ", "))
@@ -377,7 +379,7 @@ func writeTraceInitLocalSummary(w io.Writer, repoRoot string, harnesses []string
 // behaves, so it is stated plainly here rather than left to a debug log, and the
 // user is reminded to commit it like any other repository policy change.
 func writeTraceStorageSwitchedNote(w io.Writer, ymlName string) {
-	fmt.Fprintf(w, "\nThis repository was in local mode. Trace now attests sessions to the control\nplane. Commit %s so every clone switches too.\n", ymlName)
+	fmt.Fprintf(w, "\nThis repository was in local mode. Trace now sends the sessions to the control\nplane. Commit %s so that every clone also uses the control plane.\n", ymlName)
 }
 
 // writeTraceLocalNextSteps says what is left after a local init. Committing
@@ -406,11 +408,10 @@ func writeTraceLocalNextSteps(w io.Writer, repoRoot, workDir string, installed [
 	fmt.Fprintf(w, `
 What's next
 
-  1. Commit these files so the local-mode policy is shared:
+  1. Commit these files. Every clone then uses local mode:
        git add %s
   2. Start %s and write some code
-  3. Commit and push as usual. The session evidence is written to disk, with no
-     control plane; the push tells you where
+  3. Commit and push. The pre-push hook writes the session evidence to disk
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
