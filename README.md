@@ -25,6 +25,8 @@
   <a href="https://github.com/chainloop-dev/chainloop/releases">Changelog</a>
 </p>
 
+<p align="center"><sub>Last updated: 2026-10-16T13:15:50Z</sub></p>
+
 **Chainloop collects what happens across your software delivery, from the first prompt to the release, into one trusted graph. You define once what good means, as code, and Chainloop enforces it everywhere: every agent, every pipeline, every release.**
 
 Every AI coding session, pull request, build, SBOM, scan, and test report becomes a signed, timestamped record in your own registry or bucket. Each record links to the commit and release it belongs to. Rules live in git. Break one and the pipeline fails. The job prints every failing policy and its reason where the agent reads it. The agent fixes the work and pushes again, until Chainloop is happy.
