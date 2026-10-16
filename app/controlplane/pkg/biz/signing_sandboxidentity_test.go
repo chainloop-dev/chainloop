@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	ca2 "github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/sandboxidentity"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -119,7 +120,10 @@ func TestCreateSigningCertSandboxIdentityMark(t *testing.T) {
 }
 
 func TestVerifySandboxIdentity(t *testing.T) {
-	const commit = "0123456789abcdef0123456789abcdef01234567"
+	const (
+		commit   = "0123456789abcdef0123456789abcdef01234567"
+		verified = "verified"
+	)
 	orgID, projectID, workflowID := uuid.NewString(), uuid.NewString(), uuid.NewString()
 	tokenID := uuid.New()
 	uc := keylessSigningUseCase(t)
@@ -156,9 +160,9 @@ func TestVerifySandboxIdentity(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, tokenID, got.ChainloopTokenID)
 		assert.Equal(t, "sandbox-run-1", got.SandboxRun)
-		assert.True(t, got.HoldsCommitVerification(strings.ToUpper(commit), "verified"))
-		assert.False(t, got.HoldsCommitVerification(commit, "unverified"))
-		assert.False(t, got.HoldsCommitVerification("fedcba9876543210fedcba9876543210fedcba98", "verified"))
+		assert.True(t, got.HoldsCommitVerification(chainloop.GitHeadVerification{Commit: strings.ToUpper(commit), Status: verified}))
+		assert.False(t, got.HoldsCommitVerification(chainloop.GitHeadVerification{Commit: commit, Status: "unverified"}))
+		assert.False(t, got.HoldsCommitVerification(chainloop.GitHeadVerification{Commit: "fedcba9876543210fedcba9876543210fedcba98", Status: verified}))
 	})
 
 	t.Run("another caller token", func(t *testing.T) {

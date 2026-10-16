@@ -16,6 +16,7 @@
 package biz
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
@@ -41,13 +42,24 @@ func TestValidateSandboxRunner(t *testing.T) {
 		Verification: &commitverification.CommitVerification{Attempted: true, Status: commitverification.VerificationStatusVerified},
 	}}}
 
+	withAlgorithm := &SandboxIdentity{Data: &sandboxidentity.Data{CommitVerification: &sandboxidentity.CommitVerification{
+		Commit:       commit,
+		Verification: &commitverification.CommitVerification{Attempted: true, Status: commitverification.VerificationStatusVerified, SignatureAlgorithm: "PGP"},
+	}}}
+
+	// statement records a verification of the commit, and its algorithm after a "/" in status
 	statement := func(t *testing.T, commit, status string) *intoto.Statement {
 		t.Helper()
 		if commit == "" {
 			return &intoto.Statement{}
 		}
 
-		annotations, err := structpb.NewStruct(map[string]any{"author.verification_status": status})
+		fields := map[string]any{"author.verification_status": status}
+		if name, algorithm, ok := strings.Cut(status, "/"); ok {
+			fields = map[string]any{"author.verification_status": name, "signature.algorithm": algorithm}
+		}
+
+		annotations, err := structpb.NewStruct(fields)
 		require.NoError(t, err)
 
 		return &intoto.Statement{Subject: []*intoto.ResourceDescriptor{
@@ -79,6 +91,10 @@ func TestValidateSandboxRunner(t *testing.T) {
 		{name: "a commit verification with another status", runRunner: sandbox, identity: identity, attestedRunner: sandbox, authenticated: true, commit: commit, status: "unverified", wantErrContains: commitClaims},
 		{name: "a sandbox run that attests another runner", runRunner: sandbox, attestedRunner: github, authenticated: true, wantErrContains: "authenticated"},
 		{name: "an attestation that claims the sandbox runner in another run", runRunner: github, attestedRunner: sandbox, commit: commit, status: verified, wantErrContains: commitClaims},
+		{name: "the signature algorithm of the identity", runRunner: sandbox, identity: withAlgorithm, attestedRunner: sandbox, authenticated: true, commit: commit, status: verified + "/PGP"},
+		{name: "another signature algorithm than the identity", runRunner: sandbox, identity: withAlgorithm, attestedRunner: sandbox, authenticated: true, commit: commit, status: verified + "/SSH", wantErrContains: commitClaims},
+		{name: "no signature algorithm, but the identity has one", runRunner: sandbox, identity: withAlgorithm, attestedRunner: sandbox, authenticated: true, commit: commit, status: verified, wantErrContains: commitClaims},
+		{name: "an identity without an algorithm accepts the one of the commit signature", runRunner: sandbox, identity: identity, attestedRunner: sandbox, authenticated: true, commit: commit, status: verified + "/SSH"},
 	}
 
 	for _, tc := range testCases {
