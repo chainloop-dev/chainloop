@@ -19562,6 +19562,7 @@ type WorkflowRunMutation struct {
 	policy_violations_suppressed    *int32
 	addpolicy_violations_suppressed *int32
 	policy_has_gates                *bool
+	sandbox_identity                **biz.SandboxIdentity
 	clearedFields                   map[string]struct{}
 	workflow                        *uuid.UUID
 	clearedworkflow                 bool
@@ -20817,6 +20818,55 @@ func (m *WorkflowRunMutation) ResetPolicyHasGates() {
 	delete(m.clearedFields, workflowrun.FieldPolicyHasGates)
 }
 
+// SetSandboxIdentity sets the "sandbox_identity" field.
+func (m *WorkflowRunMutation) SetSandboxIdentity(bi *biz.SandboxIdentity) {
+	m.sandbox_identity = &bi
+}
+
+// SandboxIdentity returns the value of the "sandbox_identity" field in the mutation.
+func (m *WorkflowRunMutation) SandboxIdentity() (r *biz.SandboxIdentity, exists bool) {
+	v := m.sandbox_identity
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSandboxIdentity returns the old "sandbox_identity" field's value of the WorkflowRun entity.
+// If the WorkflowRun object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *WorkflowRunMutation) OldSandboxIdentity(ctx context.Context) (v *biz.SandboxIdentity, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSandboxIdentity is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSandboxIdentity requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSandboxIdentity: %w", err)
+	}
+	return oldValue.SandboxIdentity, nil
+}
+
+// ClearSandboxIdentity clears the value of the "sandbox_identity" field.
+func (m *WorkflowRunMutation) ClearSandboxIdentity() {
+	m.sandbox_identity = nil
+	m.clearedFields[workflowrun.FieldSandboxIdentity] = struct{}{}
+}
+
+// SandboxIdentityCleared returns if the "sandbox_identity" field was cleared in this mutation.
+func (m *WorkflowRunMutation) SandboxIdentityCleared() bool {
+	_, ok := m.clearedFields[workflowrun.FieldSandboxIdentity]
+	return ok
+}
+
+// ResetSandboxIdentity resets all changes to the "sandbox_identity" field.
+func (m *WorkflowRunMutation) ResetSandboxIdentity() {
+	m.sandbox_identity = nil
+	delete(m.clearedFields, workflowrun.FieldSandboxIdentity)
+}
+
 // ClearWorkflow clears the "workflow" edge to the Workflow entity.
 func (m *WorkflowRunMutation) ClearWorkflow() {
 	m.clearedworkflow = true
@@ -21064,7 +21114,7 @@ func (m *WorkflowRunMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *WorkflowRunMutation) Fields() []string {
-	fields := make([]string, 0, 22)
+	fields := make([]string, 0, 23)
 	if m.created_at != nil {
 		fields = append(fields, workflowrun.FieldCreatedAt)
 	}
@@ -21131,6 +21181,9 @@ func (m *WorkflowRunMutation) Fields() []string {
 	if m.policy_has_gates != nil {
 		fields = append(fields, workflowrun.FieldPolicyHasGates)
 	}
+	if m.sandbox_identity != nil {
+		fields = append(fields, workflowrun.FieldSandboxIdentity)
+	}
 	return fields
 }
 
@@ -21183,6 +21236,8 @@ func (m *WorkflowRunMutation) Field(name string) (ent.Value, bool) {
 		return m.PolicyViolationsSuppressed()
 	case workflowrun.FieldPolicyHasGates:
 		return m.PolicyHasGates()
+	case workflowrun.FieldSandboxIdentity:
+		return m.SandboxIdentity()
 	}
 	return nil, false
 }
@@ -21236,6 +21291,8 @@ func (m *WorkflowRunMutation) OldField(ctx context.Context, name string) (ent.Va
 		return m.OldPolicyViolationsSuppressed(ctx)
 	case workflowrun.FieldPolicyHasGates:
 		return m.OldPolicyHasGates(ctx)
+	case workflowrun.FieldSandboxIdentity:
+		return m.OldSandboxIdentity(ctx)
 	}
 	return nil, fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -21399,6 +21456,13 @@ func (m *WorkflowRunMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPolicyHasGates(v)
 		return nil
+	case workflowrun.FieldSandboxIdentity:
+		v, ok := value.(*biz.SandboxIdentity)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSandboxIdentity(v)
+		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)
 }
@@ -21561,6 +21625,9 @@ func (m *WorkflowRunMutation) ClearedFields() []string {
 	if m.FieldCleared(workflowrun.FieldPolicyHasGates) {
 		fields = append(fields, workflowrun.FieldPolicyHasGates)
 	}
+	if m.FieldCleared(workflowrun.FieldSandboxIdentity) {
+		fields = append(fields, workflowrun.FieldSandboxIdentity)
+	}
 	return fields
 }
 
@@ -21619,6 +21686,9 @@ func (m *WorkflowRunMutation) ClearField(name string) error {
 		return nil
 	case workflowrun.FieldPolicyHasGates:
 		m.ClearPolicyHasGates()
+		return nil
+	case workflowrun.FieldSandboxIdentity:
+		m.ClearSandboxIdentity()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun nullable field %s", name)
@@ -21693,6 +21763,9 @@ func (m *WorkflowRunMutation) ResetField(name string) error {
 		return nil
 	case workflowrun.FieldPolicyHasGates:
 		m.ResetPolicyHasGates()
+		return nil
+	case workflowrun.FieldSandboxIdentity:
+		m.ResetSandboxIdentity()
 		return nil
 	}
 	return fmt.Errorf("unknown WorkflowRun field %s", name)

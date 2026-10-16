@@ -28,6 +28,7 @@ import (
 	"github.com/sigstore/cosign/v3/pkg/cosign"
 	protobundle "github.com/sigstore/protobuf-specs/gen/pb-go/bundle/v1"
 	sigstorebundle "github.com/sigstore/sigstore-go/pkg/bundle"
+	"github.com/sigstore/sigstore/pkg/signature"
 	sigdsee "github.com/sigstore/sigstore/pkg/signature/dsse"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -137,16 +138,9 @@ func checkCertOrganization(cert *x509.Certificate, expected string) error {
 // verifyCertSignature validates the signing certificate against the trusted root
 // chain and verifies the DSSE envelope signature with the certificate's key.
 func verifyCertSignature(ctx context.Context, bundle *protobundle.Bundle, signingCert *x509.Certificate, tr *TrustedRoot) error {
-	akiSum := sha256.Sum256(signingCert.AuthorityKeyId)
-	aki := hex.EncodeToString(akiSum[:])
-	chain, ok := tr.Keys[aki]
-	if !ok {
-		return fmt.Errorf("trusted root not found for signing key with AKI %s", aki)
-	}
-
-	verifier, err := cosign.ValidateAndUnpackCertWithChain(signingCert, chain, &cosign.CheckOpts{IgnoreSCT: true})
+	verifier, err := ValidateCertificate(signingCert, tr)
 	if err != nil {
-		return fmt.Errorf("validating the certificate: %w", err)
+		return err
 	}
 
 	dsseVerifier, err := dsse.NewEnvelopeVerifier(&sigdsee.VerifierAdapter{SignatureVerifier: verifier})
@@ -159,4 +153,27 @@ func verifyCertSignature(ctx context.Context, bundle *protobundle.Bundle, signin
 	}
 
 	return nil
+}
+
+// ValidateCertificate validates a short-lived signing certificate against the chain of the trusted
+// root that issued it, and returns a verifier for its key. The chain is checked at the time the
+// certificate was issued, so a certificate that expired later still validates.
+func ValidateCertificate(signingCert *x509.Certificate, tr *TrustedRoot) (signature.Verifier, error) {
+	if signingCert == nil || tr == nil {
+		return nil, ErrMissingVerificationMaterial
+	}
+
+	akiSum := sha256.Sum256(signingCert.AuthorityKeyId)
+	aki := hex.EncodeToString(akiSum[:])
+	chain, ok := tr.Keys[aki]
+	if !ok {
+		return nil, fmt.Errorf("trusted root not found for signing key with AKI %s", aki)
+	}
+
+	verifier, err := cosign.ValidateAndUnpackCertWithChain(signingCert, chain, &cosign.CheckOpts{IgnoreSCT: true})
+	if err != nil {
+		return nil, fmt.Errorf("validating the certificate: %w", err)
+	}
+
+	return verifier, nil
 }
