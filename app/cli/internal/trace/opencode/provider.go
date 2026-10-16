@@ -174,29 +174,49 @@ func (p *Provider) CleanupAfterEdit(store *state.Store, input *trace.HookInput) 
 	store.DeleteFileSnapshot(input.SessionID, input.FilePath)
 }
 
-// AnnounceSessionStart writes the session-start response that the Chainloop
-// plugin reads. The plugin posts the instruction to the session as a
-// context-only message (no model reply), which is how the model receives it.
-// opencode has no channel that shows a message to the user, so the banner is
-// dropped.
-//
-// A message with no instruction writes nothing, and the plugin posts nothing.
-func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
-	if msg.Instruction == "" {
+// hookResponse is what a hook writes to stdout for the Chainloop plugin. OpenCode
+// defines no hook response of its own, so the plugin is the other half of this
+// type, and the two change together. The plugin picks a channel per field; a
+// hook with nothing to say writes nothing.
+type hookResponse struct {
+	// Instruction is posted to the session as a context-only message, which
+	// the model reads without replying to it.
+	Instruction string `json:"instruction,omitempty"`
+
+	// Banner greets the user at session start: a TUI toast in OpenCode 1.x,
+	// the description of the synthetic message in OpenCode 2.
+	Banner string `json:"banner,omitempty"`
+
+	// Message is shown to the user after a shell command, as a TUI toast in
+	// OpenCode 1.x.
+	Message string `json:"message,omitempty"`
+
+	// RelayToModel is added to the result of the shell command, which the
+	// model reads. OpenCode 2 also shows it in the command block.
+	RelayToModel string `json:"relayToModel,omitempty"`
+}
+
+// writeHookResponse writes resp as one JSON document on stdout, which is
+// reserved for it: the hook logs to stderr and to the trace log file.
+func writeHookResponse(resp hookResponse) error {
+	if resp == (hookResponse{}) {
 		return nil
 	}
-
-	resp := struct {
-		Instruction string `json:"instruction"`
-	}{Instruction: msg.Instruction}
 
 	return json.NewEncoder(os.Stdout).Encode(resp)
 }
 
-// SupportsSessionStartBanner is false for opencode: the plugin has no channel
-// to the user.
+// AnnounceSessionStart writes the session-start response that the Chainloop
+// plugin reads. The plugin posts the instruction to the session as a
+// context-only message (no model reply), and shows the banner to the user.
+func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
+	return writeHookResponse(hookResponse{Instruction: msg.Instruction, Banner: msg.Banner})
+}
+
+// SupportsSessionStartBanner is true for opencode: the plugin shows the banner
+// as a toast in OpenCode 1.x, and as a synthetic message in OpenCode 2.
 func (p *Provider) SupportsSessionStartBanner() bool {
-	return false
+	return true
 }
 
 // SupportsSessionStartInstruction is true for opencode: the plugin posts the
@@ -215,23 +235,20 @@ func (p *Provider) SupportsPromptReminder() bool {
 // plugin reads, in the same shape as the session-start one. The plugin posts
 // the reminder to the session as a context-only message.
 func (p *Provider) AnnouncePromptSubmit(reminder string) error {
-	if reminder == "" {
+	return writeHookResponse(hookResponse{Instruction: reminder})
+}
+
+// AnnounceToUser writes the response after a shell command for the plugin to
+// deliver on two channels: a toast that reaches the user without the model,
+// and the command result, which the model reads so it repeats the message in
+// its reply. A toast goes away after a few seconds, and the user who looked
+// away is the one this message is for; the reply is still on screen after.
+func (p *Provider) AnnounceToUser(msg string) error {
+	if msg == "" {
 		return nil
 	}
 
-	resp := struct {
-		Instruction string `json:"instruction"`
-	}{Instruction: reminder}
-
-	return json.NewEncoder(os.Stdout).Encode(resp)
-}
-
-// AnnounceToUser is unsupported for OpenCode until its plugin's response
-// shape for surfacing a message is verified against a live session, the way
-// Claude Code's was. The hook after a shell command already fires, so wiring
-// this up later is a change to this method alone.
-func (p *Provider) AnnounceToUser(_ string) error {
-	return trace.ErrAnnounceUnsupported
+	return writeHookResponse(hookResponse{Message: msg, RelayToModel: trace.RelayToModelInstruction + msg})
 }
 
 // ParseSession reads the copied export JSON for sessionID and returns
