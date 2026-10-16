@@ -183,6 +183,101 @@
         "anchor_verification": {
           "type": "string",
           "description": "Anchor checking mode, e.g. \"relocating\" \u2014 model line numbers may be corrected when the quoted bytes are found elsewhere in the same blob"
+        },
+        "trace_discover": {
+          "$ref": "#/definitions/trace_discover"
+        }
+      }
+    },
+    "trace_discover": {
+      "type": "object",
+      "title": "Trace discover outcome",
+      "description": "Outcome of the Chainloop graph lookup that resolves fingerprint commits without a Chainloop-Trace-Sessions trailer to AI coding sessions. Lets a reader tell 'no AI sessions' from 'the lookup could not run or was refused'. Absent in artifacts produced before the field existed.",
+      "additionalProperties": false,
+      "required": [
+        "status"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "ran",
+            "disabled",
+            "cli_not_found"
+          ],
+          "description": "ran: the lookup ran and the counters are set. disabled: the scan ran with --trace-discover=false. cli_not_found: no chainloop CLI was found, so the lookup could not run."
+        },
+        "commits": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Distinct fix and introducing commits looked up: those whose trailer declared no session."
+        },
+        "matched": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits that resolved to at least one AI coding session. Never more than commits."
+        },
+        "not_found": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Commits with no node in the Chainloop graph, that is commits that are not attested."
+        },
+        "denied": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Lookup calls the control plane refused (PermissionDenied or Unauthenticated). Non-zero means the graph was not readable, not that it was empty. Counts calls, so it can exceed commits."
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Other failed lookup calls: CLI errors, unparseable output, a referenced attestation or session material that cannot be read, or a material without a session id. Counts calls, so it can exceed commits."
+        }
+      },
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ran"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "commits",
+          "matched",
+          "not_found",
+          "denied",
+          "failed"
+        ]
+      },
+      "else": {
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "commits"
+              ]
+            },
+            {
+              "required": [
+                "matched"
+              ]
+            },
+            {
+              "required": [
+                "not_found"
+              ]
+            },
+            {
+              "required": [
+                "denied"
+              ]
+            },
+            {
+              "required": [
+                "failed"
+              ]
+            }
+          ]
         }
       }
     },
