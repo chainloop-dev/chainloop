@@ -519,7 +519,7 @@ func validateSandboxRunner(run *WorkflowRun, statement *intoto.Statement, predic
 	}
 
 	for _, v := range chainloop.GitHeadVerifications(statement) {
-		if !run.SandboxIdentity.HoldsCommitVerification(v.Commit, v.Status) {
+		if !run.SandboxIdentity.HoldsCommitVerification(v) {
 			return NewErrValidationStr("the attestation records a commit verification that the sandbox identity of its workflow run does not hold")
 		}
 	}

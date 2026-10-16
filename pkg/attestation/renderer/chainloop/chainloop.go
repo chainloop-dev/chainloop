@@ -367,6 +367,8 @@ type GitHeadVerification struct {
 	Commit string
 	// Status is the name of the verification status
 	Status string
+	// SignatureAlgorithm is the signature algorithm that the attestation records, if any
+	SignatureAlgorithm string
 }
 
 // GitHeadVerifications returns the commit verifications that the git.head subjects of the
@@ -383,7 +385,11 @@ func GitHeadVerifications(statement *intoto.Statement) []GitHeadVerification {
 			continue
 		}
 
-		res = append(res, GitHeadVerification{Commit: subject.GetDigest()["sha1"], Status: status.GetStringValue()})
+		res = append(res, GitHeadVerification{
+			Commit:             subject.GetDigest()["sha1"],
+			Status:             status.GetStringValue(),
+			SignatureAlgorithm: subject.GetAnnotations().GetFields()[subjectGitAnnotationSignatureAlgorithm].GetStringValue(),
+		})
 	}
 
 	return res
