@@ -641,6 +641,79 @@ func TestValidateSecurityContextTriageFields(t *testing.T) {
 	})
 }
 
+// TestValidateSecurityContextTraceDiscover covers the optional
+// provenance.trace_discover object: the counters are required when the lookup
+// ran and forbidden otherwise, and an artifact without the object stays valid.
+func TestValidateSecurityContextTraceDiscover(t *testing.T) {
+	ranCounters := func() map[string]any {
+		return map[string]any{
+			"status":    "ran",
+			"commits":   88,
+			"matched":   0,
+			"not_found": 0,
+			"denied":    88,
+			"failed":    0,
+		}
+	}
+	with := func(key string, value any) map[string]any {
+		td := ranCounters()
+		td[key] = value
+		return td
+	}
+	without := func(keys ...string) map[string]any {
+		td := ranCounters()
+		for _, k := range keys {
+			delete(td, k)
+		}
+		return td
+	}
+
+	testCases := []struct {
+		name          string
+		traceDiscover map[string]any // nil leaves the field out
+		wantErr       string
+	}{
+		{name: "absent, as in older artifacts"},
+		{name: "ran with all counters", traceDiscover: ranCounters()},
+		{
+			name:          "ran with matches",
+			traceDiscover: map[string]any{"status": "ran", "commits": 12, "matched": 3, "not_found": 9, "denied": 0, "failed": 0},
+		},
+		{name: "disabled without counters", traceDiscover: map[string]any{"status": "disabled"}},
+		{name: "cli_not_found without counters", traceDiscover: map[string]any{"status": "cli_not_found"}},
+		{name: "missing status", traceDiscover: without("status"), wantErr: "missing properties"},
+		{name: "unknown property", traceDiscover: with("session_ids", []any{"x"}), wantErr: "additionalProperties"},
+		{name: "unknown status", traceDiscover: map[string]any{"status": "skipped"}, wantErr: "enum"},
+		{name: "negative counter", traceDiscover: with("denied", -1), wantErr: "minimum"},
+		{name: "ran without counters", traceDiscover: map[string]any{"status": "ran"}, wantErr: "missing properties"},
+		{name: "ran with some counters", traceDiscover: without("not_found", "failed"), wantErr: "missing properties"},
+		{name: "disabled with a counter", traceDiscover: map[string]any{"status": "disabled", "commits": 0}, wantErr: "not failed"},
+		{name: "cli_not_found with a counter", traceDiscover: map[string]any{"status": "cli_not_found", "failed": 1}, wantErr: "not failed"},
+		{name: "counter as a string", traceDiscover: with("commits", "3"), wantErr: "expected integer"},
+		{name: "counter as a non-integer number", traceDiscover: with("matched", 1.5), wantErr: "expected integer"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			payload, ok := loadJSONFile(t, "./testdata/ai_security_context_valid.json").(map[string]any)
+			require.True(t, ok, "the fixture must be a JSON object")
+
+			provenance, ok := payload["provenance"].(map[string]any)
+			require.True(t, ok, "the fixture must carry a provenance object")
+			if tc.traceDiscover != nil {
+				provenance["trace_discover"] = tc.traceDiscover
+			}
+
+			err := schemavalidators.ValidateSecurityContext(payload, "")
+			if tc.wantErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, tc.wantErr)
+		})
+	}
+}
+
 func TestValidateOpenAPI(t *testing.T) {
 	testCases := []struct {
 		name    string
