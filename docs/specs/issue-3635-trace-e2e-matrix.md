@@ -30,7 +30,7 @@ Chainloop Trace supports several coding agents ("harnesses"): Claude Code, Curso
 
 - The feature table in the Trace README is written by hand. Nothing checks that it is true.
 - The table is probably not complete. Some features that Trace implements have no row, so no harness column says whether they work.
-- Harnesses release often. A harness upgrade can change hook behavior, and Trace can break without a code change in Chainloop. Examples: the welcome message stops showing, or a hook event stops firing.
+- Harnesses release often. A harness upgrade can change hook behavior, and Trace can break without a code change in Chainloop. Examples: the welcome message stops showing, or a hook event stops firing. Today, the team cannot test a new harness version before it bumps it.
 - Some features depend on the model. Spec capture works only when the model follows an instruction that Trace injects. A new model can follow the instruction less often, and no test sees this.
 - Unit tests and golden tests check the Trace side only. They cannot show what the user sees in each harness.
 - The team cannot answer simple questions with evidence, for example "does OpenCode show the welcome message?" or "does Cursor with model X capture specs?".
@@ -40,7 +40,7 @@ Chainloop Trace supports several coding agents ("harnesses"): Claude Code, Curso
 
 - Goal: the feature table lists every user-visible and evidence feature that Trace implements.
 - Goal: one command and one job produce a result matrix of harness, model, and feature from real harness runs.
-- Goal: the team knows within one day when a supported feature stops working in a harness or a model.
+- Goal: the team knows within one day when a supported feature stops working. The cause can be a Chainloop change, a model change, or a harness version bump.
 - Goal: a new provider gets test coverage by adding a harness adapter and a column in the feature table.
 - Non-goal: test features that the table marks "No" or "Not applicable". The team knows that these features are missing.
 - Non-goal: test features that need a control plane, for example the session link after push or the attestation at push. The suite uses local storage mode only (D-007).
@@ -56,11 +56,11 @@ Before the suite uses it, the feature table in the Trace README MUST list each f
 - Done when: the team compared the table with the Trace commands, the hook behavior of each provider, and the Trace specs. The table has a row for each missing feature. The Appendix lists the first candidates.
 
 ### R-002: Expected matrix from the feature table
-The suite MUST read the expected matrix from the feature table in the Trace README. It MUST test each cell marked "Yes", "Partial", or "Unknown". It MUST skip each cell marked "No" or "Not applicable", and report it as skipped.
+The suite MUST read the expected matrix from the feature table in the Trace README. It MUST test each cell marked "Yes", "Partial", or "Unknown". It MUST skip each cell marked "No" or "Not applicable", and report it as skipped. A cell whose feature needs a control plane MUST be reported as "not covered", with that reason (D-007). Each feature row MUST map to its registered checks by the feature name. A row can have no registered check. Then the suite MUST report each cell of that row as "no check", and the job MUST report it as a suite problem (R-008). The other rows still run.
 - Done when: a change to a cell in the README changes which cells the next run tests, with no other edit.
 
 ### R-003: Real headless harness runs
-The suite MUST run each harness in its headless mode with a real model. It MUST install the latest release of each harness on each run. It MUST run each harness with each model in a configured list for that harness. Each run MUST use a new throwaway git repository with Trace initialized in local storage mode. Each result MUST record the harness version, the model, and the Chainloop CLI version.
+The suite MUST run each harness in its headless mode with a real model. It MUST install a pinned version for each harness column. OpenCode 1.x and OpenCode 2 each have their own pinned version. It MUST run each harness with each model in a configured list for that harness. Each run MUST use a new throwaway git repository with Trace initialized in local storage mode. Each result MUST record the harness version, the model, and the Chainloop CLI version.
 
 ### R-004: Checks on what the user sees
 For a feature the user sees, the suite MUST check the visible output of the harness, not only the hook output. Examples are the welcome message and the one-line notice after a spec capture. Sometimes the headless mode of a harness cannot show a feature that the interactive mode shows. Then the suite MUST report the cell as "not covered", not as failed.
@@ -100,7 +100,7 @@ A maintainer opens the job summary of the last nightly run and sees the matrix. 
 The suite has four parts.
 
 1. **Expected matrix.** The suite reads the feature table in the Trace README. Each feature row maps to one or more checks. Each harness column maps to a harness adapter.
-2. **Harness adapters.** One adapter for each harness. An adapter installs the latest release, starts the harness in headless mode with a prompt and a model, and returns the visible output. The adapter is the only part that knows the harness. Trace itself is installed by `trace init --local` for that harness, as a user does it.
+2. **Harness adapters.** One adapter for each harness. An adapter installs the pinned version, starts the harness in headless mode with a prompt and a model, and returns the visible output. The adapter is the only part that knows the harness. Trace itself is installed by `trace init --local` for that harness, as a user does it.
 3. **Scenarios and checks.** A scenario is a scripted task in a throwaway repository. Examples: "edit a file, run a shell command, and commit", "work from the text of a pasted ticket", "use a skill". One session runs one scenario, and the checks for all the features that the scenario touches read its result. A check reads either the visible output of the harness (R-004) or the session in local storage (R-005). A push to a local bare remote starts the pre-push hook, and Trace stores the session.
 4. **Runner and report.** The runner expands the expected matrix into the list of harness, model, and scenario runs. It repeats model-driven cells (R-006) and builds the result matrix. The nightly job downloads the previous result, compares it (R-007), publishes the new result, and posts to Slack (R-008).
 
@@ -162,13 +162,15 @@ The job reports a cell when its state differs from the previous full scheduled r
   - Commit results to a branch: history in git, but the job needs write access and adds commits.
 - Source: drafting
 
-### D-006: Latest harness release on each run
-The suite installs the latest release of each harness and records the version.
-- Why: harness upgrades are the main cause of breakage that the team cannot see today.
-- Alternatives considered:
-  - Pinned versions: stable, but the suite misses upstream breakage until a manual bump.
-  - Pinned and latest: twice the cost.
-- Source: drafting
+### ~~D-006: Latest harness release on each run~~
+Superseded by D-013.
+
+~~The suite installs the latest release of each harness and records the version.~~
+- ~~Why: harness upgrades are the main cause of breakage that the team cannot see today.~~
+- ~~Alternatives considered:~~
+  - ~~Pinned versions: stable, but the suite misses upstream breakage until a manual bump.~~
+  - ~~Pinned and latest: twice the cost.~~
+- ~~Source: drafting~~
 
 ### D-007: Local storage mode only
 The suite runs Trace in local storage mode and needs no control plane.
@@ -212,9 +214,17 @@ The table review is part of this spec and is the first milestone. A missing feat
   - A separate spec for the review: the review is small, and the suite depends on it.
 - Source: drafting
 
+### D-013: Pinned harness versions, bumped by hand
+Supersedes D-006. The suite configuration pins one version for each harness column. A maintainer bumps a pin on purpose, and the next nightly run tests the new version.
+- Why: the nightly job has access to secrets. It must not run a harness release that nobody selected. A bump is also a clear point to see a change in the matrix.
+- Alternatives considered:
+  - Latest release on each run: finds upstream breakage sooner, but runs code that nobody selected in a job with secrets.
+  - Automated bump pull requests: less manual work, but more tooling for the first version.
+- Source: [PR #3636 review](https://github.com/chainloop-dev/chainloop/pull/3636#discussion_r4293084583)
+
 ## Open Questions
 
-- [ ] **Do we set a cost limit for each nightly run?** Proposed: measure the cost of the first Claude Code runs in milestone 2. Then set a limit for each run, and stop the run when it gets to the limit.
+- [ ] **Do we set a cost limit for each nightly run?** Proposed: measure the first Claude Code runs (milestone 2). Then set a limit for each run. The run stops when it gets to the limit.
 
 ## Milestones
 
@@ -233,7 +243,7 @@ The table review is part of this spec and is the first milestone. A missing feat
 | Model flakiness gives false alarms. | Repeated runs with a threshold (R-006), and one message for each change (R-007). |
 | Cost grows with harnesses, models, and scenarios. | Short model lists, shared scenarios, and a time limit per scenario. |
 | A secret leaks in a public job log. | Secrets only on main. Scenarios use no real secrets. The published matrix shows results, not transcripts. |
-| A harness release breaks the adapter, not Trace. | The report marks the run as "suite cannot run", which is a different message from a regression (R-008). |
+| A harness version bump breaks the adapter, not Trace. | The report marks the run as "suite cannot run", which is a different message from a regression (R-008). |
 
 ## Appendix: Candidate rows for the feature table review
 
