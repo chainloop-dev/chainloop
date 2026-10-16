@@ -46,6 +46,7 @@ Chainloop Trace reports, for each file in an AI coding session, how many lines t
 - Non-goal: Deduplicate lines across sessions on the platform when two sessions report the same commit.
 - Non-goal: Fix the bugs where AI changes show as human. Separate tickets track them.
 - Non-goal: Build the platform part in this ticket. Follow-up: a separate platform ticket, filed after this spec merges.
+- Non-goal: Report the total lines that the AI generated in a session, committed or not, in the evidence. This spec keeps the data for it (R-011). Sessions with no commit send no evidence today, and a change to that also belongs to the follow-up. Follow-up: a new spec.
 
 ## Requirements
 
@@ -76,6 +77,10 @@ The CLI MUST track AI lines one by one. A commit can hold only part of the AI li
 
 ### R-007: Renames and history rewrites
 Attribution MUST survive a file rename, amend, rebase, squash, and cherry-pick in the same clone. The CLI MUST match lines by content. A line with no match counts as human.
+
+### R-011: Keep the counts of every agent edit
+For each agent edit, the trace state MUST keep the number of lines that the edit added and removed. The CLI MUST keep these counts also for lines that never reach a commit. A later change can then report all the lines that the AI generated in a session, and compare them with the committed result.
+- Done when: the trace state of a session gives the sum of lines added and removed by all its agent edits, including discarded edits.
 
 ### R-008: Platform uses the CLI split
 For each file row, the platform MUST store the AI and human numbers that the CLI sends. It MUST stop deriving them from the file-level marker. For one session, organization totals and per-user totals MUST then agree.
@@ -196,6 +201,14 @@ The existing AI and human fields of the session totals hold the net numbers. Eac
   - Derive the file split from the line ranges in the evidence: the ranges do not hold the net numbers or the removals.
 - Source: drafting
 
+### D-011: Keep generated-line counts now, report them in a later spec
+The ledger keeps the added and removed counts of every agent edit (R-011). Reporting the generated totals in the evidence goes to a follow-up spec.
+- Why: comparing the generated lines with the committed result is a separate metric. This spec changes the ledger already, so it keeps the data that the metric needs.
+- Alternatives considered:
+  - Add the generated totals to the evidence in this spec: more scope, and it also needs evidence for sessions with no commit.
+  - Do nothing now: the follow-up would need a second ledger change.
+- Source: https://github.com/chainloop-dev/chainloop/pull/3640#discussion_r4296029633
+
 ## Open Questions
 
 - [ ] **How long does the CLI keep the trace state of a pushed session?**
@@ -203,8 +216,8 @@ The existing AI and human fields of the session totals hold the net numbers. Eac
 
 ## Milestones
 
-1. **Last writer and partial commits.** R-001, R-002, R-005, R-006 in the CLI. Cases 1 and 3 are correct.
-2. **Net contribution and session updates.** R-003, R-004, R-010. Cases 2, 4, and 5 are correct.
+1. **Last writer and partial commits.** R-001, R-002, R-005, R-006, R-011 in the CLI. Cases 1 and 3 give the expected results.
+2. **Net contribution and session updates.** R-003, R-004, R-010. Cases 2, 4, and 5 give the expected results.
 3. **Rewrites and renames.** R-007.
 4. **Platform.** R-008, in the follow-up platform ticket.
 
