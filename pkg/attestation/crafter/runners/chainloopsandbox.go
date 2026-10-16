@@ -17,32 +17,20 @@ package runners
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"os"
-	"strings"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/sandboxidentity"
 )
 
 const chainloopSandboxEnvVar = "CHAINLOOP_SANDBOX"
 
-// ChainloopSandboxCommitVerificationEnvVar holds a SandboxCommitVerification as JSON.
-// The sandbox gets no SCM token, so the platform verifies the commit before it starts
-// the sandbox and gives the result to the runner in this variable.
-const ChainloopSandboxCommitVerificationEnvVar = "CHAINLOOP_SANDBOX_COMMIT_VERIFICATION"
-
-// SandboxCommitVerification is a commit verification result and the commit that it applies to.
-type SandboxCommitVerification struct {
-	// Commit is the full hash of the verified commit.
-	Commit string `json:"commit"`
-	// Verification is the result of the verification.
-	Verification *commitverification.CommitVerification `json:"verification"`
-}
-
+// ChainloopSandbox is the runner of a Chainloop sandbox. It is authenticated only after its
+// identity token verifies, and it gives only the data of a verified identity.
 type ChainloopSandbox struct {
 	*Generic
+	identity *sandboxidentity.Identity
 }
 
 func NewChainloopSandbox() *ChainloopSandbox {
@@ -76,40 +64,29 @@ func (r *ChainloopSandbox) WorkflowFilePath() string {
 }
 
 func (r *ChainloopSandbox) IsAuthenticated() bool {
-	return false
+	return r.identity != nil
+}
+
+// IdentityToken returns the identity token that the platform gave to the sandbox, if any.
+func (r *ChainloopSandbox) IdentityToken() string {
+	return os.Getenv(sandboxidentity.EnvVar)
+}
+
+// SetVerifiedIdentity sets the identity of the sandbox, after the CLI and the control plane
+// verified it. A nil identity makes the runner not authenticated.
+func (r *ChainloopSandbox) SetVerifiedIdentity(id *sandboxidentity.Identity) {
+	r.identity = id
 }
 
 func (r *ChainloopSandbox) Environment() RunnerEnvironment {
 	return Unknown
 }
 
-// VerifyCommitSignature returns the verification that the platform gave in
-// ChainloopSandboxCommitVerificationEnvVar. It returns nil when no verification was
-// given, or when the verification is for a different commit than commitHash.
+// VerifyCommitSignature returns the commit verification of the verified identity. The sandbox has
+// no SCM token, so the platform verifies the commit and signs the result in the identity. It
+// returns nil without a verified identity, and for a commit other than the full commitHash.
 func (r *ChainloopSandbox) VerifyCommitSignature(_ context.Context, commitHash string) *commitverification.CommitVerification {
-	raw := os.Getenv(ChainloopSandboxCommitVerificationEnvVar)
-	if raw == "" || commitHash == "" {
-		return nil
-	}
-
-	// A verification without a status carries no result, the same as a missing one.
-	var given SandboxCommitVerification
-	if err := json.Unmarshal([]byte(raw), &given); err != nil || given.Verification == nil ||
-		given.Verification.Status == commitverification.VerificationStatusUnspecified {
-		return &commitverification.CommitVerification{
-			Attempted: true,
-			Status:    commitverification.VerificationStatusUnavailable,
-			Reason:    fmt.Sprintf("invalid value in %s", ChainloopSandboxCommitVerificationEnvVar),
-		}
-	}
-
-	// The result is about one commit only. Never apply it to the commit of another
-	// checkout, and never match an abbreviated hash.
-	if !strings.EqualFold(given.Commit, commitHash) {
-		return nil
-	}
-
-	return given.Verification
+	return r.identity.CommitVerification(commitHash)
 }
 
 func (r *ChainloopSandbox) Report(_ []byte, _ string) error {
