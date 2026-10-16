@@ -50,7 +50,7 @@ Chainloop Trace reports, for each file in an AI coding session, how many lines t
 ## Requirements
 
 ### R-001: Last writer owns the line
-The CLI MUST attribute each added line of a commit to the last writer of its content. A line that a hooked agent edit wrote, and that did not change after it, is AI. All other added lines are human.
+The CLI MUST attribute each added line of a commit to the last writer of its content. A line that a hooked agent edit wrote, and that did not change after it, is AI. A whitespace-only change does not change the owner (D-008). All other added lines are human.
 - Done when: AI writes 100 lines, and a human changes 20 of them before the commit. The commit reports 80 AI and 20 human added.
 
 ### R-002: Human edits between agent edits
@@ -61,7 +61,7 @@ For each file, the session evidence MUST report the lines that the session's com
 - Done when: the same work as R-001 in two commits (AI 100, then human 20) reports 80 AI and 20 human for the file.
 
 ### R-004: Later replacements update the owning session
-A commit can remove or replace lines that a session owns. Then the next push MUST send the evidence of the owning session again, with updated net numbers. This MUST happen when the commit is in another session, and when it is in no session.
+A commit can remove or replace lines that a session owns. Then the next push MUST send the evidence of the owning session again, with updated net numbers. This MUST happen when the commit is in another session, and when it is in no session. This applies while the CLI keeps the trace state of the owning session (see Open Questions). After that, the CLI does not update the session.
 - Done when: cases 2, 4, and 5 of the Appendix give the expected results after the push of the later commit.
 
 ### R-010: Human commits join the session they change
@@ -188,11 +188,12 @@ A change that only adds, removes, or moves whitespace in a line does not change 
   - Any change makes the editor the owner: a formatter run would turn AI lines into human lines.
 - Source: drafting
 
-### D-010: Existing fields hold the net numbers
-The existing AI and human added fields of the evidence hold the net numbers. The evidence gets no new count field.
-- Why: older platforms then show correct numbers with no change (R-009).
+### D-010: Existing session fields hold the net numbers, and files get a split
+The existing AI and human fields of the session totals hold the net numbers. Each file entry of the evidence gets new AI and human added and removed counts. Today a file entry has only its total counts and the file-level marker.
+- Why: older platforms then show the right session totals with no change (R-009). The platform needs the per-file split for R-008. The new file fields are additive.
 - Alternatives considered:
-  - New net fields next to the old ones: the platform must switch fields, and the old fields stay wrong.
+  - New net fields next to the old session fields: the platform must switch fields, and the old fields stay wrong.
+  - Derive the file split from the line ranges in the evidence: the ranges do not hold the net numbers or the removals.
 - Source: drafting
 
 ## Open Questions
@@ -211,7 +212,7 @@ The existing AI and human added fields of the evidence hold the net numbers. The
 
 | Risk | Mitigation |
 |------|------------|
-| Owner lookup for removed lines makes a push slow on large commits. | Run blame only for files that have ledger entries. Skip files above a size limit and count their lines as human. |
+| Owner lookup for removed lines makes a push slow on large commits. | Run blame only for files that have ledger entries, and only on the line ranges that the pushed commits removed. Do not skip files, so the ledger ownership stays complete. |
 | Sending evidence again makes a push slower and creates more attestations. | Send a session again only when its net numbers changed. |
 | Content match after a rebase gives the wrong owner for repeated lines. | Match by position in the hunk first, then by content. An unmatched line is human (R-007). |
 | Pushes from older CLIs and newer CLIs mix on one platform. | Additive schema (R-009). The platform falls back to the marker when the split is missing. |
