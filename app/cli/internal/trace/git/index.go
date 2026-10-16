@@ -68,7 +68,7 @@ func (c *GoGitClient) IndexFile(repoRoot, path string) ([]byte, error) {
 			continue
 		}
 
-		content, err := commandOutput(exec.Command("git", "-C", repoRoot, "cat-file", "blob", entry.object))
+		content, err := commandOutput(exec.Command("git", "--no-replace-objects", "-C", repoRoot, "cat-file", "blob", entry.object))
 		if err != nil {
 			return nil, fmt.Errorf("read staged file %s: %w", path, err)
 		}
