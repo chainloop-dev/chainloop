@@ -52,6 +52,10 @@ const (
 	// first prompt. Missing the banner's destination line costs far less than
 	// a visible stall, so this gives up quickly.
 	hookDashboardURLTimeout = 2 * time.Second
+
+	// hookAuthCheckTimeout bounds the credentials check of the session-start
+	// hook, for the same reason. A check that takes longer shows no warning.
+	hookAuthCheckTimeout = 2 * time.Second
 )
 
 // AttestationStatePath returns the resolved path for local attestation state.

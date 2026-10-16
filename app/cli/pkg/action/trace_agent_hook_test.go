@@ -62,7 +62,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 
 		withStdin(t, `{"session_id":"abc-123","cwd":"/some/path"}`)
 
-		require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+		require.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 
 		assert.True(t, store.SessionRecordExists("abc-123"))
 	})
@@ -83,7 +83,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 
 		withStdin(t, `{"session_id":"abc-123"}`)
 
-		require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+		require.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 
 		assert.True(t, store.SessionRecordExists("abc-123"))
 	})
@@ -104,7 +104,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 
 		// Start a new session
 		withStdin(t, `{"session_id":"session-2"}`)
-		require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+		require.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 
 		// Both sessions should have records
 		assert.True(t, store.SessionRecordExists("session-1"))
@@ -123,7 +123,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 
 		withStdin(t, `{"session_id":"msg-test","cwd":"/some/path"}`)
 		stdout := captureStdout(t, func() {
-			require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+			require.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 		})
 
 		assert.Contains(t, stdout, `"systemMessage"`)
@@ -160,7 +160,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 
 			withStdin(t, `{"session_id":"mode-test"}`)
 			stdout := captureStdout(t, func() {
-				require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+				require.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 			})
 
 			if tc.wantLocal {
@@ -182,7 +182,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 
 		withStdin(t, `{"session_id":"spec-test"}`)
 		stdout := captureStdout(t, func() {
-			require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+			require.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 		})
 
 		// Claude Code parses a hook's stdout as a single JSON value, so the two
@@ -216,7 +216,7 @@ func TestHandleAgentSessionStart(t *testing.T) {
 
 		withStdin(t, `{"session_id":"spec-done"}`)
 		stdout := captureStdout(t, func() {
-			require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+			require.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 		})
 
 		var got map[string]any
@@ -230,12 +230,12 @@ func TestHandleAgentSessionStart(t *testing.T) {
 
 	t.Run("ignores malformed stdin", func(t *testing.T) {
 		withStdin(t, `not json`)
-		assert.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+		assert.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 	})
 
 	t.Run("ignores empty session ID", func(t *testing.T) {
 		withStdin(t, `{"session_id":""}`)
-		assert.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+		assert.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 	})
 }
 
@@ -393,7 +393,7 @@ func TestHandleAgentSessionEnd(t *testing.T) {
 		}))
 
 		withStdin(t, `{"session_id":"abc-123","cwd":"/some/path"}`)
-		require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop()))
+		require.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 
 		rec, err := store.LoadSessionRecord("abc-123")
 		require.NoError(t, err)
@@ -785,7 +785,7 @@ func TestHandleAgentClaudeCodeSession(t *testing.T) {
 	withStdin(t, fmt.Sprintf(
 		`{"session_id":%q,"transcript_path":%q,"cwd":%q,"hook_event_name":"SessionStart","source":"startup"}`,
 		sid, tp, root))
-	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+	require.NoError(t, HandleAgentSessionStart(p, nil, zerolog.Nop()))
 	require.True(t, store.SessionRecordExists(sid), "SessionStart should record the session")
 
 	// 2. Write a brand-new file. Claude fires PreToolUse (file does not exist
@@ -947,7 +947,7 @@ func TestHandleAgentCommandTool_OtherCheckout(t *testing.T) {
 	}
 
 	withStdin(t, fmt.Sprintf(`{"session_id":%q,"cwd":%q,"hook_event_name":"SessionStart","source":"startup"}`, sid, home))
-	require.NoError(t, HandleAgentSessionStart(p, zerolog.Nop()))
+	require.NoError(t, HandleAgentSessionStart(p, nil, zerolog.Nop()))
 
 	// 1. The agent writes a file in the other checkout, twice.
 	modal := filepath.Join(other, "modal.tsx")

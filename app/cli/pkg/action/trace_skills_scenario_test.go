@@ -117,7 +117,7 @@ func TestSkillScenario(t *testing.T) {
 	// The session starts.
 	tr.append(`{"type":"user","uuid":"u1","timestamp":"2026-10-07T10:00:00.000Z","sessionId":"` + sessionID + `","message":{"role":"user","content":"Rewrite the PR description in STE."}}`)
 	withStdin(t, hookPayload("SessionStart", ""))
-	captureStdout(t, func() { require.NoError(t, HandleAgentSessionStart(provider, zerolog.Nop())) })
+	captureStdout(t, func() { require.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop())) })
 
 	// The model calls the Skill tool, Claude Code loads the skill, and the
 	// post-tool-use hook fires.

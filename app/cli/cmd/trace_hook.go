@@ -16,6 +16,9 @@
 package cmd
 
 import (
+	"context"
+
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
@@ -183,11 +186,35 @@ func newTraceHookClaudeSessionStartCmd() *cobra.Command {
 		Annotations: map[string]string{
 			"skipActionOptsInit": "true",
 		},
-		RunE: func(_ *cobra.Command, _ []string) error {
-			InitHookLogger()
-			return action.HandleAgentSessionStart(claude.New(), logger)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runAgentSessionStart(cmd, claude.New())
 		},
 	}
+}
+
+// runAgentSessionStart handles the session-start hook of any agent. In
+// control-plane mode, the hook asks the control plane whether the credentials
+// are accepted, with the same check as `chainloop trace init`, so that the
+// session start can report a credentials problem before the push.
+func runAgentSessionStart(cmd *cobra.Command, provider trace.Provider) error {
+	InitHookLogger()
+
+	checkAuth := func(ctx context.Context, organization string) error {
+		// This command is skipActionOptsInit, so root did not build the
+		// control-plane connection. A local-mode session never gets here.
+		if err := ensureActionOpts(cmd); err != nil {
+			return err
+		}
+
+		executor, err := openTraceExecutor(ctx, organization)
+		if err != nil {
+			return err
+		}
+
+		return executor.Close()
+	}
+
+	return action.HandleAgentSessionStart(provider, checkAuth, logger)
 }
 
 func newTraceHookClaudeUserPromptSubmitCmd() *cobra.Command {
@@ -270,9 +297,8 @@ func newTraceHookCursorSessionStartCmd() *cobra.Command {
 		Annotations: map[string]string{
 			"skipActionOptsInit": "true",
 		},
-		RunE: func(_ *cobra.Command, _ []string) error {
-			InitHookLogger()
-			return action.HandleAgentSessionStart(cursor.New(), logger)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runAgentSessionStart(cmd, cursor.New())
 		},
 	}
 }
@@ -364,9 +390,8 @@ func newTraceHookOpenCodeSessionStartCmd() *cobra.Command {
 		Annotations: map[string]string{
 			"skipActionOptsInit": "true",
 		},
-		RunE: func(_ *cobra.Command, _ []string) error {
-			InitHookLogger()
-			return action.HandleAgentSessionStart(opencode.New(), logger)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			return runAgentSessionStart(cmd, opencode.New())
 		},
 	}
 }
