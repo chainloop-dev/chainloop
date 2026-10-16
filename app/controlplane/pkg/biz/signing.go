@@ -27,12 +27,17 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
+	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/sandboxidentity"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
+	"github.com/google/uuid"
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
@@ -176,13 +181,33 @@ func (s *SigningUseCase) GetSigningCA() ca.CertificateAuthority {
 	return s.CAs.SignerCA
 }
 
+// SigningCertOption customizes a signing certificate.
+type SigningCertOption func(*signingCertOpts)
+
+type signingCertOpts struct {
+	sandboxIdentityIssuer bool
+}
+
+// WithSandboxIdentityMark marks the certificate as able to sign the identity of a Chainloop
+// sandbox. The caller must hold authz.PolicySandboxIdentityIssue.
+func WithSandboxIdentityMark() SigningCertOption {
+	return func(o *signingCertOpts) {
+		o.sandboxIdentityIssuer = true
+	}
+}
+
 // CreateSigningCert signs a certificate request with a configured CA, and returns the full certificate chain
-func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, csrRaw []byte) ([]string, error) {
+func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, csrRaw []byte, opts ...SigningCertOption) ([]string, error) {
 	ctx, span := otelx.Start(ctx, signingTracer, "SigningUseCase.CreateSigningCert")
 	defer span.End()
 
 	if s.CAs == nil {
 		return nil, NewErrNotImplemented("CAs not initialized")
+	}
+
+	options := &signingCertOpts{}
+	for _, opt := range opts {
+		opt(options)
 	}
 
 	var publicKey crypto.PublicKey
@@ -213,9 +238,19 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, cs
 	if err != nil {
 		return nil, fmt.Errorf("getting signer CA: %w", err)
 	}
-	csc, err := issuerCA.CreateCertificateFromCSR(ctx, newChainloopPrincipal(orgID), csr)
+	csc, err := issuerCA.CreateCertificateFromCSR(ctx, newChainloopPrincipal(orgID, options.sandboxIdentityIssuer), csr)
 	if err != nil {
 		return nil, fmt.Errorf("creating certificate: %w", err)
+	}
+
+	// A CA that builds the subject itself, for example from the request, does not use the
+	// principal. Check the result, so that only a caller with the permission gets the mark.
+	if marked := sandboxidentity.HasMark(csc.FinalCertificate); marked != options.sandboxIdentityIssuer {
+		if options.sandboxIdentityIssuer {
+			return nil, NewErrNotImplemented("the signing CA cannot issue certificates for a sandbox identity")
+		}
+
+		return nil, errors.New("the signing CA issued a certificate with a sandbox identity mark that was not requested")
 	}
 
 	// Generated certificate
@@ -289,12 +324,14 @@ type TrustedRoot struct {
 
 type chainloopPrincipal struct {
 	orgID string
+	// sandboxIdentityIssuer adds the mark that lets the certificate sign a sandbox identity
+	sandboxIdentityIssuer bool
 }
 
 var _ identity.Principal = (*chainloopPrincipal)(nil)
 
-func newChainloopPrincipal(orgID string) *chainloopPrincipal {
-	return &chainloopPrincipal{orgID: orgID}
+func newChainloopPrincipal(orgID string, sandboxIdentityIssuer bool) *chainloopPrincipal {
+	return &chainloopPrincipal{orgID: orgID, sandboxIdentityIssuer: sandboxIdentityIssuer}
 }
 
 func (p *chainloopPrincipal) Name(_ context.Context) string {
@@ -306,6 +343,88 @@ func (p *chainloopPrincipal) Embed(_ context.Context, cert *x509.Certificate) er
 	// TODO: Chainloop might have their own private enterprise number with the Internet Assigned Numbers Authority
 	// 		 to embed its own identity information in the resulting certificate
 	cert.Subject = pkix.Name{Organization: []string{p.orgID}}
+	if p.sandboxIdentityIssuer {
+		cert.Subject.OrganizationalUnit = []string{sandboxidentity.CertificateMark}
+	}
 
 	return nil
+}
+
+// SandboxIdentity is the verified identity of a Chainloop sandbox, as recorded on its workflow run.
+type SandboxIdentity struct {
+	// SandboxRun identifies the sandbox run in the platform
+	SandboxRun string `json:"sandbox_run,omitempty"`
+	// ChainloopTokenID is the API token that the identity names
+	ChainloopTokenID uuid.UUID `json:"chainloop_token_id"`
+	// IssuedAt is the time of signing
+	IssuedAt time.Time `json:"issued_at"`
+	// Data is the data that the platform gives to the attestation
+	Data *sandboxidentity.Data `json:"data,omitempty"`
+}
+
+// HoldsCommitVerification reports whether the identity holds a verification of the full commit
+// hash, with the given status name.
+func (i *SandboxIdentity) HoldsCommitVerification(commitHash, status string) bool {
+	if i == nil || i.Data == nil || i.Data.CommitVerification == nil || i.Data.CommitVerification.Verification == nil {
+		return false
+	}
+
+	cv := i.Data.CommitVerification
+
+	return commitHash != "" && strings.EqualFold(cv.Commit, commitHash) && cv.Verification.Status.String() == status
+}
+
+// VerifySandboxIdentity verifies the identity token of a Chainloop sandbox against the certificate
+// authorities of the control plane. The identity must be for the expected attestation, and the
+// caller must use the Chainloop token that the identity names.
+func (s *SigningUseCase) VerifySandboxIdentity(ctx context.Context, raw string, expected *sandboxidentity.Expected, callerTokenID uuid.UUID) (*SandboxIdentity, error) {
+	ctx, span := otelx.Start(ctx, signingTracer, "SigningUseCase.VerifySandboxIdentity")
+	defer span.End()
+
+	if s.CAs == nil {
+		return nil, NewErrNotImplemented("CAs not initialized")
+	}
+
+	tr, err := s.trustedRootCertificates(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := sandboxidentity.Verify(raw, tr, expected)
+	if err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	tokenID, err := uuid.Parse(id.Claims.ChainloopTokenID)
+	if err != nil || tokenID != callerTokenID {
+		return nil, NewErrValidationStr("the identity names another Chainloop token")
+	}
+
+	return &SandboxIdentity{
+		SandboxRun:       id.Claims.SandboxRun,
+		ChainloopTokenID: tokenID,
+		IssuedAt:         id.Claims.IssuedAt.Time,
+		Data:             id.Claims.Data,
+	}, nil
+}
+
+// trustedRootCertificates returns the root chains of the certificate authorities, keyed as in the
+// trusted root that the CLI gets.
+func (s *SigningUseCase) trustedRootCertificates(ctx context.Context) (*verifier.TrustedRoot, error) {
+	tr := &verifier.TrustedRoot{Keys: make(map[string][]*x509.Certificate)}
+	for _, auth := range s.CAs.GetAuthorities() {
+		chain, err := auth.GetRootChain(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting root chain: %w", err)
+		}
+
+		if len(chain) == 0 {
+			continue
+		}
+
+		keyIDSum := sha256.Sum256(chain[0].SubjectKeyId)
+		tr.Keys[hex.EncodeToString(keyIDSum[:])] = chain
+	}
+
+	return tr, nil
 }

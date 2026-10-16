@@ -44,6 +44,8 @@ type NormalizablePredicate interface {
 	GetPolicyEvaluations() map[string][]*PolicyEvaluation
 	GetPolicyEvaluationsRef() *PolicyEvaluationsRef
 	GetPolicyEvaluationStatus() *PolicyEvaluationStatus
+	GetRunnerType() string
+	GetRunnerAuthenticated() bool
 }
 
 type PolicyEvaluationStatus struct {
@@ -348,6 +350,43 @@ func (p *ProvenancePredicateCommon) GetAnnotations() map[string]string {
 
 func (p *ProvenancePredicateCommon) GetMetadata() *Metadata {
 	return p.Metadata
+}
+
+func (p *ProvenancePredicateCommon) GetRunnerType() string {
+	return p.RunnerType
+}
+
+// GetRunnerAuthenticated returns whether the attestation records an authenticated runner
+func (p *ProvenancePredicateCommon) GetRunnerAuthenticated() bool {
+	return p.RunnerAuthenticated
+}
+
+// GitHeadVerification is a commit verification that an attestation records for its git.head subject.
+type GitHeadVerification struct {
+	// Commit is the hash of the commit
+	Commit string
+	// Status is the name of the verification status
+	Status string
+}
+
+// GitHeadVerifications returns the commit verifications that the git.head subjects of the
+// statement record. A subject without a verification status is not returned.
+func GitHeadVerifications(statement *intoto.Statement) []GitHeadVerification {
+	var res []GitHeadVerification
+	for _, subject := range statement.GetSubject() {
+		if subject.GetName() != SubjectGitHead {
+			continue
+		}
+
+		status, ok := subject.GetAnnotations().GetFields()[subjectGitAnnotationAuthorVerificationStatus]
+		if !ok {
+			continue
+		}
+
+		res = append(res, GitHeadVerification{Commit: subject.GetDigest()["sha1"], Status: status.GetStringValue()})
+	}
+
+	return res
 }
 
 const (

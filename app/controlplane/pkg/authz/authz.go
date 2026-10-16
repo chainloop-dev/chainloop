@@ -69,6 +69,7 @@ const (
 	ResourceProjectMembership       = "project_membership"
 	ResourceOrganizationInvitations = "organization_invitations"
 	ResourceDefaultBackend          = "default_backend"
+	ResourceSandboxIdentity         = "sandbox_identity"
 
 	// Top level instance admin role
 	// this is used to know if an user is a super admin of the chainloop instance
@@ -182,6 +183,10 @@ var (
 
 	// Manage owners (promote to/demote from owner, remove owners)
 	PolicyOrganizationManageOwners = &Policy{OrganizationMemberships, ActionManageOwners}
+
+	// PolicySandboxIdentityIssue allows to get a certificate that can sign the identity of a
+	// Chainloop sandbox. No role holds it. Only a system API token of the platform can hold it.
+	PolicySandboxIdentityIssue = &Policy{ResourceSandboxIdentity, ActionCreate}
 )
 
 // RolesMap The default list of policies for each role

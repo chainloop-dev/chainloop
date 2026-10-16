@@ -42,6 +42,7 @@ import (
 	"github.com/go-kratos/kratos/v2/log"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
+	intoto "github.com/in-toto/attestation/go/v1"
 )
 
 var workflowRunTracer = otelx.Tracer("chainloop-controlplane", "biz/workflowrun")
@@ -65,6 +66,8 @@ type WorkflowRun struct {
 	// Canonical policy outcome summary (nil if no policies were evaluated or if
 	// the row predates the policy-summary materialization change).
 	PolicyStatus *chainloop.PolicyStatusSummary
+	// SandboxIdentity is the verified identity of the Chainloop sandbox that started the run, if any
+	SandboxIdentity *SandboxIdentity
 }
 
 type Attestation struct {
@@ -279,6 +282,8 @@ type WorkflowRunCreateOpts struct {
 	// BlockReleasedVersions rejects creating a run against an already-released
 	// (prerelease == false) project version. Set from the org-level setting.
 	BlockReleasedVersions bool
+	// SandboxIdentity is the verified identity of the Chainloop sandbox that starts the run, if any
+	SandboxIdentity *SandboxIdentity
 }
 
 type WorkflowRunRepoCreateOpts struct {
@@ -293,6 +298,8 @@ type WorkflowRunRepoCreateOpts struct {
 	// BlockReleasedVersions rejects creating a run against an already-released
 	// (prerelease == false) project version.
 	BlockReleasedVersions bool
+	// SandboxIdentity is the verified identity of the Chainloop sandbox that starts the run, if any
+	SandboxIdentity *SandboxIdentity
 }
 
 // Create will add a new WorkflowRun, associate it to a schemaVersion and increment the counter in the associated workflow
@@ -351,6 +358,7 @@ func (uc *WorkflowRunUseCase) Create(ctx context.Context, opts *WorkflowRunCreat
 			RequireExistingVersion: opts.RequireExistingVersion,
 			MarkAsLatest:           opts.MarkAsLatest,
 			BlockReleasedVersions:  opts.BlockReleasedVersions,
+			SandboxIdentity:        opts.SandboxIdentity,
 		})
 	if err != nil {
 		return nil, err
@@ -479,7 +487,44 @@ func (uc *WorkflowRunUseCase) ValidateAttestationContract(ctx context.Context, r
 		return fmt.Errorf("extracting predicate: %w", err)
 	}
 
+	if err := validateSandboxRunnerInEnvelope(run, dsseEnv, predicate); err != nil {
+		return err
+	}
+
 	return uc.validateAgainstContract(ctx, run, predicate)
+}
+
+// validateSandboxRunnerInEnvelope runs validateSandboxRunner on the statement of the envelope.
+func validateSandboxRunnerInEnvelope(run *WorkflowRun, dsseEnv *dsse.Envelope, predicate chainloop.NormalizablePredicate) error {
+	statement, err := chainloop.ExtractStatement(dsseEnv)
+	if err != nil {
+		return fmt.Errorf("extracting statement: %w", err)
+	}
+
+	return validateSandboxRunner(run, statement, predicate)
+}
+
+// validateSandboxRunner rejects an attestation of the Chainloop sandbox runner that claims more
+// than the verified sandbox identity of its run holds (R-006). The CLI applies the same rules,
+// but a changed CLI can claim anything, so the control plane is the authority. Other runners
+// keep their behavior.
+func validateSandboxRunner(run *WorkflowRun, statement *intoto.Statement, predicate chainloop.NormalizablePredicate) error {
+	sandbox := schemaapi.CraftingSchema_Runner_CHAINLOOP_SANDBOX.String()
+	if run.RunnerType != sandbox && predicate.GetRunnerType() != sandbox {
+		return nil
+	}
+
+	if predicate.GetRunnerAuthenticated() && run.SandboxIdentity == nil {
+		return NewErrValidationStr("the attestation claims an authenticated sandbox runner, but its workflow run has no verified sandbox identity")
+	}
+
+	for _, v := range chainloop.GitHeadVerifications(statement) {
+		if !run.SandboxIdentity.HoldsCommitVerification(v.Commit, v.Status) {
+			return NewErrValidationStr("the attestation records a commit verification that the sandbox identity of its workflow run does not hold")
+		}
+	}
+
+	return nil
 }
 
 // validateAgainstContract rejects an attestation that does not satisfy the
@@ -587,6 +632,10 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 				return nil, NewErrValidation(fmt.Errorf("dependent attestation not found: %s", m.Hash))
 			}
 		}
+	}
+
+	if err := validateSandboxRunnerInEnvelope(run, dsseEnv, predicate); err != nil {
+		return nil, err
 	}
 
 	if err := uc.validateAgainstContract(ctx, run, predicate); err != nil {

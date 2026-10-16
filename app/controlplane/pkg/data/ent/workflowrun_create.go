@@ -284,6 +284,12 @@ func (_c *WorkflowRunCreate) SetNillablePolicyHasGates(v *bool) *WorkflowRunCrea
 	return _c
 }
 
+// SetSandboxIdentity sets the "sandbox_identity" field.
+func (_c *WorkflowRunCreate) SetSandboxIdentity(v *biz.SandboxIdentity) *WorkflowRunCreate {
+	_c.mutation.SetSandboxIdentity(v)
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *WorkflowRunCreate) SetID(v uuid.UUID) *WorkflowRunCreate {
 	_c.mutation.SetID(v)
@@ -568,6 +574,10 @@ func (_c *WorkflowRunCreate) createSpec() (*WorkflowRun, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.PolicyHasGates(); ok {
 		_spec.SetField(workflowrun.FieldPolicyHasGates, field.TypeBool, value)
 		_node.PolicyHasGates = &value
+	}
+	if value, ok := _c.mutation.SandboxIdentity(); ok {
+		_spec.SetField(workflowrun.FieldSandboxIdentity, field.TypeJSON, value)
+		_node.SandboxIdentity = value
 	}
 	if nodes := _c.mutation.WorkflowIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1081,6 +1091,24 @@ func (u *WorkflowRunUpsert) ClearPolicyHasGates() *WorkflowRunUpsert {
 	return u
 }
 
+// SetSandboxIdentity sets the "sandbox_identity" field.
+func (u *WorkflowRunUpsert) SetSandboxIdentity(v *biz.SandboxIdentity) *WorkflowRunUpsert {
+	u.Set(workflowrun.FieldSandboxIdentity, v)
+	return u
+}
+
+// UpdateSandboxIdentity sets the "sandbox_identity" field to the value that was provided on create.
+func (u *WorkflowRunUpsert) UpdateSandboxIdentity() *WorkflowRunUpsert {
+	u.SetExcluded(workflowrun.FieldSandboxIdentity)
+	return u
+}
+
+// ClearSandboxIdentity clears the value of the "sandbox_identity" field.
+func (u *WorkflowRunUpsert) ClearSandboxIdentity() *WorkflowRunUpsert {
+	u.SetNull(workflowrun.FieldSandboxIdentity)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -1555,6 +1583,27 @@ func (u *WorkflowRunUpsertOne) UpdatePolicyHasGates() *WorkflowRunUpsertOne {
 func (u *WorkflowRunUpsertOne) ClearPolicyHasGates() *WorkflowRunUpsertOne {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.ClearPolicyHasGates()
+	})
+}
+
+// SetSandboxIdentity sets the "sandbox_identity" field.
+func (u *WorkflowRunUpsertOne) SetSandboxIdentity(v *biz.SandboxIdentity) *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetSandboxIdentity(v)
+	})
+}
+
+// UpdateSandboxIdentity sets the "sandbox_identity" field to the value that was provided on create.
+func (u *WorkflowRunUpsertOne) UpdateSandboxIdentity() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateSandboxIdentity()
+	})
+}
+
+// ClearSandboxIdentity clears the value of the "sandbox_identity" field.
+func (u *WorkflowRunUpsertOne) ClearSandboxIdentity() *WorkflowRunUpsertOne {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearSandboxIdentity()
 	})
 }
 
@@ -2199,6 +2248,27 @@ func (u *WorkflowRunUpsertBulk) UpdatePolicyHasGates() *WorkflowRunUpsertBulk {
 func (u *WorkflowRunUpsertBulk) ClearPolicyHasGates() *WorkflowRunUpsertBulk {
 	return u.Update(func(s *WorkflowRunUpsert) {
 		s.ClearPolicyHasGates()
+	})
+}
+
+// SetSandboxIdentity sets the "sandbox_identity" field.
+func (u *WorkflowRunUpsertBulk) SetSandboxIdentity(v *biz.SandboxIdentity) *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.SetSandboxIdentity(v)
+	})
+}
+
+// UpdateSandboxIdentity sets the "sandbox_identity" field to the value that was provided on create.
+func (u *WorkflowRunUpsertBulk) UpdateSandboxIdentity() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.UpdateSandboxIdentity()
+	})
+}
+
+// ClearSandboxIdentity clears the value of the "sandbox_identity" field.
+func (u *WorkflowRunUpsertBulk) ClearSandboxIdentity() *WorkflowRunUpsertBulk {
+	return u.Update(func(s *WorkflowRunUpsert) {
+		s.ClearSandboxIdentity()
 	})
 }
 
