@@ -78,15 +78,15 @@ The CLI MUST track AI lines one by one. A commit can hold only part of the AI li
 ### R-007: Renames and history rewrites
 Attribution MUST survive a file rename, amend, rebase, squash, and cherry-pick in the same clone. The CLI MUST match lines by content. A line with no match counts as human.
 
-### R-011: Keep the counts of every agent edit
-For each agent edit, the trace state MUST keep the number of lines that the edit added and removed. The CLI MUST keep these counts also for lines that never reach a commit. A later change can then report all the lines that the AI generated in a session, and compare them with the committed result.
-- Done when: the trace state of a session gives the sum of lines added and removed by all its agent edits, including discarded edits.
-
 ### R-008: Platform uses the CLI split
 For each file row, the platform MUST store the AI and human numbers that the CLI sends. It MUST stop deriving them from the file-level marker. For one session, organization totals and per-user totals MUST then agree.
 
 ### R-009: Compatible evidence
 The evidence schema change MUST be additive. A platform that does not know the new fields MUST keep working. The platform MUST keep accepting evidence from older CLIs.
+
+### R-011: Keep the counts of every agent edit
+For each agent edit, the trace state MUST keep the number of lines that the edit added and removed. The CLI MUST keep these counts also for lines that never reach a commit. A later change can then report all the lines that the AI generated in a session, and compare them with the committed result.
+- Done when: the trace state of a session gives the sum of lines added and removed by all its agent edits, including discarded edits.
 
 ## Constraints
 
