@@ -7,6 +7,11 @@ export const protobufPackage = "controlplane.v1";
 
 export interface GenerateSigningCertRequest {
   certificateSigningRequest: Uint8Array;
+  /**
+   * Request a certificate that can sign the identity of a Chainloop sandbox.
+   * Only a caller with the dedicated permission gets it, other callers are denied.
+   */
+  sandboxIdentityIssuer: boolean;
 }
 
 export interface GenerateSigningCertResponse {
@@ -39,13 +44,16 @@ export interface GetTrustedRootResponse_TimestampAuthoritiesEntry {
 }
 
 function createBaseGenerateSigningCertRequest(): GenerateSigningCertRequest {
-  return { certificateSigningRequest: new Uint8Array(0) };
+  return { certificateSigningRequest: new Uint8Array(0), sandboxIdentityIssuer: false };
 }
 
 export const GenerateSigningCertRequest = {
   encode(message: GenerateSigningCertRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.certificateSigningRequest.length !== 0) {
       writer.uint32(10).bytes(message.certificateSigningRequest);
+    }
+    if (message.sandboxIdentityIssuer === true) {
+      writer.uint32(16).bool(message.sandboxIdentityIssuer);
     }
     return writer;
   },
@@ -64,6 +72,13 @@ export const GenerateSigningCertRequest = {
 
           message.certificateSigningRequest = reader.bytes();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.sandboxIdentityIssuer = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -78,6 +93,7 @@ export const GenerateSigningCertRequest = {
       certificateSigningRequest: isSet(object.certificateSigningRequest)
         ? bytesFromBase64(object.certificateSigningRequest)
         : new Uint8Array(0),
+      sandboxIdentityIssuer: isSet(object.sandboxIdentityIssuer) ? Boolean(object.sandboxIdentityIssuer) : false,
     };
   },
 
@@ -87,6 +103,7 @@ export const GenerateSigningCertRequest = {
       (obj.certificateSigningRequest = base64FromBytes(
         message.certificateSigningRequest !== undefined ? message.certificateSigningRequest : new Uint8Array(0),
       ));
+    message.sandboxIdentityIssuer !== undefined && (obj.sandboxIdentityIssuer = message.sandboxIdentityIssuer);
     return obj;
   },
 
@@ -97,6 +114,7 @@ export const GenerateSigningCertRequest = {
   fromPartial<I extends Exact<DeepPartial<GenerateSigningCertRequest>, I>>(object: I): GenerateSigningCertRequest {
     const message = createBaseGenerateSigningCertRequest();
     message.certificateSigningRequest = object.certificateSigningRequest ?? new Uint8Array(0);
+    message.sandboxIdentityIssuer = object.sandboxIdentityIssuer ?? false;
     return message;
   },
 };
