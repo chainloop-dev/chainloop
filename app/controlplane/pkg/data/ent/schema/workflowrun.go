@@ -80,6 +80,8 @@ func (WorkflowRun) Fields() []ent.Field {
 		field.Int32("policy_violations_count").Optional().Nillable(),
 		field.Int32("policy_violations_suppressed").Optional().Nillable(),
 		field.Bool("policy_has_gates").Optional().Nillable(),
+		// The verified identity of the Chainloop sandbox that started the run, if any
+		field.JSON("sandbox_identity", &biz.SandboxIdentity{}).Optional(),
 	}
 }
 

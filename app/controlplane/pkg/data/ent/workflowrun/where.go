@@ -1092,6 +1092,16 @@ func PolicyHasGatesNotNil() predicate.WorkflowRun {
 	return predicate.WorkflowRun(sql.FieldNotNull(FieldPolicyHasGates))
 }
 
+// SandboxIdentityIsNil applies the IsNil predicate on the "sandbox_identity" field.
+func SandboxIdentityIsNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldIsNull(FieldSandboxIdentity))
+}
+
+// SandboxIdentityNotNil applies the NotNil predicate on the "sandbox_identity" field.
+func SandboxIdentityNotNil() predicate.WorkflowRun {
+	return predicate.WorkflowRun(sql.FieldNotNull(FieldSandboxIdentity))
+}
+
 // HasWorkflow applies the HasEdge predicate on the "workflow" edge.
 func HasWorkflow() predicate.WorkflowRun {
 	return predicate.WorkflowRun(func(s *sql.Selector) {

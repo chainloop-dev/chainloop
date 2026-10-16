@@ -30,6 +30,8 @@ import (
 	entProjectVersion "github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/sandboxidentity"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	v2 "github.com/google/go-containerregistry/pkg/v1"
@@ -525,6 +527,35 @@ func (s *workflowRunIntegrationTestSuite) TestCreate() {
 		s.Equal("runURL", run.RunURL)
 		s.Equal(string(biz.WorkflowRunInitialized), run.State)
 		s.Equal(pv, run.ProjectVersion)
+	})
+
+	s.T().Run("records the sandbox identity", func(_ *testing.T) {
+		identity := &biz.SandboxIdentity{
+			SandboxRun: "sandbox-run-1", ChainloopTokenID: uuid.New(), IssuedAt: time.Now().UTC().Truncate(time.Second),
+			Data: &sandboxidentity.Data{CommitVerification: &sandboxidentity.CommitVerification{
+				Commit:       "0123456789abcdef0123456789abcdef01234567",
+				Verification: &commitverification.CommitVerification{Attempted: true, Status: commitverification.VerificationStatusVerified, Platform: "github"},
+			}},
+		}
+
+		run, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+			RunnerType: schemav1.CraftingSchema_Runner_CHAINLOOP_SANDBOX.String(), SandboxIdentity: identity,
+		})
+		s.Require().NoError(err)
+
+		got, err := s.WorkflowRun.GetByIDInOrg(ctx, s.org.ID, run.ID.String())
+		s.Require().NoError(err)
+		s.Equal(identity, got.SandboxIdentity)
+
+		without, err := s.WorkflowRun.Create(ctx, &biz.WorkflowRunCreateOpts{
+			WorkflowID: s.workflowOrg1.ID.String(), ContractRevision: s.contractVersion, CASBackendID: s.casBackend.ID,
+		})
+		s.Require().NoError(err)
+
+		got, err = s.WorkflowRun.GetByIDInOrg(ctx, s.org.ID, without.ID.String())
+		s.Require().NoError(err)
+		s.Nil(got.SandboxIdentity)
 	})
 
 	s.T().Run("find or create version", func(_ *testing.T) {

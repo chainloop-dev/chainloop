@@ -70,6 +70,8 @@ type WorkflowRun struct {
 	PolicyViolationsSuppressed *int32 `json:"policy_violations_suppressed,omitempty"`
 	// PolicyHasGates holds the value of the "policy_has_gates" field.
 	PolicyHasGates *bool `json:"policy_has_gates,omitempty"`
+	// SandboxIdentity holds the value of the "sandbox_identity" field.
+	SandboxIdentity *biz.SandboxIdentity `json:"sandbox_identity,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the WorkflowRunQuery when eager-loading is set.
 	Edges                         WorkflowRunEdges `json:"edges"`
@@ -165,7 +167,7 @@ func (*WorkflowRun) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case workflowrun.FieldAttestation, workflowrun.FieldAttestationState:
+		case workflowrun.FieldAttestation, workflowrun.FieldAttestationState, workflowrun.FieldSandboxIdentity:
 			values[i] = new([]byte)
 		case workflowrun.FieldHasPolicyViolations, workflowrun.FieldPolicyHasGates:
 			values[i] = new(sql.NullBool)
@@ -342,6 +344,14 @@ func (_m *WorkflowRun) assignValues(columns []string, values []any) error {
 				_m.PolicyHasGates = new(bool)
 				*_m.PolicyHasGates = value.Bool
 			}
+		case workflowrun.FieldSandboxIdentity:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field sandbox_identity", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.SandboxIdentity); err != nil {
+					return fmt.Errorf("unmarshal field sandbox_identity: %w", err)
+				}
+			}
 		case workflowrun.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field workflow_run_contract_version", values[i])
@@ -496,6 +506,9 @@ func (_m *WorkflowRun) String() string {
 		builder.WriteString("policy_has_gates=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("sandbox_identity=")
+	builder.WriteString(fmt.Sprintf("%v", _m.SandboxIdentity))
 	builder.WriteByte(')')
 	return builder.String()
 }
