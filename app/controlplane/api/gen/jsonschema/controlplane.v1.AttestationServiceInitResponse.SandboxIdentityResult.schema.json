@@ -1,0 +1,17 @@
+{
+  "$id": "controlplane.v1.AttestationServiceInitResponse.SandboxIdentityResult.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "reason": {
+      "description": "Why the identity did not verify",
+      "type": "string"
+    },
+    "verified": {
+      "description": "Whether the control plane verified the identity and recorded it on the workflow run",
+      "type": "boolean"
+    }
+  },
+  "title": "Sandbox Identity Result",
+  "type": "object"
+}
