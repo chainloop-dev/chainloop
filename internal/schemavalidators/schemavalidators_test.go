@@ -645,23 +645,28 @@ func TestValidateSecurityContextTriageFields(t *testing.T) {
 // provenance.trace_discover object: the counters are required when the lookup
 // ran and forbidden otherwise, and an artifact without the object stays valid.
 func TestValidateSecurityContextTraceDiscover(t *testing.T) {
-	ranCounters := func() map[string]any {
+	const status = "status"
+	onlyStatus := func(s string) map[string]any {
+		return map[string]any{status: s}
+	}
+	ran := func(commits, matched, notFound, denied, failed int) map[string]any {
 		return map[string]any{
-			"status":    "ran",
-			"commits":   88,
-			"matched":   0,
-			"not_found": 0,
-			"denied":    88,
-			"failed":    0,
+			status:      "ran",
+			"commits":   commits,
+			"matched":   matched,
+			"not_found": notFound,
+			"denied":    denied,
+			"failed":    failed,
 		}
 	}
+	// with and without vary a lookup where every call was denied.
 	with := func(key string, value any) map[string]any {
-		td := ranCounters()
+		td := ran(88, 0, 0, 88, 0)
 		td[key] = value
 		return td
 	}
 	without := func(keys ...string) map[string]any {
-		td := ranCounters()
+		td := ran(88, 0, 0, 88, 0)
 		for _, k := range keys {
 			delete(td, k)
 		}
@@ -674,21 +679,18 @@ func TestValidateSecurityContextTraceDiscover(t *testing.T) {
 		wantErr       string
 	}{
 		{name: "absent, as in older artifacts"},
-		{name: "ran with all counters", traceDiscover: ranCounters()},
-		{
-			name:          "ran with matches",
-			traceDiscover: map[string]any{"status": "ran", "commits": 12, "matched": 3, "not_found": 9, "denied": 0, "failed": 0},
-		},
-		{name: "disabled without counters", traceDiscover: map[string]any{"status": "disabled"}},
-		{name: "cli_not_found without counters", traceDiscover: map[string]any{"status": "cli_not_found"}},
-		{name: "missing status", traceDiscover: without("status"), wantErr: "missing properties"},
+		{name: "ran with every call denied", traceDiscover: ran(88, 0, 0, 88, 0)},
+		{name: "ran with matches", traceDiscover: ran(12, 3, 9, 0, 0)},
+		{name: "disabled without counters", traceDiscover: onlyStatus("disabled")},
+		{name: "cli_not_found without counters", traceDiscover: onlyStatus("cli_not_found")},
+		{name: "missing status", traceDiscover: without(status), wantErr: "missing properties"},
 		{name: "unknown property", traceDiscover: with("session_ids", []any{"x"}), wantErr: "additionalProperties"},
-		{name: "unknown status", traceDiscover: map[string]any{"status": "skipped"}, wantErr: "enum"},
+		{name: "unknown status", traceDiscover: onlyStatus("skipped"), wantErr: "enum"},
 		{name: "negative counter", traceDiscover: with("denied", -1), wantErr: "minimum"},
-		{name: "ran without counters", traceDiscover: map[string]any{"status": "ran"}, wantErr: "missing properties"},
+		{name: "ran without counters", traceDiscover: onlyStatus("ran"), wantErr: "missing properties"},
 		{name: "ran with some counters", traceDiscover: without("not_found", "failed"), wantErr: "missing properties"},
-		{name: "disabled with a counter", traceDiscover: map[string]any{"status": "disabled", "commits": 0}, wantErr: "not failed"},
-		{name: "cli_not_found with a counter", traceDiscover: map[string]any{"status": "cli_not_found", "failed": 1}, wantErr: "not failed"},
+		{name: "disabled with counters", traceDiscover: with(status, "disabled"), wantErr: "not failed"},
+		{name: "cli_not_found with counters", traceDiscover: with(status, "cli_not_found"), wantErr: "not failed"},
 		{name: "counter as a string", traceDiscover: with("commits", "3"), wantErr: "expected integer"},
 		{name: "counter as a non-integer number", traceDiscover: with("matched", 1.5), wantErr: "expected integer"},
 	}
