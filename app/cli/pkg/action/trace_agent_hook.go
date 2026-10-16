@@ -277,13 +277,6 @@ func HandleAgentSessionStart(provider trace.Provider, checkAuth TraceAuthCheck, 
 	// Each part is composed only for an agent that can receive it.
 	var msg trace.SessionStartMessage
 
-	// A `trace run` session takes its mode from the run. Other sessions take
-	// it from traceStorage in .chainloop.yml.
-	local := config.IsLocalStorage(repoRoot)
-	if store.IsTraceRunActive() {
-		local = store.IsTraceRunLocal()
-	}
-
 	// Local mode uploads nothing, so only the control-plane mode needs
 	// credentials.
 	var authMsg string
