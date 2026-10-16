@@ -26,11 +26,12 @@ const (
 	AttributionHuman = "human"
 )
 
-// RawSessionEntry is the wire format for a single message in
-// raw_session["main"]. All providers must emit entries matching this
-// struct so the frontend's ConversationTimeline can render them
-// uniformly. The shape mirrors Claude's JSONL transcript format, which
-// the frontend was originally built against.
+// RawSessionEntry is the normalized wire format most providers use for a
+// single message in raw_session["main"]. A provider whose persisted format
+// carries a native timeline may retain those objects instead, so valid unknown
+// entries are not discarded. Consumers can select a renderer by Agent.Name.
+// This shape mirrors Claude's JSONL transcript format, which the frontend was
+// originally built against.
 type RawSessionEntry struct {
 	Type      string            `json:"type,omitempty"`
 	Role      string            `json:"role,omitempty"`

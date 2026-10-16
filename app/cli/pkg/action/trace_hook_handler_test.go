@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -623,6 +624,13 @@ func TestCommitLifecycle_LaterSessionSupersedesFinishedOne(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, commits, 1)
 	assert.Equal(t, []string{"sess-second"}, commits[0].SessionIDs)
+}
+
+func TestSessionCopyIsUnsafe(t *testing.T) {
+	assert.False(t, sessionCopyIsUnsafe(nil))
+	assert.False(t, sessionCopyIsUnsafe(errors.New("ordinary provider copy failure")))
+	assert.True(t, sessionCopyIsUnsafe(trace.ErrSessionDataNotFresh))
+	assert.True(t, sessionCopyIsUnsafe(fmt.Errorf("Pi refresh failed: %w", trace.ErrSessionDataNotFresh)))
 }
 
 // A session committing its work in logical chunks has to keep credit for the
