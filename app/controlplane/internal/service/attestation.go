@@ -26,6 +26,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	cpAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/dispatcher"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/panicguard"
@@ -37,6 +38,7 @@ import (
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/sandboxidentity"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	errors "github.com/go-kratos/kratos/v2/errors"
@@ -201,6 +203,16 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
+	// A sandbox identity that verifies is recorded on the run (R-006)
+	var (
+		sandboxIdentity       *biz.SandboxIdentity
+		sandboxIdentityResult *cpAPI.AttestationServiceInitResponse_SandboxIdentityResult
+	)
+
+	if raw := req.GetSandboxIdentity(); raw != "" {
+		sandboxIdentity, sandboxIdentityResult = s.verifySandboxIdentity(ctx, raw, req.GetRunner(), org.ID, wf)
+	}
+
 	// Create workflowRun
 	opts := &biz.WorkflowRunCreateOpts{
 		WorkflowID:             wf.ID.String(),
@@ -213,6 +225,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		RequireExistingVersion: req.GetRequireExistingVersion(),
 		MarkAsLatest:           req.MarkAsLatest,
 		BlockReleasedVersions:  org.BlockAttestationsOnReleasedVersions,
+		SandboxIdentity:        sandboxIdentity,
 	}
 
 	run, err := s.wrUseCase.Create(ctx, opts)
@@ -230,6 +243,7 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		UiDashboardUrl:           s.bootstrapConfig.UiDashboardUrl,
 		EnableAiAgentCollector:   org.EnableAIAgentCollector,
 		SkipRunnerEnvVars:        org.SkipRunnerEnvVars,
+		SandboxIdentity:          sandboxIdentityResult,
 	}
 
 	resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{}
@@ -245,6 +259,51 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 	}
 
 	return &cpAPI.AttestationServiceInitResponse{Result: resp}, nil
+}
+
+// verifySandboxIdentity verifies the identity token of a Chainloop sandbox for the attested
+// workflow and the API token of the caller. A token that does not verify is the same as no token:
+// the run records no identity, and the result says why (D-011).
+func (s *AttestationService) verifySandboxIdentity(ctx context.Context, raw string, runner schemaapi.CraftingSchema_Runner_RunnerType, orgID string, wf *biz.Workflow) (*biz.SandboxIdentity, *cpAPI.AttestationServiceInitResponse_SandboxIdentityResult) {
+	notVerified := func(reason string) (*biz.SandboxIdentity, *cpAPI.AttestationServiceInitResponse_SandboxIdentityResult) {
+		s.log.Infow("msg", "sandbox identity not verified", "reason", reason, "workflow_id", wf.ID.String())
+		return nil, &cpAPI.AttestationServiceInitResponse_SandboxIdentityResult{Reason: reason}
+	}
+
+	if runner != schemaapi.CraftingSchema_Runner_CHAINLOOP_SANDBOX {
+		return notVerified("only the CHAINLOOP_SANDBOX runner has a sandbox identity")
+	}
+
+	if !s.signingUseCase.KeylessEnabled() {
+		return notVerified("keyless signing is not configured")
+	}
+
+	token := entities.CurrentAPIToken(ctx)
+	if token == nil {
+		return notVerified("a sandbox identity needs the Chainloop API token that it names")
+	}
+
+	tokenID, err := uuid.Parse(token.ID)
+	if err != nil {
+		return notVerified("a sandbox identity needs the Chainloop API token that it names")
+	}
+
+	expected := &sandboxidentity.Expected{OrganizationID: orgID, ProjectID: wf.ProjectID.String(), WorkflowID: wf.ID.String()}
+
+	id, err := s.signingUseCase.VerifySandboxIdentity(ctx, raw, expected, tokenID)
+	if err != nil {
+		if biz.IsErrValidation(err) || biz.IsErrNotImplemented(err) {
+			return notVerified(err.Error())
+		}
+
+		// Any other failure also leaves the run without an identity, so the attestation goes on
+		// as one from a sandbox runner that is not authenticated.
+		s.log.Errorw("msg", "verifying the sandbox identity", "error", err, "workflow_id", wf.ID.String())
+
+		return notVerified("the sandbox identity could not be verified")
+	}
+
+	return id, &cpAPI.AttestationServiceInitResponse_SandboxIdentityResult{Verified: true}
 }
 
 func (s *AttestationService) Store(ctx context.Context, req *cpAPI.AttestationServiceStoreRequest) (*cpAPI.AttestationServiceStoreResponse, error) {

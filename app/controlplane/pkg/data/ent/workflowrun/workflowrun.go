@@ -61,6 +61,8 @@ const (
 	FieldPolicyViolationsSuppressed = "policy_violations_suppressed"
 	// FieldPolicyHasGates holds the string denoting the policy_has_gates field in the database.
 	FieldPolicyHasGates = "policy_has_gates"
+	// FieldSandboxIdentity holds the string denoting the sandbox_identity field in the database.
+	FieldSandboxIdentity = "sandbox_identity"
 	// EdgeWorkflow holds the string denoting the workflow edge name in mutations.
 	EdgeWorkflow = "workflow"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
@@ -142,6 +144,7 @@ var Columns = []string{
 	FieldPolicyViolationsCount,
 	FieldPolicyViolationsSuppressed,
 	FieldPolicyHasGates,
+	FieldSandboxIdentity,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "workflow_runs"
