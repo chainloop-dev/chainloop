@@ -25,7 +25,11 @@ import (
 )
 
 func TestGitHeadVerifications(t *testing.T) {
-	const verified = "verified"
+	const (
+		verified = "verified"
+		sha1     = "sha1"
+		pgp      = "PGP"
+	)
 
 	annotations := func(t *testing.T, fields map[string]any) *structpb.Struct {
 		t.Helper()
@@ -36,12 +40,15 @@ func TestGitHeadVerifications(t *testing.T) {
 
 	statement := &intoto.Statement{Subject: []*intoto.ResourceDescriptor{
 		{Name: "workflow.wf"},
-		{Name: SubjectGitHead, Digest: map[string]string{"sha1": "c1"}, Annotations: annotations(t, map[string]any{subjectGitAnnotationAuthorEmail: "a@b"})},
-		{Name: SubjectGitHead, Digest: map[string]string{"sha1": "c2"}, Annotations: annotations(t, map[string]any{subjectGitAnnotationAuthorVerificationStatus: verified})},
+		{Name: SubjectGitHead, Digest: map[string]string{sha1: "c1"}, Annotations: annotations(t, map[string]any{subjectGitAnnotationAuthorEmail: "a@b"})},
+		{Name: SubjectGitHead, Digest: map[string]string{sha1: "c2"}, Annotations: annotations(t, map[string]any{subjectGitAnnotationAuthorVerificationStatus: verified})},
+		{Name: SubjectGitHead, Digest: map[string]string{sha1: "c3"}, Annotations: annotations(t, map[string]any{
+			subjectGitAnnotationAuthorVerificationStatus: verified, subjectGitAnnotationSignatureAlgorithm: pgp,
+		})},
 	}}
 
 	got := GitHeadVerifications(statement)
-	assert.Equal(t, []GitHeadVerification{{Commit: "c2", Status: verified}}, got)
+	assert.Equal(t, []GitHeadVerification{{Commit: "c2", Status: verified}, {Commit: "c3", Status: verified, SignatureAlgorithm: pgp}}, got)
 	assert.Empty(t, GitHeadVerifications(&intoto.Statement{}))
 	assert.Empty(t, GitHeadVerifications(nil))
 }

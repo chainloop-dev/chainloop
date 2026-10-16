@@ -32,6 +32,7 @@ import (
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/sandboxidentity"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
@@ -362,16 +363,21 @@ type SandboxIdentity struct {
 	Data *sandboxidentity.Data `json:"data,omitempty"`
 }
 
-// HoldsCommitVerification reports whether the identity holds a verification of the full commit
-// hash, with the given status name.
-func (i *SandboxIdentity) HoldsCommitVerification(commitHash, status string) bool {
+// HoldsCommitVerification reports whether the identity holds the commit verification that an
+// attestation records: the same full commit hash and status name. When the identity has a
+// signature algorithm, the attestation must record the same one. Without it, the attestation takes
+// the algorithm from the signature of the commit, so it is not compared.
+func (i *SandboxIdentity) HoldsCommitVerification(v chainloop.GitHeadVerification) bool {
 	if i == nil || i.Data == nil || i.Data.CommitVerification == nil || i.Data.CommitVerification.Verification == nil {
 		return false
 	}
 
 	cv := i.Data.CommitVerification
+	if v.Commit == "" || !strings.EqualFold(cv.Commit, v.Commit) || cv.Verification.Status.String() != v.Status {
+		return false
+	}
 
-	return commitHash != "" && strings.EqualFold(cv.Commit, commitHash) && cv.Verification.Status.String() == status
+	return cv.Verification.SignatureAlgorithm == "" || cv.Verification.SignatureAlgorithm == v.SignatureAlgorithm
 }
 
 // VerifySandboxIdentity verifies the identity token of a Chainloop sandbox against the certificate

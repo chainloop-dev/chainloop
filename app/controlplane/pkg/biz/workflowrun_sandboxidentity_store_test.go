@@ -46,8 +46,8 @@ import (
 const testBundleHead = "25f40d9f4b911969c901377eb247f934dde21b9f"
 
 // newSignedSandboxBundle signs the test attestation as one of the sandbox runner. It records an
-// authenticated runner, and a verification with the given status for the git.head commit.
-func newSignedSandboxBundle(t *testing.T, signing *biz.SigningUseCase, orgID string, verificationStatus string) []byte {
+// authenticated runner, and a verification with the given status and algorithm for the git.head commit.
+func newSignedSandboxBundle(t *testing.T, signing *biz.SigningUseCase, orgID, verificationStatus, algorithm string) []byte {
 	t.Helper()
 
 	raw, err := os.ReadFile("testdata/attestations/bundle.json")
@@ -67,7 +67,11 @@ func newSignedSandboxBundle(t *testing.T, signing *biz.SigningUseCase, orgID str
 	for _, s := range statement["subject"].([]any) {
 		subject := s.(map[string]any)
 		if subject["name"] == "git.head" && verificationStatus != "" {
-			subject["annotations"].(map[string]any)["author.verification_status"] = verificationStatus
+			annotations := subject["annotations"].(map[string]any)
+			annotations["author.verification_status"] = verificationStatus
+			if algorithm != "" {
+				annotations["signature.algorithm"] = algorithm
+			}
 		}
 	}
 
@@ -102,27 +106,34 @@ func newSignedSandboxBundle(t *testing.T, signing *biz.SigningUseCase, orgID str
 
 // The control plane enforces the sandbox identity on the store path, for any CLI (R-006).
 func TestValidateAttestationContractEnforcesSandboxIdentity(t *testing.T) {
+	const (
+		verified     = "verified"
+		commitClaims = "commit verification"
+	)
+
 	orgID := uuid.New()
 	signing := keylessSigningUseCase(t)
 
 	holding := func(commit string) *biz.SandboxIdentity {
 		return &biz.SandboxIdentity{ChainloopTokenID: uuid.New(), Data: &sandboxidentity.Data{CommitVerification: &sandboxidentity.CommitVerification{
 			Commit:       commit,
-			Verification: &commitverification.CommitVerification{Attempted: true, Status: commitverification.VerificationStatusVerified},
+			Verification: &commitverification.CommitVerification{Attempted: true, Status: commitverification.VerificationStatusVerified, SignatureAlgorithm: "PGP"},
 		}}}
 	}
 
 	cases := []struct {
-		name     string
-		identity *biz.SandboxIdentity
-		status   string
+		name      string
+		identity  *biz.SandboxIdentity
+		status    string
+		algorithm string
 		// empty when the attestation passes the sandbox check and stops at the contract check
 		wantErr string
 	}{
 		{name: "an authenticated runner without an identity", wantErr: "authenticated sandbox runner"},
-		{name: "a commit verification that the identity holds", identity: holding(testBundleHead), status: "verified"},
-		{name: "a commit verification for another commit", identity: holding("0123456789abcdef0123456789abcdef01234567"), status: "verified", wantErr: "commit verification"},
-		{name: "a commit verification with another status", identity: holding(testBundleHead), status: "unverified", wantErr: "commit verification"},
+		{name: "a commit verification that the identity holds", identity: holding(testBundleHead), status: verified, algorithm: "PGP"},
+		{name: "a commit verification with another signature algorithm", identity: holding(testBundleHead), status: verified, algorithm: "SSH", wantErr: commitClaims},
+		{name: "a commit verification for another commit", identity: holding("0123456789abcdef0123456789abcdef01234567"), status: verified, wantErr: commitClaims},
+		{name: "a commit verification with another status", identity: holding(testBundleHead), status: "unverified", wantErr: commitClaims},
 	}
 
 	for _, tc := range cases {
@@ -135,7 +146,7 @@ func TestValidateAttestationContractEnforcesSandboxIdentity(t *testing.T) {
 			run := &biz.WorkflowRun{ID: runID, Workflow: &biz.Workflow{OrgID: orgID}, RunnerType: schemaapi.CraftingSchema_Runner_CHAINLOOP_SANDBOX.String(), SandboxIdentity: tc.identity}
 			repo.On("FindByID", mock.Anything, runID).Return(run, nil)
 
-			err = uc.ValidateAttestationContract(context.Background(), runID.String(), newSignedSandboxBundle(t, signing, orgID.String(), tc.status))
+			err = uc.ValidateAttestationContract(context.Background(), runID.String(), newSignedSandboxBundle(t, signing, orgID.String(), tc.status, tc.algorithm))
 			require.Error(t, err)
 			assert.True(t, biz.IsErrValidation(err), "unexpected error type: %v", err)
 
