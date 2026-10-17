@@ -309,9 +309,7 @@ func snapshotWorktree(repoRoot string) (map[string]string, error) {
 		// Ignore rules apply only to untracked files, matching git: a tracked
 		// file that also matches a .gitignore pattern (e.g. force-added
 		// generated code) is still part of the working tree and must be
-		// snapshotted so edits to it are attributed. (Tracked files nested
-		// inside an ignored directory are the one gap — that directory is
-		// pruned above for walk performance.)
+		// snapshotted so edits to it are attributed.
 		if matcher.Match(parts, false) && !tracked[slashRel] {
 			return nil
 		}
@@ -324,6 +322,20 @@ func snapshotWorktree(repoRoot string) (map[string]string, error) {
 
 		return nil
 	})
+	for path := range tracked {
+		if _, ok := sig[path]; ok {
+			continue
+		}
+		fullPath := filepath.Join(repoRoot, filepath.FromSlash(path))
+		info, statErr := os.Lstat(fullPath)
+		if statErr != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		hash, hashErr := hashFileContent(fullPath)
+		if hashErr == nil {
+			sig[path] = hash
+		}
+	}
 
 	return sig, err
 }

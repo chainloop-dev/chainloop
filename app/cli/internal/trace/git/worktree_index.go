@@ -22,10 +22,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
-	"github.com/go-git/go-billy/v6/osfs"
 	gogit "github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/format/gitattributes"
@@ -55,11 +53,11 @@ func (c *GoGitClient) UnstagedFiles(repoRoot string) (map[string]struct{}, error
 
 	indexed := make(map[string]*formatindex.Entry)
 	for _, entry := range idx.Entries {
-		if entry.Stage == 0 && entry.Mode.IsFile() && entry.Mode != filemode.Symlink {
+		if entry.Stage == 0 && !entry.IntentToAdd && entry.Mode.IsFile() && entry.Mode != filemode.Symlink {
 			indexed[entry.Name] = entry
 		}
 	}
-	attributes, err := attributeMatcher(repoRoot, indexed)
+	attributes, err := attributeMatcher(repo, repoRoot, indexed)
 	if err != nil {
 		return nil, fmt.Errorf("load git attributes: %w", err)
 	}
@@ -86,45 +84,6 @@ func (c *GoGitClient) UnstagedFiles(repoRoot string) (map[string]struct{}, error
 	}
 
 	return paths, nil
-}
-
-func attributeMatcher(repoRoot string, indexed map[string]*formatindex.Entry) (gitattributes.Matcher, error) {
-	fs := osfs.New(repoRoot)
-	attrs, err := gitattributes.ReadAttributesFile(fs, nil, ".gitattributes", true)
-	if err != nil {
-		return nil, err
-	}
-
-	dirs := make(map[string]struct{})
-	for path := range indexed {
-		for dir := filepath.ToSlash(filepath.Dir(path)); dir != "."; dir = filepath.ToSlash(filepath.Dir(dir)) {
-			dirs[dir] = struct{}{}
-		}
-	}
-	ordered := make([]string, 0, len(dirs))
-	for dir := range dirs {
-		ordered = append(ordered, dir)
-	}
-	sort.Slice(ordered, func(i, j int) bool {
-		leftDepth, rightDepth := strings.Count(ordered[i], "/"), strings.Count(ordered[j], "/")
-		if leftDepth == rightDepth {
-			return ordered[i] < ordered[j]
-		}
-		return leftDepth < rightDepth
-	})
-	for _, dir := range ordered {
-		nested, err := gitattributes.ReadAttributesFile(fs, strings.Split(dir, "/"), ".gitattributes", false)
-		if err != nil {
-			return nil, err
-		}
-		attrs = append(attrs, nested...)
-	}
-
-	for i, j := 0, len(attrs)-1; i < j; i, j = i+1, j-1 {
-		attrs[i], attrs[j] = attrs[j], attrs[i]
-	}
-
-	return gitattributes.NewMatcher(attrs), nil
 }
 
 func worktreeMatchesIndex(
@@ -157,10 +116,6 @@ func worktreeMatchesIndex(
 	if err != nil {
 		return false, fmt.Errorf("read worktree file %s: %w", path, err)
 	}
-	content, canCompare := cleanWorktreeContent(path, content, autoCRLF, attributes)
-	if !canCompare {
-		return false, nil
-	}
 
 	blob, err := repo.BlobObject(entry.Hash)
 	if err != nil {
@@ -175,6 +130,14 @@ func worktreeMatchesIndex(
 	if err != nil {
 		return false, fmt.Errorf("read index content %s: %w", path, err)
 	}
+	if bytes.Equal(content, staged) {
+		return true, nil
+	}
+
+	content, canCompare := cleanWorktreeContent(path, content, autoCRLF, attributes)
+	if !canCompare {
+		return false, nil
+	}
 
 	return bytes.Equal(content, staged), nil
 }
@@ -187,6 +150,9 @@ func cleanWorktreeContent(
 ) ([]byte, bool) {
 	result, _ := matcher.Match(strings.Split(filepath.ToSlash(path), "/"), nil)
 	if filter, ok := result["filter"]; ok && !filter.IsUnset() {
+		// Raw equality is handled before this function. Reproducing an
+		// arbitrary configured filter driver would execute repository code, so
+		// transformed content stays conservatively dirty.
 		return nil, false
 	}
 

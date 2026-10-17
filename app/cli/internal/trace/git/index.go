@@ -54,6 +54,9 @@ func (c *GoGitClient) StagedFiles(repoRoot string) ([]string, error) {
 	staged := make(map[string]struct{})
 	current := make(map[string]*formatindex.Entry)
 	for _, entry := range idx.Entries {
+		if entry.IntentToAdd {
+			continue
+		}
 		if entry.Stage != 0 {
 			staged[entry.Name] = struct{}{}
 			continue

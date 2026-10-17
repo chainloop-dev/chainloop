@@ -17,7 +17,9 @@ package git
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -72,6 +74,19 @@ func TestGoGitClient_IndexFile_IgnoresReplacementObjects(t *testing.T) {
 	// Then
 	require.Equal(t, []byte("indexed content\n"), content,
 		"staged content must come from the exact object recorded in the index")
+}
+
+func TestGoGitClient_StagedFiles_ExcludesIntentToAdd(t *testing.T) {
+	dir := t.TempDir()
+	runIndexGit(t, dir, "init", "-q")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "pending.txt"), []byte("pending\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "staged.txt"), nil, 0o600))
+	runIndexGit(t, dir, "add", "-N", "pending.txt")
+	runIndexGit(t, dir, "add", "staged.txt")
+
+	files, err := NewGoGitClient().StagedFiles(dir)
+	require.NoError(t, err)
+	require.Equal(t, []string{"staged.txt"}, files)
 }
 
 func runIndexGit(t *testing.T, dir string, args ...string) string {

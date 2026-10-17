@@ -29,7 +29,9 @@ import (
 func TestCommitLifecycle_BashCommitWithCleanFilterDoesNotRequeueAttribution(t *testing.T) {
 	// Given
 	dir, gitDir := initGitRepo(t)
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitattributes"), []byte("filtered.txt text eol=lf\n"), 0600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitattributes"), []byte("filtered.txt filter=identity\n"), 0600))
+	runGit(t, dir, "config", "filter.identity.clean", "cat")
+	runGit(t, dir, "config", "filter.identity.smudge", "cat")
 	runGit(t, dir, "add", ".gitattributes")
 	runGit(t, dir, "commit", "-m", "chore: add attributes")
 
@@ -51,7 +53,7 @@ func TestCommitLifecycle_BashCommitWithCleanFilterDoesNotRequeueAttribution(t *t
 	)
 
 	target := filepath.Join(dir, "filtered.txt")
-	require.NoError(t, os.WriteFile(target, []byte("first\r\nsecond\r\n"), 0600))
+	require.NoError(t, os.WriteFile(target, []byte("first\nsecond\n"), 0600))
 	runGit(t, dir, "add", "filtered.txt")
 
 	msgPath := filepath.Join(gitDir, "COMMIT_EDITMSG")
