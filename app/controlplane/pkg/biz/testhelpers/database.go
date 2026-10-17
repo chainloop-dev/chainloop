@@ -182,6 +182,15 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 			"POSTGRES_PASSWORD": "postgres",
 			"POSTGRES_DB":       "controlplane_test",
 		},
+		// The database is disposable, so trade durability for speed.
+		// Never use these settings outside of tests.
+		Cmd: []string{
+			"postgres",
+			"-c", "fsync=off",
+			"-c", "synchronous_commit=off",
+			"-c", "full_page_writes=off",
+		},
+		Tmpfs:      map[string]string{"/var/lib/postgresql/data": "rw"},
 		WaitingFor: wait.ForSQL(port, "postgres", dbURL).WithStartupTimeout(time.Second * 5),
 	}
 
