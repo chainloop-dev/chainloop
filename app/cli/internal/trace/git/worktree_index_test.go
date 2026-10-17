@@ -105,3 +105,44 @@ func TestGoGitClient_UnstagedFiles_TrackedFileInIgnoredDirectory(t *testing.T) {
 	require.NoError(t, err)
 	require.Contains(t, unstaged, "build/tracked.txt")
 }
+
+func TestGoGitClient_SnapshotWorktree_ExcludesIgnoredIntentToAdd(t *testing.T) {
+	dir := t.TempDir()
+	runIndexGit(t, dir, "init", "-q")
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "build"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("build/\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "build", "pending.txt"), []byte("pending\n"), 0o600))
+	runIndexGit(t, dir, "add", ".gitignore")
+	runIndexGit(t, dir, "add", "-N", "-f", "build/pending.txt")
+
+	snapshot, err := NewGoGitClient().SnapshotWorktree(dir)
+	require.NoError(t, err)
+	require.NotContains(t, snapshot, "build/pending.txt")
+}
+
+func TestGoGitClient_SnapshotWorktree_DoesNotFollowEscapingSymlink(t *testing.T) {
+	dir := t.TempDir()
+	outside := t.TempDir()
+	runIndexGit(t, dir, "init", "-q")
+	require.NoError(t, os.WriteFile(filepath.Join(outside, "outside.txt"), []byte("outside\n"), 0o600))
+	require.NoError(t, os.Symlink(outside, filepath.Join(dir, "link")))
+	blob := writeGitObject(t, dir, "outside\n")
+	writeGitIndex(t, dir, fmt.Sprintf("100644 %s 0\tlink/outside.txt\n", blob))
+
+	snapshot, err := NewGoGitClient().SnapshotWorktree(dir)
+	require.NoError(t, err)
+	require.NotContains(t, snapshot, "link/outside.txt")
+}
+
+func TestGoGitClient_UnstagedFiles_ChangedFilterMarksRawEqualityDirty(t *testing.T) {
+	dir := t.TempDir()
+	runIndexGit(t, dir, "init", "-q")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitattributes"), []byte("filtered.txt filter=mutate\n"), 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "filtered.txt"), []byte("same bytes\n"), 0o600))
+	runIndexGit(t, dir, "add", ".gitattributes", "filtered.txt")
+	runIndexGit(t, dir, "config", "filter.mutate.clean", "sed 's/^/clean:/'")
+
+	unstaged, err := NewGoGitClient().UnstagedFiles(dir)
+	require.NoError(t, err)
+	require.Contains(t, unstaged, "filtered.txt")
+}

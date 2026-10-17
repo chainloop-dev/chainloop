@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	gogit "github.com/go-git/go-git/v6"
+	gogitconfig "github.com/go-git/go-git/v6/config"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/format/gitattributes"
 	formatindex "github.com/go-git/go-git/v6/plumbing/format/index"
@@ -69,7 +70,7 @@ func (c *GoGitClient) UnstagedFiles(repoRoot string) (map[string]struct{}, error
 			paths[path] = struct{}{}
 			continue
 		}
-		same, err := worktreeMatchesIndex(repoRoot, path, entry, repo, cfg.Core.AutoCRLF, cfg.Core.FileMode, attributes)
+		same, err := worktreeMatchesIndex(repoRoot, path, entry, repo, cfg, attributes)
 		if err != nil {
 			return nil, err
 		}
@@ -90,8 +91,7 @@ func worktreeMatchesIndex(
 	repoRoot, path string,
 	entry *formatindex.Entry,
 	repo *gogit.Repository,
-	autoCRLF string,
-	fileMode bool,
+	cfg *gogitconfig.Config,
 	attributes gitattributes.Matcher,
 ) (bool, error) {
 	fullPath := filepath.Join(repoRoot, filepath.FromSlash(path))
@@ -102,7 +102,7 @@ func worktreeMatchesIndex(
 		}
 		return false, fmt.Errorf("stat worktree file %s: %w", path, err)
 	}
-	if fileMode {
+	if cfg.Core.FileMode {
 		mode, err := filemode.NewFromOSFileMode(info.Mode())
 		if err != nil {
 			return false, fmt.Errorf("read worktree mode %s: %w", path, err)
@@ -130,11 +130,7 @@ func worktreeMatchesIndex(
 	if err != nil {
 		return false, fmt.Errorf("read index content %s: %w", path, err)
 	}
-	if bytes.Equal(content, staged) {
-		return true, nil
-	}
-
-	content, canCompare := cleanWorktreeContent(path, content, autoCRLF, attributes)
+	content, canCompare := cleanWorktreeContent(path, content, cfg, attributes)
 	if !canCompare {
 		return false, nil
 	}
@@ -145,18 +141,17 @@ func worktreeMatchesIndex(
 func cleanWorktreeContent(
 	path string,
 	content []byte,
-	autoCRLF string,
+	cfg *gogitconfig.Config,
 	matcher gitattributes.Matcher,
 ) ([]byte, bool) {
 	result, _ := matcher.Match(strings.Split(filepath.ToSlash(path), "/"), nil)
-	if filter, ok := result["filter"]; ok && !filter.IsUnset() {
-		// Raw equality is handled before this function. Reproducing an
-		// arbitrary configured filter driver would execute repository code, so
-		// transformed content stays conservatively dirty.
+	if filter, ok := result["filter"]; ok && !filter.IsUnset() && !noOpCleanFilter(filter, cfg) {
+		// Reproducing an arbitrary configured filter driver would execute
+		// repository code, so transformed content stays conservatively dirty.
 		return nil, false
 	}
 
-	normalize := autoCRLF == "true" || autoCRLF == "input"
+	normalize := cfg.Core.AutoCRLF == "true" || cfg.Core.AutoCRLF == "input"
 	forceText := false
 	if text, ok := result["text"]; ok {
 		switch {
@@ -185,4 +180,20 @@ func cleanWorktreeContent(
 	}
 
 	return cleaned.Bytes(), true
+}
+
+func noOpCleanFilter(filter gitattributes.Attribute, cfg *gogitconfig.Config) bool {
+	if !filter.IsValueSet() {
+		return false
+	}
+	section := cfg.Raw.Section("filter")
+	if !section.HasSubsection(filter.Value()) {
+		return false
+	}
+	driver := section.Subsection(filter.Value())
+	if strings.TrimSpace(driver.Options.Get("process")) != "" {
+		return false
+	}
+	clean := strings.TrimSpace(driver.Options.Get("clean"))
+	return clean == "" || clean == "cat"
 }

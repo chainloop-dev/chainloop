@@ -18,6 +18,7 @@ package git
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	iofs "io/fs"
@@ -322,16 +323,26 @@ func snapshotWorktree(repoRoot string) (map[string]string, error) {
 
 		return nil
 	})
+	root, rootErr := os.OpenRoot(repoRoot)
+	if rootErr != nil {
+		return sig, errors.Join(err, fmt.Errorf("open worktree root: %w", rootErr))
+	}
+	defer func() { _ = root.Close() }()
 	for path := range tracked {
 		if _, ok := sig[path]; ok {
 			continue
 		}
-		fullPath := filepath.Join(repoRoot, filepath.FromSlash(path))
-		info, statErr := os.Lstat(fullPath)
-		if statErr != nil || !info.Mode().IsRegular() {
+		f, openErr := root.Open(filepath.FromSlash(path))
+		if openErr != nil {
 			continue
 		}
-		hash, hashErr := hashFileContent(fullPath)
+		info, statErr := f.Stat()
+		if statErr != nil || !info.Mode().IsRegular() {
+			_ = f.Close()
+			continue
+		}
+		hash, hashErr := hashFileReader(f)
+		_ = f.Close()
 		if hashErr == nil {
 			sig[path] = hash
 		}
@@ -355,6 +366,9 @@ func trackedPaths(repoRoot string) map[string]bool {
 
 	tracked := make(map[string]bool, len(idx.Entries))
 	for _, entry := range idx.Entries {
+		if entry.IntentToAdd {
+			continue
+		}
 		tracked[entry.Name] = true
 	}
 
@@ -369,8 +383,12 @@ func hashFileContent(path string) (string, error) {
 	}
 	defer func() { _ = f.Close() }()
 
+	return hashFileReader(f)
+}
+
+func hashFileReader(r io.Reader) (string, error) {
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+	if _, err := io.Copy(h, r); err != nil {
 		return "", err
 	}
 
