@@ -134,6 +134,20 @@ func TestGoGitClient_SnapshotWorktree_DoesNotFollowEscapingSymlink(t *testing.T)
 	require.NotContains(t, snapshot, "link/outside.txt")
 }
 
+func TestGoGitClient_SnapshotWorktree_DoesNotFollowInRootSymlink(t *testing.T) {
+	dir := t.TempDir()
+	runIndexGit(t, dir, "init", "-q")
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, "target"), 0o700))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "target", "file.txt"), []byte("inside\n"), 0o600))
+	require.NoError(t, os.Symlink("target", filepath.Join(dir, "link")))
+	blob := writeGitObject(t, dir, "inside\n")
+	writeGitIndex(t, dir, fmt.Sprintf("100644 %s 0\tlink/file.txt\n", blob))
+
+	snapshot, err := NewGoGitClient().SnapshotWorktree(dir)
+	require.NoError(t, err)
+	require.NotContains(t, snapshot, "link/file.txt")
+}
+
 func TestGoGitClient_UnstagedFiles_ChangedFilterMarksRawEqualityDirty(t *testing.T) {
 	dir := t.TempDir()
 	runIndexGit(t, dir, "init", "-q")

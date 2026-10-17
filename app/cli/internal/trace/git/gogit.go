@@ -332,13 +332,8 @@ func snapshotWorktree(repoRoot string) (map[string]string, error) {
 		if _, ok := sig[path]; ok {
 			continue
 		}
-		f, openErr := root.Open(filepath.FromSlash(path))
-		if openErr != nil {
-			continue
-		}
-		info, statErr := f.Stat()
-		if statErr != nil || !info.Mode().IsRegular() {
-			_ = f.Close()
+		f, ok := openRegularRootFile(root, path)
+		if !ok {
 			continue
 		}
 		hash, hashErr := hashFileReader(f)
@@ -373,6 +368,28 @@ func trackedPaths(repoRoot string) map[string]bool {
 	}
 
 	return tracked
+}
+
+func openRegularRootFile(root *os.Root, path string) (*os.File, bool) {
+	parts := strings.Split(filepath.ToSlash(path), "/")
+	current := ""
+	for i, part := range parts {
+		current = filepath.Join(current, filepath.FromSlash(part))
+		info, err := root.Lstat(current)
+		if err != nil || info.Mode()&os.ModeSymlink != 0 {
+			return nil, false
+		}
+		if i < len(parts)-1 {
+			if !info.IsDir() {
+				return nil, false
+			}
+		} else if !info.Mode().IsRegular() {
+			return nil, false
+		}
+	}
+
+	f, err := root.Open(filepath.FromSlash(path))
+	return f, err == nil
 }
 
 // hashFileContent returns the hex-encoded SHA-256 of the file's content.
