@@ -22,9 +22,7 @@ import (
 	"io"
 	iofs "io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -267,20 +265,6 @@ func (c *GoGitClient) GeneratedMatcher(repoRoot string) func(path string) bool {
 	}
 }
 
-// StagedFiles returns repo-relative paths of files staged for the current commit.
-func (c *GoGitClient) StagedFiles(repoRoot string) ([]string, error) {
-	output, err := commandOutput(exec.Command("git", "-C", repoRoot, "diff", "--cached",
-		"--no-ext-diff", "--no-textconv", "--no-renames", "--name-only", "-z", "--"))
-	if err != nil {
-		return nil, fmt.Errorf("list staged files: %w", err)
-	}
-
-	files := nullDelimitedPaths(output)
-	sort.Strings(files)
-
-	return files, nil
-}
-
 // SnapshotWorktree returns a signature of the working tree (repo-relative path
 // → SHA-256 content hash), honoring .gitignore and skipping the .git directory.
 func (c *GoGitClient) SnapshotWorktree(repoRoot string) (map[string]string, error) {
@@ -348,14 +332,18 @@ func snapshotWorktree(repoRoot string) (map[string]string, error) {
 // recorded in the git index. Best-effort: returns nil when the repository or
 // its index cannot be read, in which case ignore rules apply to every file.
 func trackedPaths(repoRoot string) map[string]bool {
-	entries, err := loadIndexEntries(repoRoot)
+	repo, err := openRepo(repoRoot)
+	if err != nil {
+		return nil
+	}
+	idx, err := loadEffectiveIndex(repo)
 	if err != nil {
 		return nil
 	}
 
-	tracked := make(map[string]bool, len(entries))
-	for _, entry := range entries {
-		tracked[entry.path] = true
+	tracked := make(map[string]bool, len(idx.Entries))
+	for _, entry := range idx.Entries {
+		tracked[entry.Name] = true
 	}
 
 	return tracked
