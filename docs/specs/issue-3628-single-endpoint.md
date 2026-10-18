@@ -9,22 +9,22 @@ AGENT INSTRUCTIONS. Keep this comment. Read it before you change this file.
 
 This spec records a design that humans reviewed and approved. Do not change it as part of other work. Find the status of the parent ticket (the `ticket:` field) before you change anything. If you cannot find the status, or you are not sure which case below applies, do not change the spec. Ask the human first.
 
-- Ticket in design, and the spec PR is open: change the spec only through the br:eng-spec skill (`--revise`). Never renumber or reuse an R-xxx or D-xxx ID.
-- Ticket in progress: do not rewrite the requirements, the Proposal, or existing Decision Record entries. Record a changed decision as a new Decision Record entry. The owner records the differences with the shipped work through br:eng-spec (`--done`).
+- Ticket in design, and the spec PR is open: change the spec only through the br:eng-spec skill (`--revise`). The spec shows only the current design. Delete a dropped requirement, do not strike it through, and record why in a Decision Record entry that names its ID. Never renumber or reuse an R-xxx or D-xxx ID.
+- Ticket in progress: never rewrite or delete existing text. When the build changes a requirement or a decision, supersede it in the implementation PR. Add an entry with the next free ID that starts "Supersedes D-xxx." (or R-xxx). Strike through the heading and text of the old entry, and add "Superseded by D-yyy." under its heading. Name both IDs in the PR body. When the Summary, the Problem, or the main flow becomes wrong, it is a redesign: stop, and ask the human for a new spec. The owner records other differences with the shipped work through br:eng-spec (`--done`).
 - Ticket done or canceled: the spec is frozen. Do not change, delete, or strike through any text. The only allowed edits are typo fixes, broken links, and the "Superseded by" line under the title. For a design change, write a new spec with br:eng-spec that supersedes this one.
 
 When you review this spec, or before you add scope to it, check three things. No requirement contradicts another requirement, a Non-Goal, a Constraint, or a Decision Record entry. The most important requirements come first. The spec solves one problem: when a part can ship or be decided on its own, propose a separate spec instead of extending this one. Report each issue to the human. Do not fix it by yourself.
 
 Do not answer an open question or a review comment on this spec by yourself. The answer is a design decision, and a human makes it. You can propose an answer and discuss it with a human. Change the spec or reply only after the human agrees.
 
-When your code goes against this spec, say so in your PR. Do not edit the spec to match the code.
+When your code goes against this spec, say so in your PR, and supersede the entry when the ticket is in progress.
 -->
 
 # Spec issue-3628: Serve gRPC and HTTP from one endpoint per service
 
 ## Summary
 
-The control plane and the Artifact CAS will each serve gRPC, gRPC-Web, and HTTP on one port. Today each service has a gRPC port and an HTTP port. An installation thus needs two Services, two ingresses, two hostnames, and two TLS settings per service. The service will accept all connections on its current gRPC port. It will look at each new connection and give it to the gRPC server or to the HTTP server that runs today. The middleware, the authentication, and the native gRPC transport for large CAS streams do not change. The legacy HTTP port stays on by default for a deprecation period, behind a config flag. The Helm chart moves to one Service and one hostname per service.
+The control plane and the Artifact CAS will each serve gRPC and HTTP on one port. The control plane also serves gRPC-Web on it, as it does today. Today each service has a gRPC port and an HTTP port. An installation thus needs two Services, two ingresses, two hostnames, and two TLS settings per service. The service will accept all connections on its current gRPC port. It will look at each new connection and give it to the gRPC server or to the HTTP server that runs today. The middleware, the authentication, and the native gRPC transport for large CAS streams do not change. The legacy HTTP port stays on by default for a deprecation period, behind a config flag. The Helm chart moves to one Service and one hostname per service.
 
 ## Problem
 
@@ -51,7 +51,7 @@ The control plane and the Artifact CAS will each serve gRPC, gRPC-Web, and HTTP 
 ## Requirements
 
 ### R-001: One port serves all protocols
-On its single port, each service MUST serve gRPC (HTTP/2), gRPC-Web, and plain HTTP (HTTP/1.1 and HTTP/2). This includes every endpoint that the gRPC port and the HTTP port serve today.
+On its single port, each service MUST serve gRPC (HTTP/2) and plain HTTP (HTTP/1.1 and HTTP/2). The control plane MUST also serve gRPC-Web. The CAS has no gRPC-Web today and does not get it (see D-011). This includes every endpoint that the gRPC port and the HTTP port serve today.
 - Done when: these clients work against only the single port:
   - the CLI and the web UI
   - the OIDC login and the status probes
@@ -68,7 +68,7 @@ A request on the single port MUST get the same result as the same request gets t
   - no token, a user token, an API token, and a robot account or attestation token
   - CAS uploader and downloader tokens on streams and on the download endpoint
   - a validation error and a suspended organization
-  - a gRPC-Web call
+  - a gRPC-Web call to the control plane
 
   These tests merge before the listener change, so that they first record the current behavior. After the change, the HTTP calls also run against the legacy HTTP port.
 
@@ -106,7 +106,7 @@ After the upgrade, nothing changes for the operator. The gRPC port now also answ
 Each service opens one listener on its current gRPC address. A small classifier reads the start of each new connection, without consuming it:
 
 - An HTTP/2 connection whose first request has a content type that starts with `application/grpc` goes to the native gRPC server. This includes `application/grpc+proto` and content types with parameters. gRPC-Web (`application/grpc-web`) is not in this family and stays on the HTTP server. This server is the same one that runs today, with its middleware, interceptors, message size limits, and streaming transport.
-- All other connections go to the HTTP server that runs today. These are HTTP/1.1, HTTP/2 without gRPC, and gRPC-Web. The HTTP server keeps its routes, its middleware, the gRPC-Web wrapper, and the CORS rules of the CAS.
+- All other connections go to the HTTP server that runs today. These are HTTP/1.1, HTTP/2 without gRPC, and gRPC-Web. The HTTP server keeps its routes and its middleware. In the control plane it also keeps the gRPC-Web wrapper. In the CAS it keeps the CORS rules for browser downloads. The CAS has no gRPC-Web wrapper, and this spec does not add one.
 
 Both servers keep their own lifecycle. They read from the classifier instead of from their own port. When the operator configures TLS, the listener terminates TLS before the classifier, and it offers HTTP/2 and HTTP/1.1 through ALPN. One certificate then covers all protocols.
 
@@ -123,7 +123,7 @@ flowchart LR
   B[Browser<br/>OIDC, status, downloads] --> L
   L["Single port<br/>(optional TLS + ALPN)"] --> C{Classify<br/>new connection}
   C -- "HTTP/2 + application/grpc" --> G[Native gRPC server<br/>today's middleware]
-  C -- "everything else" --> H[HTTP server<br/>routes, gRPC-Web, CORS]
+  C -- "everything else" --> H[HTTP server<br/>routes, CORS<br/>gRPC-Web: control plane only]
   H -. "gRPC request on shared connection" .-> G
   LH[Legacy HTTP port<br/>flag, default on] --> H
 ```
@@ -215,6 +215,13 @@ The single port routes each connection once. It supports only clients and proxie
 - Alternatives considered:
   - Route each request on one HTTP/2 server: it supports every proxy. But all gRPC calls then use the slower HTTP adapter of the gRPC server, which puts R-003 at risk.
 - Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927)
+
+### D-011: gRPC-Web only on the control plane
+The single port serves gRPC-Web on the control plane only. The CAS serves gRPC and HTTP.
+- Why: the CAS has no gRPC-Web today, and no CAS client needs it. A CAS adapter would be a new feature with its own streaming, authentication, and CORS design, and this spec is about one port per service.
+- Alternatives considered:
+  - Add a gRPC-Web adapter to the CAS: it adds scope that can ship on its own. A separate spec can cover it if a client needs it.
+- Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4307471522)
 
 ## Open Questions
 
