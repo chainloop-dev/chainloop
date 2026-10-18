@@ -60,7 +60,8 @@ On its single port, each service MUST serve gRPC (HTTP/2) and plain HTTP (HTTP/1
 - Done when: the same checks pass through nginx ingress and through Traefik ingress.
 
 ### R-005: Existing configuration keeps working
-An installation that does not change its configuration MUST keep working after the upgrade. The legacy gRPC port keeps serving gRPC at its current address during the deprecation period. Existing CLI configurations and the control plane connection to the CAS hold hostnames on the ingress port, so they keep working when the ingress backend moves to the single port. A client that connects to the gRPC port directly keeps working until the legacy gRPC port closes.
+An installation that does not change its configuration MUST keep working during the deprecation period. The legacy gRPC port keeps serving gRPC at its current address during that period. CLI configurations that use ingress hostnames keep working when the ingress backend moves to the single port. The control plane connection to the CAS, and any other client that uses the legacy gRPC address, MUST move to the single HTTP address before the legacy gRPC port is disabled.
+- Done when: the release notes name this migration step for the CAS connection and for direct gRPC clients.
 
 ### R-002: Same behavior as today
 A request on the single port MUST get the same result as the same request gets today on the separate ports. This covers authentication, authorization, validation, logging, tracing, and metrics.
@@ -99,7 +100,7 @@ The Helm chart MUST create one Service and one external hostname per service. Pr
 
 ### What the operator sees
 
-After the upgrade, nothing changes for the operator. The HTTP port now also answers native gRPC, and the legacy gRPC port still works. The operator points one hostname at the HTTP port of each service. When the operator is ready, the operator sets the legacy flag to off, and the gRPC port closes. In a later release the flag defaults to off. A release after that deletes the legacy gRPC port.
+After the upgrade, nothing changes for the operator. The HTTP port now also answers native gRPC, and the legacy gRPC port still works. The operator points one hostname at the HTTP port of each service. Before the operator sets the legacy flag to off, the operator moves the control plane connection to the CAS, and any other client that uses the gRPC address directly, to the single HTTP address. Then the operator sets the flag to off, and the gRPC port closes. In a later release the flag defaults to off. A release after that deletes the legacy gRPC port.
 
 ### How the single port works
 
@@ -218,7 +219,7 @@ The single port serves gRPC-Web on the control plane only. The CAS serves gRPC a
 ### D-012: The current HTTP port is the single endpoint
 Drops D-002. The current HTTP port becomes the single port, not the gRPC port. The legacy listener is the gRPC port.
 - Why: the human-facing hostname, with the status, download, and login endpoints, is already on the HTTP port. It becomes the one endpoint, with one URL, one certificate, and one TLS setting.
-- Why: clients do not break in either direction. CLI configurations and the control plane connection to the CAS hold hostnames on the ingress port. During the deprecation period the legacy gRPC port keeps serving. After it closes, the gRPC ingress changes only its backend port.
+- Why: clients that use ingress hostnames do not break in either direction. During the deprecation period the legacy gRPC port keeps serving. After it closes, the gRPC ingress changes only its backend port. Direct clients, such as the control plane connection to the CAS, move to the single HTTP address (see R-005).
 - Why: the ingress and chart work is the same size in both variants, so it does not decide the question.
 - Cost: TLS settings move to the HTTP port, and the deprecation window applies to the gRPC port.
 - Alternatives considered:
