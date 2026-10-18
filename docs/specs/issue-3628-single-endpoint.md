@@ -24,7 +24,7 @@ When your code goes against this spec, say so in your PR, and supersede the entr
 
 ## Summary
 
-The control plane and the Artifact CAS will each serve gRPC and HTTP on one port. The control plane also serves gRPC-Web on it, as it does today. Today each service has a gRPC port and an HTTP port. An installation thus needs two Services, two ingresses, two hostnames, and two TLS settings per service. The service will accept all connections on its current gRPC port. It will look at each new connection and give it to the gRPC server or to the HTTP server that runs today. The middleware, the authentication, and the native gRPC transport for large CAS streams do not change. The legacy HTTP port stays on by default for a deprecation period, behind a config flag. The Helm chart moves to one Service and one hostname per service.
+The control plane and the Artifact CAS will each serve gRPC and HTTP on one port. The control plane also serves gRPC-Web on it, as it does today. Today each service has a gRPC port and an HTTP port. An installation thus needs two Services, two ingresses, two hostnames, and two TLS settings per service. The service will accept all connections on its current HTTP port, the one that serves the human-facing hostname today. It will look at each new connection and give it to the gRPC server or to the HTTP server that runs today. The middleware, the authentication, and the native gRPC transport for large CAS streams do not change. The legacy gRPC port stays on by default for a deprecation period, behind a config flag. The Helm chart moves to one Service and one hostname per service.
 
 ## Problem
 
@@ -45,7 +45,7 @@ The control plane and the Artifact CAS will each serve gRPC and HTTP on one port
 - Non-goal: move the services to another RPC framework (for example Connect). The single port does not need it (see D-001).
 - Non-goal: merge the Prometheus metrics port or the profiler port into the single port. These ports are internal and must not be on the public hostname (see D-006).
 - Non-goal: add Gateway API resources to the Helm chart. It is a separate chart feature, and the single port works without it (see D-004).
-- Non-goal: change the CLI's default endpoints or its configuration format. The single port is the current gRPC address, so the CLI needs no change (see R-005).
+- Non-goal: change the CLI's default endpoints or its configuration format. The CLI holds hostnames on the ingress port, so it needs no change (see R-005).
 - Non-goal: replace the gRPC-Web library of the control plane or change its origin policy. The single port keeps the current gRPC-Web wrapper with no change. Follow-up: a separate ticket covers the library replacement and a security review of its origin policy.
 
 ## Requirements
@@ -60,7 +60,7 @@ On its single port, each service MUST serve gRPC (HTTP/2) and plain HTTP (HTTP/1
 - Done when: the same checks pass through nginx ingress and through Traefik ingress.
 
 ### R-005: Existing configuration keeps working
-An installation that does not change its configuration MUST keep working after the upgrade. The single port MUST be the current gRPC address, so existing CLI configurations and the control plane connection to the CAS work as before.
+An installation that does not change its configuration MUST keep working after the upgrade. The legacy gRPC port keeps serving gRPC at its current address during the deprecation period. Existing CLI configurations and the control plane connection to the CAS hold hostnames on the ingress port, so they keep working when the ingress backend moves to the single port. A client that connects to the gRPC port directly keeps working until the legacy gRPC port closes.
 
 ### R-002: Same behavior as today
 A request on the single port MUST get the same result as the same request gets today on the separate ports. This covers authentication, authorization, validation, logging, tracing, and metrics.
@@ -70,7 +70,7 @@ A request on the single port MUST get the same result as the same request gets t
   - a validation error and a suspended organization
   - a gRPC-Web call to the control plane
 
-  These tests merge before the listener change, so that they first record the current behavior. After the change, the HTTP calls also run against the legacy HTTP port.
+  These tests merge before the listener change, so that they first record the current behavior. After the change, the gRPC calls also run against the legacy gRPC port.
 
 ### R-003: CAS streaming parity
 Through the single port, CAS uploads and downloads MUST stream with bounded memory. Their throughput MUST stay within 10% of the current release for the same artifact.
@@ -79,14 +79,14 @@ Through the single port, CAS uploads and downloads MUST stream with bounded memo
 ### R-004: One TLS setting per service
 When the operator configures TLS for a service, the single port MUST serve gRPC, gRPC-Web, and HTTP over that TLS configuration. It MUST negotiate HTTP/2 and HTTP/1.1.
 
-### R-006: Legacy HTTP port behind a flag
-A configuration flag MUST control the legacy HTTP port. During the deprecation period the flag MUST default to on. When the flag is off, the service MUST listen only on the single port, plus the internal metrics and profiler ports. When the legacy HTTP port is on, the service SHOULD log a deprecation warning at startup.
+### R-006: Legacy gRPC port behind a flag
+A configuration flag MUST control the legacy gRPC port. During the deprecation period the flag MUST default to on. When the flag is off, the service MUST listen only on the single port, plus the internal metrics and profiler ports. When the legacy gRPC port is on, the service SHOULD log a deprecation warning at startup.
 
 ### R-007: Health checks on the single port
 The HTTP status endpoint (`/statusz`, including readiness) and the standard gRPC health service MUST be available on the single port.
 
 ### R-008: One Service and one hostname in the Helm chart
-The Helm chart MUST create one Service and one external hostname per service. Probes MUST target the single port. The install notes and the CAS download URL MUST use the single hostname. While the legacy flag is on, the chart MAY keep the legacy HTTP port on the Service.
+The Helm chart MUST create one Service and one external hostname per service. Probes MUST target the single port. The install notes and the CAS download URL MUST use the single hostname. While the legacy flag is on, the chart MAY keep the legacy gRPC port on the Service.
 - Done when: a default install with nginx ingress serves the CLI, the web UI, and CAS downloads through one hostname per service.
 
 ## Constraints
@@ -99,11 +99,11 @@ The Helm chart MUST create one Service and one external hostname per service. Pr
 
 ### What the operator sees
 
-After the upgrade, nothing changes for the operator. The gRPC port now also answers HTTP and gRPC-Web, and the legacy HTTP port still works. The operator points one hostname at the gRPC port of each service. When the operator is ready, the operator sets the legacy flag to off, and the HTTP port closes. In a later release the flag defaults to off. A release after that deletes the legacy HTTP port.
+After the upgrade, nothing changes for the operator. The HTTP port now also answers native gRPC, and the legacy gRPC port still works. The operator points one hostname at the HTTP port of each service. When the operator is ready, the operator sets the legacy flag to off, and the gRPC port closes. In a later release the flag defaults to off. A release after that deletes the legacy gRPC port.
 
 ### How the single port works
 
-Each service opens one listener on its current gRPC address. A small classifier reads the start of each new connection, without consuming it:
+Each service opens one listener on its current HTTP address. A small classifier reads the start of each new connection, without consuming it:
 
 - An HTTP/2 connection whose first request has a content type that starts with `application/grpc` goes to the native gRPC server. This includes `application/grpc+proto` and content types with parameters. gRPC-Web (`application/grpc-web`) is not in this family and stays on the HTTP server. This server is the same one that runs today, with its middleware, interceptors, message size limits, and streaming transport.
 - All other connections go to the HTTP server that runs today. These are HTTP/1.1, HTTP/2 without gRPC, and gRPC-Web. The HTTP server keeps its routes and its middleware. In the control plane it also keeps the gRPC-Web wrapper. In the CAS it keeps the CORS rules for browser downloads. The CAS has no gRPC-Web wrapper, and this spec does not add one.
@@ -125,16 +125,16 @@ flowchart LR
   C -- "HTTP/2 + application/grpc" --> G[Native gRPC server<br/>today's middleware]
   C -- "everything else" --> H[HTTP server<br/>routes, CORS<br/>gRPC-Web: control plane only]
   H -. "gRPC request on shared connection" .-> G
-  LH[Legacy HTTP port<br/>flag, default on] --> H
+  LG[Legacy gRPC port<br/>flag, default on] --> G
 ```
 
 ### Configuration
 
-The current gRPC address becomes the single port, and its TLS settings now apply to all protocols. A new flag in the server configuration controls the legacy HTTP listener, which keeps its current address. The Helm chart exposes the same flag as a value for each service.
+The current HTTP address becomes the single port. It gets its own TLS settings, which apply to all protocols. The existing gRPC TLS settings stay with the legacy gRPC listener. A new flag in the server configuration controls the legacy gRPC listener, which keeps its current address. The Helm chart exposes the same flag as a value for each service.
 
 ### Helm chart
 
-- One Service per service. It exposes the single port, plus the legacy HTTP port while the flag is on.
+- One Service per service. It exposes the single port, plus the legacy gRPC port while the flag is on.
 - One hostname per service. Controllers that can speak HTTP/2 without TLS to the backend use one Ingress. nginx sets the backend protocol per Ingress object. For nginx, the chart renders a second Ingress on the same hostname. It routes the gRPC service path prefixes with the gRPC backend protocol. The body size settings that the CAS needs today move with it.
 - These items use the single port and hostname:
   - the probes and the install notes
@@ -153,19 +153,11 @@ The service splits by connection in front of the current gRPC and HTTP servers.
   - A move to Connect: it replaces every middleware and route, which is a large migration for the same result.
 - Source: drafting
 
-### D-002: Which port becomes the single endpoint
-The current gRPC port becomes the single port.
-- Why: CLI configurations, the control plane connection to the CAS, and the existing TLS settings keep working.
-- Alternatives considered:
-  - The HTTP port: every gRPC client and address must change, and TLS must be added to it.
-  - A new port: every client changes.
-- Source: drafting
-
 ### D-003: Deprecation default
-The legacy HTTP port is on by default, then off by default, then deleted.
+The legacy gRPC port is on by default, then off by default, then deleted.
 - Why: no upgrade breaks, and operators move when they are ready.
 - Alternatives considered:
-  - Legacy HTTP port opt-in from the first release: it breaks installations that send HTTP traffic to that port.
+  - Legacy gRPC port opt-in from the first release: it breaks clients that connect to that port directly.
 - Source: drafting
 
 ### D-004: Ingress shape
@@ -189,14 +181,14 @@ The metrics and profiler ports stay separate.
 - Source: drafting
 
 ### D-007: Length of the deprecation period
-The legacy HTTP port defaults to off three months after the single port ships. A release three months after that deletes it. The release notes announce each step.
+The legacy gRPC port defaults to off three months after the single port ships. A release three months after that deletes it. The release notes announce each step.
 - Why: operators get two release windows to move their ingress and probes.
 - Alternatives considered:
   - Wait for a major release: the two-port cost stays for too long.
 - Source: drafting
 
 ### D-008: TLS on the single port
-When the operator configures TLS, all protocols on the single port use it. An HTTP ingress must use an HTTPS backend. The legacy HTTP port stays plain text during the deprecation period.
+When the operator configures TLS, all protocols on the single port use it. An HTTP ingress must use an HTTPS backend. The legacy gRPC port keeps its own TLS settings during the deprecation period.
 - Why: one certificate and one setting per service is the goal of this work.
 - Alternatives considered:
   - Accept plain text and TLS on the same port: it adds a second classification step and weakens the TLS setting.
@@ -223,23 +215,34 @@ The single port serves gRPC-Web on the control plane only. The CAS serves gRPC a
   - Add a gRPC-Web adapter to the CAS: it adds scope that can ship on its own. A separate spec can cover it if a client needs it.
 - Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4307471522)
 
+### D-012: The current HTTP port is the single endpoint
+Drops D-002. The current HTTP port becomes the single port, not the gRPC port. The legacy listener is the gRPC port.
+- Why: the human-facing hostname, with the status, download, and login endpoints, is already on the HTTP port. It becomes the one endpoint, with one URL, one certificate, and one TLS setting.
+- Why: clients do not break in either direction. CLI configurations and the control plane connection to the CAS hold hostnames on the ingress port. During the deprecation period the legacy gRPC port keeps serving. After it closes, the gRPC ingress changes only its backend port.
+- Why: the ingress and chart work is the same size in both variants, so it does not decide the question.
+- Cost: TLS settings move to the HTTP port, and the deprecation window applies to the gRPC port.
+- Alternatives considered:
+  - The gRPC port (the dropped D-002): it keeps TLS settings in place, but the human-facing hostname stays on a second port.
+  - A new port: every client changes.
+- Source: [PR comment](https://github.com/chainloop-dev/chainloop/pull/3629#issuecomment-6253559302)
+
 ## Open Questions
 
-- [ ] **Must the single port support proxies that share one upstream connection for gRPC and plain HTTP?** Examples: Envoy-based proxies, service meshes. Proposed: not in this spec. Until the legacy HTTP port is gone, those setups can keep using it. Revisit before the release that deletes it. Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927).
+- [ ] **Must the single port support proxies that share one upstream connection for gRPC and plain HTTP?** Examples: Envoy-based proxies, service meshes. Proposed: not in this spec. Until the legacy gRPC port is gone, those setups can route gRPC to it and HTTP to the single port. Revisit before the release that deletes it. Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927).
 
 D-007 and D-008 record the answers to the questions from drafting.
 
 ## Milestones
 
-1. **Single port in the servers.** Both services serve all protocols on the gRPC port. The legacy flag exists and defaults to on. The CAS benchmark (R-003) passes.
+1. **Single port in the servers.** Both services serve all protocols on the HTTP port. The legacy gRPC flag exists and defaults to on. The CAS benchmark (R-003) passes.
 2. **Helm chart.** One Service and one hostname per service. The split values are deprecated.
-3. **Deprecation.** The flag defaults to off. A later release deletes the legacy HTTP port.
+3. **Deprecation.** The flag defaults to off. A later release deletes the legacy gRPC port.
 
 ## Risks
 
 | Risk | Mitigation |
 |------|------------|
-| A proxy shares one upstream connection between gRPC and HTTP requests, for example an Envoy-based proxy or a service mesh. A plain HTTP request then lands on a connection that the classifier gave to gRPC, and fails. | The chart configures nginx and Traefik to use separate upstream connections. The documentation lists the supported setups. The legacy HTTP port stays available during the deprecation period. The open question on mixing proxies gets an answer before the legacy HTTP port is deleted. |
+| A proxy shares one upstream connection between gRPC and HTTP requests, for example an Envoy-based proxy or a service mesh. A plain HTTP request then lands on a connection that the classifier gave to gRPC, and fails. | The chart configures nginx and Traefik to use separate upstream connections. The documentation lists the supported setups. The legacy gRPC port stays available during the deprecation period. The open question on mixing proxies gets an answer before the legacy gRPC port is deleted. |
 | A gRPC client waits for the server before it sends anything, so the classifier cannot read the first request. | The classifier sends the server's HTTP/2 settings frame first when it sees an HTTP/2 preface, then reads the first request. |
 | A slow or idle client holds a connection before the classifier decides. | Put a short read deadline on classification only, and clear it when the classifier hands over the connection. Long CAS streams are not affected. |
 | A middleware behaves differently on the single port, for example an authentication step that does not run. | The server-level tests in R-002 merge first and record the current behavior. The same tests then run against the single port. |
