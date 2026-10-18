@@ -15,15 +15,20 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/pkg/httpgrpcmux"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
+	kratosgrpc "github.com/go-kratos/kratos/v2/transport/grpc"
+	kratoshttp "github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -215,4 +220,56 @@ func loadBootstrap(t *testing.T, path string) (*conf.Bootstrap, error) {
 	}
 
 	return &bootstrap, nil
+}
+
+// TestServerToleratesMuxShutdown proves the shutdown-race fix: when the mux
+// stops first, the servers' Start returns net.ErrClosed — an orderly
+// shutdown that must not surface as an error (kratos would propagate it and
+// main would panic on SIGTERM).
+func TestServerToleratesMuxShutdown(t *testing.T) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	m := httpgrpcmux.New(l, nil)
+	require.NoError(t, m.Start(context.Background()))
+
+	// A kratos HTTP server on the mux's HTTP side, and a kratos gRPC server
+	// on its gRPC side: both fed by virtual listeners.
+	hs := kratoshttp.NewServer(kratoshttp.Listener(m.HTTP()))
+	gs := kratosgrpc.NewServer(kratosgrpc.Listener(m.GRPC()))
+
+	errs := make(chan error, 2)
+	go func() { errs <- (&cleanShutdownServer{Server: hs, mux: m}).Start(context.Background()) }()
+	go func() { errs <- (&cleanShutdownServer{Server: gs, mux: m}).Start(context.Background()) }()
+
+	// Give the servers time to enter their accept loops, then close the mux
+	// first — exactly the SIGTERM ordering that used to panic.
+	time.Sleep(100 * time.Millisecond)
+	m.Close()
+
+	for i := 0; i < 2; i++ {
+		select {
+		case err := <-errs:
+			require.NoError(t, err, "an orderly mux shutdown must not surface as a server error")
+		case <-time.After(5 * time.Second):
+			require.Fail(t, "server Start did not return after the mux stopped")
+		}
+	}
+}
+
+// TestCleanShutdownServerPropagatesRealErrors proves the decorator only
+// tolerates the mux shutdown: a real failure (bind conflict) surfaces as an
+// error, so the process still crashes on genuine startup problems.
+func TestCleanShutdownServerPropagatesRealErrors(t *testing.T) {
+	l, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer l.Close()
+
+	decorated := &cleanShutdownServer{
+		Server: kratoshttp.NewServer(kratoshttp.Address(l.Addr().String())),
+		mux:    httpgrpcmux.New(l, nil),
+	}
+	err = decorated.Start(context.Background())
+	require.Error(t, err)
+	assert.NotErrorIs(t, err, net.ErrClosed)
 }

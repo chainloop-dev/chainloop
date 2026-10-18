@@ -68,25 +68,25 @@ func TestGRPCServerSpanWithMaxRecvMsgSize(t *testing.T) {
 	validator, err := protovalidate.New()
 	require.NoError(t, err)
 
-	srv, err := NewGRPCServer(&Opts{
+	srvs, err := NewGRPCServer(&Opts{
 		ServerConfig: &conf.Server{
 			Grpc: &conf.Server_GRPC{
-				Addr:           "127.0.0.1:0",
+				Addr:           testAnyAddr,
 				MaxRecvMsgSize: 8 * 1024 * 1024,
 			},
 		},
 		AuthConfig: &conf.Auth{},
 		Logger:     log.NewStdLogger(io.Discard),
 		Validator:  validator,
-		AuthSvc:    &service.AuthService{AuthURLs: &service.AuthURLs{Login: "http://localhost"}},
+		AuthSvc:    &service.AuthService{AuthURLs: &service.AuthURLs{Login: testLoginURL}},
 	})
 	require.NoError(t, err)
 
 	// Endpoint() binds the listener so the address is known before Start.
-	endpoint, err := srv.Endpoint()
+	endpoint, err := srvs[0].Endpoint()
 	require.NoError(t, err)
-	go func() { _ = srv.Start(context.Background()) }()
-	defer func() { _ = srv.Stop(context.Background()) }()
+	go func() { _ = srvs[0].Start(context.Background()) }()
+	defer func() { _ = srvs[0].Stop(context.Background()) }()
 
 	conn, err := grpcLib.NewClient(endpoint.Host, grpcLib.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestHTTPServerSpanFromTracingMiddleware(t *testing.T) {
 	require.NoError(t, err)
 
 	srv := kratoshttp.NewServer(
-		kratoshttp.Address("127.0.0.1:0"),
+		kratoshttp.Address(testAnyAddr),
 		kratoshttp.Middleware(httpMiddlewares(&Opts{
 			AuthConfig: &conf.Auth{},
 			Logger:     log.NewStdLogger(io.Discard),

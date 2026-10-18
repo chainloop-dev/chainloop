@@ -18,6 +18,7 @@ package server
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	middlewares_http "github.com/chainloop-dev/chainloop/pkg/middlewares/http"
@@ -26,6 +27,7 @@ import (
 	"buf.build/go/protovalidate"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/chainloop-dev/chainloop/pkg/httpgrpcmux"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -40,11 +42,37 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// NewHTTPServer new an HTTP server.
-func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
-	var serverOpts = []http.ServerOption{
-		http.Middleware(httpMiddlewares(opts)...),
+// NewHTTPServer builds the HTTP server that serves plain HTTP and gRPC-Web.
+//
+// In single-port mode (API mux present, see
+// docs/specs/issue-3628-single-endpoint.md) it consumes the connections that
+// the classifier did not mark as native gRPC, so gRPC-Web and HTTP are served
+// from the single port. The gRPC-Web wrapper and the native-gRPC fallback wrap
+// the mux-fed gRPC server (grpcServers[0]); the legacy gRPC server, when
+// present, serves its own deprecated port. Without the mux, the server binds
+// the HTTP-only port, as before.
+func NewHTTPServer(opts *Opts, grpcServers []*grpc.Server) ([]*http.Server, error) {
+	if opts.APIMux != nil {
+		single, err := newHTTPServer(opts, grpcServers[0], http.Listener(opts.APIMux.HTTP()))
+		if err != nil {
+			return nil, err
+		}
+		return []*http.Server{single}, nil
 	}
+
+	srv, err := newHTTPServer(opts, grpcServers[0], http.Address(opts.ServerConfig.GetHttp().GetAddr()))
+	if err != nil {
+		return nil, err
+	}
+	return []*http.Server{srv}, nil
+}
+
+// newHTTPServer builds one HTTP server that serves the routes, the gRPC-Web
+// wrapper and the transcoded handlers, bound through the given extra options.
+func newHTTPServer(opts *Opts, grpcSrv *grpc.Server, extraOpts ...http.ServerOption) (*http.Server, error) {
+	var serverOpts = append([]http.ServerOption{
+		http.Middleware(httpMiddlewares(opts)...),
+	}, extraOpts...)
 	// Prevent unmatched routes from falling through to http.DefaultServeMux,
 	// which would otherwise expose net/http/pprof's /debug/pprof/* endpoints
 	// unauthenticated on the public API listener.
@@ -52,9 +80,6 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 
 	if v := opts.ServerConfig.Http.Network; v != "" {
 		serverOpts = append(serverOpts, http.Network(v))
-	}
-	if v := opts.ServerConfig.Http.Addr; v != "" {
-		serverOpts = append(serverOpts, http.Address(v))
 	}
 	if v := opts.ServerConfig.Http.Timeout; v != nil {
 		serverOpts = append(serverOpts, http.Timeout(v.AsDuration()))
@@ -97,8 +122,28 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	// Include the OpenAPI spec handler
 	r.GET("/openapi.yaml", statusSvc.HandleOpenAPISpec)
 
-	// Handle grpc-web requests or fallback
+	// Handle grpc-web requests or fallback. Unencrypted HTTP/2 (h2c) is enabled
+	// natively so that connections that are not native gRPC still work: browsers
+	// doing gRPC-Web over HTTP/2 and h2c-aware proxies.
+	wrappedServer.Protocols = new(h.Protocols)
+	wrappedServer.Protocols.SetHTTP1(true)
+	wrappedServer.Protocols.SetHTTP2(true)
+	wrappedServer.Protocols.SetUnencryptedHTTP2(true)
+	// Bound how long a client may take to deliver its request headers over
+	// HTTP/1.x, on either listener (slowloris protection). Response streaming
+	// is not affected. The bound does not protect HTTP/2 header completion:
+	// Go's HTTP/2 path clears the connection deadline, so that case is
+	// tracked separately.
+	wrappedServer.ReadHeaderTimeout = 60 * time.Second
+
 	wrappedServer.Handler = h.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		// Native gRPC requests that arrive on a connection the classifier
+		// gave to the HTTP server: hand them to the gRPC server, which runs
+		// the same middleware chain as on the dedicated gRPC port.
+		if httpgrpcmux.IsNativeGRPCContentType(req.Header.Get("Content-Type")) {
+			grpcSrv.ServeHTTP(res, req)
+			return
+		}
 		if wrappedGrpc.IsGrpcWebRequest(req) || wrappedGrpc.IsAcceptableGrpcCorsRequest(req) {
 			wrappedGrpc.ServeHTTP(res, req)
 			return

@@ -226,6 +226,12 @@ message Server {
     // Optional
     string external_url = 4;
     google.protobuf.Duration timeout = 5;
+    // TLS for the single port, which serves gRPC, gRPC-Web and HTTP: the
+    // listener negotiates HTTP/2 and HTTP/1.1 through ALPN. A partial
+    // configuration (only one of certificate/private_key) is a startup
+    // error. Note: server.http_metrics reuses this message type but does
+    // not support TLS.
+    TLS tls_config = 6;
   }
 
   message TLS {
@@ -247,6 +253,12 @@ message Server {
   GRPC grpc = 2;
   // HTTPMetrics defines the HTTP server that exposes prometheus metrics
   HTTP http_metrics = 3;
+  // Legacy gRPC-only listener that serves native gRPC on its own port, next
+  // to the single port that already serves gRPC, gRPC-Web and HTTP. It exists
+  // for the deprecation period of docs/specs/issue-3628-single-endpoint.md.
+  // Defaults to true when unset. Set it to false to listen on the single port
+  // only, plus the internal metrics and profiler ports.
+  optional bool legacy_grpc_listener = 4;
 }
 
 message Data {
