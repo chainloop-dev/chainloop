@@ -244,6 +244,22 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "ai_lines_added": {
+                "type": "integer",
+                "description": "Lines added in this file attributed to AI"
+              },
+              "ai_lines_removed": {
+                "type": "integer",
+                "description": "Lines removed in this file attributed to AI"
+              },
+              "human_lines_added": {
+                "type": "integer",
+                "description": "Lines added in this file attributed to human"
+              },
+              "human_lines_removed": {
+                "type": "integer",
+                "description": "Lines removed in this file attributed to human"
               }
             }
           }

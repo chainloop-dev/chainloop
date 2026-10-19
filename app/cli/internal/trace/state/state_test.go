@@ -485,7 +485,7 @@ func TestAILinePendingTracking(t *testing.T) {
 		require.NoError(t, store.InitTraceDir())
 
 		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
-		require.NoError(t, store.MarkConsumed("sess-1", []string{fileA}, "sha-1"))
+		require.NoError(t, store.MarkCommitted("sess-1", "sha-1", map[string]LineSet{fileA: {}}))
 
 		attr := store.LoadAILineAttribution("sess-1")
 		assert.Empty(t, attr.Pending, "a committed file must stop crediting the session")
@@ -500,7 +500,7 @@ func TestAILinePendingTracking(t *testing.T) {
 
 		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
 		require.NoError(t, store.RecordLineRanges("sess-1", "b.go", []aicodingsession.LineRange{{Start: 1, End: 5}}))
-		require.NoError(t, store.MarkConsumed("sess-1", []string{fileA}, "sha-1"))
+		require.NoError(t, store.MarkCommitted("sess-1", "sha-1", map[string]LineSet{fileA: {}}))
 
 		pending := store.LoadAILineAttribution("sess-1").Pending
 		assert.NotContains(t, pending, fileA)
@@ -512,7 +512,7 @@ func TestAILinePendingTracking(t *testing.T) {
 		require.NoError(t, store.InitTraceDir())
 
 		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
-		require.NoError(t, store.MarkConsumed("sess-1", []string{fileA}, "sha-1"))
+		require.NoError(t, store.MarkCommitted("sess-1", "sha-1", map[string]LineSet{fileA: {}}))
 		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}))
 
 		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA)
@@ -523,7 +523,7 @@ func TestAILinePendingTracking(t *testing.T) {
 		require.NoError(t, store.InitTraceDir())
 
 		require.NoError(t, store.RecordLineRanges("sess-1", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
-		require.NoError(t, store.MarkConsumed("sess-1", []string{"untouched.go"}, "sha-1"))
+		require.NoError(t, store.MarkCommitted("sess-1", "sha-1", map[string]LineSet{"untouched.go": {}}))
 
 		attr := store.LoadAILineAttribution("sess-1")
 		assert.Contains(t, attr.Pending, fileA)
@@ -570,7 +570,7 @@ func TestAILinePendingTracking(t *testing.T) {
 	})
 
 	t.Run("a marker does not retire an edit recorded after it was built", func(t *testing.T) {
-		// MarkConsumed reads the pending set and then appends; an agent editing
+		// MarkCommitted reads the pending set and then appends; an agent editing
 		// the same file in between leaves a marker sitting behind an edit the
 		// commit never contained. That edit must stay pending.
 		store := NewGitStore(t.TempDir())
@@ -584,7 +584,7 @@ func TestAILinePendingTracking(t *testing.T) {
 
 		// The racing edit lands first, then the marker for the older one.
 		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}, committed.Add(time.Second)))
-		require.NoError(t, store.markConsumedAt(pendingBefore, "sess-1", []string{fileA}, "sha-1"))
+		require.NoError(t, store.markCommittedAt(pendingBefore, "sess-1", "sha-1", map[string]LineSet{fileA: {}}))
 
 		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA,
 			"the edit made after the snapshot was not in the commit")
@@ -604,7 +604,7 @@ func TestAILinePendingTracking(t *testing.T) {
 		require.Contains(t, pendingBefore, fileA)
 
 		require.NoError(t, store.RecordLineRangesAt("sess-1", fileA, []aicodingsession.LineRange{{Start: 8, End: 9}}, tick))
-		require.NoError(t, store.markConsumedAt(pendingBefore, "sess-1", []string{fileA}, "sha-1"))
+		require.NoError(t, store.markCommittedAt(pendingBefore, "sess-1", "sha-1", map[string]LineSet{fileA: {}}))
 
 		assert.Contains(t, store.LoadAILineAttribution("sess-1").Pending, fileA,
 			"an identical timestamp must not make the later edit indistinguishable")

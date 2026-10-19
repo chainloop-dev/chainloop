@@ -17,12 +17,14 @@ package action
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"maps"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -286,21 +288,58 @@ func handlePostCommit(_ context.Context, log zerolog.Logger) error {
 		return fmt.Errorf("save commit record: %w", err)
 	}
 
-	// The credited sessions' pending ranges have now landed, so retire them.
+	// The credited sessions' pending lines have now landed, so retire them.
 	// Skipping this is what makes a session accumulate foreign commits: its
 	// files stay pending and keep matching every later commit that touches
 	// them. Post-commit errors only ever get logged — the commit already
 	// exists — so returning here costs nothing but surfaces the failure.
 	if len(sessionIDs) > 0 {
-		committed := commitFiles(client, repoRoot, sha)
-		for _, sid := range sessionIDs {
-			if err := store.MarkConsumed(sid, committed, sha); err != nil {
-				return fmt.Errorf("mark attribution consumed for session %s: %w", sid, err)
-			}
+		if err := settleCommittedLines(client, store, repoRoot, sha, sessionIDs); err != nil {
+			return err
 		}
 	}
 
 	log.Info().Str("sha", sha).Msg("commit record saved")
+
+	return nil
+}
+
+// settleCommittedLines closes, for each session of a commit, the open lines
+// that the commit took and the ones that are gone from the worktree. The
+// session's other open lines stay pending for a later commit (R-006).
+func settleCommittedLines(client tracegit.Client, store *state.Store, repoRoot, sha string, sessionIDs []string) error {
+	committed := commitFiles(client, repoRoot, sha)
+	if len(committed) == 0 {
+		return nil
+	}
+
+	// A commit that cannot be read settles no line. Its files still get a
+	// marker, so that legacy files retire as before.
+	linesByPath := make(map[string]tracegit.FileLines)
+	if lines, err := client.CommitLines(repoRoot, sha); err == nil {
+		for _, fl := range lines {
+			linesByPath[fl.Path] = fl
+		}
+	}
+
+	for _, sid := range sessionIDs {
+		attr := store.LoadAILineAttribution(sid)
+		settled := make(map[string]state.LineSet, len(committed))
+		for _, path := range committed {
+			if _, pending := attr.Pending[path]; !pending {
+				continue
+			}
+
+			worktree, _ := os.ReadFile(filepath.Join(repoRoot, path))
+			atCommit, err := client.FileAt(repoRoot, sha, path)
+			clean := err == nil && bytes.Equal(worktree, atCommit)
+			settled[path] = attribution.SettleCommit(attr.Open[path], linesByPath[path], worktree, clean)
+		}
+
+		if err := store.MarkCommitted(sid, sha, settled); err != nil {
+			return fmt.Errorf("mark attribution committed for session %s: %w", sid, err)
+		}
+	}
 
 	return nil
 }
@@ -859,6 +898,18 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 
 	isGenerated := gitClient.GeneratedMatcher(repoRoot)
 
+	// Every ledger, because a commit can hold the lines of more than one
+	// session, and the lines of each commit, read once for all sessions.
+	ledgers := make(map[string]*state.AILineAttribution)
+	if attrs, err := store.LoadAllAILineAttributions(); err != nil {
+		log.Debug().Err(err).Msg("could not load AI line attributions")
+	} else {
+		for _, a := range attrs {
+			ledgers[a.SessionID] = a
+		}
+	}
+	commitLines := make(map[string][]tracegit.FileLines)
+
 	var sessions []sessionEvidence
 
 	for sessionID, commits := range sessionCommits {
@@ -940,9 +991,8 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 			if err != nil {
 				log.Debug().Err(err).Msg("could not collect code changes")
 			} else {
-				attr := store.LoadAILineAttribution(sessionID)
 				attribution.FilterGenerated(codeChanges, isGenerated)
-				attribution.Enrich(sessionID, attr.Files, codeChanges)
+				attribution.Enrich(sessionID, ledgers, sessionCommitLines(gitClient, repoRoot, commits, commitLines, log), codeChanges)
 				result.Data.CodeChanges = codeChanges
 			}
 		}
@@ -959,6 +1009,27 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 	}
 
 	return sessions
+}
+
+// sessionCommitLines returns the changed lines of each commit of a session,
+// oldest first, with the sessions that the commit's record names. cache holds
+// the lines already read, by SHA. A commit that cannot be read is left out.
+func sessionCommitLines(gitClient tracegit.Client, repoRoot string, commits []*state.CommitRecord, cache map[string][]tracegit.FileLines, log zerolog.Logger) []attribution.CommitLines {
+	out := make([]attribution.CommitLines, 0, len(commits))
+	for _, c := range commits {
+		lines, ok := cache[c.SHA]
+		if !ok {
+			var err error
+			if lines, err = gitClient.CommitLines(repoRoot, c.SHA); err != nil {
+				log.Debug().Err(err).Str("sha", c.SHA).Msg("could not read the lines of a commit")
+				continue
+			}
+			cache[c.SHA] = lines
+		}
+		out = append(out, attribution.CommitLines{SessionIDs: c.SessionIDs, Files: lines})
+	}
+
+	return out
 }
 
 // attachSessionEvidence adds the materials of each session to the attestation:
