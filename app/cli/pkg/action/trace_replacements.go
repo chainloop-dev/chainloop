@@ -18,6 +18,7 @@ package action
 import (
 	"reflect"
 	"slices"
+	"sort"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
@@ -32,13 +33,25 @@ import (
 // that session (R-010): its record gets the lines that its replacing hunks
 // added, and is saved.
 //
+// A join can depend on another one: a human commit that replaces the lines of
+// an earlier human commit joins the sessions that the earlier commit joined.
+// So the commits are read oldest first, and read again until no join changes.
+//
 // Only files with ledger entries are blamed, because only those can hold the
-// lines of a session. A commit or a file that cannot be read is skipped.
-func scanReplacements(client tracegit.Client, store *state.Store, repoRoot string, records []*state.CommitRecord, ledgers map[string]*state.AILineAttribution, log zerolog.Logger) map[string]struct{} {
+// lines of a session. It also returns the commits that it could not read,
+// which must stay untracked so that the next push reads them again.
+func scanReplacements(client tracegit.Client, store *state.Store, repoRoot string, records []*state.CommitRecord, ledgers map[string]*state.AILineAttribution, log zerolog.Logger) (affected map[string]struct{}, failed map[string]bool) {
 	bySHA := make(map[string]*state.CommitRecord, len(records))
+	var untracked []*state.CommitRecord
 	for _, r := range records {
 		bySHA[r.SHA] = r
+		if !r.Tracked {
+			untracked = append(untracked, r)
+		}
 	}
+	sort.SliceStable(untracked, func(i, j int) bool {
+		return untracked[i].Timestamp < untracked[j].Timestamp
+	})
 
 	ledgerFiles := make(map[string]bool)
 	for _, l := range ledgers {
@@ -47,61 +60,104 @@ func scanReplacements(client tracegit.Client, store *state.Store, repoRoot strin
 		}
 	}
 
-	affected := make(map[string]struct{})
-	for _, rec := range records {
-		if rec.Tracked {
-			continue
-		}
+	scan := &replacementScan{
+		client:      client,
+		repoRoot:    repoRoot,
+		bySHA:       bySHA,
+		ledgerFiles: ledgerFiles,
+		lines:       make(map[string][]tracegit.FileLines),
+		blames:      make(map[[2]string][]tracegit.BlameLine),
+	}
 
-		joined, err := replacedSessions(client, repoRoot, rec, bySHA, ledgerFiles, affected, log)
-		if err != nil {
-			log.Debug().Err(err).Str("sha", rec.SHA).Msg("could not read the lines of a commit; it replaces no session lines")
-			continue
-		}
+	affected = make(map[string]struct{})
+	failed = make(map[string]bool)
+	changed := make(map[string]*state.CommitRecord)
+	// Each pass can add one link to a chain of joins, so the number of
+	// commits bounds the passes.
+	for range len(untracked) + 1 {
+		again := false
+		for _, rec := range untracked {
+			if failed[rec.SHA] {
+				continue
+			}
 
-		// Only a commit in no session joins one. Recompute it on each push
-		// until the commit is tracked, so that a failed push leaves no stale
-		// join behind.
-		if len(rec.SessionIDs) > 0 || reflect.DeepEqual(joined, rec.Joined) {
-			continue
+			joined, err := scan.replacedSessions(rec, affected)
+			if err != nil {
+				log.Debug().Err(err).Str("sha", rec.SHA).Msg("could not read the lines of a commit; the next push reads it again")
+				failed[rec.SHA] = true
+				continue
+			}
+
+			// Only a commit in no session joins one. It is recomputed on each
+			// push until the commit is tracked, so that a failed push leaves
+			// no stale join behind.
+			if len(rec.SessionIDs) > 0 || reflect.DeepEqual(joined, rec.Joined) {
+				continue
+			}
+			rec.Joined = joined
+			changed[rec.SHA] = rec
+			again = true
 		}
-		rec.Joined = joined
+		if !again {
+			break
+		}
+	}
+
+	for _, rec := range changed {
 		if err := store.SaveCommitRecord(rec); err != nil {
 			log.Debug().Err(err).Str("sha", rec.SHA).Msg("could not save the sessions that a commit joined")
 		}
 	}
 
-	return affected
+	return affected, failed
+}
+
+// replacementScan reads the lines of commits and the blame of their parents,
+// each one time for all the passes of scanReplacements.
+type replacementScan struct {
+	client      tracegit.Client
+	repoRoot    string
+	bySHA       map[string]*state.CommitRecord
+	ledgerFiles map[string]bool
+	lines       map[string][]tracegit.FileLines
+	blames      map[[2]string][]tracegit.BlameLine
 }
 
 // replacedSessions adds to affected each session that owns a line that the
 // commit removed. It returns, for a commit in no session, the sessions that
 // the commit joins, with the fingerprints of the lines that its replacing
-// hunks added, per file.
-func replacedSessions(client tracegit.Client, repoRoot string, rec *state.CommitRecord, bySHA map[string]*state.CommitRecord, ledgerFiles map[string]bool, affected map[string]struct{}, log zerolog.Logger) (map[string]map[string][]string, error) {
-	lines, err := client.CommitLines(repoRoot, rec.SHA)
-	if err != nil {
-		return nil, err
+// hunks added, per file. An error means the commit could not be read.
+func (s *replacementScan) replacedSessions(rec *state.CommitRecord, affected map[string]struct{}) (map[string]map[string][]string, error) {
+	lines, ok := s.lines[rec.SHA]
+	if !ok {
+		var err error
+		if lines, err = s.client.CommitLines(s.repoRoot, rec.SHA); err != nil {
+			return nil, err
+		}
+		s.lines[rec.SHA] = lines
 	}
 
 	var joined map[string]map[string][]string
 	for _, fl := range lines {
-		if len(fl.Removed) == 0 || !ledgerFiles[fl.Path] {
+		// A root commit removes nothing, so its parent is never blamed.
+		if len(fl.Removed) == 0 || !s.ledgerFiles[fl.Path] {
 			continue
 		}
 
 		// The removed lines are lines of the parent, so the parent's blame
-		// names the commit that last wrote each one. A root commit has no
-		// parent, and removes nothing.
-		blame, err := client.Blame(repoRoot, rec.SHA+"^", fl.Path)
-		if err != nil {
-			log.Debug().Err(err).Str("sha", rec.SHA).Str("file", fl.Path).Msg("could not blame the parent of a commit")
-			continue
+		// names the commit that last wrote each one.
+		key := [2]string{rec.SHA, fl.Path}
+		blame, ok := s.blames[key]
+		if !ok {
+			var err error
+			if blame, err = s.client.Blame(s.repoRoot, rec.SHA+"^", fl.Path); err != nil {
+				return nil, err
+			}
+			s.blames[key] = blame
 		}
 
 		for _, h := range fl.Hunks {
-			owners := hunkOwners(h, blame, bySHA, rec.SHA, fl.Path)
-			for _, sid := range owners {
+			for _, sid := range hunkOwners(h, blame, s.bySHA, rec.SHA, fl.Path) {
 				affected[sid] = struct{}{}
 				if len(rec.SessionIDs) > 0 {
 					continue

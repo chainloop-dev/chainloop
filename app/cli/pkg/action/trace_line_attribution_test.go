@@ -16,6 +16,7 @@
 package action
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -118,7 +119,8 @@ func (r *lineRepo) push() map[string]pushed {
 
 	client := tracegit.NewGitClient()
 	ledgers := loadLedgers(r.store, zerolog.Nop())
-	affected := scanReplacements(client, r.store, r.dir, records, ledgers, zerolog.Nop())
+	affected, failed := scanReplacements(client, r.store, r.dir, records, ledgers, zerolog.Nop())
+	require.Empty(r.t, failed)
 
 	var aiCommits []*state.CommitRecord
 	untracked := 0
@@ -269,6 +271,67 @@ func TestLineAttribution_Case2HumanCommitJoinsSession(t *testing.T) {
 
 	// A third push with nothing new sends nothing.
 	assert.Empty(t, r.push())
+}
+
+// A human commit that replaces the lines of an earlier human commit joins the
+// sessions that the earlier commit joined, in whatever order the records are
+// read.
+func TestLineAttribution_ChainedHumanCommitsJoin(t *testing.T) {
+	r := newLineRepo(t)
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+	r.push()
+
+	lines[1] = "human one"
+	r.humanWrite("a.go", content(lines))
+	r.commit("fix: one", "a.go")
+	first := headSHA(t, r.dir)
+
+	lines[1] = "human two"
+	r.humanWrite("a.go", content(lines))
+	r.commit("fix: two", "a.go")
+	second := headSHA(t, r.dir)
+
+	got := r.push()
+	require.Contains(t, got, lineSession)
+	assert.Equal(t, lineSplit{aiAdded: 4, humanAdded: 1}, fileSplitOf(t, got[lineSession].changes, "a.go"))
+	assert.Contains(t, got[lineSession].commits, first)
+	assert.Contains(t, got[lineSession].commits, second, "the second commit joins through the first one")
+}
+
+// failingLinesClient fails to read the lines of one commit.
+type failingLinesClient struct {
+	tracegit.Client
+	sha string
+}
+
+func (c failingLinesClient) CommitLines(repoRoot, sha string) ([]tracegit.FileLines, error) {
+	if sha == c.sha {
+		return nil, errors.New("read failed")
+	}
+
+	return c.Client.CommitLines(repoRoot, sha)
+}
+
+// A commit that the scan cannot read is reported, so that the push keeps it
+// untracked and reads it again.
+func TestScanReplacements_ReportsFailedCommits(t *testing.T) {
+	r := newLineRepo(t)
+
+	r.agentWrite(lineSession, "a.go", content(numbered("ai", 3)))
+	r.commit("feat: a", "a.go")
+	r.humanWrite("a.go", "changed\n")
+	r.commit("fix: by hand", "a.go")
+	human := headSHA(t, r.dir)
+
+	records, err := r.store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	client := failingLinesClient{Client: tracegit.NewGitClient(), sha: human}
+	_, failed := scanReplacements(client, r.store, r.dir, records, loadLedgers(r.store, zerolog.Nop()), zerolog.Nop())
+
+	assert.Equal(t, map[string]bool{human: true}, failed)
 }
 
 // Case 4 of the spec: a commit of another session replaces lines of the first

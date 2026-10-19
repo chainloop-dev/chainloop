@@ -17,6 +17,7 @@ package git
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"testing"
@@ -135,6 +136,27 @@ func TestCommitLinesAndFileAt(t *testing.T) {
 
 func sortFileLines(fl []FileLines) {
 	sort.Slice(fl, func(i, j int) bool { return fl[i].Path < fl[j].Path })
+}
+
+func TestNewGitClient(t *testing.T) {
+	testCases := []struct {
+		name    string
+		lookErr error
+		want    Client
+	}{
+		{name: "git on the PATH", want: &ExecClient{}},
+		{name: "no git binary", lookErr: exec.ErrNotFound, want: &GoGitClient{}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			orig := lookPath
+			t.Cleanup(func() { lookPath = orig })
+			lookPath = func(string) (string, error) { return "/usr/bin/git", tc.lookErr }
+
+			assert.IsType(t, tc.want, NewGitClient())
+		})
+	}
 }
 
 func TestGoGitBlameFallback(t *testing.T) {

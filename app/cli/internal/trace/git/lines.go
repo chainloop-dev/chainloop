@@ -253,11 +253,9 @@ func hunkOldStart(header string) int {
 // FileAt returns the content of path at the commit, or nil when the commit
 // does not hold it.
 func (c *ExecClient) FileAt(repoRoot, sha, path string) ([]byte, error) {
-	if _, err := gitRawOutput(repoRoot, "rev-parse", "--verify", "--quiet", sha+"^{commit}"); err != nil {
-		return nil, fmt.Errorf("resolve %s: %w", sha, err)
-	}
-	if _, err := gitRawOutput(repoRoot, "cat-file", "-e", sha+":"+path); err != nil {
-		return nil, nil //nolint:nilerr // the commit resolves, so a failure here means the path is absent
+	exists, err := pathAt(repoRoot, sha, path)
+	if err != nil || !exists {
+		return nil, err
 	}
 
 	out, err := gitRawOutput(repoRoot, "cat-file", "blob", sha+":"+path)
@@ -266,6 +264,19 @@ func (c *ExecClient) FileAt(repoRoot, sha, path string) ([]byte, error) {
 	}
 
 	return out, nil
+}
+
+// pathAt reports whether the commit holds path, without reading its content.
+// An error means the commit does not resolve.
+func pathAt(repoRoot, sha, path string) (bool, error) {
+	if _, err := gitRawOutput(repoRoot, "rev-parse", "--verify", "--quiet", sha+"^{commit}"); err != nil {
+		return false, fmt.Errorf("resolve %s: %w", sha, err)
+	}
+	if _, err := gitRawOutput(repoRoot, "cat-file", "-e", sha+":"+path); err != nil {
+		return false, nil //nolint:nilerr // the commit resolves, so a failure here means the path is absent
+	}
+
+	return true, nil
 }
 
 // gitRawOutput runs git and returns its output unchanged. gitOutput trims
@@ -304,18 +315,15 @@ func (c *GoGitClient) Blame(repoRoot, rev, path string) ([]BlameLine, error) {
 
 // Blame returns the last writer of each line of path at rev.
 func (c *ExecClient) Blame(repoRoot, rev, path string) ([]BlameLine, error) {
-	return blamePorcelain(c, repoRoot, rev, path)
+	return blamePorcelain(repoRoot, rev, path)
 }
 
 // blamePorcelain runs `git blame --porcelain` and reads the commit and the
 // text of each line. A path that rev does not hold has no lines.
-func blamePorcelain(c *ExecClient, repoRoot, rev, path string) ([]BlameLine, error) {
-	content, err := c.FileAt(repoRoot, rev, path)
-	if err != nil {
+func blamePorcelain(repoRoot, rev, path string) ([]BlameLine, error) {
+	exists, err := pathAt(repoRoot, rev, path)
+	if err != nil || !exists {
 		return nil, err
-	}
-	if content == nil {
-		return nil, nil
 	}
 
 	raw, err := gitRawOutput(repoRoot, "blame", "--porcelain", rev, "--", path)

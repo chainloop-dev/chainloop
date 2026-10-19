@@ -813,7 +813,10 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 	// That session is sent again, with its new net numbers (spec issue-3639
 	// R-004), and a commit in no session joins it (R-010).
 	ledgers := loadLedgers(store, log)
-	affected := scanReplacements(gitClient, store, repoRoot, allCommits, ledgers, log)
+	affected, failed := scanReplacements(gitClient, store, repoRoot, allCommits, ledgers, log)
+	// A commit that could not be read stays untracked, so the next push reads
+	// it again.
+	scanned := slices.DeleteFunc(slices.Clone(allCommits), func(c *state.CommitRecord) bool { return failed[c.SHA] })
 
 	// Discard commits that neither belong to nor joined a session (no AI
 	// agent involved).
@@ -830,7 +833,7 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 
 	if len(aiCommits) == 0 && !allowEmpty {
 		log.Debug().Msg("no AI-assisted commits")
-		markScanned(store, allCommits, log)
+		markScanned(store, scanned, log)
 
 		return nil, nil, nil
 	}
@@ -841,7 +844,7 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 	// same evidence.
 	if len(aiCommits) > 0 && untrackedAICommits == 0 && len(affected) == 0 && !allowEmpty {
 		log.Debug().Int("ai_commit_count", len(aiCommits)).Msg("all AI-assisted commits already recorded")
-		markScanned(store, allCommits, log)
+		markScanned(store, scanned, log)
 
 		return nil, aiCommits, nil
 	}
@@ -864,9 +867,9 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 		log.Debug().Msg("no session evidence could be generated")
 	}
 
-	// Every commit of the branch was scanned, so all of them are marked
-	// tracked once the evidence is out.
-	return sessions, allCommits, nil
+	// Every commit of the branch that the scan could read is marked tracked
+	// once the evidence is out.
+	return sessions, scanned, nil
 }
 
 // markScanned marks tracked the commits in no session that scanReplacements

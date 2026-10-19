@@ -214,7 +214,7 @@ The CLI keeps the ledger and the commit records of a session for 30 days after t
 - Why: a later human edit often comes days after the push. Thirty days covers a normal review cycle, and the state stays small.
 - Alternatives considered:
   - Keep the earlier 7 days: a fix after a long review does not update the session.
-- Source: answer to the open question, milestone 2 implementation
+- Source: decision of the spec owner on the open question, during milestone 2 (PR #3658)
 
 ### D-013: The push sends a session again only from the branch with its commits
 The push sends a session again only when its own commits are on the branch that the push sends. Take a session whose commits are only on another branch, for example the default branch. A commit that replaces its lines does not update it.

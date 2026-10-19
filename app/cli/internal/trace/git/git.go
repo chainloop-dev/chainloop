@@ -22,11 +22,14 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
 
+// lookPath finds a binary on the PATH. Tests replace it to pick a client.
+var lookPath = exec.LookPath
+
 // NewGitClient returns the client that runs the git binary when one is on
 // the PATH, and the go-git client otherwise. The git binary is many times
 // faster on a long history, for example for blame.
 func NewGitClient() Client {
-	if _, err := exec.LookPath("git"); err == nil {
+	if _, err := lookPath("git"); err == nil {
 		return NewExecClient()
 	}
 
