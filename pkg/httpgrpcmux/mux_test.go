@@ -23,11 +23,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"fmt"
 	"io"
 	"math/big"
 	"net"
+	"net/http"
 	"strings"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -49,6 +52,7 @@ const (
 	ctGRPC         = "application/grpc"
 	ctGRPCProto    = "application/grpc+proto"
 	ctGRPCWebProto = "application/grpc-web+proto"
+	alpnHTTP1      = "http/1.1"
 )
 
 // startMux creates a real TCP listener, wraps it in a mux and starts it.
@@ -429,32 +433,212 @@ func TestSettingsWaitingClientClassifiesNative(t *testing.T) {
 	assert.Equal(t, "still-writable", string(tail))
 }
 
-// TestCommittedNonGRPCDropped proves a spoken-to connection whose first
-// request is not native gRPC is closed, not handed to the HTTP server: its
-// acknowledgement of the injected settings frame is already recorded, and
-// net/http fails a connection that acknowledges settings it never sent.
-func TestCommittedNonGRPCDropped(t *testing.T) {
-	_, dial := startMux(t, &Options{SettingsGrace: 100 * time.Millisecond, ClassifyTimeout: time.Second})
+// HTTP/2 permits any client to wait for server SETTINGS before its request.
+// Exercise real net/http handoff, including the ACK of net/http's subsequent
+// SETTINGS and a second request, so an extra replayed ACK cannot go unnoticed.
+func TestSettingsWaitingHTTPClient(t *testing.T) {
+	for _, encrypted := range []bool{false, true} {
+		for _, contentType := range []string{"application/json", ctGRPCWebProto} {
+			for _, ackFirst := range []bool{false, true} {
+				name := fmt.Sprintf("TLS=%t/content-type=%s/ACK-first=%t", encrypted, contentType, ackFirst)
+				t.Run(name, func(t *testing.T) {
+					t.Parallel()
+					l, err := net.Listen("tcp", "127.0.0.1:0")
+					require.NoError(t, err)
+					t.Cleanup(func() { _ = l.Close() })
+					root := l
+					if encrypted {
+						root = tls.NewListener(l, &tls.Config{
+							Certificates: []tls.Certificate{selfSignedCert(t)},
+							MinVersion:   tls.VersionTLS12,
+							NextProtos:   []string{"h2", alpnHTTP1},
+						})
+					}
+					m := New(root, &Options{SettingsGrace: 40 * time.Millisecond, ClassifyTimeout: 2 * time.Second})
+					require.NoError(t, m.Start(context.Background()))
+					t.Cleanup(m.Close)
+					srv := &http.Server{
+						Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							w.Header().Set("X-Request-Content-Type", r.Header.Get(hdrContentType))
+							w.WriteHeader(http.StatusOK)
+						}),
+						ReadHeaderTimeout: time.Second,
+						Protocols:         new(http.Protocols),
+					}
+					srv.Protocols.SetHTTP1(true)
+					srv.Protocols.SetUnencryptedHTTP2(true)
+					go func() { _ = srv.Serve(m.HTTP()) }()
+					t.Cleanup(func() { _ = srv.Close() })
 
+					var c net.Conn
+					if encrypted {
+						c, err = tls.Dial("tcp", l.Addr().String(), &tls.Config{
+							InsecureSkipVerify: true, //nolint:gosec // self-signed test certificate
+							MinVersion:         tls.VersionTLS12,
+							NextProtos:         []string{"h2"},
+						})
+					} else {
+						c, err = net.Dial("tcp", l.Addr().String())
+					}
+					require.NoError(t, err)
+					t.Cleanup(func() { _ = c.Close() })
+					require.NoError(t, c.SetDeadline(time.Now().Add(5*time.Second)))
+					_, err = io.WriteString(c, http2.ClientPreface)
+					require.NoError(t, err)
+					fr := http2.NewFramer(c, c)
+					fr.ReadMetaHeaders = hpack.NewDecoder(4096, nil)
+					require.NoError(t, fr.WriteSettings())
+					frame, err := fr.ReadFrame()
+					require.NoError(t, err)
+					settings, ok := frame.(*http2.SettingsFrame)
+					require.True(t, ok, "expected injected SETTINGS, got %T", frame)
+					require.False(t, settings.IsAck())
+
+					var block bytes.Buffer
+					enc := hpack.NewEncoder(&block)
+					writeRequest := func(streamID uint32) {
+						block.Reset()
+						method, scheme := "GET", "http"
+						if contentType == ctGRPCWebProto {
+							method = hdrMethodPost
+						}
+						if encrypted {
+							scheme = "https"
+						}
+						for _, hf := range []hpack.HeaderField{
+							{Name: hdrMethod, Value: method},
+							{Name: ":scheme", Value: scheme},
+							{Name: ":authority", Value: l.Addr().String()},
+							{Name: ":path", Value: "/statusz"},
+							{Name: hdrContentType, Value: contentType},
+						} {
+							require.NoError(t, enc.WriteField(hf))
+						}
+						require.NoError(t, fr.WriteHeaders(http2.HeadersFrameParam{
+							StreamID: streamID, BlockFragment: block.Bytes(), EndHeaders: true, EndStream: true,
+						}))
+					}
+					if ackFirst {
+						require.NoError(t, fr.WriteSettingsAck())
+					}
+					writeRequest(1)
+					// Include another frame before the ACK to exercise its exact
+					// offset rather than assuming it immediately follows SETTINGS.
+					require.NoError(t, fr.WritePing(false, [8]byte{1}))
+					if !ackFirst {
+						require.NoError(t, fr.WriteSettingsAck())
+					}
+
+					serverSettings := 0
+					readResponse := func(streamID uint32) {
+						for {
+							frame, err := fr.ReadFrame()
+							require.NoError(t, err)
+							switch f := frame.(type) {
+							case *http2.SettingsFrame:
+								if !f.IsAck() {
+									serverSettings++
+									require.NoError(t, fr.WriteSettingsAck())
+								}
+							case *http2.MetaHeadersFrame:
+								if f.StreamID == streamID {
+									assert.Equal(t, "200", f.PseudoValue("status"))
+									assert.Contains(t, f.Fields, hpack.HeaderField{Name: "x-request-content-type", Value: contentType})
+									return
+								}
+							case *http2.GoAwayFrame:
+								require.FailNow(t, "unexpected GOAWAY", "%v: %s", f.ErrCode, f.DebugData())
+							}
+						}
+					}
+					readResponse(1)
+					writeRequest(3)
+					readResponse(3)
+					assert.Equal(t, 1, serverSettings, "the HTTP server must own its SETTINGS/ACK exchange")
+				})
+			}
+		}
+	}
+}
+
+func TestHTTPReplayRemovesOnlyMatcherACK(t *testing.T) {
+	var wire bytes.Buffer
+	wire.WriteString(http2.ClientPreface)
+	fr := http2.NewFramer(&wire, nil)
+	require.NoError(t, fr.WriteSettings())
+	prefix := wire.String()
+	require.NoError(t, fr.WriteSettingsAck())
+	require.NoError(t, fr.WritePing(false, [8]byte{1, 2, 3}))
+	require.NoError(t, fr.WriteSettingsAck()) // belongs to the HTTP server
+	tail := wire.Bytes()[len(prefix)+9:]
+	for _, oneByte := range []bool{false, true} {
+		var reader io.Reader = bytes.NewReader(wire.Bytes())
+		if oneByte {
+			reader = iotest.OneByteReader(reader)
+		}
+		c := &httpConn{Conn: &readerConn{reader: reader}, beforeACK: int64(len(prefix))}
+		got, err := io.ReadAll(c)
+		require.NoError(t, err)
+		assert.Equal(t, prefix+string(tail), string(got))
+	}
+}
+
+func TestSettingsWaitingHTTPWithoutACKDropped(t *testing.T) {
+	_, dial := startMux(t, &Options{SettingsGrace: 40 * time.Millisecond, ClassifyTimeout: 150 * time.Millisecond})
 	c, err := dial()
 	require.NoError(t, err)
 	defer c.Close()
-
 	_, err = io.WriteString(c, http2.ClientPreface)
 	require.NoError(t, err)
 	writeFrame(t, c, http2.FrameSettings, 0, 0, nil)
-
-	// Receive the injected settings frame, acknowledge it, and send a
-	// gRPC-Web request flight.
 	require.NoError(t, c.SetReadDeadline(time.Now().Add(2*time.Second)))
 	_, err = io.ReadFull(c, make([]byte, 9))
 	require.NoError(t, err)
-	writeFrame(t, c, http2.FrameSettings, http2.FlagSettingsAck, 0, nil)
 	writeRequestFrames(t, c, ctGRPCWebProto)
-
-	// The connection matches no listener and cmux closes it.
+	// The first request alone cannot complete handoff: an ACK still pending
+	// on the wire would belong to the matcher rather than the HTTP server.
 	readEOF(t, c, 2*time.Second)
 }
+
+type readerConn struct {
+	net.Conn
+	reader io.Reader
+}
+
+func (c *readerConn) Read(p []byte) (int, error) { return c.reader.Read(p) }
+
+// A frame length must be rejected before any read of its advertised payload.
+// The sentinel makes this deterministic without process-wide memory or timing
+// assertions: the old Framer allocated first, then reached the sentinel.
+func TestOversizedFrameRejectedBeforePayloadRead(t *testing.T) {
+	for _, size := range []uint32{initialMaxFrameSize + 1, (1 << 24) - 1} {
+		t.Run(fmt.Sprint(size), func(t *testing.T) {
+			var wire bytes.Buffer
+			wire.WriteString(http2.ClientPreface)
+			require.NoError(t, http2.NewFramer(&wire, nil).WriteSettings())
+			wire.Write([]byte{byte(size >> 16), byte(size >> 8), byte(size), 0xfe, 0, 0, 0, 0, 0})
+			payloadRead := false
+			reader := io.MultiReader(&wire, testReaderFunc(func([]byte) (int, error) {
+				payloadRead = true
+				return 0, io.EOF
+			}))
+			server, client := net.Pipe()
+			defer server.Close()
+			defer client.Close()
+			m := &Mux{
+				maxClassifiedBytes: defaultMaxClassifiedBytes,
+				settingsGrace:      time.Second,
+				admit:              make(chan struct{}, 1),
+			}
+			assert.False(t, m.matchNativeGRPC(&classificationConn{Conn: server, settingsACKOffset: -1}, reader))
+			assert.False(t, payloadRead, "oversized frame header must fail before its payload buffer is read")
+		})
+	}
+}
+
+type testReaderFunc func([]byte) (int, error)
+
+func (f testReaderFunc) Read(p []byte) (int, error) { return f(p) }
 
 // TestOversizedHeaderBlockDeclined proves a connection whose first request
 // needs more than the classification byte budget goes to the HTTP server,
@@ -569,8 +753,7 @@ func TestIdleConnectionDropped(t *testing.T) {
 
 // TestStalledAfterPrefaceDropped proves a connection that sends a preface and
 // then stalls is closed at the end of its classification window: the matcher
-// speaks to it after the grace, and a spoken-to connection never reaches the
-// HTTP server.
+// speaks to it after the grace, but the handshake never completes.
 func TestStalledAfterPrefaceDropped(t *testing.T) {
 	_, dial := startMux(t, &Options{SettingsGrace: 100 * time.Millisecond, ClassifyTimeout: 300 * time.Millisecond})
 
@@ -624,7 +807,7 @@ func TestSlowMidFrameClientTakesFallback(t *testing.T) {
 	_, err = c.Write(block[len(block)/2:])
 	require.NoError(t, err)
 
-	// The connection is not dropped and not poisoned: the HTTP server gets
+	// The connection is not dropped: the HTTP server gets
 	// it with the whole stream replayed.
 	got := acceptWithTimeout(t, m.HTTP())
 	defer got.Close()
@@ -738,7 +921,7 @@ func TestTLSALPNClassification(t *testing.T) {
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{selfSignedCert(t)},
 		MinVersion:   tls.VersionTLS12,
-		NextProtos:   []string{"h2", "http/1.1"},
+		NextProtos:   []string{"h2", alpnHTTP1},
 	}
 	m := New(tls.NewListener(l, tlsConfig), nil)
 	require.NoError(t, m.Start(context.Background()))
@@ -763,7 +946,7 @@ func TestTLSALPNClassification(t *testing.T) {
 	c.Close()
 
 	// ALPN http/1.1 -> HTTP server.
-	c = dialTLS(t, "http/1.1")
+	c = dialTLS(t, alpnHTTP1)
 	_, err = io.WriteString(c, "GET /statusz HTTP/1.1\r\nHost: x\r\n\r\n")
 	require.NoError(t, err)
 	got = acceptWithTimeout(t, m.HTTP())

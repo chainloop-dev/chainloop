@@ -19,7 +19,7 @@
 //
 // It implements the connection-level split described in
 // docs/specs/issue-3628-single-endpoint.md, with the cmux library as the
-// classifier (D-013). cmux reads the start of each new connection without
+// classifier (D-016). cmux reads the start of each new connection without
 // consuming it and hands the connection to the gRPC or the HTTP listener. A
 // service-owned matcher decides native gRPC from the first request's content
 // type; every other connection (HTTP/1.x, HTTP/2 without gRPC, gRPC-Web) goes
@@ -29,11 +29,10 @@
 //
 // The matcher speaks only when a connection stays silent for the settings
 // grace: gRPC clients (the CLI, Java) wait for the server's HTTP/2 settings
-// frame before their first request. A connection the matcher has spoken to is
-// committed to the gRPC side, because the client's acknowledgement of the
-// injected frame reaches whichever server owns the connection, and net/http
-// fails on an acknowledgement of settings it never sent. Every other client
-// sends its first request without waiting and classifies unwritten-to.
+// frame before their first request. Ordinary HTTP/2 clients may also wait for
+// this frame. When such a connection goes to HTTP, the matcher consumes its
+// SETTINGS acknowledgement and the HTTP listener removes that one frame from
+// cmux's replay. The HTTP server owns every subsequent SETTINGS exchange.
 //
 // The mux implements kratos' transport.Server interface (Start/Stop with
 // standard signatures) so it can join the application server lifecycle.
@@ -64,11 +63,14 @@ const defaultClassifyTimeout = 10 * time.Second
 
 // defaultSettingsGrace is how long the matcher waits for the first request
 // after the connection preface before it assumes the client waits for the
-// server to speak first. gRPC clients (the CLI) wait for the server's
-// HTTP/2 settings frame before they send their first request, so the matcher
-// must send one. Every other client (browsers, plain HTTP/2) sends its first
-// request without waiting and stays unspoken-to.
+// server to speak first. Both native gRPC and ordinary HTTP/2 clients may
+// wait for the server's SETTINGS before sending their first request.
 const defaultSettingsGrace = 250 * time.Millisecond
+
+// initialMaxFrameSize is the HTTP/2 frame size limit before the server has
+// advertised a larger value. Bound allocation before reading frame payloads;
+// a LimitedReader alone only bounds bytes consumed, not allocated buffers.
+const initialMaxFrameSize = 1 << 14
 
 // defaultMaxClassifiedBytes bounds how much of a connection the matcher may
 // read while looking for the first request headers. A connection that needs
@@ -146,17 +148,7 @@ type Mux struct {
 	// admit caps how many connections may be in classification at once. A
 	// matcher holds a slot while it runs; a connection that cannot get one
 	// matches no listener, and cmux closes it.
-	admit chan struct{}
-	// poisoned holds the connections the gRPC matcher has sent the server's
-	// HTTP/2 settings frame to, but whose first request turned out not to be
-	// native gRPC. Their acknowledgement of that frame is already recorded
-	// in cmux's replay buffer, and net/http fails a connection that
-	// acknowledges settings it never sent, so they must not reach the HTTP
-	// side. The gRPC matcher sets the entry before it declines; the HTTP
-	// listener's dropPoisoned wrapper, which cmux always runs next, clears
-	// it before reading, so a full admission cap cannot strand the marker.
-	poisoned sync.Map
-
+	admit    chan struct{}
 	stopping atomic.Bool
 	serveWG  sync.WaitGroup
 	// serveOnce and closeOnce keep Start and Close idempotent: kratos may
@@ -172,9 +164,72 @@ type stoppingListener struct {
 	stopping *atomic.Bool
 }
 
+func (l *stoppingListener) Accept() (net.Conn, error) {
+	c, err := l.Listener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	return &classificationConn{Conn: c, settingsACKOffset: -1}, nil
+}
+
 func (l *stoppingListener) Close() error {
 	l.stopping.Store(true)
 	return l.Listener.Close()
+}
+
+// classificationConn carries handshake state through cmux. Matchers update
+// it before cmux publishes the connection to a sub-listener. No shared map
+// or state remains after an unaccepted connection closes.
+type classificationConn struct {
+	net.Conn
+	settingsACKOffset int64
+	rejectHTTP        bool
+}
+
+// httpListener strips only the acknowledgement of the matcher's SETTINGS.
+// Its exact offset is known before handoff, so serving HTTP does not require
+// a second frame parser or any inspection of later requests or streams.
+type httpListener struct{ net.Listener }
+
+func (l httpListener) Accept() (net.Conn, error) {
+	c, err := l.Listener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	if mc, ok := c.(*cmux.MuxConn); ok {
+		if state, ok := mc.Conn.(*classificationConn); ok && state.settingsACKOffset >= 0 {
+			return &httpConn{Conn: c, beforeACK: state.settingsACKOffset}, nil
+		}
+	}
+	return c, nil
+}
+
+type httpConn struct {
+	net.Conn
+	beforeACK int64
+}
+
+func (c *httpConn) Read(p []byte) (int, error) {
+	if len(p) == 0 {
+		return 0, nil
+	}
+	if c.beforeACK > 0 {
+		n, err := c.Conn.Read(p[:min(int64(len(p)), c.beforeACK)])
+		c.beforeACK -= int64(n)
+		return n, err
+	}
+	if c.beforeACK == 0 {
+		// The matcher already read and validated this complete, empty ACK.
+		// It is entirely in cmux's replay, even when the caller reads one
+		// byte at a time. Leave the next server SETTINGS/ACK pair untouched.
+		var ack [9]byte
+		_, err := io.ReadFull(c.Conn, ack[:])
+		c.beforeACK = -1
+		if err != nil {
+			return 0, err
+		}
+	}
+	return c.Conn.Read(p)
 }
 
 // New creates a mux over l. Both listeners are usable immediately;
@@ -225,10 +280,9 @@ func New(l net.Listener, opts *Options) *Mux {
 	// are MatchWriters so they can reach the connection: the gRPC matcher
 	// writes the server's settings frame to clients that wait for it, and
 	// takes its admission slot itself, once the connection prefaced. The
-	// HTTP chain drops spoken-to connections before it reads anything, so a
-	// poison marker never survives a full admission cap.
+	// HTTP chain rejects incomplete handshakes before it reads anything.
 	m.grpcL = m.cm.MatchWithWriters(m.matchNativeGRPC)
-	m.httpL = m.cm.MatchWithWriters(m.dropPoisoned(m.requireTraffic))
+	m.httpL = httpListener{m.cm.MatchWithWriters(m.rejectIncompleteHandshake(m.requireTraffic))}
 
 	m.cm.HandleError(func(err error) bool {
 		var notMatched cmux.ErrNotMatched
@@ -325,18 +379,13 @@ func (m *Mux) IsOrderlyShutdownErr(err error) bool {
 		errors.Is(err, cmux.ErrListenerClosed))
 }
 
-// dropPoisoned declines the connections the gRPC matcher has spoken to.
-// It runs as the outermost wrapper of the HTTP chain, before any read and
-// before admission: a spoken-to connection cannot be handed to net/http, and
-// its marker must clear even when the admission cap is full, or the entry
-// would pin the connection object forever.
-func (m *Mux) dropPoisoned(next cmux.MatchWriter) cmux.MatchWriter {
+// rejectIncompleteHandshake closes connections whose injected SETTINGS
+// exchange failed. A completed HTTP handshake is safe to hand off because
+// httpListener removes the acknowledgement belonging to the matcher.
+func (m *Mux) rejectIncompleteHandshake(next cmux.MatchWriter) cmux.MatchWriter {
 	return func(w io.Writer, r io.Reader) bool {
-		if conn, ok := w.(net.Conn); ok {
-			if _, poisoned := m.poisoned.LoadAndDelete(conn); poisoned {
-				m.logger.Warnw("msg", "closing connection: the classifier sent its settings frame, but the first request was not native gRPC")
-				return false
-			}
+		if conn, ok := w.(*classificationConn); ok && conn.rejectHTTP {
+			return false
 		}
 		return next(w, r)
 	}
@@ -389,17 +438,12 @@ func isTimeout(err error) bool {
 // matchNativeGRPC reports whether the connection's first request carries a
 // native gRPC content type.
 //
-// Clients that send their first request without waiting (browsers, plain
-// HTTP/2) classify without a single byte written to them. A client that stays
-// silent for the settings grace is a gRPC client waiting for the server's
-// HTTP/2 settings frame — the gRPC Go client does this, and so do Java
-// clients — so the matcher sends one. From that moment the connection is
-// committed: the client's acknowledgement of the injected frame is already
-// recorded in cmux's replay buffer, net/http fails a connection that
-// acknowledges settings it never sent, and the gRPC server ignores extra
-// acknowledgements. A committed connection whose first request is not native
-// gRPC, or that never sends its request, is therefore declined and poisoned:
-// the HTTP matcher declines it too, and cmux closes it.
+// Clients that send their first request without waiting classify without a
+// single byte written to them. After the settings grace, the matcher sends
+// SETTINGS to unblock either kind of waiting HTTP/2 client. Before an HTTP
+// handoff it records the ACK's exact replay offset, even if the ACK follows
+// the first request. httpListener removes that ACK; native gRPC continues to
+// receive the original replay. Incomplete injected handshakes are closed.
 //
 // Frame parsing and HPACK decoding are the standard HTTP/2 library's;
 // everything the matcher reads stays buffered in cmux and is replayed to the
@@ -430,12 +474,13 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 	}
 	defer func() { <-m.admit }()
 
-	conn, ok := w.(net.Conn)
+	conn, ok := w.(*classificationConn)
 	if !ok {
 		return false
 	}
 
 	framer := http2.NewFramer(w, lr)
+	framer.SetMaxReadFrameSize(initialMaxFrameSize)
 	var contentType string
 	hdec := hpack.NewDecoder(hpackDynamicTableSize, func(hf hpack.HeaderField) {
 		if strings.EqualFold(hf.Name, headerContentType) {
@@ -446,18 +491,20 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 
 	// Narrow the read deadline cmux set to the classification window down to
 	// the settings grace: how long to wait for a first request before
-	// speaking. decline reports no match, and poisons the connection when the
-	// matcher has spoken, so it never reaches net/http. boundary is the
+	// speaking. decline reports no match, and rejects an incomplete handshake
+	// when the matcher has spoken, so it never reaches net/http. boundary is the
 	// remaining read budget at the last completed frame: a timeout with a
 	// smaller budget fired mid-frame. The rule is correct only while the
 	// framer reads exactly frame-header plus payload with no read-ahead;
 	// inserting a buffering reader in this chain breaks it.
 	spoken := false
+	firstRequest := false
+	nativeGRPC := false
 	boundary := lr.N
 	_ = conn.SetReadDeadline(time.Now().Add(m.settingsGrace))
 	decline := func() bool {
 		if spoken {
-			m.poisoned.Store(conn, struct{}{})
+			conn.rejectHTTP = true
 		}
 		return false
 	}
@@ -466,8 +513,8 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 		// deadline when the connection is handed over, so a lingering write
 		// deadline would kill long-lived streams downstream.
 		_ = conn.SetWriteDeadline(time.Now().Add(m.classifyTimeout))
-		// The connection is committed from the first written byte, even if
-		// the frame is only partially delivered: decline must poison it.
+		// A failed handshake cannot be replayed to HTTP, even if only part
+		// of the SETTINGS frame was delivered.
 		spoken = true
 		err := framer.WriteSettings()
 		_ = conn.SetWriteDeadline(time.Time{})
@@ -479,6 +526,7 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 	}
 
 	for {
+		offset := int64(m.maxClassifiedBytes) + 1 - lr.N
 		f, err := framer.ReadFrame()
 		if err != nil {
 			if !spoken && isTimeout(err) {
@@ -498,16 +546,19 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 				}
 				continue
 			}
-			// Read failure, budget exhausted, or deadline: a committed
-			// connection cannot go to the HTTP server.
+			// Read failure, budget exhausted, or deadline: an incomplete
+			// injected handshake cannot go to the HTTP server.
 			return decline()
 		}
 		boundary = lr.N
+		if sf, ok := f.(*http2.SettingsFrame); ok && sf.IsAck() && spoken && conn.settingsACKOffset < 0 {
+			conn.settingsACKOffset = offset
+		}
 		// HEADERS and CONTINUATION are the only frames that carry header
 		// block fragments; SETTINGS (including the acknowledgement of the
 		// injected frame), PING, WINDOW_UPDATE, ... are skipped and stay in
 		// the replay: the gRPC server ignores unsolicited acknowledgements.
-		if hb, ok := f.(interface{ HeaderBlockFragment() []byte }); ok {
+		if hb, ok := f.(interface{ HeaderBlockFragment() []byte }); ok && !firstRequest {
 			if _, err := hdec.Write(hb.HeaderBlockFragment()); err != nil {
 				return decline()
 			}
@@ -515,10 +566,16 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 				if err := hdec.Close(); err != nil {
 					return decline()
 				}
-				if !IsNativeGRPCContentType(contentType) {
-					return decline()
-				}
+				firstRequest = true
+				nativeGRPC = IsNativeGRPCContentType(contentType)
+			}
+		}
+		if firstRequest {
+			if nativeGRPC {
 				return true
+			}
+			if !spoken || conn.settingsACKOffset >= 0 {
+				return false
 			}
 		}
 	}
