@@ -20,13 +20,6 @@ import "context"
 // HarnessClaudeCode is the column name of Claude Code in the feature table.
 const HarnessClaudeCode = "Claude Code"
 
-// harnesses are the adapters of the suite, by column name. The suite runs the
-// ones that config.yaml lists.
-var harnesses = map[string]Harness{
-	HarnessClaudeCode: &Claude{},
-	"OpenCode 2":      &OpenCode{Major: "2"},
-}
-
 // RunRequest is one headless session of a harness.
 type RunRequest struct {
 	// Dir is the repository the session runs in.

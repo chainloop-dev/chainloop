@@ -125,6 +125,13 @@ func TestTraceMatrix(t *testing.T) {
 	}
 }
 
+// harnesses are the adapters of the suite, by column name. The suite runs the
+// ones that config.yaml lists.
+var harnesses = map[string]Harness{
+	HarnessClaudeCode: &Claude{},
+	"OpenCode 2":      &OpenCode{Major: "2"},
+}
+
 // configuredHarnesses returns the adapters of the harnesses that the suite
 // config lists, in the order of their names.
 func configuredHarnesses(t *testing.T, cfg *Config) []Harness {
