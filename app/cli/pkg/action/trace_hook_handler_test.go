@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -300,6 +299,10 @@ func (f *fakeBranchClient) CommitLines(string, string) ([]tracegit.FileLines, er
 }
 
 func (f *fakeBranchClient) FileAt(string, string, string) ([]byte, error) { return nil, nil }
+
+func (f *fakeBranchClient) Blame(string, string, string) ([]tracegit.BlameLine, error) {
+	return nil, nil
+}
 
 func (f *fakeBranchClient) CommitHeadInfo(string) (string, string, error) { return "", "", nil }
 func (f *fakeBranchClient) HeadAuthorTime(string) (time.Time, error)      { return time.Time{}, nil }
@@ -775,7 +778,7 @@ func TestRebaseLifecycle(t *testing.T) {
 	assert.Len(t, all, 2)
 
 	// --- 3. The pre-push filter should drop the orphan and keep the new SHA. ---
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	filtered := filterCurrentBranchCommits(client, dir, all, zerolog.Nop())
 	require.Len(t, filtered, 1)
 	assert.Equal(t, newSHA, filtered[0].SHA, "only the in-branch SHA should survive the filter")
@@ -851,7 +854,7 @@ func TestCommitLifecycle_AmendKeepsSessions(t *testing.T) {
 
 	all, err := store.LoadAllCommitRecords()
 	require.NoError(t, err)
-	filtered := filterCurrentBranchCommits(tracegit.NewGoGitClient(), dir, all, zerolog.Nop())
+	filtered := filterCurrentBranchCommits(tracegit.NewGitClient(), dir, all, zerolog.Nop())
 	require.Len(t, filtered, 1)
 	assert.Equal(t, newSHA, filtered[0].SHA)
 }
@@ -1169,7 +1172,7 @@ func TestPushRebasePushPreservesAIAttribution(t *testing.T) {
 	//        end of runTracePush. ai-lines/ and commits/ for sessionID must
 	//        survive because the SHA is reachable from feature. ---
 	require.NoError(t, store.WipeTraceDir())
-	gitClient := tracegit.NewGoGitClient()
+	gitClient := tracegit.NewGitClient()
 	liveSHAs, err := gitClient.LocalReachableSHAs(dir)
 	require.NoError(t, err)
 	require.NotEmpty(t, liveSHAs, "post-push GC must see reachable SHAs")
@@ -1216,20 +1219,15 @@ func TestPushRebasePushPreservesAIAttribution(t *testing.T) {
 // Returns the resulting CodeChanges so the caller can assert on it.
 func buildSessionCodeChanges(t *testing.T, store *state.Store, dir, sha, sessionID string) *aicodingsession.CodeChanges {
 	t.Helper()
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	cc, err := client.CodeChangesForCommits(dir, []string{sha})
 	require.NoError(t, err)
-	attrs, err := store.LoadAllAILineAttributions()
-	require.NoError(t, err)
-	ledgers := make(map[string]*state.AILineAttribution, len(attrs))
-	for _, a := range attrs {
-		ledgers[a.SessionID] = a
-	}
 	commits := []*state.CommitRecord{{SHA: sha, SessionIDs: []string{sessionID}}}
-	lines := sessionCommitLines(client, dir, commits, map[string][]tracegit.FileLines{}, zerolog.Nop())
-	attribution.Enrich(sessionID, ledgers, lines, cc)
+	got := sessionCodeChanges(client, dir, sessionID, commits, loadLedgers(store, zerolog.Nop()), newLineCache(client, dir, zerolog.Nop()), func(string) bool { return false }, zerolog.Nop())
+	require.NotNil(t, got)
+	require.Equal(t, cc.LinesAdded, got.LinesAdded)
 
-	return cc
+	return got
 }
 
 // requireFileAttribution finds path in changes.Files and asserts attribution

@@ -25,6 +25,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -72,7 +73,7 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 		return nil
 	}
 
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 
 	// An amend with a new message replaces HEAD's trailer, and its sessions
 	// cannot be matched again because HEAD already consumed their pending
@@ -248,7 +249,7 @@ func handlePostCommit(_ context.Context, log zerolog.Logger) error {
 
 	log.Debug().Str("git_dir", gitDir).Msg("post-commit hook invoked")
 
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	sha, message, err := client.CommitHeadInfo(repoRoot)
 	if err != nil {
 		return fmt.Errorf("get commit info: %w", err)
@@ -749,14 +750,26 @@ func RunTracePush(ctx context.Context, log zerolog.Logger, opts RunTracePushOpts
 // they produced no commit on this branch (the trace-run and local-store paths).
 // A session that has ended without a commit is left out: assembling it on every
 // later push would republish the same stale evidence.
+//
+// A commit that joined a session (spec issue-3639 R-010) is in the group of
+// that session too. A session with joined commits only is left out: its own
+// commits are not on this branch, so the push cannot rebuild it (D-013).
 func sessionCommitGroups(aiCommits []*state.CommitRecord, sessionRecords map[string]*state.SessionRecord, allowEmpty bool) map[string][]*state.CommitRecord {
 	groups := make(map[string][]*state.CommitRecord)
+	own := make(map[string]bool)
 	for _, c := range aiCommits {
-		for _, sid := range c.SessionIDs {
+		for _, sid := range c.AllSessionIDs() {
 			groups[sid] = append(groups[sid], c)
 		}
+		for _, sid := range c.SessionIDs {
+			own[sid] = true
+		}
 	}
-	for _, commits := range groups {
+	for sid, commits := range groups {
+		if !own[sid] {
+			delete(groups, sid)
+			continue
+		}
 		sort.Slice(commits, func(i, j int) bool {
 			return commits[i].Timestamp < commits[j].Timestamp
 		})
@@ -790,19 +803,33 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 	}
 	log.Debug().Int("commit_count", len(allCommits)).Msg("loaded commit records")
 
-	gitClient := tracegit.NewGoGitClient()
+	gitClient := tracegit.NewGitClient()
 
 	// Drop orphan records (SHAs no longer in the branch — typically left over
 	// by a rebase) and any record that turns out to belong to a merge commit.
 	allCommits = filterCurrentBranchCommits(gitClient, repoRoot, allCommits, log)
 
-	// Discard commits without any session IDs (no AI agent involved).
+	// A new commit can replace lines of a session that a previous push sent.
+	// That session is sent again, with its new net numbers (spec issue-3639
+	// R-004), and a commit in no session joins it (R-010).
+	ledgers := loadLedgers(store, log)
+	affected, failed := scanReplacements(gitClient, store, repoRoot, allCommits, ledgers, log)
+	// A commit in no session that could not be read stays untracked, so the
+	// next push reads it again. It is never sent itself, so the retry does not
+	// send a session twice. A commit of a session is sent with its session, and
+	// is tracked like any other: a replacement in it that the scan missed is
+	// not found later.
+	retry := func(c *state.CommitRecord) bool { return failed[c.SHA] && len(c.SessionIDs) == 0 }
+	scanned := slices.DeleteFunc(slices.Clone(allCommits), retry)
+
+	// Discard commits that neither belong to nor joined a session (no AI
+	// agent involved).
 	var aiCommits []*state.CommitRecord
 	var untrackedAICommits int
 	for _, c := range allCommits {
-		if len(c.SessionIDs) > 0 {
+		if len(c.AllSessionIDs()) > 0 {
 			aiCommits = append(aiCommits, c)
-			if !c.Tracked {
+			if !c.Tracked && !retry(c) {
 				untrackedAICommits++
 			}
 		}
@@ -810,15 +837,18 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 
 	if len(aiCommits) == 0 && !allowEmpty {
 		log.Debug().Msg("no AI-assisted commits")
+		markScanned(store, scanned, log)
 
 		return nil, nil, nil
 	}
 
 	// If every candidate AI commit has already been recorded by a previous
-	// successful run, there is nothing new. Short-circuit so a no-op `git push`
-	// does not re-record the same evidence.
-	if len(aiCommits) > 0 && untrackedAICommits == 0 && !allowEmpty {
+	// successful run, and no new commit replaced lines of a session, there is
+	// nothing new. Short-circuit so a no-op `git push` does not re-record the
+	// same evidence.
+	if len(aiCommits) > 0 && untrackedAICommits == 0 && len(affected) == 0 && !allowEmpty {
 		log.Debug().Int("ai_commit_count", len(aiCommits)).Msg("all AI-assisted commits already recorded")
+		markScanned(store, scanned, log)
 
 		return nil, aiCommits, nil
 	}
@@ -836,22 +866,55 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 	}
 	log.Debug().Int("session_count", len(sessionCommits)).Msg("grouped commits by session")
 
-	sessions := buildSessionEvidence(ctx, store, repoRoot, gitClient, sessionCommits, sessionRecords, sessionMode, log)
+	sessions := buildSessionEvidence(ctx, store, repoRoot, gitClient, sessionCommits, sessionRecords, ledgers, sessionMode, log)
 	if len(sessions) == 0 {
 		log.Debug().Msg("no session evidence could be generated")
 	}
 
-	return sessions, aiCommits, nil
+	// Every commit of the branch that the scan could read is marked tracked
+	// once the evidence is out.
+	return sessions, scanned, nil
 }
 
-// finalizePush marks the AI commits recorded by this run as tracked and prunes
-// the single-use trace state, so a later `git push` with no new commits
+// markScanned marks tracked the commits in no session that scanReplacements
+// read, when the push has nothing to send. They replaced no line of a session,
+// and reading them again on each push would only repeat the blame.
+func markScanned(store *state.Store, records []*state.CommitRecord, log zerolog.Logger) {
+	for _, c := range records {
+		if c.Tracked || len(c.AllSessionIDs()) > 0 {
+			continue
+		}
+		c.Tracked = true
+		if err := store.SaveCommitRecord(c); err != nil {
+			log.Debug().Err(err).Str("sha", c.SHA).Msg("could not mark commit record as tracked")
+		}
+	}
+}
+
+// loadLedgers returns the AI line ledger of every session, by session ID.
+func loadLedgers(store *state.Store, log zerolog.Logger) map[string]*state.AILineAttribution {
+	ledgers := make(map[string]*state.AILineAttribution)
+	attrs, err := store.LoadAllAILineAttributions()
+	if err != nil {
+		log.Debug().Err(err).Msg("could not load AI line attributions")
+
+		return ledgers
+	}
+	for _, a := range attrs {
+		ledgers[a.SessionID] = a
+	}
+
+	return ledgers
+}
+
+// finalizePush marks the commits that this run read as tracked and prunes the
+// single-use trace state, so a later `git push` with no new commits
 // short-circuits in gatherPushSessions rather than re-recording. Every step is
 // best-effort: the evidence is already out, and at worst the next run repeats
 // the work. It is shared by the control-plane push and the local store, so both
 // get the same idempotency.
-func finalizePush(store *state.Store, repoRoot string, aiCommits []*state.CommitRecord, log zerolog.Logger) {
-	for _, c := range aiCommits {
+func finalizePush(store *state.Store, repoRoot string, commits []*state.CommitRecord, log zerolog.Logger) {
+	for _, c := range commits {
 		if c.Tracked {
 			continue
 		}
@@ -863,7 +926,7 @@ func finalizePush(store *state.Store, repoRoot string, aiCommits []*state.Commit
 
 	_ = store.WipeTraceDir()
 
-	gitClient := tracegit.NewGoGitClient()
+	gitClient := tracegit.NewGitClient()
 	if liveSHAs, err := gitClient.LocalReachableSHAs(repoRoot); err == nil {
 		if err := store.GCOrphans(liveSHAs); err != nil {
 			log.Debug().Err(err).Msg("orphan GC failed; trace state is intact but not pruned")
@@ -887,7 +950,7 @@ type sessionEvidence struct {
 // buildSessionEvidence parses each session of the push into its evidence,
 // with the specs and the skills that go into the attestation next to it. A
 // session that cannot be read is left out, with a warning in the log.
-func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot string, gitClient tracegit.Client, sessionCommits map[string][]*state.CommitRecord, sessionRecords map[string]*state.SessionRecord, sessionMode string, log zerolog.Logger) []sessionEvidence {
+func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot string, gitClient tracegit.Client, sessionCommits map[string][]*state.CommitRecord, sessionRecords map[string]*state.SessionRecord, ledgers map[string]*state.AILineAttribution, sessionMode string, log zerolog.Logger) []sessionEvidence {
 	// Collect repo-level context once (same for all sessions)
 	rawDir := store.RawSessionDir()
 
@@ -898,17 +961,9 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 
 	isGenerated := gitClient.GeneratedMatcher(repoRoot)
 
-	// Every ledger, because a commit can hold the lines of more than one
-	// session, and the lines of each commit, read once for all sessions.
-	ledgers := make(map[string]*state.AILineAttribution)
-	if attrs, err := store.LoadAllAILineAttributions(); err != nil {
-		log.Debug().Err(err).Msg("could not load AI line attributions")
-	} else {
-		for _, a := range attrs {
-			ledgers[a.SessionID] = a
-		}
-	}
-	commitLines := make(map[string][]tracegit.FileLines)
+	// The lines of each commit and the blame of each file at the pushed
+	// commit, read once for all sessions.
+	lineCache := newLineCache(gitClient, repoRoot, log)
 
 	var sessions []sessionEvidence
 
@@ -978,23 +1033,8 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 			result.Data.GitContext = &sessionCtx
 		}
 
-		// Collect code changes scoped to this session's commits. Use a SET-based
-		// API rather than a SHA range: when the session's commits are non-
-		// contiguous on the branch (e.g. interleaved with another session or
-		// human commits), a range diff would over-count by including the gap.
 		if len(commits) > 0 {
-			shas := make([]string, 0, len(commits))
-			for _, c := range commits {
-				shas = append(shas, c.SHA)
-			}
-			codeChanges, err := gitClient.CodeChangesForCommits(repoRoot, shas)
-			if err != nil {
-				log.Debug().Err(err).Msg("could not collect code changes")
-			} else {
-				attribution.FilterGenerated(codeChanges, isGenerated)
-				attribution.Enrich(sessionID, ledgers, sessionCommitLines(gitClient, repoRoot, commits, commitLines, log), codeChanges)
-				result.Data.CodeChanges = codeChanges
-			}
+			result.Data.CodeChanges = sessionCodeChanges(gitClient, repoRoot, sessionID, commits, ledgers, lineCache, isGenerated, log)
 		}
 
 		log.Debug().Str("session", sessionID).Msg("generated evidence")
@@ -1011,25 +1051,128 @@ func buildSessionEvidence(ctx context.Context, store *state.Store, repoRoot stri
 	return sessions
 }
 
+// sessionCodeChanges collects the code changes of one session and attributes
+// them. The diff stats come from the session's own commits. Use a SET-based
+// API rather than a SHA range: when the session's commits are non-contiguous
+// on the branch (e.g. interleaved with another session or human commits), a
+// range diff would over-count by including the gap. The AI/human split of the
+// added lines is the net contribution at the pushed commit (spec issue-3639
+// R-003), with the human lines of the commits that joined the session (R-010).
+// It returns nil when the diff cannot be read.
+func sessionCodeChanges(gitClient tracegit.Client, repoRoot, sessionID string, commits []*state.CommitRecord, ledgers map[string]*state.AILineAttribution, cache *lineCache, isGenerated func(string) bool, log zerolog.Logger) *aicodingsession.CodeChanges {
+	var shas []string
+	for _, c := range commits {
+		if slices.Contains(c.SessionIDs, sessionID) {
+			shas = append(shas, c.SHA)
+		}
+	}
+
+	codeChanges, err := gitClient.CodeChangesForCommits(repoRoot, shas)
+	if err != nil {
+		log.Debug().Err(err).Msg("could not collect code changes")
+
+		return nil
+	}
+
+	attribution.FilterGenerated(codeChanges, isGenerated)
+
+	// A legacy file keeps the range rule, which needs no blame.
+	tip := make(map[string][]tracegit.BlameLine, len(codeChanges.Files))
+	for _, f := range codeChanges.Files {
+		if l := ledgers[sessionID]; l != nil && l.Legacy[f.Path] {
+			continue
+		}
+		if lines, ok := cache.blame(f.Path); ok {
+			tip[f.Path] = lines
+		}
+	}
+
+	attribution.Enrich(sessionID, ledgers, sessionCommitLines(sessionID, commits, cache), tip, codeChanges)
+
+	return codeChanges
+}
+
 // sessionCommitLines returns the changed lines of each commit of a session,
-// oldest first, with the sessions that the commit's record names. cache holds
-// the lines already read, by SHA. A commit that cannot be read is left out.
-func sessionCommitLines(gitClient tracegit.Client, repoRoot string, commits []*state.CommitRecord, cache map[string][]tracegit.FileLines, log zerolog.Logger) []attribution.CommitLines {
+// oldest first, with the sessions that the commit's record names. A commit
+// that joined the session carries the lines that its replacing hunks added. A
+// commit that cannot be read is left out.
+func sessionCommitLines(sessionID string, commits []*state.CommitRecord, cache *lineCache) []attribution.CommitLines {
 	out := make([]attribution.CommitLines, 0, len(commits))
 	for _, c := range commits {
-		lines, ok := cache[c.SHA]
+		lines, ok := cache.commit(c.SHA)
 		if !ok {
-			var err error
-			if lines, err = gitClient.CommitLines(repoRoot, c.SHA); err != nil {
-				log.Debug().Err(err).Str("sha", c.SHA).Msg("could not read the lines of a commit")
-				continue
-			}
-			cache[c.SHA] = lines
+			continue
 		}
-		out = append(out, attribution.CommitLines{SessionIDs: c.SessionIDs, Files: lines})
+
+		cl := attribution.CommitLines{SHA: c.SHA, SessionIDs: c.SessionIDs, Files: lines}
+		if !slices.Contains(c.SessionIDs, sessionID) {
+			// A joined commit with no added line still has to read as joined.
+			cl.Joined = c.Joined[sessionID]
+			if cl.Joined == nil {
+				cl.Joined = map[string][]string{}
+			}
+		}
+		out = append(out, cl)
 	}
 
 	return out
+}
+
+// lineCache reads the lines of commits and the blame of files at HEAD, the
+// commit that the push sends, each one time for all the sessions of a push.
+type lineCache struct {
+	client   tracegit.Client
+	repoRoot string
+	log      zerolog.Logger
+	commits  map[string][]tracegit.FileLines
+	blames   map[string][]tracegit.BlameLine
+}
+
+func newLineCache(client tracegit.Client, repoRoot string, log zerolog.Logger) *lineCache {
+	return &lineCache{
+		client:   client,
+		repoRoot: repoRoot,
+		log:      log,
+		commits:  make(map[string][]tracegit.FileLines),
+		blames:   make(map[string][]tracegit.BlameLine),
+	}
+}
+
+// commit returns the lines that a commit changed, and false when the commit
+// cannot be read.
+func (c *lineCache) commit(sha string) ([]tracegit.FileLines, bool) {
+	if lines, ok := c.commits[sha]; ok {
+		return lines, true
+	}
+
+	lines, err := c.client.CommitLines(c.repoRoot, sha)
+	if err != nil {
+		c.log.Debug().Err(err).Str("sha", sha).Msg("could not read the lines of a commit")
+
+		return nil, false
+	}
+	c.commits[sha] = lines
+
+	return lines, true
+}
+
+// blame returns the lines of a file at HEAD with the commit that last wrote
+// each, nil for a file that HEAD does not hold, and false when the blame
+// fails.
+func (c *lineCache) blame(path string) ([]tracegit.BlameLine, bool) {
+	if lines, ok := c.blames[path]; ok {
+		return lines, true
+	}
+
+	lines, err := c.client.Blame(c.repoRoot, "HEAD", path)
+	if err != nil {
+		c.log.Debug().Err(err).Str("file", path).Msg("could not blame a file at HEAD; its net numbers fall back to the sum of its commits")
+
+		return nil, false
+	}
+	c.blames[path] = lines
+
+	return lines, true
 }
 
 // attachSessionEvidence adds the materials of each session to the attestation:

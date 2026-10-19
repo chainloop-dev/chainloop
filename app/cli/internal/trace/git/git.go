@@ -16,10 +16,25 @@
 package git
 
 import (
+	"os/exec"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
+
+// lookPath finds a binary on the PATH. Tests replace it to pick a client.
+var lookPath = exec.LookPath
+
+// NewGitClient returns the client that runs the git binary when one is on
+// the PATH, and the go-git client otherwise. The git binary is many times
+// faster on a long history, for example for blame.
+func NewGitClient() Client {
+	if _, err := lookPath("git"); err == nil {
+		return NewExecClient()
+	}
+
+	return NewGoGitClient()
+}
 
 // File statuses reported in aicodingsession.FileChange.Status. The control
 // plane buckets on these exact strings when it ingests the evidence, so they
@@ -37,6 +52,24 @@ type FileLines struct {
 	Path    string
 	Added   []string
 	Removed []string
+	// Hunks holds the same lines, split into the hunks of the diff.
+	Hunks []Hunk
+}
+
+// Hunk is one run of removed and added lines of a diff.
+type Hunk struct {
+	// OldStart is the line of the parent's file where the hunk starts,
+	// counting from one: the first removed line, or the line that the added
+	// lines go before. Removed line i is line OldStart+i of the parent.
+	OldStart int
+	Removed  []string
+	Added    []string
+}
+
+// BlameLine is one line of a file, with the commit that last wrote it.
+type BlameLine struct {
+	SHA  string
+	Text string
 }
 
 // Client abstracts git operations so the implementation can be swapped
@@ -63,6 +96,10 @@ type Client interface {
 	// FileAt returns the content of a repo-relative path at a commit, or nil
 	// when the commit does not hold the path.
 	FileAt(repoRoot, sha, path string) ([]byte, error)
+	// Blame returns each line of a repo-relative path at a revision, with the
+	// commit that last wrote it, or nil when the revision does not hold the
+	// path.
+	Blame(repoRoot, rev, path string) ([]BlameLine, error)
 	// CommitHeadInfo returns the SHA and message of HEAD.
 	CommitHeadInfo(repoRoot string) (sha, message string, err error)
 	// HeadAuthorTime returns the author date of HEAD.

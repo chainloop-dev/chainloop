@@ -17,6 +17,7 @@ package attribution
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -83,6 +84,10 @@ func TestFilterGenerated(t *testing.T) {
 
 	t.Run("ent gitattributes rules drop generated ent code but keep schema and migrations", func(t *testing.T) {
 		dir := t.TempDir()
+		// The exec client reads attributes with `git check-attr`, which needs
+		// a repository.
+		out, err := exec.Command("git", "init", "-q", dir).CombinedOutput()
+		require.NoError(t, err, string(out))
 		// Order matches the project .gitattributes: general rule first, then
 		// more-specific overrides (last match wins, per gitattributes spec).
 		writeGitAttributes(t, dir,
@@ -91,7 +96,7 @@ func TestFilterGenerated(t *testing.T) {
 				"backend/internal/data/ent/schema/* linguist-generated=false\n",
 		)
 
-		isGenerated := tracegit.NewGoGitClient().GeneratedMatcher(dir)
+		isGenerated := tracegit.NewGitClient().GeneratedMatcher(dir)
 
 		changes := &aicodingsession.CodeChanges{
 			FilesCreated:  3,

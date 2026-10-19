@@ -53,10 +53,14 @@ Which lines of a commit the AI wrote.
 | Partial commits | A commit that holds only part of the AI lines of a file credits the session with those lines. The other AI lines stay pending, and the next commit with them is credited to the session too (spec issue-3639). | Yes | Partial | Yes | Yes |
 | Generated line counts | The trace state keeps the lines that each agent edit added and removed, also the lines that never reach a commit. The evidence does not report them yet (spec issue-3639). | Yes | Partial | Yes | Yes |
 | Shell changes attribution | Changes that the agent makes with shell commands (for example `sed`) are attributed to the AI too, not only changes made with the file tools. | Partial | Partial | Partial | Partial |
+| Net contribution | The added lines of a session are the lines that its commits added and that are still in the commit that the push sends. A line that a later commit replaced does not count, and each line counts one time. The removed lines are the sum of the removals of the session's commits (spec issue-3639). | Partial | Partial | Partial | Partial |
+| Session updates | A later commit that replaces lines of a session sends the evidence of the session again at the next push, with the new numbers. A commit in no session that replaces lines of a session joins it: the commit list of the session holds the commit, and its replacing lines count as human (spec issue-3639). | Partial | Partial | Partial | Partial |
 
 Why not Yes:
 
 - **Line attribution, partial commits and generated line counts, Cursor:** Cursor has only the `afterFileEdit` hook, which gives the edits but no snapshot before the edit. The provider rebuilds the content before the edit from the edits.
+- **Net contribution, all agents:** the push finds the last writer of each line with `git blame`. A later commit that only re-indents a line takes the line, because blame sees a change. For Cursor, the limits of line attribution apply too.
+- **Session updates, all agents:** the update works only in the clone where the work happened, while the CLI keeps the trace state of the session (30 days), and only when the commits of the session are on the branch that the push sends.
 - **Shell changes attribution, all agents:** the hook before a shell command records only a hash of each file, not its content. The file at the `HEAD` commit from before the command stands in for the content before the command. Uncommitted lines that an earlier agent edit recorded are not recorded again, but uncommitted human lines of a file that the command changes count as AI.
 - **Shell changes attribution, Cursor:** the provider installs the `preToolUse` and `postToolUse` hooks for the `Shell` tool. These hooks are verified for the Cursor IDE only. It is not verified that the Cursor CLI sends them.
 

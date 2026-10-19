@@ -209,10 +209,25 @@ The ledger keeps the added and removed counts of every agent edit (R-011). Repor
   - Do nothing now: the follow-up would need a second ledger change.
 - Source: https://github.com/chainloop-dev/chainloop/pull/3640#discussion_r4296029633
 
+### D-012: Keep the trace state of a pushed session for 30 days
+The CLI keeps the ledger and the commit records of a session for 30 days after the session starts. The time counts only when a push attested all the work of the session. A local branch must still reach the session's commits. After that, a replacement of its lines does not update the session (R-004).
+- Why: a later human edit often comes days after the push. Thirty days covers a normal review cycle, and the state stays small.
+- Alternatives considered:
+  - Keep the earlier 7 days: a fix after a long review does not update the session.
+- Source: decision of the spec owner on the open question, during milestone 2 (PR #3658)
+
+### D-013: The push sends a session again only from the branch with its commits
+The push sends a session again only when its own commits are on the branch that the push sends. Take a session whose commits are only on another branch, for example the default branch. A commit that replaces its lines does not update it.
+- Why: the push already reads only the commits of its branch. Finding sessions on other branches needs a walk of the history at each push.
+- Alternatives considered:
+  - Any session whose commits HEAD reaches: more complete, but slower pushes.
+- Source: milestone 2 implementation
+
 ## Open Questions
 
-- [ ] **How long does the CLI keep the trace state of a pushed session?**
+- [x] **How long does the CLI keep the trace state of a pushed session?**
   Proposed: keep its ledger and commit records for 30 days at most. A local branch must still reach the session's commits. After that, a replacement of these lines does not update the session.
+  Answered by D-012.
 
 ## Milestones
 

@@ -16,12 +16,12 @@
 package action
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -102,32 +102,68 @@ func (r *lineRepo) commit(subject string, files ...string) string {
 	return string(got)
 }
 
-// sessionChanges runs the push pipeline for one session over the commits that
-// name it, and returns its code changes.
-func (r *lineRepo) sessionChanges(sessionID string) *aicodingsession.CodeChanges {
+// pushed is what a push sends for one session: its code changes and its
+// commit list.
+type pushed struct {
+	changes *aicodingsession.CodeChanges
+	commits []string
+}
+
+// push runs the push pipeline of the git hook on the recorded commits, and
+// marks them tracked as a successful push does. It returns what each session
+// sends.
+func (r *lineRepo) push() map[string]pushed {
 	r.t.Helper()
 	records, err := r.store.LoadAllCommitRecords()
 	require.NoError(r.t, err)
-	commits := sessionCommitGroups(records, nil, false)[sessionID]
 
-	shas := make([]string, 0, len(commits))
-	for _, c := range commits {
-		shas = append(shas, c.SHA)
+	client := tracegit.NewGitClient()
+	ledgers := loadLedgers(r.store, zerolog.Nop())
+	affected, failed := scanReplacements(client, r.store, r.dir, records, ledgers, zerolog.Nop())
+	require.Empty(r.t, failed)
+
+	var aiCommits []*state.CommitRecord
+	untracked := 0
+	for _, c := range records {
+		if len(c.AllSessionIDs()) > 0 {
+			aiCommits = append(aiCommits, c)
+			if !c.Tracked {
+				untracked++
+			}
+		}
 	}
 
-	client := tracegit.NewGoGitClient()
-	cc, err := client.CodeChangesForCommits(r.dir, shas)
-	require.NoError(r.t, err)
-
-	attrs, err := r.store.LoadAllAILineAttributions()
-	require.NoError(r.t, err)
-	ledgers := make(map[string]*state.AILineAttribution, len(attrs))
-	for _, a := range attrs {
-		ledgers[a.SessionID] = a
+	out := make(map[string]pushed)
+	if untracked > 0 || len(affected) > 0 {
+		cache := newLineCache(client, r.dir, zerolog.Nop())
+		for sid, commits := range sessionCommitGroups(aiCommits, nil, false) {
+			var shas []string
+			for _, c := range commits {
+				shas = append(shas, c.SHA)
+			}
+			cc := sessionCodeChanges(client, r.dir, sid, commits, ledgers, cache, func(string) bool { return false }, zerolog.Nop())
+			require.NotNil(r.t, cc)
+			out[sid] = pushed{changes: cc, commits: shas}
+		}
 	}
-	attribution.Enrich(sessionID, ledgers, sessionCommitLines(client, r.dir, commits, map[string][]tracegit.FileLines{}, zerolog.Nop()), cc)
 
-	return cc
+	for _, c := range records {
+		if !c.Tracked {
+			c.Tracked = true
+			require.NoError(r.t, r.store.SaveCommitRecord(c))
+		}
+	}
+
+	return out
+}
+
+// sessionChanges pushes and returns the code changes that a session sends.
+func (r *lineRepo) sessionChanges(sessionID string) *aicodingsession.CodeChanges {
+	r.t.Helper()
+	got, ok := r.push()[sessionID]
+	require.True(r.t, ok, "the push sends session %s", sessionID)
+
+	return got.changes
 }
 
 type lineSplit struct{ aiAdded, aiRemoved, humanAdded, humanRemoved int }
@@ -185,10 +221,10 @@ func TestLineAttribution_HumanChangeBetweenAgentEdits(t *testing.T) {
 	assert.Equal(t, lineSplit{aiAdded: 3, humanAdded: 1}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
 }
 
-// Case 3 of the spec, as far as milestone 1 goes: a later commit of the same
-// session replaces AI lines by hand. The removed AI lines are human removals
-// (R-005). The net numbers (R-003) come with milestone 2.
-func TestLineAttribution_HumanRemovalIsHuman(t *testing.T) {
+// Case 3 of the spec: a later commit of the same session replaces AI lines by
+// hand. Each line counts once (R-003), and the removed AI lines are human
+// removals (R-005).
+func TestLineAttribution_Case3SameSessionLaterCommit(t *testing.T) {
 	r := newLineRepo(t)
 
 	lines := numbered("ai", 5)
@@ -200,7 +236,129 @@ func TestLineAttribution_HumanRemovalIsHuman(t *testing.T) {
 	r.agentWrite(lineSession, "b.go", "package b\n")
 	assert.Contains(t, r.commit("feat: b", "a.go", "b.go"), "Chainloop-Trace-Sessions: "+lineSession)
 
-	assert.Equal(t, lineSplit{aiAdded: 5, humanAdded: 1, humanRemoved: 1}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
+	assert.Equal(t, lineSplit{aiAdded: 4, humanAdded: 1, humanRemoved: 1}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
+}
+
+// Cases 2 and 5 of the spec: a human commit in no session replaces AI lines
+// after the session's push. The next push sends the session again (R-004),
+// and the commit joins it with the human lines of its replacing hunks only
+// (R-010).
+func TestLineAttribution_Case2HumanCommitJoinsSession(t *testing.T) {
+	r := newLineRepo(t)
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+	first := r.push()
+	require.Contains(t, first, lineSession)
+	assert.Equal(t, lineSplit{aiAdded: 5}, fileSplitOf(t, first[lineSession].changes, "a.go"))
+
+	// The human replaces one AI line and also edits an unrelated file.
+	lines[1] = "human"
+	r.humanWrite("a.go", content(lines))
+	r.humanWrite("other.go", "package other\n")
+	assert.NotContains(t, r.commit("fix: by hand", "a.go", "other.go"), "Chainloop-Trace-Sessions")
+	human := headSHA(t, r.dir)
+
+	second := r.push()
+	require.Contains(t, second, lineSession, "the session is sent again")
+	got := second[lineSession]
+	assert.Equal(t, lineSplit{aiAdded: 4, humanAdded: 1}, fileSplitOf(t, got.changes, "a.go"))
+	assert.Contains(t, got.commits, human, "the commit list holds the joined commit")
+	for _, f := range got.changes.Files {
+		assert.NotEqual(t, "other.go", f.Path, "the unrelated file of the joined commit is not the session's")
+	}
+
+	// A third push with nothing new sends nothing.
+	assert.Empty(t, r.push())
+}
+
+// A human commit that replaces the lines of an earlier human commit joins the
+// sessions that the earlier commit joined, in whatever order the records are
+// read.
+func TestLineAttribution_ChainedHumanCommitsJoin(t *testing.T) {
+	r := newLineRepo(t)
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+	r.push()
+
+	lines[1] = "human one"
+	r.humanWrite("a.go", content(lines))
+	r.commit("fix: one", "a.go")
+	first := headSHA(t, r.dir)
+
+	lines[1] = "human two"
+	r.humanWrite("a.go", content(lines))
+	r.commit("fix: two", "a.go")
+	second := headSHA(t, r.dir)
+
+	got := r.push()
+	require.Contains(t, got, lineSession)
+	assert.Equal(t, lineSplit{aiAdded: 4, humanAdded: 1}, fileSplitOf(t, got[lineSession].changes, "a.go"))
+	assert.Contains(t, got[lineSession].commits, first)
+	assert.Contains(t, got[lineSession].commits, second, "the second commit joins through the first one")
+}
+
+// failingLinesClient fails to read the lines of one commit.
+type failingLinesClient struct {
+	tracegit.Client
+	sha string
+}
+
+func (c failingLinesClient) CommitLines(repoRoot, sha string) ([]tracegit.FileLines, error) {
+	if sha == c.sha {
+		return nil, errors.New("read failed")
+	}
+
+	return c.Client.CommitLines(repoRoot, sha)
+}
+
+// A commit that the scan cannot read is reported, so that the push keeps it
+// untracked and reads it again.
+func TestScanReplacements_ReportsFailedCommits(t *testing.T) {
+	r := newLineRepo(t)
+
+	r.agentWrite(lineSession, "a.go", content(numbered("ai", 3)))
+	r.commit("feat: a", "a.go")
+	r.humanWrite("a.go", "changed\n")
+	r.commit("fix: by hand", "a.go")
+	human := headSHA(t, r.dir)
+
+	records, err := r.store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	client := failingLinesClient{Client: tracegit.NewGitClient(), sha: human}
+	_, failed := scanReplacements(client, r.store, r.dir, records, loadLedgers(r.store, zerolog.Nop()), zerolog.Nop())
+
+	assert.Equal(t, map[string]bool{human: true}, failed)
+}
+
+// Case 4 of the spec: a commit of another session replaces lines of the first
+// session. The first session is sent again with what is still there (R-004),
+// and the commit does not join it.
+func TestLineAttribution_Case4OtherSessionReplaces(t *testing.T) {
+	r := newLineRepo(t)
+	const other = "sess-other"
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+	r.push()
+
+	lines[1] = "human in b"
+	r.humanWrite("a.go", content(lines))
+	r.agentWrite(other, "b.go", "package b\n")
+	assert.Contains(t, r.commit("feat: b", "a.go", "b.go"), "Chainloop-Trace-Sessions: "+other)
+	commitB := headSHA(t, r.dir)
+
+	got := r.push()
+	require.Contains(t, got, lineSession, "the replaced session is sent again")
+	assert.Equal(t, lineSplit{aiAdded: 4}, fileSplitOf(t, got[lineSession].changes, "a.go"))
+	assert.NotContains(t, got[lineSession].commits, commitB, "a commit of another session does not join")
+
+	require.Contains(t, got, other)
+	assert.Equal(t, lineSplit{humanAdded: 1, humanRemoved: 1}, fileSplitOf(t, got[other].changes, "a.go"))
 }
 
 // R-005: lines that the agent removed are AI removals.
@@ -288,7 +446,7 @@ func TestLineAttribution_SurvivesCherryPick(t *testing.T) {
 
 	// Drop the feature branch and its record, as the post-push GC does.
 	runGit(t, r.dir, "branch", "-D", "feature")
-	live, err := tracegit.NewGoGitClient().LocalReachableSHAs(r.dir)
+	live, err := tracegit.NewGitClient().LocalReachableSHAs(r.dir)
 	require.NoError(t, err)
 	require.NoError(t, r.store.GCOrphans(live))
 

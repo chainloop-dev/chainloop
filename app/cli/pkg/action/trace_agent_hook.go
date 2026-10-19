@@ -428,7 +428,7 @@ func shellCallKey(input *trace.HookInput) state.ShellCallKey {
 // run in the session's own checkout. Best-effort: failures are logged and
 // never block the agent.
 func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	sigs := make(state.WorktreeSignatures)
 	heads := make(map[string]string)
 	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
@@ -896,7 +896,7 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 // ones, such as uncommitted human lines, are claimed. An untracked file counts
 // as new.
 func recordRootChanges(store *state.Store, repoRoot, base string, before map[string]string, sessionID string, log zerolog.Logger) {
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	after, err := client.SnapshotWorktree(repoRoot)
 	if err != nil {
 		log.Debug().Err(err).Str("root", repoRoot).Msg("post-command: worktree snapshot failed")

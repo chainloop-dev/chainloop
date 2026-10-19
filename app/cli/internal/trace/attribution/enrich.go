@@ -25,8 +25,14 @@ import (
 // CommitLines is one commit of a session: the lines it changed and the
 // sessions that its record names.
 type CommitLines struct {
+	SHA        string
 	SessionIDs []string
 	Files      []tracegit.FileLines
+	// Joined is set on a commit in no session that replaced lines of the
+	// session and so joined it (R-010). It holds, for each file, the
+	// fingerprints of the lines that its replacing hunks added. Only these
+	// lines count for the session, and they are human.
+	Joined map[string][]string
 }
 
 // Enrich adds AI/human attribution to the code changes of a session.
@@ -43,15 +49,31 @@ type CommitLines struct {
 // another session of the commit counts for neither side: it is that session's
 // work. All other lines are human.
 //
+// tip holds, for each file, its lines at the pushed commit with the commit
+// that last wrote each one. The added lines of a file in tip are the net
+// contribution of the session (R-003): the lines that its commits added and
+// that no later commit replaced, each one counted once. A file that tip holds
+// with no lines is gone, and adds nothing. A file that tip does not hold falls
+// back to the sum of the added lines of each commit. Removed lines are always
+// the sum over the session's own commits.
+//
 // A file with an edit recorded before line fingerprints existed keeps the
 // earlier rule: AI lines are the recorded ranges, capped at the file's diff.
-func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commits []CommitLines, changes *aicodingsession.CodeChanges) {
+func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commits []CommitLines, tip map[string][]tracegit.BlameLine, changes *aicodingsession.CodeChanges) {
 	self := ledgers[sessionID]
 	if self == nil {
 		self = &state.AILineAttribution{SessionID: sessionID}
 	}
 
 	byPath := splitByPath(sessionID, self, ledgers, commits)
+	for path, net := range netAdded(sessionID, self, ledgers, commits, tip) {
+		s, ok := byPath[path]
+		if !ok {
+			s = &fileSplit{}
+			byPath[path] = s
+		}
+		s.aiAdded, s.humanAdded = net.aiAdded, net.humanAdded
+	}
 
 	changes.AILinesAdded, changes.AILinesRemoved = 0, 0
 	changes.HumanLinesAdded, changes.HumanLinesRemoved = 0, 0
@@ -103,12 +125,12 @@ func splitByPath(sessionID string, self *state.AILineAttribution, ledgers map[st
 
 	out := make(map[string]*fileSplit)
 	for _, commit := range commits {
-		var others []*state.AILineAttribution
-		for _, id := range commit.SessionIDs {
-			if l := ledgers[id]; id != sessionID && l != nil {
-				others = append(others, l)
-			}
+		// A joined commit counts only through the lines that are still in
+		// the pushed commit (netAdded).
+		if commit.Joined != nil {
+			continue
 		}
+		others := otherLedgers(sessionID, ledgers, commit.SessionIDs)
 
 		for _, fl := range commit.Files {
 			s, ok := out[fl.Path]
@@ -137,6 +159,72 @@ func splitByPath(sessionID string, self *state.AILineAttribution, ledgers map[st
 					s.humanRemoved++
 				}
 			}
+		}
+	}
+
+	return out
+}
+
+// netAdded splits the lines of each file in tip that the session's commits
+// wrote. A line from a commit outside the session is not the session's. A
+// line from a joined commit counts as human when its replacing hunks added
+// it, and not at all otherwise.
+func netAdded(sessionID string, self *state.AILineAttribution, ledgers map[string]*state.AILineAttribution, commits []CommitLines, tip map[string][]tracegit.BlameLine) map[string]*fileSplit {
+	bySHA := make(map[string]CommitLines, len(commits))
+	for _, c := range commits {
+		bySHA[c.SHA] = c
+	}
+
+	written := linePool{pick: func(a *state.AILineAttribution) map[string]state.LineCounts { return a.Written }}
+	joined := make(map[[2]string]state.LineCounts)
+
+	out := make(map[string]*fileSplit, len(tip))
+	for path, lines := range tip {
+		s := &fileSplit{}
+		out[path] = s
+
+		for _, l := range lines {
+			commit, ok := bySHA[l.SHA]
+			if !ok {
+				continue
+			}
+			fp := Fingerprint(l.Text)
+
+			if commit.Joined != nil {
+				key := [2]string{commit.SHA, path}
+				pool, ok := joined[key]
+				if !ok {
+					pool = state.LineCounts{}
+					pool.Add(commit.Joined[path]...)
+					joined[key] = pool
+				}
+				if pool.Take(fp) {
+					s.humanAdded++
+				}
+
+				continue
+			}
+
+			switch {
+			case written.take(self, path, fp):
+				s.aiAdded++
+			case written.takeAny(otherLedgers(sessionID, ledgers, commit.SessionIDs), path, fp):
+			default:
+				s.humanAdded++
+			}
+		}
+	}
+
+	return out
+}
+
+// otherLedgers returns the ledgers of the sessions in ids other than
+// sessionID.
+func otherLedgers(sessionID string, ledgers map[string]*state.AILineAttribution, ids []string) []*state.AILineAttribution {
+	var out []*state.AILineAttribution
+	for _, id := range ids {
+		if l := ledgers[id]; id != sessionID && l != nil {
+			out = append(out, l)
 		}
 	}
 

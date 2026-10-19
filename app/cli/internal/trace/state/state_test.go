@@ -651,7 +651,7 @@ func TestGCOrphans_StaleSessions(t *testing.T) {
 		store := NewGitStore(t.TempDir())
 		require.NoError(t, store.InitTraceDir())
 
-		old := time.Now().UTC().Add(-30 * 24 * time.Hour).Format(time.RFC3339)
+		old := time.Now().UTC().Add(-31 * 24 * time.Hour).Format(time.RFC3339)
 		require.NoError(t, store.SaveCommitRecord(&CommitRecord{
 			SHA: "sha-1", SessionIDs: []string{sessOld}, Timestamp: old, Tracked: true,
 		}))
@@ -670,7 +670,7 @@ func TestGCOrphans_StaleSessions(t *testing.T) {
 		store := NewGitStore(t.TempDir())
 		require.NoError(t, store.InitTraceDir())
 
-		old := time.Now().UTC().Add(-30 * 24 * time.Hour).Format(time.RFC3339)
+		old := time.Now().UTC().Add(-31 * 24 * time.Hour).Format(time.RFC3339)
 		require.NoError(t, store.SaveCommitRecord(&CommitRecord{
 			SHA: "sha-1", SessionIDs: []string{sessOld}, Timestamp: old, Tracked: false,
 		}))
@@ -698,6 +698,43 @@ func TestGCOrphans_StaleSessions(t *testing.T) {
 
 		assert.True(t, store.SessionRecordExists("sess-new"))
 		assert.NotEmpty(t, store.LoadAILineAttribution("sess-new").Files)
+	})
+
+	// A later commit can still replace the lines of a pushed session and
+	// send it again (spec issue-3639 R-004), so its state outlives a week.
+	t.Run("keeps an attested session for 30 days", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		tenDays := time.Now().UTC().Add(-10 * 24 * time.Hour).Format(time.RFC3339)
+		require.NoError(t, store.SaveCommitRecord(&CommitRecord{
+			SHA: "sha-1", SessionIDs: []string{sessOld}, Timestamp: tenDays, Tracked: true,
+		}))
+		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: sessOld, StartedAt: tenDays}))
+		require.NoError(t, store.RecordLineRanges(sessOld, fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+
+		require.NoError(t, store.GCOrphans(map[string]bool{"sha-1": true}))
+
+		assert.True(t, store.SessionRecordExists(sessOld))
+		assert.NotEmpty(t, store.LoadAILineAttribution(sessOld).Files)
+	})
+
+	t.Run("a commit that joined a session keeps the session", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.InitTraceDir())
+
+		recent := time.Now().UTC().Add(-1 * time.Hour).Format(time.RFC3339)
+		require.NoError(t, store.SaveCommitRecord(&CommitRecord{
+			SHA: "sha-human", Timestamp: recent, Tracked: true,
+			Joined: map[string]map[string][]string{"sess-joined": {fileA: {"fp"}}},
+		}))
+		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: "sess-joined", StartedAt: recent}))
+		require.NoError(t, store.RecordLineRanges("sess-joined", fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+
+		require.NoError(t, store.GCOrphans(map[string]bool{"sha-human": true}))
+
+		assert.True(t, store.SessionRecordExists("sess-joined"))
+		assert.NotEmpty(t, store.LoadAILineAttribution("sess-joined").Files)
 	})
 
 	t.Run("an unparseable StartedAt is never treated as stale", func(t *testing.T) {

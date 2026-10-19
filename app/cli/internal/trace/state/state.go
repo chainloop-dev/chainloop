@@ -68,8 +68,10 @@ const (
 	// staleSessionRetention is how long a session's records are kept once
 	// everything it produced has been attested. Reachability alone never
 	// expires them: a session referenced by one surviving commit pins itself
-	// into the repository for good.
-	staleSessionRetention = 7 * 24 * time.Hour
+	// into the repository for good. Within this time, a later commit that
+	// replaces lines of the session sends its evidence again (spec
+	// issue-3639 R-004 and D-012).
+	staleSessionRetention = 30 * 24 * time.Hour
 )
 
 // InitTraceDir creates the <dir>/chainloop-trace/ directory structure.
@@ -251,7 +253,9 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 			_ = os.Remove(path)
 			continue
 		}
-		for _, sid := range rec.SessionIDs {
+		// A session that a commit joined is live too: the next push of that
+		// commit counts its replacing lines for the session.
+		for _, sid := range rec.AllSessionIDs() {
 			liveSessions[sanitizeID(sid)] = struct{}{}
 			if !rec.Tracked {
 				unattestedSessions[sanitizeID(sid)] = struct{}{}
@@ -318,13 +322,13 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 // Liveness is deliberately not consulted: session-end does not always run, so
 // a leaked record stays Active forever and would never expire.
 //
-// Uncommitted attribution is deliberately not spared either, so a week-old
-// edit that is committed later is attributed to nobody rather than to the
-// session that made it. That is the safe direction: keeping the entry means a
-// session nothing has heard from in a week can still claim a file and pull the
-// whole commit's diff into its evidence, and by then its transcript is usually
-// gone — raw/ is wiped on every push — so the attestation it wins yields
-// nothing anyway. Under-crediting beats crediting the wrong session.
+// Uncommitted attribution is deliberately not spared either, so an edit older
+// than the retention that is committed later is attributed to nobody rather
+// than to the session that made it. That is the safe direction: keeping the
+// entry means a session nothing has heard from in that time can still claim a
+// file and pull the commit into its evidence, and by then its transcript is
+// usually gone — raw/ is wiped on every push — so the attestation it wins
+// yields nothing anyway. Under-crediting beats crediting the wrong session.
 func (s *Store) staleSessionIDs(unattested map[string]struct{}) map[string]struct{} {
 	records, err := s.LoadAllSessionRecords()
 	if err != nil {
