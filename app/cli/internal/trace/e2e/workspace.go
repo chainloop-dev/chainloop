@@ -98,11 +98,13 @@ func NewWorkspace(ctx context.Context, base, chainloopBin string, h Harness, sc 
 		return nil, err
 	}
 
-	seed := sc.Seed
+	seed := maps.Clone(sc.Seed)
+	for name, content := range sc.Skills {
+		seed[h.SkillPath(name)] = content
+	}
 	if sc.SeedUserHooks {
 		hc := h.HookConfig()
-		seed = maps.Clone(seed)
-		seed[hc.Path] = hc.UserConfig
+		seed[hc.UserFile()] = hc.UserConfig
 	}
 	for name, content := range seed {
 		path := filepath.Join(repo, filepath.FromSlash(name))

@@ -29,6 +29,9 @@ type Scenario struct {
 	Checkout string
 	// Images are PNG images that the user pastes with the prompt.
 	Images [][]byte
+	// Skills are the project skills of the repository, by name. The harness
+	// gives the path of each skill file.
+	Skills map[string]string
 	// NoAgent runs no harness session. The checks run commands in the
 	// workspace themselves.
 	NoAgent bool
@@ -55,6 +58,10 @@ const (
 	// The stored session keeps it.
 	fakeAllowedSecret = "ghp_Zx7Lq2Wm9Rt4Yp6Vn3Bk8Hd1Jf5Gs0CaEu2o" //nolint:gosec // gitleaks:allow a fake token on a line with an allow marker
 )
+
+// allowMarker is the inline marker that keeps a secret on its line from
+// redaction.
+const allowMarker = "gitleaks:allow"
 
 // The README of every scenario repository.
 const (
@@ -99,7 +106,7 @@ var scenarios = map[string]Scenario{
 		Name: scenarioEditAndCommit,
 		Seed: map[string]string{
 			readmePath:    seedReadme,
-			"fixture.txt": "token = " + fakeAllowedSecret + " # gitleaks:allow\n",
+			"fixture.txt": "token = " + fakeAllowedSecret + " # " + allowMarker + "\n",
 		},
 		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
 1. Read the file fixture.txt.
@@ -119,9 +126,9 @@ The deploy token ` + fakeSecret + ` is for a later task: do not use it.`,
 	},
 	scenarioSkill: {
 		Name: scenarioSkill,
-		Seed: map[string]string{
-			readmePath: seedReadme,
-			".claude/skills/" + skillName + "/SKILL.md": `---
+		Seed: map[string]string{readmePath: seedReadme},
+		Skills: map[string]string{
+			skillName: `---
 name: ` + skillName + `
 description: Use when asked to add the farewell file to the repository.
 ---

@@ -18,9 +18,11 @@
 package e2e
 
 import (
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -74,7 +76,7 @@ func TestTraceMatrix(t *testing.T) {
 	runner := &Runner{
 		Expected:     exp,
 		Config:       cfg,
-		Harnesses:    []Harness{&Claude{}},
+		Harnesses:    configuredHarnesses(t, cfg),
 		Filter:       Filter{Harnesses: envList(envHarness), Models: envList(envModel), Features: envList(envFeature)},
 		ChainloopBin: bin,
 		CLIVersion:   version,
@@ -82,8 +84,12 @@ func TestTraceMatrix(t *testing.T) {
 		Logf:         t.Logf,
 	}
 
+	// An agent that does not work in its workspace commits in the checkout
+	// that runs the suite. The suite cannot stop that, but it must not pass.
+	head := sourceHead(t)
 	res, err := runner.Run(ctx)
 	require.NoError(t, err)
+	require.Equal(t, head, sourceHead(t), "an agent committed in the checkout that runs the suite, not in its workspace")
 
 	resultsDir := os.Getenv(envResultsDir)
 	if resultsDir == "" {
@@ -117,6 +123,30 @@ func TestTraceMatrix(t *testing.T) {
 			assert.Failf(t, "regression of a supported feature", "%s / %s %s / %s: marked %s but fails (%d/%d): %s", c.Feature, c.Harness, c.HarnessVersion, c.Model, c.Expected, c.Passes, c.Runs, c.Reason)
 		}
 	}
+}
+
+// configuredHarnesses returns the adapters of the harnesses that the suite
+// config lists, in the order of their names.
+func configuredHarnesses(t *testing.T, cfg *Config) []Harness {
+	t.Helper()
+
+	names := slices.Sorted(maps.Keys(cfg.Harnesses))
+	out := make([]Harness, 0, len(names))
+	for _, name := range names {
+		h, ok := harnesses[name]
+		require.True(t, ok, "the suite config lists harness %q, which has no adapter", name)
+		out = append(out, h)
+	}
+	return out
+}
+
+// sourceHead returns the HEAD commit of the checkout that runs the suite.
+func sourceHead(t *testing.T) string {
+	t.Helper()
+
+	out, err := exec.Command("git", "rev-parse", "HEAD").Output()
+	require.NoError(t, err)
+	return strings.TrimSpace(string(out))
 }
 
 // buildChainloop builds the chainloop CLI under test and returns its path and

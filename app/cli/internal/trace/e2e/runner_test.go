@@ -138,6 +138,7 @@ func (fakeHarness) Run(context.Context, RunRequest) (*RunOutput, error) {
 }
 func (fakeHarness) HookConfig() HookConfig           { return HookConfig{} }
 func (fakeHarness) DisableSessionStart(string) error { return errors.New("not installed") }
+func (fakeHarness) SkillPath(string) string          { return "" }
 
 func TestRunnerPlansCells(t *testing.T) {
 	exp, err := ParseExpected(strings.NewReader(`| Feature | What it means | Claude Code | Cursor |

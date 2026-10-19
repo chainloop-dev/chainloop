@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"image/png"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -36,9 +37,29 @@ import (
 // commandTimeout limits a command that a check runs in the workspace.
 const commandTimeout = 2 * time.Minute
 
-// readHookConfig reads the hook configuration file of the harness.
+// readHookFile reads a hook file of the harness. A missing file is empty.
+func readHookFile(s *Session, path string) ([]byte, error) {
+	data, err := os.ReadFile(filepath.Join(s.Workspace.Dir, path))
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	return data, err
+}
+
+// readHookConfig reads the hook configuration of the harness: the file of
+// the Chainloop hooks, and the file of the hook of the user when it is
+// another file.
 func readHookConfig(s *Session) ([]byte, error) {
-	return os.ReadFile(filepath.Join(s.Workspace.Dir, s.Harness.HookConfig().Path))
+	hc := s.Harness.HookConfig()
+	out, err := readHookFile(s, hc.Path)
+	if err != nil || hc.UserFile() == hc.Path {
+		return out, err
+	}
+	user, err := readHookFile(s, hc.UserFile())
+	if err != nil {
+		return nil, err
+	}
+	return append(out, user...), nil
 }
 
 // checkHookInstallation checks that `trace init` installs the Chainloop
@@ -90,12 +111,22 @@ func checkHookInstallation(s *Session) error {
 // checkHookConfigRestored checks that the hook configuration is the same as
 // before the wrapped session.
 func checkHookConfigRestored(s *Session) error {
-	got, err := readHookConfig(s)
+	hc := s.Harness.HookConfig()
+	got, err := readHookFile(s, hc.UserFile())
 	if err != nil {
 		return err
 	}
-	if string(got) != s.Harness.HookConfig().UserConfig {
+	if string(got) != hc.UserConfig {
 		return fmt.Errorf("the hook configuration changed after trace run: %s", got)
+	}
+	if hc.UserFile() == hc.Path {
+		return nil
+	}
+	if got, err = readHookFile(s, hc.Path); err != nil {
+		return err
+	}
+	if bytes.Contains(got, []byte(hc.ChainloopMarker)) {
+		return fmt.Errorf("trace run left Chainloop hooks in %s", hc.Path)
 	}
 	return nil
 }
