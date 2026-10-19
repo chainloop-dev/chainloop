@@ -100,13 +100,10 @@ func writeClientStream(t *testing.T, c net.Conn, contentType string, extraHeader
 	writeRequestFrames(t, c, contentType, extraHeaders...)
 }
 
-// writeRequestFrames sends a client SETTINGS frame and one HEADERS frame
-// carrying the given headers: the request flight after the connection
-// preface.
-func writeRequestFrames(t *testing.T, c net.Conn, contentType string, extraHeaders ...hpack.HeaderField) {
+// encodeRequestHeaders returns the HPACK-encoded header block of a request
+// with the given content type.
+func encodeRequestHeaders(t *testing.T, contentType string, extraHeaders ...hpack.HeaderField) []byte {
 	t.Helper()
-
-	writeFrame(t, c, http2.FrameSettings, 0, 0, nil)
 
 	var buf bytes.Buffer
 	enc := hpack.NewEncoder(&buf)
@@ -118,7 +115,18 @@ func writeRequestFrames(t *testing.T, c net.Conn, contentType string, extraHeade
 	}, extraHeaders...) {
 		require.NoError(t, enc.WriteField(hf))
 	}
-	writeFrame(t, c, http2.FrameHeaders, http2.FlagHeadersEndHeaders, 1, buf.Bytes())
+	return buf.Bytes()
+}
+
+// writeRequestFrames sends a client SETTINGS frame and one HEADERS frame
+// carrying the given headers: the request flight after the connection
+// preface.
+func writeRequestFrames(t *testing.T, c net.Conn, contentType string, extraHeaders ...hpack.HeaderField) {
+	t.Helper()
+
+	writeFrame(t, c, http2.FrameSettings, 0, 0, nil)
+	writeFrame(t, c, http2.FrameHeaders, http2.FlagHeadersEndHeaders, 1,
+		encodeRequestHeaders(t, contentType, extraHeaders...))
 }
 
 func writeFrame(t *testing.T, c net.Conn, frameType http2.FrameType, flags http2.Flags, streamID uint32, payload []byte) {
@@ -144,6 +152,21 @@ func readEOF(t *testing.T, c net.Conn, within time.Duration) {
 	_, err := c.Read(make([]byte, 1))
 	require.Error(t, err)
 	assert.False(t, isTimeout(err), "the connection must be closed, not merely silent")
+}
+
+// requireAdmissionParked waits until a connection holds an admission slot.
+func requireAdmissionParked(t *testing.T, m *Mux, msg string) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		select {
+		case m.admit <- struct{}{}:
+			// The slot was free: put the token back for the matchers.
+			<-m.admit
+			return false
+		default:
+			return true
+		}
+	}, 2*time.Second, 5*time.Millisecond, msg)
 }
 
 func TestClassifyHTTP1(t *testing.T) {
@@ -357,7 +380,7 @@ func TestMatcherDoesNotSpeakFirstForImmediateClients(t *testing.T) {
 // connection goes to the gRPC side with the acknowledgement in the replay:
 // the gRPC server ignores acknowledgements of settings it never sent.
 func TestSettingsWaitingClientClassifiesNative(t *testing.T) {
-	m, dial := startMux(t, &Options{SettingsGrace: 100 * time.Millisecond, ClassifyTimeout: time.Second})
+	m, dial := startMux(t, &Options{SettingsGrace: 100 * time.Millisecond, ClassifyTimeout: 300 * time.Millisecond})
 
 	c, err := dial()
 	require.NoError(t, err)
@@ -390,6 +413,20 @@ func TestSettingsWaitingClientClassifiesNative(t *testing.T) {
 	_, err = io.ReadFull(got, replay)
 	require.NoError(t, err)
 	assert.Equal(t, http2.ClientPreface, string(replay), "preface not replayed intact")
+
+	// The matcher must clear the write deadline its settings frame was
+	// bounded by: cmux clears only the read deadline at handover, and a
+	// lingering write deadline would fail every later write on the
+	// connection. Write from the server past the classification window and
+	// expect the client to receive it.
+	time.Sleep(450 * time.Millisecond)
+	_, err = got.Write([]byte("still-writable"))
+	require.NoError(t, err, "a write deadline survived the handover")
+	require.NoError(t, c.SetReadDeadline(time.Now().Add(time.Second)))
+	tail := make([]byte, len("still-writable"))
+	_, err = io.ReadFull(c, tail)
+	require.NoError(t, err)
+	assert.Equal(t, "still-writable", string(tail))
 }
 
 // TestCommittedNonGRPCDropped proves a spoken-to connection whose first
@@ -397,7 +434,7 @@ func TestSettingsWaitingClientClassifiesNative(t *testing.T) {
 // acknowledgement of the injected settings frame is already recorded, and
 // net/http fails a connection that acknowledges settings it never sent.
 func TestCommittedNonGRPCDropped(t *testing.T) {
-	m, dial := startMux(t, &Options{SettingsGrace: 100 * time.Millisecond, ClassifyTimeout: time.Second})
+	_, dial := startMux(t, &Options{SettingsGrace: 100 * time.Millisecond, ClassifyTimeout: time.Second})
 
 	c, err := dial()
 	require.NoError(t, err)
@@ -417,7 +454,6 @@ func TestCommittedNonGRPCDropped(t *testing.T) {
 
 	// The connection matches no listener and cmux closes it.
 	readEOF(t, c, 2*time.Second)
-	_ = m // keep the mux referenced for the duration of the test
 }
 
 // TestOversizedHeaderBlockDeclined proves a connection whose first request
@@ -495,16 +531,7 @@ func TestAdmissionControlSheds(t *testing.T) {
 	defer parked.Close()
 	_, err = io.WriteString(parked, http2.ClientPreface)
 	require.NoError(t, err)
-	require.Eventually(t, func() bool {
-		select {
-		case m.admit <- struct{}{}:
-			// The slot was free: put the token back for the matchers.
-			<-m.admit
-			return false
-		default:
-			return true
-		}
-	}, 2*time.Second, 5*time.Millisecond, "the first connection never parked in classification")
+	requireAdmissionParked(t, m, "the first connection never parked in classification")
 
 	// The second connection prefaced but cannot get a slot in either
 	// matcher, so cmux closes it without parsing anything from it.
@@ -581,17 +608,7 @@ func TestSlowMidFrameClientTakesFallback(t *testing.T) {
 
 	// Send the HEADERS frame header and half of its payload, then stall past
 	// the grace.
-	var buf bytes.Buffer
-	enc := hpack.NewEncoder(&buf)
-	for _, hf := range []hpack.HeaderField{
-		{Name: hdrMethod, Value: hdrMethodPost},
-		{Name: ":scheme", Value: "http"},
-		{Name: ":path", Value: "/controlplane.v1.FooService/Bar"},
-		{Name: hdrContentType, Value: ctGRPCProto},
-	} {
-		require.NoError(t, enc.WriteField(hf))
-	}
-	block := buf.Bytes()
+	block := encodeRequestHeaders(t, ctGRPCProto)
 	hdr := []byte{
 		byte(len(block) >> 16), byte(len(block) >> 8), byte(len(block)),
 		byte(http2.FrameHeaders), byte(http2.FlagHeadersEndHeaders),
@@ -707,15 +724,7 @@ func TestCloseReturnsWhileConnParked(t *testing.T) {
 	// silent connection holds no slot at all.
 	_, err = io.WriteString(c, http2.ClientPreface)
 	require.NoError(t, err)
-	require.Eventually(t, func() bool {
-		select {
-		case m.admit <- struct{}{}:
-			<-m.admit
-			return false
-		default:
-			return true
-		}
-	}, 2*time.Second, 5*time.Millisecond, "the connection never parked in classification")
+	requireAdmissionParked(t, m, "the connection never parked in classification")
 	start := time.Now()
 	m.Close()
 	require.Less(t, time.Since(start), 2*time.Second, "Close rode out the classification window")
