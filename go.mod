@@ -93,6 +93,7 @@ require (
 	github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.11.0
 	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.11.0
 	github.com/sigstore/timestamp-authority/v2 v2.1.4
+	github.com/soheilhy/cmux v0.1.5
 	github.com/spdx/tools-golang v0.5.7
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10

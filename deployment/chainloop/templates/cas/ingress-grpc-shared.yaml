@@ -1,0 +1,61 @@
+{{- /*
+Copyright Chainloop, Inc. All Rights Reserved.
+SPDX-License-Identifier: APACHE-2.0
+*/}}
+
+{{- /*
+gRPC routes of the shared CAS endpoint (spec D-018). Rendered as a second
+Ingress on the same hostname as cas/ingress.yaml, with its own annotations:
+controllers that set the backend protocol per Ingress resource (community
+nginx `backend-protocol`) need a dedicated object for the gRPC paths, so the
+gRPC upstream pool keeps the HTTP/2 (grpc_pass) transport while the HTTP
+routes keep an HTTP/1.1 upstream. Controllers that conflict on unrelated
+same-host Ingress objects (F5 NGINX) need their own resource instead; see
+the chart README.
+*/}}
+{{- if and .Values.cas.ingress.enabled .Values.cas.ingress.grpc.paths }}
+{{- $fullName := include "chainloop.cas.fullname" . -}}
+{{- $grpcName := printf "%s-grpc" $fullName -}}
+apiVersion: {{ include "common.capabilities.ingress.apiVersion" . }}
+kind: Ingress
+metadata:
+  name: {{ $grpcName }}
+  namespace: {{ include "common.names.namespace" . | quote }}
+  labels: {{- include "chainloop.cas.labels" . | nindent 4 }}
+  {{- if or .Values.cas.ingress.grpc.annotations .Values.cas.ingress.grpc.defaultAnnotations .Values.commonAnnotations }}
+  {{- /* cas.ingress.annotations stay on the HTTP ingress only: a gRPC backend
+         protocol set there would reach the HTTP routes. The gRPC-path Ingress
+         takes its annotations from cas.ingress.grpc.annotations and the
+         common ones; earlier in the list wins. */}}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.cas.ingress.grpc.annotations .Values.commonAnnotations .Values.cas.ingress.grpc.defaultAnnotations) "context" .) }}
+  annotations: {{- include "common.tplvalues.render" (dict "value" $annotations "context" $) | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and .Values.cas.ingress.ingressClassName (eq "true" (include "common.ingress.supportsIngressClassname" .)) }}
+  ingressClassName: {{ .Values.cas.ingress.ingressClassName | quote }}
+  {{- end }}
+  rules:
+    {{- if .Values.cas.ingress.hostname }}
+    - host: {{ .Values.cas.ingress.hostname }}
+      http:
+        paths:
+          {{- range .Values.cas.ingress.grpc.paths }}
+          - path: {{ . }}
+            {{- if eq "true" (include "common.ingress.supportsPathType" $) }}
+            pathType: {{ default "ImplementationSpecific" $.Values.cas.ingress.pathType }}
+            {{- end }}
+            backend: {{- include "common.ingress.backend" (dict "serviceName" $fullName "servicePort" "http" "context" $) | nindent 14 }}
+          {{- end }}
+    {{- end }}
+  {{- if or (and .Values.cas.ingress.tls (or (include "common.ingress.certManagerRequest" (dict "annotations" (include "common.tplvalues.merge" (dict "values" (list .Values.cas.ingress.grpc.annotations .Values.commonAnnotations) "context" .) | fromYaml))) .Values.cas.ingress.selfSigned)) .Values.cas.ingress.extraTls }}
+  tls:
+    {{- if and .Values.cas.ingress.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.cas.ingress.annotations )) .Values.cas.ingress.selfSigned) }}
+    - hosts:
+        - {{ .Values.cas.ingress.hostname | quote }}
+      secretName: {{ printf "%s-tls" .Values.cas.ingress.hostname }}
+    {{- end }}
+    {{- if .Values.cas.ingress.extraTls }}
+    {{- include "common.tplvalues.render" (dict "value" .Values.cas.ingress.extraTls "context" $) | nindent 4 }}
+    {{- end }}
+  {{- end }}
+{{- end }}

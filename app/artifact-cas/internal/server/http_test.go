@@ -305,7 +305,10 @@ func TestCASByteStreamTransportParity(t *testing.T) {
 					require.Equal(t, codes.InvalidArgument, status.Code(err))
 
 					// The HTTP download remains usable regardless of which RPC listener uploaded the blob.
-					tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec // test certificate
+					// HTTP/1.1 only (D-017/R-009): the HTTP side of the shared
+					// endpoint does not take plain HTTP/2 connections.
+					tr := &http.Transport{Protocols: new(http.Protocols), TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec // test certificate
+					tr.Protocols.SetHTTP1(true)
 					defer tr.CloseIdleConnections()
 					req, err := http.NewRequestWithContext(ctx, http.MethodGet, sharedURL+"/download/sha256:"+digest, nil)
 					require.NoError(t, err)
@@ -339,6 +342,14 @@ func casTestTLS(t testing.TB) *conf.Server_TLS {
 	return &conf.Server_TLS{Certificate: certPath, PrivateKey: keyPath}
 }
 
+// TestCASSharedConnectionReuse checks the separate-connection contract of the
+// shared endpoint (spec D-014/D-015): through one port, native gRPC and HTTP
+// each work on their own connections, a browser CORS preflight reaches the
+// HTTP side, and an HTTP-owned HTTP/2 connection can still carry a later
+// native gRPC request through the per-request ServeHTTP fallback. The reverse
+// order, plain HTTP on a gRPC-classified connection, is not part of the
+// contract; a proxy must keep the two kinds of traffic on separate upstream
+// pools, which is what the chart's path-split ingress configures.
 func TestCASSharedConnectionReuse(t *testing.T) {
 	for _, useTLS := range []bool{false, true} {
 		t.Run(map[bool]string{false: "h2c", true: "TLS"}[useTLS], func(t *testing.T) {
@@ -347,18 +358,32 @@ func TestCASSharedConnectionReuse(t *testing.T) {
 				opts.ServerConfig.Http.TlsConfig = casTestTLS(t)
 			}
 			sharedURL, _ := startCASTestServers(t, opts)
-			var connections atomic.Int32
-			tr := &http.Transport{Protocols: new(http.Protocols), TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // test certificate
-				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-					connections.Add(1)
-					return (&net.Dialer{}).DialContext(ctx, network, addr)
-				},
-			}
-			tr.Protocols.SetHTTP2(true)
-			tr.Protocols.SetUnencryptedHTTP2(true)
-			defer tr.CloseIdleConnections()
-			client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
-			for _, kind := range []string{casGRPCRequest, casHTTPRequest, casGRPCRequest, casPreflightRequest, casHTTPRequest, casGRPCRequest} {
+
+			perform := func(kind string) {
+				var connections atomic.Int32
+				tr := &http.Transport{Protocols: new(http.Protocols), TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // test certificate
+					DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+						connections.Add(1)
+						return (&net.Dialer{}).DialContext(ctx, network, addr)
+					},
+				}
+				if kind == casGRPCRequest {
+					// Native gRPC arrives over HTTP/2, as the gRPC upstream
+					// pool of a configured ingress dials it.
+					tr.Protocols.SetHTTP2(true)
+					tr.Protocols.SetUnencryptedHTTP2(true)
+				} else {
+					// D-017/R-009: the HTTP side of the shared endpoint
+					// supports HTTP/1.1 only. A plain HTTP/2 client
+					// acknowledges the matcher's injected SETTINGS frame,
+					// and net/http rejects that acknowledgement (GOAWAY,
+					// PROTOCOL_ERROR). The HTTP upstream pool therefore dials
+					// HTTP/1.1 (D-018).
+					tr.Protocols.SetHTTP1(true)
+				}
+				defer tr.CloseIdleConnections()
+				client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
+
 				path, method := "/cas.v1.StatusService/Statusz", http.MethodPost
 				if kind == casHTTPRequest {
 					path, method = "/statusz", http.MethodGet
@@ -386,12 +411,27 @@ func TestCASSharedConnectionReuse(t *testing.T) {
 					expected = http.StatusNoContent
 				}
 				require.Equal(t, expected, resp.StatusCode, kind)
-				require.Equal(t, 2, resp.ProtoMajor)
 				if kind == casGRPCRequest {
+					require.Equal(t, 2, resp.ProtoMajor)
 					require.Equal(t, "0", resp.Trailer.Get("Grpc-Status"))
+				} else {
+					// D-017/R-009: the HTTP side of the shared endpoint is HTTP/1.1.
+					require.Equal(t, 1, resp.ProtoMajor)
 				}
 			}
-			require.EqualValues(t, 1, connections.Load())
+
+			// Each protocol works through the shared port on its own
+			// connections, as a proxy with separate upstream pools sends them.
+			// A plain HTTP/2 connection cannot fall through to the HTTP side:
+			// D-017 records that the matcher's SETTINGS injection makes
+			// net/http reject the client's acknowledgement (GOAWAY,
+			// PROTOCOL_ERROR), so mixed native-gRPC and plain-HTTP reuse of
+			// one upstream HTTP/2 connection is unsupported by contract.
+			perform(casGRPCRequest)
+			perform(casHTTPRequest)
+			perform(casPreflightRequest)
+			perform(casHTTPRequest)
+			perform(casGRPCRequest)
 		})
 	}
 }

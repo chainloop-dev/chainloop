@@ -26,7 +26,8 @@ Control-plane requirements and design superseded by [Spec issue-3628-controlplan
 For the control plane, the requirements, constraints, proposal, diagram, decision records, milestones, and risks below are historical.
 Use the replacement spec for all control-plane implementation and qualification.
 Only CAS requirements remain in scope here.
-CAS transport selection and qualification remain open under the parent ticket.
+The CAS transport decision is recorded below in D-017 and D-018.
+CAS qualification remains open under the parent ticket.
 
 ## Summary
 
@@ -56,14 +57,22 @@ The control plane and the Artifact CAS will each serve gRPC and HTTP on one port
 
 ## Requirements
 
-### R-001: One port serves all protocols
-On its single port, each service MUST serve gRPC (HTTP/2) and plain HTTP (HTTP/1.1 and HTTP/2). The control plane MUST also serve gRPC-Web. The CAS has no gRPC-Web today and does not get it (see D-011). This includes every endpoint that the gRPC port and the HTTP port serve today.
-- Done when: these clients work against only the single port:
-  - the CLI and the web UI
-  - the OIDC login and the status probes
-  - the referrer discovery and the OpenAPI document
-  - CAS browser downloads
-- Done when: the same checks pass through nginx ingress and through Traefik ingress.
+### ~~R-001: One port serves all protocols~~
+Superseded by R-009 for the CAS. The control-plane scope moved to [the replacement spec](issue-3628-controlplane-http-dispatch.md).
+
+~~On its single port, each service MUST serve gRPC (HTTP/2) and plain HTTP (HTTP/1.1 and HTTP/2). The control plane MUST also serve gRPC-Web. The CAS has no gRPC-Web today and does not get it (see D-011). This includes every endpoint that the gRPC port and the HTTP port serve today.~~
+- ~~Done when: these clients work against only the single port:~~
+  - ~~the CLI and the web UI~~
+  - ~~the OIDC login and the status probes~~
+  - ~~the referrer discovery and the OpenAPI document~~
+  - ~~CAS browser downloads~~
+- ~~Done when: the same checks pass through nginx ingress and through Traefik ingress.~~
+
+### R-009: CAS shared endpoint protocol scope
+Supersedes R-001 for the CAS. On its single port, the CAS MUST serve native gRPC over HTTP/2 and plain HTTP over HTTP/1.1, through cmux connection classification with the native gRPC transport (D-017). Plain HTTP/2 other than native gRPC is not supported on the CAS shared port: the gRPC matcher's SETTINGS injection breaks such a connection once it falls through to the HTTP server. Plain HTTP/2 and mixed connections remain control-plane scope under the replacement spec.
+- Done when: focused tests cover native gRPC over h2c and TLS, HTTP/1.1 downloads, the status endpoints, and the CORS preflight through the shared port.
+- Done when: the chart routes the gRPC paths and the HTTP paths into separate upstream pools, with HTTP/1.1 for the HTTP routes (D-018).
+- Done when: browser downloads through a configured ingress work, and the documentation states that a browser downloading directly from a TLS-configured shared port is not a supported deployment.
 
 ### R-005: Existing configuration keeps working
 An installation that does not change its configuration MUST keep working during the deprecation period. The legacy gRPC port keeps serving gRPC at its current address during that period. CLI configurations that use ingress hostnames keep working when the ingress backend moves to the single port. The control plane connection to the CAS, and any other client that uses the legacy gRPC address, MUST move to the single HTTP address before the legacy gRPC port is disabled.
@@ -269,14 +278,32 @@ Supersedes D-005. The services solve the multiplexing in the server process. The
   - A mandatory sidecar or embedded proxy: it works behind more proxy configurations, but it adds a process and its lifecycle to every deployment.
 - Source: [PR comment](https://github.com/chainloop-dev/chainloop/pull/3647#issuecomment-6266145446)
 
-### D-016: Complete the classifier's SETTINGS exchange before HTTP handoff
-Supersedes D-013. The service keeps cmux connection classification, the native gRPC server, and the HTTP request dispatcher with its gRPC-Web wrapper and native-gRPC fallback. Both native gRPC and ordinary HTTP/2 clients may wait for server SETTINGS before their first request. Silence does not identify the protocol of that request.
-- The matcher uses the standard HTTP/2 framer and HPACK decoder. It limits incoming frames to the initial 16 KiB maximum before reading their payloads, as well as limiting classification bytes, time, and concurrency.
-- When the matcher sends an empty SETTINGS frame and the first request is HTTP, it waits within the classification bounds for that SETTINGS acknowledgement. It records the validated ACK's exact offset in cmux's replay. The HTTP listener removes only that nine-byte frame before the HTTP server reads the connection. The HTTP server owns all subsequent SETTINGS exchanges. An incomplete injected handshake is closed.
-- Native gRPC connections still go to the existing native server with their original replay. HTTP connections that did not need an injected SETTINGS frame also retain their original replay. HTTP requests and later streams are not parsed again by the handoff adapter.
-- Why: rejecting every non-gRPC request after the matcher sends SETTINGS also rejects valid HTTP-only clients. Forwarding the extra ACK unchanged makes net/http reject the connection after the client acknowledges the HTTP server's own SETTINGS. Removing the one ACK preserves its ownership without adding an ongoing frame parser.
-- Evidence: focused tests cover HTTP and gRPC-Web content types over plaintext and TLS, ACKs before and after the first request, subsequent requests on the same connection, incomplete handshakes, and an oversized frame header without its payload. These tests do not establish full R-002 parity or R-003 CAS performance.
-- Source: [implementation review](https://github.com/chainloop-dev/chainloop/pull/3647#pullrequestreview-5573391966).
+### ~~D-016: Complete the classifier's SETTINGS exchange before HTTP handoff~~
+Superseded by D-017.
+
+~~Supersedes D-013. The service keeps cmux connection classification, the native gRPC server, and the HTTP request dispatcher with its gRPC-Web wrapper and native-gRPC fallback. Both native gRPC and ordinary HTTP/2 clients may wait for server SETTINGS before their first request. Silence does not identify the protocol of that request.~~
+- ~~The matcher uses the standard HTTP/2 framer and HPACK decoder. It limits incoming frames to the initial 16 KiB maximum before reading their payloads, as well as limiting classification bytes, time, and concurrency.~~
+- ~~When the matcher sends an empty SETTINGS frame and the first request is HTTP, it waits within the classification bounds for that SETTINGS acknowledgement. It records the validated ACK's exact offset in cmux's replay. The HTTP listener removes only that nine-byte frame before the HTTP server reads the connection. The HTTP server owns all subsequent SETTINGS exchanges. An incomplete injected handshake is closed.~~
+- ~~Native gRPC connections still go to the existing native server with their original replay. HTTP connections that did not need an injected SETTINGS frame also retain their original replay. HTTP requests and later streams are not parsed again by the handoff adapter.~~
+- ~~Why: rejecting every non-gRPC request after the matcher sends SETTINGS also rejects valid HTTP-only clients. Forwarding the extra ACK unchanged makes net/http reject the connection after the client acknowledges the HTTP server's own SETTINGS. Removing the one ACK preserves its ownership without adding an ongoing frame parser.~~
+- ~~Evidence: focused tests cover HTTP and gRPC-Web content types over plaintext and TLS, ACKs before and after the first request, subsequent requests on the same connection, incomplete handshakes, and an oversized frame header without its payload. These tests do not establish full R-002 parity or R-003 CAS performance.~~
+- ~~Source: [implementation review](https://github.com/chainloop-dev/chainloop/pull/3647#pullrequestreview-5573391966).~~
+
+### D-017: CAS shared endpoint: cmux with the native transport, and the corrected SETTINGS contract
+Supersedes D-016 for the CAS endpoint. The control-plane parts of D-014 to D-016 were already superseded by [the replacement spec](issue-3628-controlplane-http-dispatch.md).
+
+The CAS shared endpoint is `server.http.addr`. cmux reads the start of each new connection and hands the whole connection to one of the two existing transports: an HTTP/2 connection whose first request declares a native gRPC content type goes to the existing native gRPC listener (`grpc.Server.Serve`); every other connection goes to the existing HTTP server. ByteStream uploads and downloads therefore keep the grpc-go native transport, so R-003 does not rest on the HTTP adapter.
+- Why not the merged control-plane design, per-request `ServeHTTP` dispatch: the [PR #3663 1 GiB comparison](https://github.com/chainloop-dev/chainloop/pull/3663) measured about 1.25 GiB of combined client/server sampled peak live heap for adapter uploads, against about 28 MiB for the native transport, and download throughput 11.8% lower, already past the R-003 limit. grpc-go's handler transport reads the HTTP body in a separate goroutine into an unbounded receive buffer, so read-ahead is not bounded by the application's pace. CAS moves gigabyte streams; the control plane does not. The two services keep different transport designs on purpose.
+- Why D-016 is superseded: D-016 assumed a classifier this project owns, which records the SETTINGS ACK offset in its own replay and removes that frame before the HTTP server reads. The cmux library owns the sniffing buffer, so that removal does not exist. Two reproductions on the CAS branch fix the contract instead. First, without SETTINGS injection, direct grpc-go clients deadlock: they send their preface and SETTINGS and wait for the server's SETTINGS before their first HEADERS frame, while the matcher waits for headers to sniff. The gRPC matcher must use cmux's SETTINGS-writing matcher. Second, that matcher writes a SETTINGS frame on every HTTP/2 connection, matched or not, because every HTTP/2 client sends SETTINGS with its preface. A plain HTTP/2 client that falls through to the HTTP server acknowledges the injected SETTINGS frame, and net/http rejects the unsolicited acknowledgement (GOAWAY, PROTOCOL_ERROR).
+- Contract: once the matcher has written to a connection, the connection belongs to the native gRPC server. The HTTP side of the shared endpoint supports HTTP/1.1 only; HTTP/2 reaches the CAS only as native gRPC. Supported proxies keep native gRPC and plain HTTP on separate upstream connections (D-014) and dial HTTP/1.1 for the HTTP routes (D-018).
+- Source: [PR #3663](https://github.com/chainloop-dev/chainloop/pull/3663) experiment and benchmark, and the local reproductions on its branch.
+
+### D-018: CAS chart: one hostname, path-split upstream pools, HTTP/1.1 for the HTTP routes
+The chart exposes one CAS hostname and one public port, and splits the routes by protocol into separate upstream pools: the `/cas.v1.*` paths go to the gRPC pool with an HTTP/2 upstream (nginx `backend-protocol: GRPC` and `grpc-services`; the upload body-size annotations move with them), and `/download/*`, `/statusz`, and `/infoz` go to the HTTP pool, which dials HTTP/1.1, not h2c. One certificate terminates at the edge.
+- Why the path split is exact for CAS: CAS has no gRPC-Web (D-011), so its gRPC paths and its HTTP paths are disjoint. No path can carry both protocols. The control plane could not use this split because native gRPC and gRPC-Web share RPC paths; the [PR #3647 NGINX reproduction](https://github.com/chainloop-dev/chainloop/pull/3647#issuecomment-6272007730) showed the path-only split failing there with 415 on gRPC-Web. CAS does not have that failure mode.
+- Why HTTP/1.1 upstream on the HTTP pool: D-017. An HTTP/2 upstream for the HTTP routes triggers the matcher's SETTINGS injection, and the client's acknowledgement then breaks the HTTP server connection with GOAWAY.
+- Controller notes: community nginx merges same-host paths from multiple Ingress resources and sets the backend protocol per resource, which expresses the split. F5 NGINX conflicts on unrelated same-host Ingresses; use its VirtualServer resource. Traefik applies the `service.serversscheme` annotation per Service, so one Service cannot be dialed h2c for the gRPC routes and HTTP/1.1 for the HTTP routes; the Traefik split needs a second Service for the HTTP routes or a controller-specific resource. The browser download endpoint stays on the HTTP routes: it is published API ([docs](https://docs.chainloop.dev/api-reference/downloadservice/download-artifacts-from-cas)), and CAS does not drop it.
+- Source: chart changes on the [PR #3663](https://github.com/chainloop-dev/chainloop/pull/3663) branch.
 
 ## Open Questions
 

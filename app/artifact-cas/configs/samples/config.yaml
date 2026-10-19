@@ -8,7 +8,8 @@ server:
   http:
     addr: 0.0.0.0:8001
     timeout: 300s
-    # Optional TLS for both HTTP and native gRPC on port 8001. Independent of grpc.tls_config.
+    # Shared endpoint: HTTP/1.1 and native gRPC (cmux). HTTP/2 is native gRPC only.
+    # Optional TLS for both transports on port 8001. Independent of grpc.tls_config.
     # tls_config:
     #   certificate: "./configs/tls/shared.crt"
     #   private_key: "./configs/tls/shared.key"

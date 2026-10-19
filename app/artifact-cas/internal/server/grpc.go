@@ -64,8 +64,12 @@ type Opts struct {
 	Logger       log.Logger
 }
 
-// GRPCServers keeps the HTTP handler separate from the native transport.
-// Handler must never be started with Serve; the HTTP server owns its streams.
+// GRPCServers keeps one gRPC server for the shared endpoint separate from the
+// optional legacy listener. Handler never binds a socket of its own: cmux
+// hands it the native-gRPC connections of the shared HTTP listener, and the
+// HTTP server dispatches its per-request gRPC fallback to the same server
+// through grpc-go's HTTP adapter. Both listeners therefore run the same
+// services and interceptors.
 type GRPCServers struct {
 	Handler *grpc.Server
 	Legacy  *grpc.Server

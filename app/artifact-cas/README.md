@@ -70,11 +70,11 @@ go run main.go --insecure artifact download -d [sha256:...]
 
 ### Shared endpoint experiment
 
-This branch extends the control-plane HTTP dispatch approach to CAS for local evaluation. The existing HTTP port, `8001`, accepts HTTP/1.1, HTTP/2, and native gRPC. Every request is dispatched independently: HTTP/2 requests with a native gRPC content type use `grpc.Server.ServeHTTP`; other requests use the existing HTTP status and authenticated download handlers. CAS does not add gRPC-Web or Connect.
+The CAS HTTP port, `8001`, is the shared endpoint. cmux reads the first request of each new connection and hands the whole connection to one of the two existing transports: HTTP/2 connections whose first request declares a native gRPC content type go to the native gRPC transport (`grpc.Server.Serve`), everything else goes to the existing HTTP server. ByteStream therefore keeps the grpc-go native transport; the earlier per-request `grpc.Server.ServeHTTP` experiment on this branch was rejected because its uploads peaked at ~1.25 GiB of live heap for a 1 GiB artifact (see the results history below and the PR #3663 discussion). CAS does not add gRPC-Web or Connect.
 
-The native gRPC listener on `9001` remains enabled by default, with its existing independent TLS configuration. The same ByteStream and resource services, JWT checks, role checks, validators, and metrics interceptors serve both listeners. `server.http.timeout` continues to apply to HTTP routes; ByteStream requests bypass the HTTP route middleware. HTTP drains before its gRPC handler stops.
+The gRPC matcher is the SETTINGS-writing one: grpc-go clients send their preface and SETTINGS and then wait for the server's SETTINGS before their first request, so a silent matcher deadlocks them. Once the matcher has written, the connection belongs to the native gRPC server. The HTTP side of the shared endpoint therefore supports HTTP/1.1 only: a plain HTTP/2 client that falls through to the HTTP server acknowledges the injected SETTINGS frame, which `net/http` rejects (`GOAWAY`, `PROTOCOL_ERROR`). Mixed native-gRPC and plain-HTTP requests on one upstream HTTP/2 connection are not supported; supported proxies keep the two kinds of traffic on separate upstream pools, which the chart configures (spec D-017/D-018, recorded in [issue-3628-single-endpoint](../../docs/specs/issue-3628-single-endpoint.md)).
 
-This is an experiment against the original CAS design in [issue-3628-single-endpoint](../../docs/specs/issue-3628-single-endpoint.md), particularly its D-014 through D-016 native-transport design. The control-plane replacement spec defers CAS. Neither spec is amended by this branch: a CAS transport decision and the original R-002/R-003 qualification remain required before migration. The HTTP adapter can read ahead while the application is paused, so functional streaming tests alone cannot establish bounded memory.
+The native gRPC listener on `9001` remains enabled by default, with its existing independent TLS configuration. The same ByteStream and resource services, JWT checks, role checks, validators, and metrics interceptors serve both listeners. `server.http.timeout` continues to apply to HTTP routes; ByteStream requests bypass the HTTP route middleware. HTTP drains before the gRPC transport stops.
 
 To test with your existing development infrastructure:
 
@@ -90,9 +90,9 @@ go run ./app/cli --insecure --artifact-cas localhost:8001 artifact download -d s
 
 The development CAS public key and credentials service must match the control plane that issues these temporary CAS tokens. If another CAS already occupies these ports, start this binary with a copy of your CAS configuration and unused addresses. Do not replace the running service or edit the CLI config just to run a comparison.
 
-Change only the per-command override to `localhost:9001` to compare with the native listener. Once all direct clients and the control-plane CAS connection have been moved, `server.legacy_grpc_listener: false` disables the native listener. Leave it enabled during evaluation. Optional `server.http.tls_config` configures TLS for the shared endpoint; both certificate and private key must be set. It does not inherit `server.grpc.tls_config`.
+Change only the per-command override to `localhost:9001` to compare with the native listener. Once all direct clients and the control-plane CAS connection have been moved, `server.legacy_grpc_listener: false` disables the native listener. Leave it enabled during evaluation. Optional `server.http.tls_config` configures TLS for the shared endpoint; both certificate and private key must be set. It does not inherit `server.grpc.tls_config`. Note that a browser downloading directly from a TLS-configured shared port is not supported: the browser negotiates HTTP/2 through ALPN and the connection reaches the HTTP server with an injected SETTINGS frame. Serve browser downloads through the ingress.
 
-The chart's `cas.ingress` targets the shared HTTP Service with HTTP/2 upstream defaults for ingress-nginx, F5 NGINX, and Traefik, matching the control-plane settings. `cas.ingressAPI` and `cas.serviceAPI` retain their existing settings. The control plane still targets the legacy CAS Service. The shared ingress retains the native ingress's `100m` body limit and `3M` client body buffer default; override the body limit to `0` or a suitable larger limit for a 1 GB ingress experiment. Deployed controller qualification remains outstanding.
+The chart's `cas.ingress` routes the HTTP paths (`/download`, `/statusz`, `/infoz`) with an HTTP/1.1 upstream, and a second Ingress rendered from `cas.ingress.grpc` routes the `/cas.v1.*` RPC paths with the gRPC backend protocol. The gRPC Ingress keeps the native ingress's `100m` body limit and `3M` client body buffer default; override the body limit to `0` or a suitable larger limit for a 1 GB ingress experiment. `cas.ingressAPI`, `cas.serviceAPI`, and the control plane's connection to the legacy CAS Service keep their existing settings. Deployed controller qualification (F5 same-host Ingress conflicts, Traefik's per-Service scheme) remains outstanding.
 
 Run the isolated functional checks without Vault or an object store:
 
@@ -100,7 +100,7 @@ Run the isolated functional checks without Vault or an object store:
 go test -race ./app/artifact-cas/internal/server ./app/artifact-cas/cmd ./deployment/chainloop -count=1
 ```
 
-Compare real ByteStream upload and download paths over TCP with a synthetic 1 GiB zero-filled artifact, streamed from a fixed-size buffer and checked by SHA256. Both transports use the same file-backed test backend and real CAS staging and authentication. Select a disk-backed temporary directory; `/tmp` can be tmpfs.
+Compare real ByteStream upload and download paths over TCP with a synthetic 1 GiB zero-filled artifact, streamed from a fixed-size buffer and checked by SHA256. Both listeners use the same file-backed test backend and real CAS staging and authentication. Select a disk-backed temporary directory; `/tmp` can be tmpfs.
 
 ```sh
 mkdir -p "$HOME/.cache/chainloop-cas-bench"
@@ -113,18 +113,18 @@ TMPDIR="$HOME/.cache/chainloop-cas-bench" go test ./app/artifact-cas/internal/se
 
 #### Observed local results
 
-Three 1 GiB transfers per operation, Go 1.27.2, grpc-go 1.84.0, Linux amd64, disk-backed btrfs staging. These medians come from the [raw benchmark output](experiments/shared-endpoint-benchmark.txt).
+Three 1 GiB transfers per operation, Go 1.27.2, grpc-go 1.84.0, cmux 0.1.5, Linux amd64, disk-backed btrfs staging. These medians come from the [raw benchmark output](experiments/shared-endpoint-benchmark.txt).
 
-| Transport | Operation | Throughput (MB/s) | Sampled peak live heap (MiB) |
+| Listener | Operation | Throughput (MB/s) | Sampled peak live heap (MiB) |
 | --- | --- | ---: | ---: |
-| Native gRPC | Upload | 240.84 | 27.97 |
-| HTTP adapter | Upload | 232.00 | 1278.00 |
-| Native gRPC | Download | 197.03 | 31.97 |
-| HTTP adapter | Download | 173.83 | 38.92 |
+| Native gRPC (`:9001`) | Upload | 228.90 | 29.27 |
+| Shared endpoint (`:8001`, cmux) | Upload | 232.51 | 27.97 |
+| Native gRPC (`:9001`) | Download | 194.10 | 30.90 |
+| Shared endpoint (`:8001`, cmux) | Download | 189.74 | 31.83 |
 
-The HTTP-adapter upload used approximately 1.25 GiB of combined client/server heap for a 1 GiB artifact, while the native upload stayed around 28 MiB. This is a material memory regression even with an actively reading application. The sampled peak includes pooled and queued buffers and does not identify every allocation's owner. Source inspection is consistent with server read-ahead: grpc-go's [handler transport reads the HTTP body in a separate goroutine](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/handler_server.go#L434) and queues data into an [unbounded receive buffer](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/transport.go#L90).
+Both listeners use the native grpc-go transport, and the numbers match: median upload throughput on the shared endpoint was 1.6% higher and median download throughput 2.2% lower than the legacy listener, with sampled peak live heap equivalent (~28-32 MiB) on both. This satisfies the R-003 transport-comparison shape for the shared endpoint — within 10% with bounded memory — in this synthetic local setup. Filesystem caching, synthetic content, the combined client/server process, and local machine load limit extrapolation to production.
 
-Median upload throughput was 3.7% lower and download throughput 11.8% lower on the adapter in this run. Filesystem caching, synthetic content, the combined client/server process, and local machine load limit extrapolation to production. The memory result prevents recommending this shared CAS adapter for migration. The native endpoint remains the comparison baseline; use this branch to reproduce the result and evaluate another transport before changing production CAS clients.
+For contrast, the earlier per-request `ServeHTTP` experiment on this branch measured 232.00 MB/s upload and 173.83 MB/s download against the same native baseline, with an upload peak of ~1278 MiB: grpc-go's [handler transport reads the HTTP body in a separate goroutine](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/handler_server.go#L434) into an [unbounded receive buffer](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/transport.go#L90), so read-ahead is not bounded by the application's pace. That memory regression rejected the adapter for CAS uploads (the control plane keeps the adapter because its requests are small and unary) and motivated the cmux design recorded in D-017.
 
 ### Run tests
 
