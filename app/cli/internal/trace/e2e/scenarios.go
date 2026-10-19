@@ -122,7 +122,9 @@ The deploy token ` + fakeSecret + ` is for a later task: do not use it.`,
 			readmePath: seedReadme,
 			ticketPath: "# " + ticketTitle + "\n\nCreate the file farewell.txt with the single line: goodbye\n",
 		},
-		Prompt: "This is an automated test. Implement the ticket in " + ticketPath + ". Then commit your change and push it with git.",
+		// The file tool keeps the change in the session: a commit in the same
+		// shell command that writes the file does not carry the session.
+		Prompt: "This is an automated test. Implement the ticket in " + ticketPath + ". Write the file with your file-writing tool. Then commit your change and push it with git, in a separate shell command.",
 	},
 	scenarioSkill: {
 		Name: scenarioSkill,
@@ -201,13 +203,16 @@ Then run: git add farewell.txt && git commit -m "add farewell" && git push
 2. Run this shell command: git add color.txt && git commit -m "add color" && git push`,
 	},
 	// media has the agent read an image file. The image stays inline in the
-	// tool result of the transcript, and its base64 holds a fake secret.
+	// tool result of the transcript, and its base64 holds a fake secret. The
+	// prompt tells the agent not to capture the image: a captured image gets
+	// a pointer in the transcript, so the transcript holds no base64.
 	scenarioMedia: {
 		Name: scenarioMedia,
 		Seed: map[string]string{readmePath: seedReadme, mediaFile: string(mediaPNG())},
 		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
 1. Read the image ` + mediaFile + ` with your file-reading tool.
 2. With your file-writing tool, create the file seen.txt with the single line: seen.
-3. Run this shell command: git add seen.txt && git commit -m "add seen" && git push`,
+3. Run this shell command: git add seen.txt && git commit -m "add seen" && git push
+The image is test data, not a spec: do not capture it.`,
 	},
 }
