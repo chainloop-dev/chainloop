@@ -67,6 +67,65 @@ go run main.go --insecure artifact upload -f [FILE] # will return a sha256 diges
 go run main.go --insecure artifact download -d [sha256:...]
 ```
 
+
+### Shared endpoint experiment
+
+This branch extends the control-plane HTTP dispatch approach to CAS for local evaluation. The existing HTTP port, `8001`, accepts HTTP/1.1, HTTP/2, and native gRPC. Every request is dispatched independently: HTTP/2 requests with a native gRPC content type use `grpc.Server.ServeHTTP`; other requests use the existing HTTP status and authenticated download handlers. CAS does not add gRPC-Web or Connect.
+
+The native gRPC listener on `9001` remains enabled by default, with its existing independent TLS configuration. The same ByteStream and resource services, JWT checks, role checks, validators, and metrics interceptors serve both listeners. `server.http.timeout` continues to apply to HTTP routes; ByteStream requests bypass the HTTP route middleware. HTTP drains before its gRPC handler stops.
+
+This is an experiment against the original CAS design in [issue-3628-single-endpoint](../../docs/specs/issue-3628-single-endpoint.md), particularly its D-014 through D-016 native-transport design. The control-plane replacement spec defers CAS. Neither spec is amended by this branch: a CAS transport decision and the original R-002/R-003 qualification remain required before migration. The HTTP adapter can read ahead while the application is paused, so functional streaming tests alone cannot establish bounded memory.
+
+To test with your existing development infrastructure:
+
+```sh
+make -C app/artifact-cas run
+
+# In another terminal, use a per-command CAS endpoint override.
+# Existing CLI authentication and the control-plane endpoint come from your config.
+go run ./app/cli --insecure --artifact-cas localhost:8001 artifact upload -f /path/to/artifact
+# Use the returned digest:
+go run ./app/cli --insecure --artifact-cas localhost:8001 artifact download -d sha256:DIGEST
+```
+
+The development CAS public key and credentials service must match the control plane that issues these temporary CAS tokens. If another CAS already occupies these ports, start this binary with a copy of your CAS configuration and unused addresses. Do not replace the running service or edit the CLI config just to run a comparison.
+
+Change only the per-command override to `localhost:9001` to compare with the native listener. Once all direct clients and the control-plane CAS connection have been moved, `server.legacy_grpc_listener: false` disables the native listener. Leave it enabled during evaluation. Optional `server.http.tls_config` configures TLS for the shared endpoint; both certificate and private key must be set. It does not inherit `server.grpc.tls_config`.
+
+The chart's `cas.ingress` targets the shared HTTP Service with HTTP/2 upstream defaults for ingress-nginx, F5 NGINX, and Traefik, matching the control-plane settings. `cas.ingressAPI` and `cas.serviceAPI` retain their existing settings. The control plane still targets the legacy CAS Service. The shared ingress retains the native ingress's `100m` body limit and `3M` client body buffer default; override the body limit to `0` or a suitable larger limit for a 1 GB ingress experiment. Deployed controller qualification remains outstanding.
+
+Run the isolated functional checks without Vault or an object store:
+
+```sh
+go test -race ./app/artifact-cas/internal/server ./app/artifact-cas/cmd ./deployment/chainloop -count=1
+```
+
+Compare real ByteStream upload and download paths over TCP with a synthetic 1 GiB zero-filled artifact, streamed from a fixed-size buffer and checked by SHA256. Both transports use the same file-backed test backend and real CAS staging and authentication. Select a disk-backed temporary directory; `/tmp` can be tmpfs.
+
+```sh
+mkdir -p "$HOME/.cache/chainloop-cas-bench"
+TMPDIR="$HOME/.cache/chainloop-cas-bench" go test ./app/artifact-cas/internal/server \
+  -run '^$' -bench '^BenchmarkCASByteStreamTransport$' -benchtime=1x -count=3 -timeout=10m
+```
+
+`CAS_BENCH_BYTES` changes the artifact size for shorter experiments. Benchmark throughput and total allocated bytes come from Go's benchmark runner. `peak-heap-MiB` samples live heap every 10 ms for the combined client and server process; it is neither server-only RSS nor a bounded-memory proof. This controlled transport comparison does not establish the original R-003 requirement of throughput within 10% of the current release with representative object storage, or cover slow readers, concurrent streams, ingress, TLS throughput, or the complete R-002 authentication matrix.
+
+
+#### Observed local results
+
+Three 1 GiB transfers per operation, Go 1.27.2, grpc-go 1.84.0, Linux amd64, disk-backed btrfs staging. These medians come from the [raw benchmark output](experiments/shared-endpoint-benchmark.txt).
+
+| Transport | Operation | Throughput (MB/s) | Sampled peak live heap (MiB) |
+| --- | --- | ---: | ---: |
+| Native gRPC | Upload | 240.84 | 27.97 |
+| HTTP adapter | Upload | 232.00 | 1278.00 |
+| Native gRPC | Download | 197.03 | 31.97 |
+| HTTP adapter | Download | 173.83 | 38.92 |
+
+The HTTP-adapter upload used approximately 1.25 GiB of combined client/server heap for a 1 GiB artifact, while the native upload stayed around 28 MiB. This is a material memory regression even with an actively reading application. The sampled peak includes pooled and queued buffers and does not identify every allocation's owner. Source inspection is consistent with server read-ahead: grpc-go's [handler transport reads the HTTP body in a separate goroutine](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/handler_server.go#L434) and queues data into an [unbounded receive buffer](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/transport.go#L90).
+
+Median upload throughput was 3.7% lower and download throughput 11.8% lower on the adapter in this run. Filesystem caching, synthetic content, the combined client/server process, and local machine load limit extrapolation to production. The memory result prevents recommending this shared CAS adapter for migration. The native endpoint remains the comparison baseline; use this branch to reproduce the result and evaluate another transport before changing production CAS clients.
+
 ### Run tests
 
 ```

@@ -3,9 +3,15 @@ auth:
   public_key_path: "./configs/devkeys/cas.public.pem"
 
 server:
+  # Retain the native transport while evaluating the shared HTTP endpoint.
+  legacy_grpc_listener: true
   http:
     addr: 0.0.0.0:8001
-    timeout: 1s
+    timeout: 300s
+    # Optional TLS for both HTTP and native gRPC on port 8001. Independent of grpc.tls_config.
+    # tls_config:
+    #   certificate: "./configs/tls/shared.crt"
+    #   private_key: "./configs/tls/shared.key"
   grpc:
     addr: 0.0.0.0:9001
     timeout: 1s

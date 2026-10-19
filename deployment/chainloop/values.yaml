@@ -1129,9 +1129,11 @@ cas:
     ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
     ##
     externalTrafficPolicy: Cluster
-    ## @param cas.service.annotations Additional custom annotations for cas service
+    ## @extra cas.service.annotations Annotations for the shared HTTP and gRPC service. Traefik uses h2c upstream.
     ##
-    annotations: {}
+    annotations:
+      ## @skip cas.service.annotations.traefik.ingress.kubernetes.io/service.serversscheme
+      traefik.ingress.kubernetes.io/service.serversscheme: h2c
     ## @param cas.service.extraPorts Extra ports to expose in cas service (normally used with the `sidecars` value)
     ##
     extraPorts: []
@@ -1235,7 +1237,7 @@ cas:
     ## NOTE: You may need to set this to '/*' in order to use this with ALB ingress controllers
     ##
     path: /
-    ## @param cas.ingress.annotations Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.
+    ## @extra cas.ingress.annotations Annotations for the experimental shared HTTP and gRPC ingress.
     ## Use this parameter to set the required annotations for cert-manager, see
     ## ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
     ## e.g:
@@ -1243,7 +1245,18 @@ cas:
     ##   kubernetes.io/cas.ingress.class: nginx
     ##   cert-manager.io/cluster-issuer: cluster-issuer-name
     ##
-    annotations: {}
+    annotations:
+      ## @skip cas.ingress.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      nginx.ingress.kubernetes.io/backend-protocol: GRPC
+      ## @skip cas.ingress.annotations.nginx.org/grpc-services
+      nginx.org/grpc-services: '{{ include "chainloop.cas.fullname" . }}'
+      ## @skip cas.ingress.annotations.nginx.org/http2
+      nginx.org/http2: "true"
+      ## @skip cas.ingress.annotations.nginx.ingress.kubernetes.io/proxy-body-size
+      # Same upload limit as the independent legacy gRPC ingress. Set 0 to disable.
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      ## @skip cas.ingress.annotations.nginx.ingress.kubernetes.io/client-body-buffer-size
+      nginx.ingress.kubernetes.io/client-body-buffer-size: "3M"
     ## @param cas.ingress.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
     ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.controlplane.ingress.hostname }}`
     ## You can:

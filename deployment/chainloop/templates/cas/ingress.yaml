@@ -12,13 +12,8 @@ metadata:
   namespace: {{ include "common.names.namespace" . | quote }}
   labels: {{- include "chainloop.cas.labels" . | nindent 4 }}
   {{- if or .Values.cas.ingress.annotations .Values.commonAnnotations }}
-  annotations:
-    {{- if .Values.cas.ingress.annotations }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.cas.ingress.annotations "context" $) | nindent 4 }}
-    {{- end }}
-    {{- if .Values.commonAnnotations }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
-    {{- end }}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.cas.ingress.annotations .Values.commonAnnotations) "context" .) }}
+  annotations: {{- include "common.tplvalues.render" (dict "value" $annotations "context" $) | nindent 4 }}
   {{- end }}
 spec:
   {{- if and .Values.cas.ingress.ingressClassName (eq "true" (include "common.ingress.supportsIngressClassname" .)) }}

@@ -20,6 +20,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/tls"
 	"fmt"
+	"net/url"
 	"os"
 	"regexp"
 
@@ -51,8 +52,84 @@ import (
 	grpcLib "google.golang.org/grpc"
 )
 
-// NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers backend.Providers, validator protovalidate.Validator, logger log.Logger) (*grpc.Server, error) {
+// Opts provides the shared service implementations and transport settings.
+type Opts struct {
+	ServerConfig *conf.Server
+	AuthConfig   *conf.Auth
+	ByteService  *service.ByteStreamService
+	ResourceSvc  *service.ResourceService
+	DownloadSvc  *service.DownloadService
+	Providers    backend.Providers
+	Validator    protovalidate.Validator
+	Logger       log.Logger
+}
+
+// GRPCServers keeps the HTTP handler separate from the native transport.
+// Handler must never be started with Serve; the HTTP server owns its streams.
+type GRPCServers struct {
+	Handler *grpc.Server
+	Legacy  *grpc.Server
+}
+
+func legacyGRPCListenerEnabled(c *conf.Server) bool {
+	return c.LegacyGrpcListener == nil || *c.LegacyGrpcListener
+}
+
+// NewGRPCServers builds both transports with the same services and interceptors.
+func NewGRPCServers(opts *Opts) (*GRPCServers, error) {
+	scheme := "grpc"
+	if opts.ServerConfig.GetHttp().GetTlsConfig().GetCertificate() != "" {
+		scheme = "grpcs"
+	}
+	// Kratos stream interceptors require endpoint metadata even though this
+	// handler never binds a native socket.
+	handler, err := newGRPCServer(opts, grpc.Endpoint(&url.URL{
+		Scheme: scheme, Host: opts.ServerConfig.GetHttp().GetAddr(),
+	}))
+	if err != nil {
+		return nil, err
+	}
+	servers := &GRPCServers{Handler: handler}
+	if legacyGRPCListenerEnabled(opts.ServerConfig) {
+		servers.Legacy, err = NewGRPCServer(opts)
+		if err != nil {
+			handler.Server.Stop()
+			return nil, err
+		}
+	}
+	return servers, nil
+}
+
+// NewGRPCServer retains the existing native listener and its independent TLS.
+func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
+	c := opts.ServerConfig.GetGrpc()
+	var serverOpts []grpc.ServerOption
+	if c.GetNetwork() != "" {
+		serverOpts = append(serverOpts, grpc.Network(c.GetNetwork()))
+	}
+	if c.GetAddr() != "" {
+		serverOpts = append(serverOpts, grpc.Address(c.GetAddr()))
+	}
+	if tlsConf := c.GetTlsConfig(); tlsConf != nil {
+		cert, key := tlsConf.GetCertificate(), tlsConf.GetPrivateKey()
+		// Keep the legacy behavior for partial TLS configuration.
+		if cert != "" && key != "" {
+			pair, err := tls.LoadX509KeyPair(cert, key)
+			if err != nil {
+				return nil, fmt.Errorf("loading gRPC server TLS certificate: %w", err)
+			}
+			serverOpts = append(serverOpts, grpc.TLSConfig(&tls.Config{
+				Certificates: []tls.Certificate{pair}, MinVersion: tls.VersionTLS12,
+			}))
+		}
+	}
+	return newGRPCServer(opts, serverOpts...)
+}
+
+func newGRPCServer(settings *Opts, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+	c, authConf := settings.ServerConfig, settings.AuthConfig
+	byteService, rSvc := settings.ByteService, settings.ResourceSvc
+	providers, validator, logger := settings.Providers, settings.Validator, settings.Logger
 	// Parse the public key once on initialization instead of on every request
 	// TODO: implement jwks endpoint
 	publicKey, err := parsePublicKey(authConf, logger)
@@ -104,28 +181,9 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 	// Since we track uploads / downloads we'll increase the buckets
 	grpc_prometheus.EnableHandlingTimeHistogram(grpc_prometheus.WithHistogramBuckets(prometheus.ExponentialBucketsRange(0.5, 60, 8)))
 
-	if c.Grpc.Network != "" {
-		opts = append(opts, grpc.Network(c.Grpc.Network))
-	}
-	if c.Grpc.Addr != "" {
-		opts = append(opts, grpc.Address(c.Grpc.Addr))
-	}
-	if c.Grpc.Timeout != nil {
-		opts = append(opts, grpc.Timeout(c.Grpc.Timeout.AsDuration()))
-	}
-	if tlsConf := c.Grpc.GetTlsConfig(); tlsConf != nil {
-		cert := tlsConf.GetCertificate()
-		privKey := tlsConf.GetPrivateKey()
-		if cert != "" && privKey != "" {
-			cert, err := tls.LoadX509KeyPair(cert, privKey)
-			if err != nil {
-				return nil, fmt.Errorf("loading gRPC server TLS certificate: %w", err)
-			}
-			opts = append(opts, grpc.TLSConfig(&tls.Config{
-				Certificates: []tls.Certificate{cert},
-				MinVersion:   tls.VersionTLS12, // gosec complains about insecure minimum version we use default value
-			}))
-		}
+	opts = append(opts, extraOpts...)
+	if c.GetGrpc().GetTimeout() != nil {
+		opts = append(opts, grpc.Timeout(c.GetGrpc().GetTimeout().AsDuration()))
 	}
 
 	srv := grpc.NewServer(opts...)

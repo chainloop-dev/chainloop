@@ -1,0 +1,37 @@
+# Copyright 2026 The Chainloop Authors.
+# SPDX-License-Identifier: Apache-2.0
+
+go version go1.27.2 linux/amd64
+grpc-go: v1.84.0; Kratos: v2.9.2
+Temporary filesystem: btrfs (not tmpfs)
+Command: go test ./app/artifact-cas/internal/server -run ^$ -bench ^BenchmarkCASByteStreamTransport$ -benchtime=1x -count=3 -timeout=10m
+
+Artifact: 1 GiB; plaintext localhost TCP; real CAS services/auth/staging; disk-backed test backend; client and server in one process.
+INFO msg=[HTTP] server listening on: 127.0.0.1:39645
+INFO msg=[gRPC] server listening on: 127.0.0.1:35009
+goos: linux
+goarch: amd64
+pkg: github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server
+cpu: Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz
+BenchmarkCASByteStreamTransport/legacy/upload-8  	       1	4428889185 ns/op	 242.44 MB/s	        26.92 peak-heap-MiB	1453444272 B/op	 3158778 allocs/op
+BenchmarkCASByteStreamTransport/legacy/upload-8  	       1	4458294797 ns/op	 240.84 MB/s	        28.33 peak-heap-MiB	1432098544 B/op	 3132177 allocs/op
+BenchmarkCASByteStreamTransport/legacy/upload-8  	       1	4502562403 ns/op	 238.47 MB/s	        27.97 peak-heap-MiB	1445793976 B/op	 3132288 allocs/op
+BenchmarkCASByteStreamTransport/legacy/download-8         	       1	5747630684 ns/op	 186.81 MB/s	        31.97 peak-heap-MiB	1373396504 B/op	   84976 allocs/op
+BenchmarkCASByteStreamTransport/legacy/download-8         	       1	5449605338 ns/op	 197.03 MB/s	        31.38 peak-heap-MiB	1401101656 B/op	   80266 allocs/op
+BenchmarkCASByteStreamTransport/legacy/download-8         	       1	5371327380 ns/op	 199.90 MB/s	        32.44 peak-heap-MiB	1379661432 B/op	   80201 allocs/op
+INFO msg=[gRPC] server stopping
+INFO msg=[HTTP] server stopping
+INFO msg=[gRPC] server stopping
+INFO msg=[gRPC] server listening on: 127.0.0.1:36189
+INFO msg=[HTTP] server listening on: 127.0.0.1:43493
+BenchmarkCASByteStreamTransport/shared/upload-8           	       1	4757267201 ns/op	 225.71 MB/s	      1244 peak-heap-MiB	2002041336 B/op	 3626317 allocs/op
+BenchmarkCASByteStreamTransport/shared/upload-8           	       1	4626278404 ns/op	 232.10 MB/s	      1304 peak-heap-MiB	2031947176 B/op	 3636468 allocs/op
+BenchmarkCASByteStreamTransport/shared/upload-8           	       1	4628108813 ns/op	 232.00 MB/s	      1278 peak-heap-MiB	2034461720 B/op	 3638817 allocs/op
+BenchmarkCASByteStreamTransport/shared/download-8         	       1	6451314190 ns/op	 166.44 MB/s	        38.92 peak-heap-MiB	1246487112 B/op	  314413 allocs/op
+BenchmarkCASByteStreamTransport/shared/download-8         	       1	6177002391 ns/op	 173.83 MB/s	        39.37 peak-heap-MiB	1267943360 B/op	  314523 allocs/op
+BenchmarkCASByteStreamTransport/shared/download-8         	       1	5987610343 ns/op	 179.33 MB/s	        37.41 peak-heap-MiB	1259259368 B/op	  307480 allocs/op
+INFO msg=[gRPC] server stopping
+INFO msg=[HTTP] server stopping
+INFO msg=[gRPC] server stopping
+PASS
+ok  	github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server	65.296s

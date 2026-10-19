@@ -29,8 +29,15 @@ import (
 )
 
 // Verify the rendered resources, including templated F5 service names and
-// overrides. The legacy gRPC and CAS resources keep their own upstreams.
-func TestSharedControlplaneIngress(t *testing.T) {
+// overrides. The legacy gRPC resources keep their own upstreams.
+func TestSharedIngress(t *testing.T) {
+	for _, component := range []string{"controlplane", "cas"} {
+		t.Run(component, func(t *testing.T) { testSharedIngress(t, component) })
+	}
+}
+
+func testSharedIngress(t *testing.T, component string) {
+	t.Helper()
 	const (
 		setFlag       = "--set"
 		setStringFlag = "--set-string"
@@ -59,16 +66,16 @@ func TestSharedControlplaneIngress(t *testing.T) {
 		{
 			name: "encrypted upstream overrides",
 			args: []string{
-				setStringFlag, `controlplane.ingress.annotations.nginx\.ingress\.kubernetes\.io/backend-protocol=GRPCS`,
-				setStringFlag, `controlplane.service.annotations.traefik\.ingress\.kubernetes\.io/service\.serversscheme=https`,
+				setStringFlag, component + `.ingress.annotations.nginx\.ingress\.kubernetes\.io/backend-protocol=GRPCS`,
+				setStringFlag, component + `.service.annotations.traefik\.ingress\.kubernetes\.io/service\.serversscheme=https`,
 			},
 			fullname: chartFullname, backendProtocol: "GRPCS", traefikScheme: "https",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			serviceName := tc.fullname + "-controlplane"
+			serviceName := tc.fullname + "-" + component
 			args := append([]string{"template", "test", ".", setFlag, "development=true",
-				setFlag, "controlplane.ingress.enabled=true", setFlag, "controlplane.ingress.hostname=shared.example.test",
+				setFlag, component + ".ingress.enabled=true", setFlag, component + ".ingress.hostname=shared.example.test",
 				setFlag, "controlplane.ingressAPI.enabled=true", setFlag, "cas.ingressAPI.enabled=true"}, tc.args...)
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
