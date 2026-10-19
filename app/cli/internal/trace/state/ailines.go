@@ -123,7 +123,9 @@ func (a *AILineAttribution) settle(file string, set *LineSet) {
 
 // applyEdit adds the lines of a fingerprinted edit to the session's history
 // and to its open lines. A removal of an open line of the session closes that
-// line: it never reached a commit, so no commit can remove it.
+// line: it never reached a commit, so no commit can remove it. In the same
+// way, writing back an open removal closes it: the line is as it was
+// committed, so no commit can add it.
 func (a *AILineAttribution) applyEdit(entry *aiLineEntry) {
 	lines := entry.Lines
 	countsOf(a.Written, entry.File).Add(lines.Added...)
@@ -135,7 +137,11 @@ func (a *AILineAttribution) applyEdit(entry *aiLineEntry) {
 			o.Removed.Add(fp)
 		}
 	}
-	o.Added.Add(lines.Added...)
+	for _, fp := range lines.Added {
+		if !o.Removed.Take(fp) {
+			o.Added.Add(fp)
+		}
+	}
 
 	a.GeneratedAdded += entry.LinesAdded
 	a.GeneratedRemoved += entry.LinesRemoved

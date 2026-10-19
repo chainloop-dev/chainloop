@@ -35,8 +35,13 @@ type CommitLines struct {
 // session's commits, oldest first. Each line that a commit added is AI when its
 // content matches a line that an edit of the session wrote (R-001), and each
 // removed line is AI when an edit of the session removed it (R-005). Each
-// ledger line matches one commit line at most. A line that matches another session of the same commit counts for
-// neither: it is that session's work. All other lines are human.
+// ledger line matches one commit line at most.
+//
+// The session's own ledger is matched first. When it and another session of
+// the commit both hold a line, the evidence of each session counts the line as
+// its own: each evidence is the view of one session. A line that matches only
+// another session of the commit counts for neither side: it is that session's
+// work. All other lines are human.
 //
 // A file with an edit recorded before line fingerprints existed keeps the
 // earlier rule: AI lines are the recorded ranges, capped at the file's diff.
@@ -223,6 +228,37 @@ func SettleCommit(open *state.OpenLines, committed tracegit.FileLines, worktree 
 	out.Added = append(out.Added, added.Missing(present)...)
 
 	return out
+}
+
+// DropOpen removes from an edit the lines that are already open for the
+// session, and lowers its counts by the same amount. A shell command is diffed
+// against HEAD, not against the session's last edit, so its diff holds again
+// the uncommitted lines that earlier edits recorded. A command that writes one
+// more copy of an open line loses that copy too; the ledger cannot tell the
+// two apart.
+func DropOpen(edit Edit, open *state.OpenLines) Edit {
+	if open == nil {
+		return edit
+	}
+
+	keep := func(fps []string, openCounts state.LineCounts) []string {
+		left := openCounts.Clone()
+		var out []string
+		for _, fp := range fps {
+			if !left.Take(fp) {
+				out = append(out, fp)
+			}
+		}
+
+		return out
+	}
+
+	added, removed := keep(edit.Added, open.Added), keep(edit.Removed, open.Removed)
+	edit.AddedCount -= len(edit.Added) - len(added)
+	edit.RemovedCount -= len(edit.Removed) - len(removed)
+	edit.Added, edit.Removed = added, removed
+
+	return edit
 }
 
 // ReplacedLines returns the open added lines of a file that its current

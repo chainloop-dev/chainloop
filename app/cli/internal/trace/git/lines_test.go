@@ -46,6 +46,7 @@ func TestCommitLinesAndFileAt(t *testing.T) {
 
 	write("a.txt", "one\nTWO\nthree\nfour")
 	write("new.txt", "hello\n")
+	write("with space.txt", "spaced\n")
 	write("bin.dat", "\x00\x03")
 	require.NoError(t, os.Remove(filepath.Join(dir, "gone.txt")))
 	run("add", "-A")
@@ -73,6 +74,7 @@ func TestCommitLinesAndFileAt(t *testing.T) {
 					{Path: "a.txt", Added: []string{"TWO", "four"}, Removed: []string{"two"}},
 					{Path: "gone.txt", Removed: []string{"bye"}},
 					{Path: "new.txt", Added: []string{"hello"}},
+					{Path: "with space.txt", Added: []string{"spaced"}},
 				}, got)
 			})
 
@@ -88,6 +90,14 @@ func TestCommitLinesAndFileAt(t *testing.T) {
 				content, err = c.FileAt(dir, "HEAD", "new.txt")
 				require.NoError(t, err)
 				assert.Equal(t, "hello\n", string(content), "a revision name resolves")
+
+				_, err = c.FileAt(dir, "deadbeef00000000000000000000000000000000", "a.txt")
+				assert.Error(t, err, "an unknown commit is an error, not an absent file")
+			})
+
+			t.Run("an unknown commit is an error", func(t *testing.T) {
+				_, err := c.CommitLines(dir, "deadbeef00000000000000000000000000000000")
+				assert.Error(t, err)
 			})
 		})
 	}

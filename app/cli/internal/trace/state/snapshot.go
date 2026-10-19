@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // snapshotPath returns the path for a file snapshot: <dir>/chainloop-trace/snapshots/<session>/<path-hash>
@@ -123,7 +124,50 @@ func (s *Store) LoadShellPreSignature(key ShellCallKey) (WorktreeSignatures, err
 	return sig, nil
 }
 
-// DeleteShellPreSignature removes the pre-command signature once processed.
+// DeleteShellPreSignature removes the pre-command signature, and the HEAD
+// commits saved with it, once processed.
 func (s *Store) DeleteShellPreSignature(key ShellCallKey) {
 	_ = os.Remove(s.shellPreSignaturePath(key))
+	_ = os.Remove(s.shellPreHeadsPath(key))
+}
+
+// shellPreHeadsPath returns the path storing the HEAD commit of each checkout
+// before a shell command, next to the command's signature.
+func (s *Store) shellPreHeadsPath(key ShellCallKey) string {
+	return strings.TrimSuffix(s.shellPreSignaturePath(key), ".json") + ".heads.json"
+}
+
+// SaveShellPreHeads stores the HEAD commit of each checkout (checkout root →
+// SHA) before an agent-run shell command. The signature holds hashes only, so
+// the file at that commit stands in for the content before the command, also
+// when the command commits its own change.
+func (s *Store) SaveShellPreHeads(key ShellCallKey, heads map[string]string) error {
+	path := s.shellPreHeadsPath(key)
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("create snapshot dir: %w", err)
+	}
+
+	data, err := json.Marshal(heads)
+	if err != nil {
+		return fmt.Errorf("marshal shell heads: %w", err)
+	}
+
+	return os.WriteFile(path, data, 0600)
+}
+
+// LoadShellPreHeads loads the HEAD commits saved before a shell command. A
+// command whose pre hook ran on an older CLI has none, and the result is
+// empty.
+func (s *Store) LoadShellPreHeads(key ShellCallKey) map[string]string {
+	data, err := os.ReadFile(s.shellPreHeadsPath(key))
+	if err != nil {
+		return nil
+	}
+
+	var heads map[string]string
+	if err := json.Unmarshal(data, &heads); err != nil {
+		return nil
+	}
+
+	return heads
 }

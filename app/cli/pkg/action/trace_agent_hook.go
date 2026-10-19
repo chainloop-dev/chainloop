@@ -430,6 +430,7 @@ func shellCallKey(input *trace.HookInput) state.ShellCallKey {
 func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
 	client := tracegit.NewGoGitClient()
 	sigs := make(state.WorktreeSignatures)
+	heads := make(map[string]string)
 	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
 		sig, err := client.SnapshotWorktree(root)
 		if err != nil {
@@ -437,6 +438,11 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 			continue
 		}
 		sigs[root] = sig
+
+		// A checkout with no commit yet has no HEAD; its files count as new.
+		if sha, _, err := client.CommitHeadInfo(root); err == nil {
+			heads[root] = sha
+		}
 	}
 
 	if len(sigs) == 0 {
@@ -445,6 +451,9 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 
 	if err := store.SaveShellPreSignature(key, sigs); err != nil {
 		log.Debug().Err(err).Msg("pre-command: save worktree signature failed")
+	}
+	if err := store.SaveShellPreHeads(key, heads); err != nil {
+		log.Debug().Err(err).Msg("pre-command: save HEAD commits failed")
 	}
 }
 
@@ -847,8 +856,16 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 		return
 	}
 	defer store.DeleteShellPreSignature(key)
+	heads := store.LoadShellPreHeads(key)
 
 	for root, rootBefore := range before {
+		// A pre hook from an older CLI saved no HEAD: the current HEAD
+		// stands in for it.
+		base := heads[root]
+		if base == "" {
+			base = "HEAD"
+		}
+
 		rootStore := store
 		if !sameDir(root, repoRoot) {
 			s, r, err := state.LocateFrom(root)
@@ -860,7 +877,7 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 			rootStore, root = s, r
 		}
 
-		recordRootChanges(rootStore, root, rootBefore, key.SessionID, log)
+		recordRootChanges(rootStore, root, base, rootBefore, key.SessionID, log)
 	}
 }
 
@@ -869,10 +886,13 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 // created/modified file and every deleted file as AI-attributed.
 //
 // The signature holds hashes, not content, so the content before the command
-// is not known. The file at HEAD stands in for it: lines the command did not
-// touch are then not claimed, except uncommitted ones, which are claimed as
-// the whole-file range always was. An untracked file counts as new.
-func recordRootChanges(store *state.Store, repoRoot string, before map[string]string, sessionID string, log zerolog.Logger) {
+// is not known. The file at base, the HEAD commit before the command, stands in
+// for it: lines the command did not touch are then not claimed, also when the
+// command commits its own change. Uncommitted lines are in the diff too. Those
+// that an earlier edit of the session recorded are left out (DropOpen); other
+// ones, such as uncommitted human lines, are claimed. An untracked file counts
+// as new.
+func recordRootChanges(store *state.Store, repoRoot, base string, before map[string]string, sessionID string, log zerolog.Logger) {
 	client := tracegit.NewGoGitClient()
 	after, err := client.SnapshotWorktree(repoRoot)
 	if err != nil {
@@ -880,13 +900,18 @@ func recordRootChanges(store *state.Store, repoRoot string, before map[string]st
 		return
 	}
 
-	atHead := func(relPath string) []byte {
-		content, err := client.FileAt(repoRoot, "HEAD", filepath.ToSlash(relPath))
+	atBase := func(relPath string) []byte {
+		content, err := client.FileAt(repoRoot, base, filepath.ToSlash(relPath))
 		if err != nil {
 			return nil
 		}
 
 		return content
+	}
+
+	open := store.LoadAILineAttribution(sessionID).Open
+	record := func(relPath string, edit attribution.Edit) error {
+		return store.RecordEdit(sessionID, relPath, editRecord(attribution.DropOpen(edit, open[relPath])))
 	}
 
 	changed, deleted := attribution.ChangedPaths(before, after)
@@ -896,18 +921,16 @@ func recordRootChanges(store *state.Store, repoRoot string, before map[string]st
 			continue
 		}
 		// ChangedPaths already proved the file changed, so record it even when
-		// the diff finds nothing (created empty, or restored to HEAD): the
+		// the diff finds nothing (created empty, or restored to base): the
 		// file is then AI-touched with zero lines, as a deletion-only edit.
-		edit := attribution.ComputeEdit(atHead(relPath), content)
-		if err := store.RecordEdit(sessionID, relPath, editRecord(edit)); err != nil {
+		if err := record(relPath, attribution.ComputeEdit(atBase(relPath), content)); err != nil {
 			log.Debug().Err(err).Str("file", relPath).Msg("post-command: record line ranges failed")
 		}
 	}
 	for _, relPath := range deleted {
-		// The removed lines are the file at HEAD, matching the file-writing
+		// The removed lines are the file at base, matching the file-writing
 		// hook's treatment of deletions.
-		edit := attribution.ComputeEdit(atHead(relPath), nil)
-		if err := store.RecordEdit(sessionID, relPath, editRecord(edit)); err != nil {
+		if err := record(relPath, attribution.ComputeEdit(atBase(relPath), nil)); err != nil {
 			log.Debug().Err(err).Str("file", relPath).Msg("post-command: record deletion failed")
 		}
 	}

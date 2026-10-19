@@ -237,7 +237,9 @@ type FileChange struct {
 	SessionIDs  []string    `json:"session_ids,omitempty"`
 	// AILinesAdded, AILinesRemoved, HumanLinesAdded and HumanLinesRemoved
 	// split the changed lines of the file between the session's agent and
-	// humans. The session totals in CodeChanges are their sums.
+	// humans. The session totals in CodeChanges are their sums. A line that
+	// only another AI session of the same commit wrote or removed counts for
+	// neither side, so the sums can be lower than LinesAdded and LinesRemoved.
 	AILinesAdded      int `json:"ai_lines_added,omitempty"`
 	AILinesRemoved    int `json:"ai_lines_removed,omitempty"`
 	HumanLinesAdded   int `json:"human_lines_added,omitempty"`

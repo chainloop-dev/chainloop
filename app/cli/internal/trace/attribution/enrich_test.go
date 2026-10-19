@@ -327,6 +327,29 @@ func TestSettleCommit(t *testing.T) {
 	}
 }
 
+func TestDropOpen(t *testing.T) {
+	o := &state.OpenLines{Added: state.LineCounts{}, Removed: state.LineCounts{}}
+	o.Added.Add(fps("a", "b")...)
+	o.Removed.Add(fps("x")...)
+
+	got := DropOpen(Edit{
+		Changed:      true,
+		Added:        fps("a", "b", "c"),
+		Removed:      fps("x", "y"),
+		AddedCount:   3,
+		RemovedCount: 2,
+	}, o)
+
+	assert.ElementsMatch(t, fps("c"), got.Added)
+	assert.ElementsMatch(t, fps("y"), got.Removed)
+	assert.Equal(t, 1, got.AddedCount, "lines recorded before are not generated again")
+	assert.Equal(t, 1, got.RemovedCount)
+	assert.True(t, got.Changed)
+	assert.Equal(t, 2, o.Added.Len(), "the open lines are not changed")
+
+	assert.Equal(t, fps("a"), DropOpen(Edit{Added: fps("a")}, nil).Added)
+}
+
 func TestReplacedLines(t *testing.T) {
 	o := &state.OpenLines{Added: state.LineCounts{}, Removed: state.LineCounts{}}
 	o.Added.Add(fps("a", "b", "b")...)

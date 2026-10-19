@@ -79,6 +79,18 @@ func TestAILineAttribution_Lines(t *testing.T) {
 		assert.Equal(t, LineCounts{"a": 1}, attr.Erased[fileA], "the erased history keeps every removal")
 	})
 
+	t.Run("writing back a removed line closes the removal", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.RecordEdit("sess", fileA, edit(nil, []string{oldLine})))
+		require.NoError(t, store.RecordEdit("sess", fileA, edit([]string{oldLine}, nil)))
+
+		attr := store.LoadAILineAttribution("sess")
+		assert.Zero(t, attr.Open[fileA].Added.Len(), "the line is back as it was committed, so no commit can add it")
+		assert.Zero(t, attr.Open[fileA].Removed.Len())
+		assert.NotContains(t, attr.Pending, fileA, "an undo leaves nothing to credit")
+		assert.Equal(t, LineCounts{oldLine: 1}, attr.Written[fileA], "the written history keeps every line")
+	})
+
 	t.Run("lines changed outside the session close", func(t *testing.T) {
 		store := NewGitStore(t.TempDir())
 		require.NoError(t, store.RecordEdit("sess", fileA, edit([]string{"a", "b"}, nil)))

@@ -295,6 +295,54 @@ func TestLineAttribution_SurvivesCherryPick(t *testing.T) {
 	assert.Equal(t, lineSplit{aiAdded: 3, humanAdded: 1}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
 }
 
+// shellWrite runs a "shell command" of the session: the pre hook captures the
+// worktree, run changes it, and the post hook records what changed.
+func (r *lineRepo) shellWrite(sessionID string, run func()) {
+	r.t.Helper()
+	key := state.ShellCallKey{SessionID: sessionID, ToolUseID: "toolu"}
+	captureWorktreeSnapshot(r.store, r.dir, key, zerolog.Nop())
+	run()
+
+	sigs, err := r.store.LoadShellPreSignature(key)
+	require.NoError(r.t, err)
+	base := r.store.LoadShellPreHeads(key)[r.dir]
+	require.NotEmpty(r.t, base, "the pre hook saves the HEAD commit")
+	recordRootChanges(r.store, r.dir, base, sigs[r.dir], sessionID, zerolog.Nop())
+	r.store.DeleteShellPreSignature(key)
+}
+
+// A shell command is diffed against HEAD, so its diff holds again the
+// uncommitted lines of earlier edits. They are not recorded twice.
+func TestLineAttribution_ShellDoesNotRecordOpenLinesAgain(t *testing.T) {
+	r := newLineRepo(t)
+
+	r.shellWrite(lineSession, func() { r.humanWrite("a.go", "one\ntwo\n") })
+	r.shellWrite(lineSession, func() { r.humanWrite("a.go", "one\ntwo\nthree\n") })
+
+	attr := r.store.LoadAILineAttribution(lineSession)
+	assert.Equal(t, 3, attr.Written["a.go"].Len())
+	assert.Equal(t, 3, attr.Open["a.go"].Added.Len())
+	assert.Equal(t, 3, attr.GeneratedAdded)
+
+	r.commit("feat: a", "a.go")
+	assert.Equal(t, lineSplit{aiAdded: 3}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
+}
+
+// A shell command that writes a file and commits it diffs against the HEAD
+// from before the command, so its lines are still recorded.
+func TestLineAttribution_ShellCommandThatCommits(t *testing.T) {
+	r := newLineRepo(t)
+
+	r.shellWrite(lineSession, func() {
+		r.humanWrite("a.go", "one\ntwo\n")
+		runGit(t, r.dir, "add", "a.go")
+		runGit(t, r.dir, "commit", "-m", "feat: a")
+	})
+
+	attr := r.store.LoadAILineAttribution(lineSession)
+	assert.Equal(t, 2, attr.Written["a.go"].Len())
+}
+
 // R-011: the ledger keeps the lines that every agent edit added and removed,
 // also the ones that never reach a commit.
 func TestLineAttribution_GeneratedLines(t *testing.T) {
