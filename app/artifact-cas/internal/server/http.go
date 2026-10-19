@@ -23,7 +23,7 @@ import (
 	"net"
 	h "net/http"
 	"net/url"
-	"strings"
+	"sync"
 	"time"
 
 	api "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
@@ -51,11 +51,8 @@ import (
 //
 // ByteStream therefore keeps the grpc-go native transport, so large uploads
 // stream with bounded memory exactly as they do on the legacy listener. This
-// is the separate-connection contract of the spec's D-014/D-015: a pooled
-// upstream connection must stay single-protocol, and the chart routes the gRPC
-// paths through their own HTTP/2 upstream pool. A connection that cmux gave to
-// the HTTP server can still carry a later native gRPC request through the
-// per-request ServeHTTP fallback below; the reverse is not supported.
+// follows the separate-connection contract in D-017: native gRPC and HTTP
+// use separate connections, with HTTP/1.1 on the HTTP side.
 type APIServer struct {
 	lis     net.Listener
 	mux     cmux.CMux
@@ -64,6 +61,7 @@ type APIServer struct {
 	grpcSrv *grpc.Server
 	httpSrv *http.Server
 	scheme  string
+	workers sync.WaitGroup
 }
 
 // Start serves the shared endpoint until ctx is cancelled or a transport
@@ -73,9 +71,9 @@ type APIServer struct {
 // Stop closes the listener and all three return ordinary shutdown errors.
 func (s *APIServer) Start(ctx context.Context) error {
 	errCh := make(chan error, 3)
-	go func() { errCh <- s.httpSrv.Start(ctx) }()
-	go func() { errCh <- s.grpcSrv.Server.Serve(s.grpcL) }()
-	go func() { errCh <- s.mux.Serve() }()
+	s.workers.Go(func() { errCh <- s.httpSrv.Start(ctx) })
+	s.workers.Go(func() { errCh <- s.grpcSrv.Serve(s.grpcL) })
+	s.workers.Go(func() { errCh <- s.mux.Serve() })
 	select {
 	case <-ctx.Done():
 		return nil
@@ -87,9 +85,7 @@ func (s *APIServer) Start(ctx context.Context) error {
 	}
 }
 
-// Stop closes the shared listener, then drains the HTTP server (including its
-// per-request gRPC fallback streams) before the native gRPC transport stops
-// its in-flight streams.
+// Stop closes pending classification sockets, then drains both transports.
 func (s *APIServer) Stop(ctx context.Context) error {
 	// Stop accepting new connections on the shared endpoint. cmux.Close only
 	// marks the match listeners closed: active connections keep draining.
@@ -103,6 +99,7 @@ func (s *APIServer) Stop(ctx context.Context) error {
 		httpErr = nil
 	}
 	grpcErr := s.grpcSrv.Stop(ctx)
+	s.workers.Wait()
 	if closeErr != nil && !errors.Is(closeErr, net.ErrClosed) {
 		return errors.Join(closeErr, httpErr, grpcErr)
 	}
@@ -127,6 +124,12 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 		return nil, err
 	}
 
+	// Validate before binding, so initialization errors do not leak a listener.
+	publicKey, err := parsePublicKey(authConf, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	network := c.Http.GetNetwork()
 	if network == "" {
 		network = "tcp"
@@ -135,6 +138,7 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 	if err != nil {
 		return nil, fmt.Errorf("binding the shared CAS endpoint %q: %w", c.Http.GetAddr(), err)
 	}
+	lis = &classificationListener{Listener: lis, pending: make(map[*classificationConn]*time.Timer), timeout: classificationTimeout}
 	scheme := "http"
 	if tlsConfig != nil {
 		// Terminate TLS before cmux so one certificate covers both
@@ -144,6 +148,7 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 	}
 
 	mux := cmux.New(lis)
+	mux.SetReadTimeout(classificationTimeout)
 	// Native gRPC: match HTTP/2 connections whose first request declares a
 	// native gRPC content type (application/grpc, application/grpc+proto,
 	// ...). The SETTINGS-writing writer unblocks gRPC clients, which send
@@ -154,11 +159,8 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 	// server afterwards. CAS has no gRPC-Web endpoint (spec D-011), so no
 	// application/grpc-web* exclusion is needed.
 	grpcL := mux.MatchWithWriters(cmux.HTTP2MatchHeaderFieldPrefixSendSettings("content-type", "application/grpc"))
-	// Every other connection (HTTP/1.1 and plain HTTP/2) belongs to the
-	// HTTP server. Mixed native-gRPC and plain-HTTP requests on one shared
-	// upstream HTTP/2 connection are not supported (spec D-014): supported
-	// proxies keep the two kinds of traffic on separate upstream pools,
-	// which is what the chart's path-split ingress configures.
+	// Other connections go to the HTTP server, which supports HTTP/1.1 only.
+	// Plain HTTP/2 and mixed connections are outside the D-017 contract.
 	httpL := mux.Match(cmux.Any())
 
 	var opts = []http.ServerOption{
@@ -174,39 +176,16 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 		opts = append(opts, http.Timeout(c.Http.Timeout.AsDuration()))
 	}
 
-	// Parse the public key once on initialization instead of on every request
-	// TODO: implement jwks endpoint
-	publicKey, err := parsePublicKey(authConf, logger)
-	if err != nil {
-		return nil, err
-	}
-
 	srv := http.NewServer(opts...)
 
 	downloadHandler := middlewares_http.AuthFromHeaderOrQueryParam(loadPublicKey(publicKey), claimsFunc(), casJWT.SigningMethod, downloadSvc)
 	srv.Handle(service.DownloadPath, CORSMiddleware(c.GetHttp().GetCors().GetAllowOrigins(), downloadHandler))
 	api.RegisterStatusServiceHTTPServer(srv, service.NewStatusService(Version, providers))
 
-	routes := srv.Handler
 	srv.Protocols = new(h.Protocols)
 	srv.Protocols.SetHTTP1(true)
-	srv.Protocols.SetHTTP2(true)
-	srv.Protocols.SetUnencryptedHTTP2(true)
-	// Bound how long a client may take to deliver its request headers
-	// (slowloris protection). Response streaming is not affected.
+	// Bound HTTP headers after handoff; streaming responses have no deadline.
 	srv.ReadHeaderTimeout = 60 * time.Second
-	// One-way fallback (spec D-014): a connection cmux classified as HTTP
-	// may later carry a native gRPC request, for example from a proxy that
-	// pools both kinds of streams onto one upstream HTTP/2 connection.
-	// Dispatch those per request through grpc-go's HTTP adapter, with the
-	// same registered services and interceptors as the native transport.
-	srv.Handler = h.HandlerFunc(func(w h.ResponseWriter, r *h.Request) {
-		if r.ProtoMajor == 2 && isNativeGRPCContentType(r.Header.Get("Content-Type")) {
-			grpcServers.Handler.ServeHTTP(w, r)
-			return
-		}
-		routes.ServeHTTP(w, r)
-	})
 
 	log.NewHelper(logger).Infof("[shared] CAS endpoint (%s) listening on: %s", scheme, lis.Addr().String())
 
@@ -219,15 +198,6 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 		httpSrv: srv,
 		scheme:  scheme,
 	}, nil
-}
-
-// isNativeGRPCContentType reports whether a content type selects the native
-// gRPC protocol family, excluding gRPC-Web. CAS has no gRPC-Web endpoint, but
-// the exclusion keeps the fallback consistent with the control plane.
-func isNativeGRPCContentType(contentType string) bool {
-	contentType = strings.ToLower(contentType)
-	return strings.HasPrefix(contentType, "application/grpc") &&
-		!strings.HasPrefix(contentType, "application/grpc-web")
 }
 
 // claimsFunc returns the claims function for the JWT middleware that casts the claims to the correct type

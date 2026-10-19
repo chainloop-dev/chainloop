@@ -32,7 +32,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -342,15 +341,8 @@ func casTestTLS(t testing.TB) *conf.Server_TLS {
 	return &conf.Server_TLS{Certificate: certPath, PrivateKey: keyPath}
 }
 
-// TestCASSharedConnectionReuse checks the separate-connection contract of the
-// shared endpoint (spec D-014/D-015): through one port, native gRPC and HTTP
-// each work on their own connections, a browser CORS preflight reaches the
-// HTTP side, and an HTTP-owned HTTP/2 connection can still carry a later
-// native gRPC request through the per-request ServeHTTP fallback. The reverse
-// order, plain HTTP on a gRPC-classified connection, is not part of the
-// contract; a proxy must keep the two kinds of traffic on separate upstream
-// pools, which is what the chart's path-split ingress configures.
-func TestCASSharedConnectionReuse(t *testing.T) {
+// Each protocol uses its own connections through the shared port (D-017).
+func TestCASSharedProtocols(t *testing.T) {
 	for _, useTLS := range []bool{false, true} {
 		t.Run(map[bool]string{false: "h2c", true: "TLS"}[useTLS], func(t *testing.T) {
 			opts := casTestOpts(t)
@@ -360,13 +352,7 @@ func TestCASSharedConnectionReuse(t *testing.T) {
 			sharedURL, _ := startCASTestServers(t, opts)
 
 			perform := func(kind string) {
-				var connections atomic.Int32
-				tr := &http.Transport{Protocols: new(http.Protocols), TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // test certificate
-					DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-						connections.Add(1)
-						return (&net.Dialer{}).DialContext(ctx, network, addr)
-					},
-				}
+				tr := &http.Transport{Protocols: new(http.Protocols), TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec // test certificate
 				if kind == casGRPCRequest {
 					// Native gRPC arrives over HTTP/2, as the gRPC upstream
 					// pool of a configured ingress dials it.
@@ -616,4 +602,58 @@ func TestCASSharedShutdownDrainsUpload(t *testing.T) {
 	case <-ctx.Done():
 		require.FailNow(t, "shutdown did not complete after the upload")
 	}
+}
+
+// Slow clients must not survive shutdown while cmux is still reading their first request.
+func TestCASSharedShutdownClosesUnclassifiedConnections(t *testing.T) {
+	for _, useTLS := range []bool{false, true} {
+		t.Run(map[bool]string{false: "plaintext", true: "TLS handshake"}[useTLS], func(t *testing.T) {
+			opts := casTestOpts(t)
+			opts.ServerConfig.LegacyGrpcListener = new(false)
+			if useTLS {
+				opts.ServerConfig.Http.TlsConfig = casTestTLS(t)
+			}
+			servers, err := NewGRPCServers(opts)
+			require.NoError(t, err)
+			api, err := NewHTTPServer(opts, servers)
+			require.NoError(t, err)
+			endpoint, err := api.Endpoint()
+			require.NoError(t, err)
+			startCASTestTransport(t, api)
+			conn, err := net.Dial("tcp", endpoint.Host)
+			require.NoError(t, err)
+			defer conn.Close()
+			if !useTLS {
+				_, err = conn.Write([]byte("PRI "))
+				require.NoError(t, err)
+			}
+			// Allow the connection to reach the classifier, including a TLS handshake.
+			time.Sleep(50 * time.Millisecond)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			require.NoError(t, api.Stop(ctx))
+			require.NoError(t, conn.SetReadDeadline(time.Now().Add(200*time.Millisecond)))
+			var data [1]byte
+			_, err = conn.Read(data[:])
+			require.ErrorIs(t, err, io.EOF, "shutdown must close a socket still waiting for classification")
+		})
+	}
+}
+
+func TestCASSharedInitializationDoesNotBindOnInvalidKey(t *testing.T) {
+	opts := casTestOpts(t)
+	opts.ServerConfig.LegacyGrpcListener = new(false)
+	servers, err := NewGRPCServers(opts)
+	require.NoError(t, err)
+	defer func() { require.NoError(t, servers.Handler.Stop(context.Background())) }()
+	reserved, err := net.Listen("tcp", casAnyAddr)
+	require.NoError(t, err)
+	opts.ServerConfig.Http.Addr = reserved.Addr().String()
+	require.NoError(t, reserved.Close())
+	opts.AuthConfig.PublicKeyPath = "testdata/missing-public-key"
+	_, err = NewHTTPServer(opts, servers)
+	require.Error(t, err)
+	retry, err := net.Listen("tcp", opts.ServerConfig.Http.Addr)
+	require.NoError(t, err, "failed initialization must leave the listener address available")
+	require.NoError(t, retry.Close())
 }

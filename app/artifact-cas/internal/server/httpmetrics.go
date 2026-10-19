@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 package server
 
 import (
+	"errors"
+
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport/http"
@@ -29,6 +31,9 @@ type HTTPMetricsServer struct {
 
 // NewHTTPMetricsServer exposes the metrics endpoint
 func NewHTTPMetricsServer(c *conf.Server) (*HTTPMetricsServer, error) {
+	if c.GetHttpMetrics().GetTlsConfig() != nil {
+		return nil, errors.New("server.http_metrics.tls_config is unsupported; configure shared endpoint TLS under server.http.tls_config")
+	}
 	var opts = []http.ServerOption{
 		http.Middleware(
 			recovery.Recovery(),

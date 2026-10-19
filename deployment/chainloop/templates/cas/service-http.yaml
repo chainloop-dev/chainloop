@@ -37,15 +37,21 @@ spec:
     - name: http
       {{- $port := coalesce .Values.cas.service.port .Values.cas.service.ports.http }}
       port: {{ $port }}
-      {{- if not (eq $port .Values.cas.containerPorts.http) }}
-      targetPort: {{ .Values.cas.containerPorts.http }}
-      {{- end }}
+      targetPort: http
       protocol: TCP
       {{- if and (or (eq .Values.cas.service.type "NodePort") (eq .Values.cas.service.type "LoadBalancer")) (not (empty .Values.cas.service.nodePorts.http)) }}
       nodePort: {{ .Values.cas.service.nodePorts.http }}
       {{- else if eq .Values.cas.service.type "ClusterIP" }}
       nodePort: null
       {{- end }}
+    {{- if and .Values.cas.ingress.enabled .Values.cas.ingress.grpc.paths }}
+    # This alias and http both target the one shared CAS listener. Distinct
+    # Service ports give ingress-nginx separate backend identities.
+    - name: grpc-shared
+      port: {{ .Values.cas.service.ports.grpcShared }}
+      targetPort: http
+      protocol: TCP
+    {{- end }}
     {{- if .Values.cas.service.extraPorts }}
     {{- include "common.tplvalues.render" (dict "value" .Values.cas.service.extraPorts "context" $) | nindent 4 }}
     {{- end }}

@@ -64,12 +64,9 @@ type Opts struct {
 	Logger       log.Logger
 }
 
-// GRPCServers keeps one gRPC server for the shared endpoint separate from the
-// optional legacy listener. Handler never binds a socket of its own: cmux
-// hands it the native-gRPC connections of the shared HTTP listener, and the
-// HTTP server dispatches its per-request gRPC fallback to the same server
-// through grpc-go's HTTP adapter. Both listeners therefore run the same
-// services and interceptors.
+// GRPCServers keeps the shared endpoint's native gRPC server separate from
+// the optional legacy listener. Both run the same services and interceptors.
+// Handler receives connections from cmux and does not bind its own socket.
 type GRPCServers struct {
 	Handler *grpc.Server
 	Legacy  *grpc.Server

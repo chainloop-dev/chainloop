@@ -71,7 +71,7 @@ Superseded by R-009 for the CAS. The control-plane scope moved to [the replaceme
 ### R-009: CAS shared endpoint protocol scope
 Supersedes R-001 for the CAS. On its single port, the CAS MUST serve native gRPC over HTTP/2 and plain HTTP over HTTP/1.1, through cmux connection classification with the native gRPC transport (D-017). Plain HTTP/2 other than native gRPC is not supported on the CAS shared port: the gRPC matcher's SETTINGS injection breaks such a connection once it falls through to the HTTP server. Plain HTTP/2 and mixed connections remain control-plane scope under the replacement spec.
 - Done when: focused tests cover native gRPC over h2c and TLS, HTTP/1.1 downloads, the status endpoints, and the CORS preflight through the shared port.
-- Done when: the chart routes the gRPC paths and the HTTP paths into separate upstream pools, with HTTP/1.1 for the HTTP routes (D-018).
+- Done when: the chart routes the gRPC paths and the HTTP paths into separate upstream pools, with HTTP/1.1 for the HTTP routes (D-018/D-019).
 - Done when: browser downloads through a configured ingress work, and the documentation states that a browser downloading directly from a TLS-configured shared port is not a supported deployment.
 
 ### R-005: Existing configuration keeps working
@@ -296,14 +296,30 @@ The CAS shared endpoint is `server.http.addr`. cmux reads the start of each new 
 - Why not the merged control-plane design, per-request `ServeHTTP` dispatch: the [PR #3663 1 GiB comparison](https://github.com/chainloop-dev/chainloop/pull/3663) measured about 1.25 GiB of combined client/server sampled peak live heap for adapter uploads, against about 28 MiB for the native transport, and download throughput 11.8% lower, already past the R-003 limit. grpc-go's handler transport reads the HTTP body in a separate goroutine into an unbounded receive buffer, so read-ahead is not bounded by the application's pace. CAS moves gigabyte streams; the control plane does not. The two services keep different transport designs on purpose.
 - Why D-016 is superseded: D-016 assumed a classifier this project owns, which records the SETTINGS ACK offset in its own replay and removes that frame before the HTTP server reads. The cmux library owns the sniffing buffer, so that removal does not exist. Two reproductions on the CAS branch fix the contract instead. First, without SETTINGS injection, direct grpc-go clients deadlock: they send their preface and SETTINGS and wait for the server's SETTINGS before their first HEADERS frame, while the matcher waits for headers to sniff. The gRPC matcher must use cmux's SETTINGS-writing matcher. Second, that matcher writes a SETTINGS frame on every HTTP/2 connection, matched or not, because every HTTP/2 client sends SETTINGS with its preface. A plain HTTP/2 client that falls through to the HTTP server acknowledges the injected SETTINGS frame, and net/http rejects the unsolicited acknowledgement (GOAWAY, PROTOCOL_ERROR).
 - Contract: once the matcher has written to a connection, the connection belongs to the native gRPC server. The HTTP side of the shared endpoint supports HTTP/1.1 only; HTTP/2 reaches the CAS only as native gRPC. Supported proxies keep native gRPC and plain HTTP on separate upstream connections (D-014) and dial HTTP/1.1 for the HTTP routes (D-018).
+- The CAS has no per-request gRPC adapter fallback. D-017 supersedes that part of D-014 for CAS. All supported ByteStream transfers use the native transport.
+- Classification limits apply before a server owns the connection. They bound time, bytes read from the socket, and concurrent classifications. Shutdown closes pending sockets. These limits end at handoff and do not limit active transfers.
 - Source: [PR #3663](https://github.com/chainloop-dev/chainloop/pull/3663) experiment and benchmark, and the local reproductions on its branch.
 
 ### D-018: CAS chart: one hostname, path-split upstream pools, HTTP/1.1 for the HTTP routes
-The chart exposes one CAS hostname and one public port, and splits the routes by protocol into separate upstream pools: the `/cas.v1.*` paths go to the gRPC pool with an HTTP/2 upstream (nginx `backend-protocol: GRPC` and `grpc-services`; the upload body-size annotations move with them), and `/download/*`, `/statusz`, and `/infoz` go to the HTTP pool, which dials HTTP/1.1, not h2c. One certificate terminates at the edge.
+The chart exposes one CAS hostname and one public port, and splits the routes by protocol into separate upstream pools: the Google ByteStream, CAS, health, reflection, metadata, and channelz RPC paths go to the gRPC pool with an HTTP/2 upstream (nginx `backend-protocol: GRPC` and `grpc-services`; the upload body-size annotations move with them), and `/download/*`, `/statusz`, and `/infoz` go to the HTTP pool, which dials HTTP/1.1, not h2c. One certificate terminates at the edge.
 - Why the path split is exact for CAS: CAS has no gRPC-Web (D-011), so its gRPC paths and its HTTP paths are disjoint. No path can carry both protocols. The control plane could not use this split because native gRPC and gRPC-Web share RPC paths; the [PR #3647 NGINX reproduction](https://github.com/chainloop-dev/chainloop/pull/3647#issuecomment-6272007730) showed the path-only split failing there with 415 on gRPC-Web. CAS does not have that failure mode.
 - Why HTTP/1.1 upstream on the HTTP pool: D-017. An HTTP/2 upstream for the HTTP routes triggers the matcher's SETTINGS injection, and the client's acknowledgement then breaks the HTTP server connection with GOAWAY.
 - Controller notes: community nginx merges same-host paths from multiple Ingress resources and sets the backend protocol per resource, which expresses the split. F5 NGINX conflicts on unrelated same-host Ingresses; use its VirtualServer resource. Traefik applies the `service.serversscheme` annotation per Service, so one Service cannot be dialed h2c for the gRPC routes and HTTP/1.1 for the HTTP routes; the Traefik split needs a second Service for the HTTP routes or a controller-specific resource. The browser download endpoint stays on the HTTP routes: it is published API ([docs](https://docs.chainloop.dev/api-reference/downloadservice/download-artifacts-from-cas)), and CAS does not drop it.
-- Source: chart changes on the [PR #3663](https://github.com/chainloop-dev/chainloop/pull/3663) branch.
+- Source: chart changes on the [PR #3663](https://github.com/chainloop-dev/chainloop/pull/3663) branch. Connection reuse and certificate ownership are specified in D-019.
+
+### D-019: CAS ingress connection reuse and certificate ownership
+Supplements D-018. Ingress-nginx shares a global keepalive cache. Separate Ingress resources alone do not isolate their connections.
+
+The CAS Service has an HTTP port and a gRPC port alias. Both target the same application listener. The HTTP routes use pod endpoints. The gRPC routes use the Service ClusterIP and the alias. Each protocol gets a different backend identity and upstream address. This keeps one Service, one hostname, and one application listener (R-008).
+
+The Service port numbers MUST differ. At least one upstream MUST use the ClusterIP. The chart rejects configurations that use pod endpoints for both protocols, or a headless Service.
+
+Both Ingress resources reference the same TLS Secret when shared TLS is enabled. Only one requests the certificate. The HTTP Ingress owns that request when its annotations configure a certificate issuer. Otherwise, the gRPC Ingress can request it. An existing TLS Secret needs no issuer annotation.
+
+- Why: a single-worker ingress-nginx reproduction returned 502 for gRPC after an HTTP request warmed the shared connection cache. Distinct backend identities and addresses passed the same sequence with authenticated ByteStream and browser downloads.
+- Compatibility: the legacy CAS listener, Service, Ingress, and their settings retain their existing behavior. The control-plane connection continues to use that legacy endpoint.
+- Evidence limit: the local controller check covers ingress-nginx. F5 and Traefik need separate qualification. The full R-002 and original R-003 evidence remains outstanding.
+- Source: [PR #3663 implementation review](https://github.com/chainloop-dev/chainloop/pull/3663#issuecomment-6276983988).
 
 ## Open Questions
 

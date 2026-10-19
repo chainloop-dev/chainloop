@@ -92,13 +92,35 @@ The development CAS public key and credentials service must match the control pl
 
 Change only the per-command override to `localhost:9001` to compare with the native listener. Once all direct clients and the control-plane CAS connection have been moved, `server.legacy_grpc_listener: false` disables the native listener. Leave it enabled during evaluation. Optional `server.http.tls_config` configures TLS for the shared endpoint; both certificate and private key must be set. It does not inherit `server.grpc.tls_config`. Note that a browser downloading directly from a TLS-configured shared port is not supported: the browser negotiates HTTP/2 through ALPN and the connection reaches the HTTP server with an injected SETTINGS frame. Serve browser downloads through the ingress.
 
-The chart's `cas.ingress` routes the HTTP paths (`/download`, `/statusz`, `/infoz`) with an HTTP/1.1 upstream, and a second Ingress rendered from `cas.ingress.grpc` routes the `/cas.v1.*` RPC paths with the gRPC backend protocol. The gRPC Ingress keeps the native ingress's `100m` body limit and `3M` client body buffer default; override the body limit to `0` or a suitable larger limit for a 1 GB ingress experiment. `cas.ingressAPI`, `cas.serviceAPI`, and the control plane's connection to the legacy CAS Service keep their existing settings. Deployed controller qualification (F5 same-host Ingress conflicts, Traefik's per-Service scheme) remains outstanding.
+The chart's `cas.ingress` sends HTTP routes (`/download`, `/statusz`, `/infoz`) over HTTP/1.1. A second Ingress sends Google ByteStream, CAS, health, reflection, metadata, and channelz RPCs over native gRPC. The same Service has two port names: `http` (80) and `grpc-shared` (81, configurable with `cas.service.ports.grpcShared`). Both target the existing shared container port. Ingress-nginx uses pod endpoints for HTTP and the Service ClusterIP for gRPC. Different backend identities and upstream addresses prevent its global keepalive cache from reusing a socket across protocols. Separate Ingress objects alone do not provide that isolation.
+
+Keep the Service port numbers different and at least one upstream on the ClusterIP. The chart rejects unsafe pool settings and headless Services for this arrangement. The gRPC Ingress keeps the legacy ingress's `100m` body limit and `3M` client buffer default. Override the body limit to `0` or a suitable larger value for a 1 GiB ingress experiment. Both Ingress objects reference one TLS Secret. Only one requests a certificate from cert-manager, preferring the HTTP Ingress when it has issuer annotations. `cas.ingress.tls=true` also supports a pre-created Secret without issuer annotations.
+
+`cas.ingressAPI`, `cas.serviceAPI`, and the control plane's connection to the legacy CAS Service keep their existing settings. F5 same-host routing and Traefik's per-Service scheme still need qualification.
+
+Before cmux hands a connection to a server, classification is limited to 10 seconds, 64 KiB read from the socket (including TLS), and 128 concurrent pending connections. Shutdown closes pending sockets. These bounds end at handoff and do not constrain active ByteStream transfers. The HTTP server then applies its 60-second header timeout. CAS has no per-request gRPC adapter fallback. Metrics remain plaintext on their separate listener; `server.http_metrics.tls_config` is rejected.
 
 Run the isolated functional checks without Vault or an object store:
 
 ```sh
 go test -race ./app/artifact-cas/internal/server ./app/artifact-cas/cmd ./deployment/chainloop -count=1
 ```
+
+To check the chart through a real ingress-nginx controller, use a disposable local kind cluster on Linux with Docker:
+
+```sh
+kind create cluster --name cas-cmux --kubeconfig /tmp/cas-cmux-kubeconfig
+kubectl --kubeconfig /tmp/cas-cmux-kubeconfig apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.15.1/deploy/static/provider/kind/deploy.yaml
+kubectl --kubeconfig /tmp/cas-cmux-kubeconfig label node cas-cmux-control-plane ingress-ready=true
+kubectl --kubeconfig /tmp/cas-cmux-kubeconfig -n ingress-nginx wait --for=condition=Available deployment/ingress-nginx-controller --timeout=120s
+kubectl --kubeconfig /tmp/cas-cmux-kubeconfig -n ingress-nginx patch configmap ingress-nginx-controller --type merge -p '{"data":{"worker-processes":"1"}}'
+CAS_INGRESS_KUBECONFIG=/tmp/cas-cmux-kubeconfig \
+CAS_INGRESS_BACKEND_IP="$(docker network inspect kind --format '{{json .IPAM.Config}}' | jq -r '.[] | select(.Subnet | contains(":") | not) | .Gateway')" \
+go test -race ./app/artifact-cas/internal/server -run '^TestCASIngressNGINX$' -count=1 -v
+kind delete cluster --name cas-cmux
+```
+
+The test requires one controller worker so both protocols exercise the same keepalive cache. It creates and deletes a namespace containing the rendered CAS Service and Ingress objects. Its CAS server runs in the test process, reachable through the kind bridge gateway. It checks authenticated ByteStream upload/download, reflection, status, and repeated HTTP downloads with HTTP/1.1 and HTTP/2 clients. The controller sends HTTP/1.1 to the CAS for both browser protocols. This does not qualify other controllers or production object storage.
 
 Compare real ByteStream upload and download paths over TCP with a synthetic 1 GiB zero-filled artifact, streamed from a fixed-size buffer and checked by SHA256. Both listeners use the same file-backed test backend and real CAS staging and authentication. Select a disk-backed temporary directory; `/tmp` can be tmpfs.
 
@@ -117,14 +139,14 @@ Three 1 GiB transfers per operation, Go 1.27.2, grpc-go 1.84.0, cmux 0.1.5, Linu
 
 | Listener | Operation | Throughput (MB/s) | Sampled peak live heap (MiB) |
 | --- | --- | ---: | ---: |
-| Native gRPC (`:9001`) | Upload | 228.90 | 29.27 |
-| Shared endpoint (`:8001`, cmux) | Upload | 232.51 | 27.97 |
-| Native gRPC (`:9001`) | Download | 194.10 | 30.90 |
-| Shared endpoint (`:8001`, cmux) | Download | 189.74 | 31.83 |
+| Native gRPC (`:9001`) | Upload | 225.34 | 28.91 |
+| Shared endpoint (`:8001`, cmux) | Upload | 232.85 | 27.46 |
+| Native gRPC (`:9001`) | Download | 198.05 | 28.90 |
+| Shared endpoint (`:8001`, cmux) | Download | 189.63 | 31.92 |
 
-Both listeners use the native grpc-go transport, and the numbers match: median upload throughput on the shared endpoint was 1.6% higher and median download throughput 2.2% lower than the legacy listener, with sampled peak live heap equivalent (~28-32 MiB) on both. This satisfies the R-003 transport-comparison shape for the shared endpoint — within 10% with bounded memory — in this synthetic local setup. Filesystem caching, synthetic content, the combined client/server process, and local machine load limit extrapolation to production.
+Both listeners use the native grpc-go transport, and the numbers match: median upload throughput on the shared endpoint was 3.3% higher and median download throughput 4.3% lower than the legacy listener, with sampled peak live heap equivalent (~28-32 MiB) on both. This satisfies the R-003 transport-comparison shape for the shared endpoint — within 10% with bounded memory — in this synthetic local setup. Filesystem caching, synthetic content, the combined client/server process, and local machine load limit extrapolation to production.
 
-For contrast, the earlier per-request `ServeHTTP` experiment on this branch measured 232.00 MB/s upload and 173.83 MB/s download against the same native baseline, with an upload peak of ~1278 MiB: grpc-go's [handler transport reads the HTTP body in a separate goroutine](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/handler_server.go#L434) into an [unbounded receive buffer](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/transport.go#L90), so read-ahead is not bounded by the application's pace. That memory regression rejected the adapter for CAS uploads (the control plane keeps the adapter because its requests are small and unary) and motivated the cmux design recorded in D-017.
+For contrast, the earlier per-request `ServeHTTP` experiment on this branch measured 232.00 MB/s upload and 173.83 MB/s download against its contemporaneous native baseline, with an upload peak of ~1278 MiB: grpc-go's [handler transport reads the HTTP body in a separate goroutine](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/handler_server.go#L434) into an [unbounded receive buffer](https://github.com/grpc/grpc-go/blob/v1.84.0/internal/transport/transport.go#L90), so read-ahead is not bounded by the application's pace. That memory regression rejected the adapter for CAS uploads (the control plane keeps the adapter because its requests are small and unary) and motivated the cmux design recorded in D-017.
 
 ### Run tests
 

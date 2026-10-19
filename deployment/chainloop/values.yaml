@@ -1096,10 +1096,12 @@ cas:
     type: ClusterIP
 
     ## @param cas.service.ports.http cas service HTTP port
+    ## @param cas.service.ports.grpcShared Service port alias for shared-ingress gRPC (same CAS HTTP listener).
     ## @param cas.service.ports.https cas service HTTPS port
     ##
     ports:
       http: 80
+      grpcShared: 81
       https: 443
     ## Node ports to expose
     ## @param cas.service.nodePorts.http Node port for HTTP
@@ -1251,15 +1253,21 @@ cas:
     ##
     annotations: {}
     ## @extra cas.ingress.grpc gRPC routes of the shared CAS endpoint.
-    ## The chart renders a second Ingress on the same hostname with its own
-    ## upstream pool, so native gRPC traffic keeps the HTTP/2 (grpc_pass)
-    ## transport while the HTTP routes keep HTTP/1.1. This is the
-    ## separate-upstream-pool contract of spec D-014/D-018.
+    ## The second Ingress uses a dedicated Service port alias on the same
+    ## listener. ingress-nginx dials its ClusterIP for gRPC and pod endpoints
+    ## for HTTP, isolating connection reuse by backend identity and address.
+    ## Native gRPC keeps HTTP/2 while the HTTP routes keep HTTP/1.1 (D-018).
     grpc:
       ## @param cas.ingress.grpc.paths RPC path prefixes served by the gRPC upstream pool.
       paths:
-        - /cas.v1.ByteStream/
+        - /google.bytestream.ByteStream/
         - /cas.v1.ResourceService/
+        - /cas.v1.StatusService/
+        - /grpc.health.v1.Health/
+        - /grpc.reflection.v1.ServerReflection/
+        - /grpc.reflection.v1alpha.ServerReflection/
+        - /kratos.api.Metadata/
+        - /grpc.channelz.v1.Channelz/
       ## @extra cas.ingress.grpc.annotations Annotations for the gRPC-path Ingress.
       ## Use this to override the gRPC upstream settings, for example
       ## `backend-protocol: GRPCS` when TLS runs to the pod. Do not set these
@@ -1274,6 +1282,10 @@ cas:
         ## @skip cas.ingress.grpc.defaultAnnotations.nginx.ingress.kubernetes.io/backend-protocol
         ## Tell nginx Ingress Controller to expect gRPC traffic on these paths
         nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+        ## @skip cas.ingress.grpc.defaultAnnotations.nginx.ingress.kubernetes.io/service-upstream
+        # Dial the ClusterIP for gRPC; HTTP uses pod endpoints. ingress-nginx
+        # keys keepalive connections by upstream address, not Ingress resource.
+        nginx.ingress.kubernetes.io/service-upstream: "true"
         ## @skip cas.ingress.grpc.defaultAnnotations.nginx.org/grpc-services
         nginx.org/grpc-services: '{{ include "chainloop.cas.fullname" . }}'
         ## @skip cas.ingress.grpc.defaultAnnotations.nginx.org/http2

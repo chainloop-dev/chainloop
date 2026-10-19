@@ -1,45 +1,46 @@
 # Copyright 2026 The Chainloop Authors.
 # SPDX-License-Identifier: Apache-2.0
 
-# cmux shared endpoint vs the legacy native listener. Both transports use the
-# grpc-go native transport; the shared endpoint classifies each connection
-# with cmux (spec D-017). An earlier run on this branch measured the
-# grpc.Server.ServeHTTP HTTP adapter instead: its uploads peaked at
-# ~1278 MiB of combined live heap for a 1 GiB artifact and its downloads
-# were 11.8% slower; that result rejected the adapter for CAS. The raw
-# numbers of that run are preserved in the PR #3663 discussion.
+# Review-fix rerun: cmux shared endpoint vs the legacy native listener.
+# Both use grpc-go's native transport. The shared listener now has bounded
+# classification and closes pending sockets during shutdown. Earlier adapter
+# and cmux results remain in this file's git history and PR #3663 discussion.
 
 go version go1.27.2 linux/amd64
 grpc-go: v1.84.0; Kratos: v2.9.2; cmux: v0.1.5
 Temporary filesystem: btrfs (not tmpfs)
-Command: TMPDIR="$HOME/.cache/chainloop-cas-bench" go test ./app/artifact-cas/internal/server -run ^$ -bench ^BenchmarkCASByteStreamTransport$ -benchtime=1x -count=3 -timeout=10m
+Commands:
+  mkdir -p "$HOME/.cache/chainloop-cas-bench"
+  TMPDIR="$HOME/.cache/chainloop-cas-bench" go test ./app/artifact-cas/internal/server -run '^$' -bench '^BenchmarkCASByteStreamTransport$' -benchtime=1x -count=3 -timeout=10m
 
 Artifact: 1 GiB; plaintext localhost TCP; real CAS services/auth/staging; disk-backed test backend; client and server in one process.
-INFO msg=[HTTP] server listening on: 127.0.0.1:40239
-INFO msg=[gRPC] server listening on: 127.0.0.1:44469
+Limitations: synthetic zero content, local disk, combined sampled client/server live heap, no representative object store, concurrency, or TLS performance qualification.
+
+INFO msg=[gRPC] server listening on: 127.0.0.1:34425
+INFO msg=[HTTP] server listening on: 127.0.0.1:38673
 goos: linux
 goarch: amd64
 pkg: github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server
 cpu: Intel(R) Core(TM) i7-7700K CPU @ 4.20GHz
-BenchmarkCASByteStreamTransport/legacy/upload-8  	       1	5207742134 ns/op	 206.18 MB/s	        30.03 peak-heap-MiB	1442550792 B/op	 3204540 allocs/op
-BenchmarkCASByteStreamTransport/legacy/upload-8  	       1	4690862475 ns/op	 228.90 MB/s	        29.27 peak-heap-MiB	1477528368 B/op	 3032897 allocs/op
-BenchmarkCASByteStreamTransport/legacy/upload-8  	       1	4473314156 ns/op	 240.03 MB/s	        29.11 peak-heap-MiB	1509947992 B/op	 3032880 allocs/op
-BenchmarkCASByteStreamTransport/legacy/download-8         	       1	6035943310 ns/op	 177.89 MB/s	        31.86 peak-heap-MiB	1408894040 B/op	   95728 allocs/op
-BenchmarkCASByteStreamTransport/legacy/download-8         	       1	5531984200 ns/op	 194.10 MB/s	        30.90 peak-heap-MiB	1359969664 B/op	   86333 allocs/op
-BenchmarkCASByteStreamTransport/legacy/download-8         	       1	5476786936 ns/op	 196.05 MB/s	        30.05 peak-heap-MiB	1312724880 B/op	   84305 allocs/op
+BenchmarkCASByteStreamTransport/legacy/upload-8  	       1	4765003662 ns/op	 225.34 MB/s	        29.50 peak-heap-MiB	1483628368 B/op	 3160122 allocs/op
+BenchmarkCASByteStreamTransport/legacy/upload-8  	       1	6045761098 ns/op	 177.60 MB/s	        28.33 peak-heap-MiB	1505093640 B/op	 3153996 allocs/op
+BenchmarkCASByteStreamTransport/legacy/upload-8  	       1	4558956236 ns/op	 235.52 MB/s	        28.91 peak-heap-MiB	1472837272 B/op	 3153869 allocs/op
+BenchmarkCASByteStreamTransport/legacy/download-8         	       1	5701383303 ns/op	 188.33 MB/s	        28.90 peak-heap-MiB	1345298136 B/op	   87053 allocs/op
+BenchmarkCASByteStreamTransport/legacy/download-8         	       1	5418492831 ns/op	 198.16 MB/s	        28.93 peak-heap-MiB	1340639536 B/op	   86919 allocs/op
+BenchmarkCASByteStreamTransport/legacy/download-8         	       1	5421594921 ns/op	 198.05 MB/s	        28.67 peak-heap-MiB	1342393032 B/op	   86665 allocs/op
 INFO msg=[gRPC] server stopping
 INFO msg=[HTTP] server stopping
 INFO msg=[gRPC] server stopping
-INFO msg=[gRPC] server listening on: 127.0.0.1:39939
-INFO msg=[HTTP] server listening on: 127.0.0.1:38963
-BenchmarkCASByteStreamTransport/shared/upload-8           	       1	4691261582 ns/op	 228.88 MB/s	        27.97 peak-heap-MiB	1432139600 B/op	 3225369 allocs/op
-BenchmarkCASByteStreamTransport/shared/upload-8           	       1	4618093234 ns/op	 232.51 MB/s	        27.54 peak-heap-MiB	1470447088 B/op	 3224874 allocs/op
-BenchmarkCASByteStreamTransport/shared/upload-8           	       1	4550823731 ns/op	 235.94 MB/s	        28.81 peak-heap-MiB	1455017664 B/op	 3153945 allocs/op
-BenchmarkCASByteStreamTransport/shared/download-8         	       1	5921459129 ns/op	 181.33 MB/s	        31.83 peak-heap-MiB	1373096000 B/op	   95393 allocs/op
-BenchmarkCASByteStreamTransport/shared/download-8         	       1	5659083336 ns/op	 189.74 MB/s	        32.92 peak-heap-MiB	1332496448 B/op	   85621 allocs/op
-BenchmarkCASByteStreamTransport/shared/download-8         	       1	5506534391 ns/op	 194.99 MB/s	        29.10 peak-heap-MiB	1313525896 B/op	   78316 allocs/op
+INFO msg=[gRPC] server listening on: 127.0.0.1:38603
+INFO msg=[HTTP] server listening on: 127.0.0.1:45889
+BenchmarkCASByteStreamTransport/shared/upload-8           	       1	4716482049 ns/op	 227.66 MB/s	        27.46 peak-heap-MiB	1418368840 B/op	 3224685 allocs/op
+BenchmarkCASByteStreamTransport/shared/upload-8           	       1	4605922407 ns/op	 233.12 MB/s	        28.47 peak-heap-MiB	1459735392 B/op	 3224827 allocs/op
+BenchmarkCASByteStreamTransport/shared/upload-8           	       1	4611224941 ns/op	 232.85 MB/s	        26.29 peak-heap-MiB	1440540392 B/op	 3224912 allocs/op
+BenchmarkCASByteStreamTransport/shared/download-8         	       1	5862496162 ns/op	 183.15 MB/s	        32.00 peak-heap-MiB	1377047368 B/op	   94038 allocs/op
+BenchmarkCASByteStreamTransport/shared/download-8         	       1	5623257158 ns/op	 190.95 MB/s	        31.34 peak-heap-MiB	1377929448 B/op	   93669 allocs/op
+BenchmarkCASByteStreamTransport/shared/download-8         	       1	5662234715 ns/op	 189.63 MB/s	        31.92 peak-heap-MiB	1377032552 B/op	   90475 allocs/op
 INFO msg=[gRPC] server stopping
 INFO msg=[HTTP] server stopping
 INFO msg=[gRPC] server stopping
 PASS
-ok  	github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server	65.136s
+ok  	github.com/chainloop-dev/chainloop/app/artifact-cas/internal/server	65.771s
