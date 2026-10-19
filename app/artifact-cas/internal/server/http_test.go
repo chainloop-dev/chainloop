@@ -552,6 +552,54 @@ func TestCASCancelledUpload(t *testing.T) {
 	}
 }
 
+// TestCASSharedConcurrentUploadsMemoryBounded pushes several large streams
+// through the shared endpoint at once, multiplexed on one connection as a
+// single-location ingress sends them. The payload is generated on the fly, so
+// no test-owned buffer is resident. Each hop must window-pace the data: if
+// any hop buffered whole streams instead, the sampled peak heap would reach
+// the total transferred bytes. The single-stream benchmark showed the pacing
+// directly (about 32 MiB peak for a 1 GiB upload, against about 1.25 GiB on
+// the rejected grpc.Server.ServeHTTP adapter under the same conditions); this
+// test adds the concurrent-stream dimension.
+func TestCASSharedConcurrentUploadsMemoryBounded(t *testing.T) {
+	const (
+		streams = 4
+		size    = 128 << 20 // 128 MiB per stream, 512 MiB total
+	)
+	opts := casTestOpts(t)
+	sharedURL, _ := startCASTestServers(t, opts)
+	client := bytestream.NewByteStreamClient(casTestConn(t, sharedURL[len("http://"):], false))
+	up := casTestToken(t, casJWT.Uploader, 0, time.Hour)
+
+	hash := sha256.New()
+	_, err := io.CopyN(hash, zeroReader{}, size)
+	require.NoError(t, err)
+	digest := hex.EncodeToString(hash.Sum(nil))
+
+	stopSample := sampleCASHeap()
+	var wg sync.WaitGroup
+	errs := make(chan error, streams)
+	for range streams {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errs <- casTestUpload(t, client, up, digest, io.LimitReader(zeroReader{}, size), size)
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	peak := stopSample()
+	t.Logf("peak heap: %d MiB for %d MiB across %d streams", peak>>20, (size*streams)>>20, streams)
+
+	// Whole-stream buffering on any hop would push the peak toward the
+	// transferred bytes; window pacing keeps it at per-stream buffers.
+	require.Less(t, peak, uint64(300<<20),
+		"four concurrent 128 MiB uploads must not buffer whole streams; peak heap %d bytes", peak)
+}
+
 func TestCASSharedShutdownDrainsUpload(t *testing.T) {
 	opts := casTestOpts(t)
 	opts.ServerConfig.LegacyGrpcListener = new(false)
