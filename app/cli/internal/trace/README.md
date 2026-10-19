@@ -128,3 +128,15 @@ Why not Yes:
 | OpenCode | `.opencode/plugins/chainloop-trace.ts` | Session start and end, user prompt, and before and after each tool. One plugin covers both versions: `server()` for 1.x (1.3.4 or later) and `setup()` for 2. The provider picks the export command from `opencode --version`. |
 
 All agents share the git hooks `commit-msg`, `post-commit` and `pre-push`.
+
+## End-to-end tests
+
+The `e2e/` package checks the tables of this page against real agents (spec issue-3635). It runs each agent in headless mode with real models, in throwaway repositories with Trace in local storage mode. It tests each cell marked **Yes**, **Partial**, or **Unknown**, and it skips the other cells. A feature row maps to its checks by the feature name. When you rename a feature in a table, rename it in `e2e/checks.go` too.
+
+`e2e/config.yaml` pins the version of each agent and lists the models. The suite uses model tokens. To run it:
+
+```bash
+make -C app/cli test-trace-e2e
+```
+
+`CHAINLOOP_E2E_HARNESS`, `CHAINLOOP_E2E_MODEL`, and `CHAINLOOP_E2E_FEATURE` limit a run to some columns, models, or features (comma-separated). Set `CHAINLOOP_E2E_WORK_DIR` to keep the workspaces and the agent output. The results go to `e2e/results/`, or to `CHAINLOOP_E2E_RESULTS_DIR`. Only a run with no filter becomes the previous result of the next comparison.

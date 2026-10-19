@@ -1,0 +1,27 @@
+# Configuration of the Chainloop Trace end-to-end suite (spec issue-3635).
+#
+# Each harness entry pins one version for its column of the feature table
+# (D-013) and lists the models that the suite runs it with (D-009). A
+# maintainer bumps a pin on purpose. The key is the column name in the
+# feature table of ../README.md.
+harnesses:
+  Claude Code:
+    version: "2.1.301"
+    models:
+      - haiku
+
+# Runs and pass threshold of a cell whose feature depends on the model
+# following an instruction (R-006, D-004). A cell of any other feature runs
+# once.
+modelDriven:
+  runs: 3
+  threshold: 2
+
+# Per-feature overrides of the runs and the threshold, keyed by feature name.
+features: {}
+
+# Time limit of one scenario session.
+scenarioTimeout: 5m
+
+# Scenario sessions that run at the same time.
+parallel: 4
