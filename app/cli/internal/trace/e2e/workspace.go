@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -58,12 +59,15 @@ type Workspace struct {
 	// included: the chainloop binary under test first in PATH, and an
 	// isolated git configuration.
 	Env []string
+	// Chainloop is the chainloop CLI under test.
+	Chainloop string
 }
 
-// NewWorkspace creates a workspace under base. It writes the seed files,
-// runs `chainloop trace init --local` for the harness, commits the result and
-// pushes it, so the session starts from a clean, pushed tree.
-func NewWorkspace(ctx context.Context, base, chainloopBin string, h Harness, seed map[string]string) (*Workspace, error) {
+// NewWorkspace creates a workspace under base for a scenario. It writes the
+// seed files, runs `chainloop trace init --local` for the harness unless the
+// scenario says no, commits the result and pushes it, so the session starts
+// from a clean, pushed tree.
+func NewWorkspace(ctx context.Context, base, chainloopBin string, h Harness, sc Scenario) (*Workspace, error) {
 	repo := filepath.Join(base, "repo")
 	remote := filepath.Join(base, "remote.git")
 	gitConfigPath := filepath.Join(base, "gitconfig")
@@ -76,7 +80,8 @@ func NewWorkspace(ctx context.Context, base, chainloopBin string, h Harness, see
 	}
 
 	w := &Workspace{
-		Dir: repo,
+		Dir:       repo,
+		Chainloop: chainloopBin,
 		Env: append(os.Environ(),
 			"PATH="+filepath.Dir(chainloopBin)+string(os.PathListSeparator)+os.Getenv("PATH"),
 			"GIT_CONFIG_GLOBAL="+gitConfigPath,
@@ -93,6 +98,12 @@ func NewWorkspace(ctx context.Context, base, chainloopBin string, h Harness, see
 		return nil, err
 	}
 
+	seed := sc.Seed
+	if sc.SeedUserHooks {
+		hc := h.HookConfig()
+		seed = maps.Clone(seed)
+		seed[hc.Path] = hc.UserConfig
+	}
 	for name, content := range seed {
 		path := filepath.Join(repo, filepath.FromSlash(name))
 		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
@@ -103,8 +114,15 @@ func NewWorkspace(ctx context.Context, base, chainloopBin string, h Harness, see
 		}
 	}
 
-	if _, err := w.run(ctx, repo, chainloopBin, "trace", "init", "--local", h.TraceFlag()); err != nil {
-		return nil, err
+	if !sc.NoInit {
+		if _, err := w.TraceInit(ctx, h); err != nil {
+			return nil, err
+		}
+	}
+	if sc.DisableSessionStart {
+		if err := h.DisableSessionStart(repo); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, args := range [][]string{
@@ -119,6 +137,17 @@ func NewWorkspace(ctx context.Context, base, chainloopBin string, h Harness, see
 	}
 
 	return w, nil
+}
+
+// TraceInit runs `chainloop trace init --local` for the harness in the
+// repository.
+func (w *Workspace) TraceInit(ctx context.Context, h Harness) (string, error) {
+	return w.run(ctx, w.Dir, w.Chainloop, "trace", "init", "--local", h.TraceFlag())
+}
+
+// TraceUninstall runs `chainloop trace uninstall` in the repository.
+func (w *Workspace) TraceUninstall(ctx context.Context) (string, error) {
+	return w.run(ctx, w.Dir, w.Chainloop, "trace", "uninstall", "--yes")
 }
 
 // Git runs a git command in the repository and returns its output.

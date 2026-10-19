@@ -30,6 +30,25 @@ type RunRequest struct {
 	Prompt string
 	// Env is the environment of the harness process.
 	Env []string
+	// Wrapper is a command that runs the harness, for example
+	// `chainloop trace run --local --claude --`. Empty runs the harness
+	// directly.
+	Wrapper []string
+	// Images are PNG images that the user pastes with the prompt.
+	Images [][]byte
+}
+
+// HookConfig describes the file where the harness reads its hooks.
+type HookConfig struct {
+	// Path is the file, relative to the repository root.
+	Path string
+	// ChainloopMarker is a text that only a Chainloop hook in the file holds.
+	ChainloopMarker string
+	// UserConfig is the content of the file with one hook of the user and no
+	// Chainloop hook.
+	UserConfig string
+	// UserMarker is a text that only the hook of the user holds.
+	UserMarker string
 }
 
 // HookMessage is a message that a Trace hook returned to the harness.
@@ -68,4 +87,10 @@ type Harness interface {
 	// Run runs one headless session and returns its output. An error means
 	// that the session could not run, not that a feature failed.
 	Run(ctx context.Context, req RunRequest) (*RunOutput, error)
+	// HookConfig describes the hook configuration file of the harness.
+	HookConfig() HookConfig
+	// DisableSessionStart removes the session-start hook that `trace init`
+	// installed in the repository, so that a session starts with no
+	// session-start hook.
+	DisableSessionStart(repo string) error
 }

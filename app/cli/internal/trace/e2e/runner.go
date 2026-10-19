@@ -132,10 +132,12 @@ func (r *Runner) runHarnessModel(ctx context.Context, h Harness, version string,
 		switch {
 		case !support.Tested():
 			c.Status, c.Reason = StatusSkipped, "the feature table marks it "+string(support)
-		case !hasDef || (!def.ControlPlane && len(def.Checks) == 0):
+		case !hasDef || (!def.ControlPlane && def.NotCovered == "" && len(def.Checks) == 0):
 			c.Status, c.Reason = StatusNoCheck, "no check is registered for this feature"
 		case def.ControlPlane:
 			c.Status, c.Reason = StatusNotCovered, "the feature needs a control plane"
+		case def.NotCovered != "":
+			c.Status, c.Reason = StatusNotCovered, def.NotCovered
 		case versionErr != nil:
 			c.Status, c.Reason = StatusError, versionErr.Error()
 		default:
@@ -211,12 +213,20 @@ func (r *Runner) runScenario(ctx context.Context, h Harness, model string, sc Sc
 	base := filepath.Join(r.WorkDir, dirName(h.Column()), dirName(model), sc.Name, strconv.Itoa(i+1))
 	r.Logf("%s / %s / %s #%d: start in %s", h.Column(), model, sc.Name, i+1, base)
 
-	ws, err := NewWorkspace(ctx, base, r.ChainloopBin, h, sc.Seed)
+	ws, err := NewWorkspace(ctx, base, r.ChainloopBin, h, sc)
 	if err != nil {
 		return nil, fmt.Errorf("create workspace: %w", err)
 	}
 
-	out, runErr := h.Run(ctx, RunRequest{Dir: ws.Dir, Model: model, Prompt: sc.Prompt, Env: ws.Env})
+	if sc.NoAgent {
+		return &Session{Scenario: sc.Name, Model: model, Harness: h, Workspace: ws, Output: &RunOutput{}, Checkout: ws.Dir}, nil
+	}
+
+	req := RunRequest{Dir: ws.Dir, Model: model, Prompt: sc.Prompt, Env: ws.Env, Images: sc.Images}
+	if sc.WrapTraceRun {
+		req.Wrapper = []string{r.ChainloopBin, "trace", "run", "--local", h.TraceFlag(), "--"}
+	}
+	out, runErr := h.Run(ctx, req)
 	if out != nil {
 		// The harness output stays next to the workspace to debug a failure.
 		if err := os.WriteFile(filepath.Join(base, "harness-output.jsonl"), out.Raw, 0o600); err != nil {
@@ -227,7 +237,7 @@ func (r *Runner) runScenario(ctx context.Context, h Harness, model string, sc Sc
 		return nil, runErr
 	}
 
-	s := &Session{Scenario: sc.Name, Model: model, Workspace: ws, Output: out}
+	s := &Session{Scenario: sc.Name, Model: model, Harness: h, Workspace: ws, Output: out, Checkout: ws.Dir}
 
 	// The agent pushes in the session, as a user does. The pre-push hook
 	// stores the session in local storage mode. The suite does not push after
@@ -244,6 +254,7 @@ func (r *Runner) runScenario(ctx context.Context, h Harness, model string, sc Sc
 		}
 	}
 
+	s.Checkout = checkout
 	if s.HeadMessage, err = ws.run(ctx, checkout, "git", "log", "-1", "--format=%B"); err != nil {
 		return nil, err
 	}
@@ -284,8 +295,10 @@ func evaluate(p plannedCell, sessions map[string][]sessionResult) Cell {
 				return c
 			}
 
+			// A scenario with no agent stores no session. Its checks read the
+			// workspace.
 			var err error
-			if sr.session.Stored == nil {
+			if sr.session.Stored == nil && !scenarios[chk.Scenario].NoAgent {
 				err = errNoStoredSession
 			} else {
 				err = chk.Verify(sr.session)

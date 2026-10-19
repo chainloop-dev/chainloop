@@ -14,13 +14,14 @@ How Trace is added to a repository and to an agent.
 
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
-| Hook installation and deletion | `chainloop trace init` installs the hooks of the selected agent. A second init changes nothing. `chainloop trace uninstall` deletes only the Chainloop hooks and keeps the other hooks of the agent. | Unknown | Unknown | Unknown | Unknown |
-| Trace run wrapper | `chainloop trace run -- <agent command>` gives the agent temporary hooks for one session. When the command exits, the configuration of the agent is the same as before. | Unknown | Unknown | Unknown | Unknown |
+| Hook installation and deletion | `chainloop trace init` installs the hooks of the selected agent. A second init changes nothing. `chainloop trace uninstall` deletes only the Chainloop hooks and keeps the other hooks of the agent. | Yes | Unknown | Unknown | Unknown |
+| Trace run wrapper | `chainloop trace run -- <agent command>` gives the agent temporary hooks for one session. When the command exits, the configuration of the agent is the same as before. | Yes | Unknown | Unknown | Unknown |
 | More than one agent in one repository | Two agents initialized in the same repository record their sessions separately, and each commit names the sessions of the agent that made it. | Unknown | Unknown | Unknown | Unknown |
 
 Why not Yes:
 
-- **All rows, all agents:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
+- **Hook installation and deletion, and Trace run wrapper, Cursor and OpenCode:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
+- **More than one agent in one repository, all agents:** not verified yet. The end-to-end suite needs a second agent to test it (spec issue-3635).
 
 ## Session collection
 
@@ -32,7 +33,7 @@ What the session evidence holds about the conversation.
 | Token usage and cost | The evidence holds the tokens that the session used and their cost in USD. | Yes | No | Yes | Yes |
 | Model detection | The evidence names the primary model and the other models that the session used. | Yes | Partial | Yes | Yes |
 | Subagents | The evidence holds the conversations of the subagents, and their token usage, as part of the session. | Yes | No | No | No |
-| Missed session start | A session whose session-start hook did not fire is still recorded, from its first tool hook. | Unknown | Unknown | Unknown | Unknown |
+| Missed session start | A session whose session-start hook did not fire is still recorded, from its first tool hook. | Yes | Unknown | Unknown | Unknown |
 
 Why not Yes:
 
@@ -41,7 +42,7 @@ Why not Yes:
 - **Model detection, Cursor:** the primary model comes from the session-start hook. The transcript does not tell the models, so the evidence does not list the other models.
 - **Subagents, Cursor:** the provider does not read subagent conversations.
 - **Subagents, OpenCode:** a subagent runs in a child session with its own export. It is not part of the evidence of its parent session.
-- **Missed session start, all agents:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
+- **Missed session start, Cursor and OpenCode:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
 
 ## Code attribution
 
