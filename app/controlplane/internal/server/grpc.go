@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/url"
 	"regexp"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -109,28 +110,55 @@ var (
 	allButOrganizationOperationsSkipRegexp = regexp.MustCompile("/controlplane.v1.OrganizationService/Create|/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount")
 )
 
-// NewGRPCServer new a gRPC server.
-func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
-	// Opt-in histogram metrics for the interceptor
-	grpc_prometheus.EnableHandlingTimeHistogram()
+// GRPCServers separates the HTTP handler from the optional native listener.
+// Only Legacy must be started as a transport server.
+type GRPCServers struct {
+	Handler *grpc.Server
+	Legacy  *grpc.Server
+}
 
-	// NOTE: kratos middlewares will always be run before plain grpc unary interceptors
-	// If you want to change the behavior, please refer to wrappers.go and the Prometheus wrapper as example
-	var serverOpts = []grpc.ServerOption{
-		grpc.Middleware(craftMiddleware(opts)...),
-		grpc.UnaryInterceptor(
-			protovalidateMiddleware.UnaryServerInterceptor(opts.Validator),
-		),
+// NewGRPCServers assembles the HTTP handler and optional native listener.
+func NewGRPCServers(opts *Opts) (*GRPCServers, error) {
+	servers := &GRPCServers{Handler: newGRPCHandler(opts)}
+	if legacyGRPCListenerEnabled(opts.ServerConfig) {
+		// Ignore unused legacy certificates when this listener is disabled.
+		legacy, err := NewGRPCServer(opts)
+		if err != nil {
+			return nil, err
+		}
+		servers.Legacy = legacy
 	}
+	return servers, nil
+}
 
+// newGRPCHandler builds the handler served on the shared HTTP endpoint.
+func newGRPCHandler(opts *Opts) *grpc.Server {
+	// Kratos' stream interceptor needs a non-nil endpoint even when the gRPC
+	// handler never starts a native listener. Supply it explicitly rather than
+	// calling Endpoint(), which would bind an otherwise unused socket.
+	scheme := "grpc"
+	if opts.ServerConfig.GetHttp().GetTlsConfig().GetCertificate() != "" {
+		scheme = "grpcs"
+	}
+	return newGRPCServer(opts, grpc.Endpoint(&url.URL{
+		Scheme: scheme,
+		Host:   opts.ServerConfig.GetHttp().GetAddr(),
+	}))
+}
+
+func legacyGRPCListenerEnabled(c *conf.Server) bool {
+	return c.LegacyGrpcListener == nil || *c.LegacyGrpcListener
+}
+
+// NewGRPCServer builds the native gRPC listener with its existing configuration.
+// A partial TLS configuration keeps this listener plaintext, as it always did.
+func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
+	var serverOpts []grpc.ServerOption
 	if v := opts.ServerConfig.Grpc.Network; v != "" {
 		serverOpts = append(serverOpts, grpc.Network(v))
 	}
 	if v := opts.ServerConfig.Grpc.Addr; v != "" {
 		serverOpts = append(serverOpts, grpc.Address(v))
-	}
-	if v := opts.ServerConfig.Grpc.Timeout; v != nil {
-		serverOpts = append(serverOpts, grpc.Timeout(v.AsDuration()))
 	}
 	if tlsConf := opts.ServerConfig.Grpc.GetTlsConfig(); tlsConf != nil {
 		cert := tlsConf.GetCertificate()
@@ -145,6 +173,26 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 				MinVersion:   tls.VersionTLS12, // gosec complains about insecure minimum version we use default value
 			}))
 		}
+	}
+	return newGRPCServer(opts, serverOpts...), nil
+}
+
+// newGRPCServer builds one gRPC server with the shared middleware chain,
+// interceptors and service registrations, bound through the given extra
+// options.
+func newGRPCServer(opts *Opts, extraOpts ...grpc.ServerOption) *grpc.Server {
+	// Opt-in histogram metrics for the interceptor.
+	grpc_prometheus.EnableHandlingTimeHistogram()
+
+	var serverOpts = append([]grpc.ServerOption{
+		grpc.Middleware(craftMiddleware(opts)...),
+		grpc.UnaryInterceptor(
+			protovalidateMiddleware.UnaryServerInterceptor(opts.Validator),
+		),
+	}, extraOpts...)
+
+	if v := opts.ServerConfig.Grpc.Timeout; v != nil {
+		serverOpts = append(serverOpts, grpc.Timeout(v.AsDuration()))
 	}
 
 	// Raw grpc-go server options must be passed in a single grpc.Options call:
@@ -182,7 +230,7 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)
 
-	return srv, nil
+	return srv
 }
 
 func craftMiddleware(opts *Opts) []middleware.Middleware {
@@ -288,13 +336,13 @@ func craftMiddleware(opts *Opts) []middleware.Middleware {
 
 // If we should load the user
 func requireCurrentUserMatcher() selector.MatchFunc {
-	return func(ctx context.Context, operation string) bool {
+	return func(_ context.Context, operation string) bool {
 		return !currentUserSkipRegexp.MatchString(operation)
 	}
 }
 
 func requireFullyConfiguredOrgMatcher() selector.MatchFunc {
-	return func(ctx context.Context, operation string) bool {
+	return func(_ context.Context, operation string) bool {
 		return !fullyConfiguredOrgSkipRegexp.MatchString(operation)
 	}
 }
@@ -306,20 +354,20 @@ func requireFullyConfiguredCASBackendMatcher() selector.MatchFunc {
 }
 
 func allowListEnabled() selector.MatchFunc {
-	return func(ctx context.Context, operation string) bool {
+	return func(_ context.Context, operation string) bool {
 		return !allowListSkipRegexp.MatchString(operation)
 	}
 }
 
 func requireRobotAccountMatcher() selector.MatchFunc {
-	return func(ctx context.Context, operation string) bool {
+	return func(_ context.Context, operation string) bool {
 		return robotAccountRequireRegexp.MatchString(operation)
 	}
 }
 
 // Matches all operations that require to have a current organization
 func requireAllButOrganizationOperationsMatcher() selector.MatchFunc {
-	return func(ctx context.Context, operation string) bool {
+	return func(_ context.Context, operation string) bool {
 		return !allButOrganizationOperationsSkipRegexp.MatchString(operation)
 	}
 }

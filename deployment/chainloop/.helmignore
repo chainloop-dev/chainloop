@@ -21,3 +21,5 @@
 .idea/
 *.tmproj
 .vscode/
+# Go tests run from the source tree and do not belong in the chart package.
+*_test.go

@@ -241,7 +241,33 @@ or as shown before, provide them as imperative inputs during Helm Install/Upgrad
 
 ### Enable a custom domain with TLS
 
-Chainloop uses three endpoints so we'll need to enable the ingress resource for each one of them.
+The control plane ingress serves HTTP, gRPC-Web, and native gRPC on the same hostname.
+Its HTTP server routes each request, so these protocols can share an upstream HTTP/2 connection.
+The existing gRPC ingress stays available. Existing clients can keep their current endpoints.
+To test the shared endpoint, point a gRPC client to the control plane HTTP hostname on port 443.
+The Artifact CAS keeps its existing endpoints and native gRPC transport.
+
+The chart configures HTTP/2 upstream traffic for these controllers:
+
+- Community ingress-nginx: `controlplane.ingress.annotations` includes `nginx.ingress.kubernetes.io/backend-protocol: GRPC`.
+  This uses HTTP/2 upstream for all requests, including ordinary HTTP routes.
+  This setting also applies to `extraPaths`. Place other services that require HTTP/1 upstream in a separate Ingress.
+- F5 NGINX Ingress Controller with NGINX or NGINX Plus: the same annotations include `nginx.org/grpc-services` and `nginx.org/http2: "true"`.
+  For controller versions that require it, also enable `http2` in the controller ConfigMap.
+  Native gRPC clients normally use TLS on the ingress. Plaintext client HTTP/2 needs controller configuration too.
+- Traefik: `controlplane.service.annotations` includes `traefik.ingress.kubernetes.io/service.serversscheme: h2c`.
+
+These defaults apply to plaintext traffic between the ingress and the pod. Public ingress TLS still works as before.
+If you enable TLS on the pod listener, configure the controller for encrypted HTTP/2 upstream traffic instead.
+For ingress-nginx, use `GRPCS`. For F5 NGINX, also configure `nginx.org/ssl-services`.
+For Traefik, use the `https` service scheme and configure certificate trust as required.
+Other controllers need their own upstream protocol settings.
+
+The NGINX gRPC module path supports the shared endpoint without path or content-type rules.
+The regression suite checks that path with NGINX Open Source. It does not certify every controller or NGINX Plus release.
+See the [F5 annotation reference](https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-annotations/) for controller requirements.
+
+Enable the shared control plane ingress and the existing gRPC ingresses as needed.
 
 See below an example of a `values.yaml` override
 
@@ -276,6 +302,7 @@ controlplane:
     ingressClassName: nginx
     hostname: cp.chainloop.dev
     annotations:
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
       # This depends on your configured issuer
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
 
@@ -634,7 +661,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.service.loadBalancerIP`              | controlplane service Load Balancer IP                                                                                            | `""`                     |
 | `controlplane.service.loadBalancerSourceRanges`    | controlplane service Load Balancer sources                                                                                       | `[]`                     |
 | `controlplane.service.externalTrafficPolicy`       | controlplane service external traffic policy                                                                                     | `Cluster`                |
-| `controlplane.service.annotations`                 | Additional custom annotations for controlplane service                                                                           | `{}`                     |
+| `controlplane.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c upstream.                                                         | See values.yaml          |
 | `controlplane.service.extraPorts`                  | Extra ports to expose in controlplane service (normally used with the `sidecars` value)                                          | `[]`                     |
 | `controlplane.service.sessionAffinity`             | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
 | `controlplane.service.sessionAffinityConfig`       | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
@@ -651,12 +678,12 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.serviceAPI.extraPorts`               | Extra ports to expose in controlplane service (normally used with the `sidecars` value)                                          | `[]`                     |
 | `controlplane.serviceAPI.sessionAffinity`          | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
 | `controlplane.serviceAPI.sessionAffinityConfig`    | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
-| `controlplane.ingress.enabled`                     | Enable ingress record generation for controlplane                                                                                | `false`                  |
+| `controlplane.ingress.enabled`                     | Enable the shared HTTP, gRPC-Web and native gRPC ingress for controlplane                                                          | `false`                  |
 | `controlplane.ingress.pathType`                    | Ingress path type                                                                                                                | `ImplementationSpecific` |
 | `controlplane.ingress.hostname`                    | Default host for the ingress record                                                                                              | `cp.dev.local`           |
 | `controlplane.ingress.ingressClassName`            | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
 | `controlplane.ingress.path`                        | Default path for the ingress record                                                                                              | `/`                      |
-| `controlplane.ingress.annotations`                 | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
+| `controlplane.ingress.annotations`                 | Annotations for the shared ingress. NGINX uses HTTP/2 upstream. Add cert-manager annotations here.                                   | See values.yaml          |
 | `controlplane.ingress.tls`                         | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
 | `controlplane.ingress.selfSigned`                  | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
 | `controlplane.ingress.extraHosts`                  | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |

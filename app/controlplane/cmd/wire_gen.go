@@ -373,14 +373,14 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		Credentials:         readerWriter,
 		Validator:           validator,
 	}
-	grpcServer, err := server.NewGRPCServer(opts)
+	grpcServers, err := server.NewGRPCServers(opts)
 	if err != nil {
 		cleanup3()
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	httpServer, err := server.NewHTTPServer(opts, grpcServer)
+	apiServer, err := server.NewHTTPServer(opts, grpcServers)
 	if err != nil {
 		cleanup3()
 		cleanup2()
@@ -405,7 +405,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 	distributedLock := data.NewPostgresLock(dataData, logger)
 	casBackendChecker := biz.NewCASBackendChecker(logger, casBackendRepo, casBackendUseCase, distributedLock)
 	apiTokenStaleRevoker := biz.NewAPITokenStaleRevoker(organizationRepo, apiTokenRepo, apiTokenUseCase, logger)
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, userAccessSyncerUseCase, casBackendChecker, apiTokenStaleRevoker, loginHandoffUseCase, bootstrap)
+	mainApp := newApp(logger, grpcServers, apiServer, httpMetricsServer, httpProfilerServer, workflowRunExpirerUseCase, availablePlugins, userAccessSyncerUseCase, casBackendChecker, apiTokenStaleRevoker, loginHandoffUseCase, bootstrap)
 	return mainApp, func() {
 		cleanup3()
 		cleanup2()

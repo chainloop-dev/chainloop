@@ -18,6 +18,9 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
 	middlewares_http "github.com/chainloop-dev/chainloop/pkg/middlewares/http"
@@ -26,6 +29,7 @@ import (
 	"buf.build/go/protovalidate"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -40,10 +44,43 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// NewHTTPServer new an HTTP server.
-func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
-	var serverOpts = []http.ServerOption{
+// APIServer owns the public HTTP listener and its gRPC handler. The HTTP
+// server must drain before the handler is stopped, so in-flight RPCs finish.
+type APIServer struct {
+	*http.Server
+	grpcHandler *grpc.Server
+}
+
+func (s *APIServer) Stop(ctx context.Context) error {
+	httpErr := s.Server.Stop(ctx)
+	return errors.Join(httpErr, s.grpcHandler.Stop(ctx))
+}
+
+// NewHTTPServer serves HTTP, gRPC-Web and native gRPC per request on one
+// HTTP/1.1 and HTTP/2 listener, without classifying connections.
+func NewHTTPServer(opts *Opts, grpcServers *GRPCServers) (*APIServer, error) {
+	if opts.ServerConfig.GetHttp().GetAddr() == "" {
+		return nil, errors.New("server.http.addr must be set: the shared endpoint cannot bind an empty address")
+	}
+	srv, err := newHTTPServer(opts, grpcServers.Handler)
+	if err != nil {
+		return nil, err
+	}
+	if legacyGRPCListenerEnabled(opts.ServerConfig) {
+		log.NewHelper(opts.Logger).Warnw("msg", fmt.Sprintf("the gRPC-only listener on %q is deprecated; use the shared HTTP endpoint and set server.legacy_grpc_listener to false when all clients have moved", opts.ServerConfig.GetGrpc().GetAddr()))
+	}
+	return &APIServer{Server: srv, grpcHandler: grpcServers.Handler}, nil
+}
+
+// newHTTPServer builds the shared HTTP listener and its request dispatcher.
+func newHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
+	tlsConfig, err := loadServerTLSConfig(opts.ServerConfig.GetHttp().GetTlsConfig())
+	if err != nil {
+		return nil, err
+	}
+	serverOpts := []http.ServerOption{
 		http.Middleware(httpMiddlewares(opts)...),
+		http.Address(opts.ServerConfig.GetHttp().GetAddr()),
 	}
 	// Prevent unmatched routes from falling through to http.DefaultServeMux,
 	// which would otherwise expose net/http/pprof's /debug/pprof/* endpoints
@@ -53,14 +90,13 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	if v := opts.ServerConfig.Http.Network; v != "" {
 		serverOpts = append(serverOpts, http.Network(v))
 	}
-	if v := opts.ServerConfig.Http.Addr; v != "" {
-		serverOpts = append(serverOpts, http.Address(v))
-	}
 	if v := opts.ServerConfig.Http.Timeout; v != nil {
 		serverOpts = append(serverOpts, http.Timeout(v.AsDuration()))
 	}
+	if tlsConfig != nil {
+		serverOpts = append(serverOpts, http.TLSConfig(tlsConfig))
+	}
 
-	// initialize the underneath http server
 	httpSrv := http.NewServer(serverOpts...)
 	// Relax secure cookie settings in development mode
 	opts.AuthSvc.SetDevMode(Version == "dev")
@@ -97,8 +133,27 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	// Include the OpenAPI spec handler
 	r.GET("/openapi.yaml", statusSvc.HandleOpenAPISpec)
 
-	// Handle grpc-web requests or fallback
+	// The standard HTTP server owns every connection and dispatches each
+	// stream independently, including mixed HTTP/2 upstream proxy pools.
+	wrappedServer.Protocols = new(h.Protocols)
+	wrappedServer.Protocols.SetHTTP1(true)
+	wrappedServer.Protocols.SetHTTP2(true)
+	wrappedServer.Protocols.SetUnencryptedHTTP2(true)
+	// Bound how long a client may take to deliver its request headers over
+	// HTTP/1.x, on either listener (slowloris protection). Response streaming
+	// is not affected. The bound does not protect HTTP/2 header completion:
+	// Go's HTTP/2 path clears the connection deadline, so that case is
+	// tracked separately.
+	wrappedServer.ReadHeaderTimeout = 60 * time.Second
+
 	wrappedServer.Handler = h.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		// Native gRPC uses grpc-go's HTTP adapter and its existing middleware.
+		// gRPC-Web must reach its wrapper even though its content type shares
+		// the application/grpc prefix. Native gRPC requires HTTP/2.
+		if req.ProtoMajor == 2 && isNativeGRPCContentType(req.Header.Get("Content-Type")) {
+			grpcSrv.ServeHTTP(res, req)
+			return
+		}
 		if wrappedGrpc.IsGrpcWebRequest(req) || wrappedGrpc.IsAcceptableGrpcCorsRequest(req) {
 			wrappedGrpc.ServeHTTP(res, req)
 			return
@@ -107,6 +162,12 @@ func NewHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	})
 
 	return wrappedServer, nil
+}
+
+func isNativeGRPCContentType(contentType string) bool {
+	contentType = strings.ToLower(contentType)
+	return strings.HasPrefix(contentType, "application/grpc") &&
+		!strings.HasPrefix(contentType, "application/grpc-web")
 }
 
 // httpMiddlewares returns the middleware chain for the HTTP server.
