@@ -35,6 +35,33 @@ type CommitRecord struct {
 	// the last push (e.g. a bare `git push` with no new commits, or a
 	// `git tag && git push --tags` over already-pushed commits).
 	Tracked bool `json:"tracked,omitempty"`
+	// Joined is set on a commit in no session that replaced lines of a
+	// session, and so joined that session (spec issue-3639 R-010). It maps
+	// each joined session ID to the files of the commit, and each file to the
+	// fingerprints of the lines that the replacing hunks added. The push
+	// fills it in.
+	Joined map[string]map[string][]string `json:"joined,omitempty"`
+}
+
+// AllSessionIDs returns the sessions of the commit and the sessions that it
+// joined, without duplicates, in no fixed order.
+func (r *CommitRecord) AllSessionIDs() []string {
+	out := make([]string, 0, len(r.SessionIDs)+len(r.Joined))
+	seen := make(map[string]struct{}, cap(out))
+	for _, id := range r.SessionIDs {
+		if _, dup := seen[id]; !dup {
+			seen[id] = struct{}{}
+			out = append(out, id)
+		}
+	}
+	for id := range r.Joined {
+		if _, dup := seen[id]; !dup {
+			seen[id] = struct{}{}
+			out = append(out, id)
+		}
+	}
+
+	return out
 }
 
 // SaveCommitRecord writes a commit record to <dir>/chainloop-trace/commits/<sha>.json.

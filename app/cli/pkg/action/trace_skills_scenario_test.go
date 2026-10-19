@@ -152,7 +152,7 @@ func TestSkillScenario(t *testing.T) {
 	require.NoError(t, err)
 
 	sessions := buildSessionEvidence(ctx, store, repoRoot, tracegit.NewGoGitClient(),
-		map[string][]*state.CommitRecord{sessionID: nil}, records, aicodingsession.ModeCoding, zerolog.Nop())
+		map[string][]*state.CommitRecord{sessionID: nil}, records, nil, aicodingsession.ModeCoding, zerolog.Nop())
 	require.Len(t, sessions, 1)
 
 	adder := &fakeMaterialAdder{realDigests: true}

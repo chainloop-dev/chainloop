@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/attribution"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -300,6 +299,10 @@ func (f *fakeBranchClient) CommitLines(string, string) ([]tracegit.FileLines, er
 }
 
 func (f *fakeBranchClient) FileAt(string, string, string) ([]byte, error) { return nil, nil }
+
+func (f *fakeBranchClient) Blame(string, string, string) ([]tracegit.BlameLine, error) {
+	return nil, nil
+}
 
 func (f *fakeBranchClient) CommitHeadInfo(string) (string, string, error) { return "", "", nil }
 func (f *fakeBranchClient) HeadAuthorTime(string) (time.Time, error)      { return time.Time{}, nil }
@@ -1219,17 +1222,12 @@ func buildSessionCodeChanges(t *testing.T, store *state.Store, dir, sha, session
 	client := tracegit.NewGoGitClient()
 	cc, err := client.CodeChangesForCommits(dir, []string{sha})
 	require.NoError(t, err)
-	attrs, err := store.LoadAllAILineAttributions()
-	require.NoError(t, err)
-	ledgers := make(map[string]*state.AILineAttribution, len(attrs))
-	for _, a := range attrs {
-		ledgers[a.SessionID] = a
-	}
 	commits := []*state.CommitRecord{{SHA: sha, SessionIDs: []string{sessionID}}}
-	lines := sessionCommitLines(client, dir, commits, map[string][]tracegit.FileLines{}, zerolog.Nop())
-	attribution.Enrich(sessionID, ledgers, lines, cc)
+	got := sessionCodeChanges(client, dir, sessionID, commits, loadLedgers(store, zerolog.Nop()), newLineCache(client, dir, zerolog.Nop()), func(string) bool { return false }, zerolog.Nop())
+	require.NotNil(t, got)
+	require.Equal(t, cc.LinesAdded, got.LinesAdded)
 
-	return cc
+	return got
 }
 
 // requireFileAttribution finds path in changes.Files and asserts attribution

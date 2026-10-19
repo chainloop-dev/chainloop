@@ -16,6 +16,7 @@
 package attribution
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -67,7 +68,7 @@ func TestEnrich_Legacy(t *testing.T) {
 			},
 		}
 
-		Enrich(testSession, nil, nil, changes)
+		Enrich(testSession, nil, nil, nil, changes)
 
 		assert.Equal(t, 10, changes.HumanLinesAdded)
 		assert.Equal(t, 4, changes.HumanLinesRemoved)
@@ -95,7 +96,7 @@ func TestEnrich_Legacy(t *testing.T) {
 			},
 		}
 
-		Enrich(testSession, ledgers, nil, changes)
+		Enrich(testSession, ledgers, nil, nil, changes)
 
 		assert.Equal(t, trace.AttributionAI, changes.Files[0].Attribution)
 		assert.Equal(t, trace.AttributionAI, changes.Files[1].Attribution)
@@ -115,7 +116,7 @@ func TestEnrich_Legacy(t *testing.T) {
 			},
 		}
 
-		Enrich(testSession, ledgers, nil, changes)
+		Enrich(testSession, ledgers, nil, nil, changes)
 
 		assert.Equal(t, trace.AttributionAI, changes.Files[0].Attribution)
 		assert.Equal(t, []string{testSession}, changes.Files[0].SessionIDs)
@@ -141,7 +142,7 @@ func TestEnrich_Legacy(t *testing.T) {
 			},
 		}
 
-		Enrich(testSession, ledgers, nil, changes)
+		Enrich(testSession, ledgers, nil, nil, changes)
 
 		assert.Equal(t, trace.AttributionAI, changes.Files[0].Attribution)
 		assert.Equal(t, []string{testSession}, changes.Files[0].SessionIDs)
@@ -164,7 +165,7 @@ func TestEnrich_Legacy(t *testing.T) {
 			},
 		}
 
-		Enrich(testSession, ledgers, nil, changes)
+		Enrich(testSession, ledgers, nil, nil, changes)
 
 		assert.Equal(t, trace.AttributionAI, changes.Files[0].Attribution)
 		assert.Equal(t, trace.AttributionHuman, changes.Files[1].Attribution)
@@ -258,7 +259,7 @@ func TestEnrich_Lines(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			changes := &aicodingsession.CodeChanges{Files: []aicodingsession.FileChange{{Path: testFile}}}
 
-			Enrich(testSession, tc.ledgers, tc.commits, changes)
+			Enrich(testSession, tc.ledgers, tc.commits, nil, changes)
 
 			f := changes.Files[0]
 			assert.Equal(t, tc.want, split{f.AILinesAdded, f.AILinesRemoved, f.HumanLinesAdded, f.HumanLinesRemoved}, "file split")
@@ -266,6 +267,103 @@ func TestEnrich_Lines(t *testing.T) {
 				"session totals are the sum of the files")
 			assert.Equal(t, trace.AttributionAI, f.Attribution, "the marker for older platforms still names the files that the session edited")
 			assert.Equal(t, []string{testSession}, f.SessionIDs)
+		})
+	}
+}
+
+func TestEnrich_Net(t *testing.T) {
+	type split struct{ aiAdded, aiRemoved, humanAdded, humanRemoved int }
+
+	const c1, c2, c3 = "c1", "c2", "c3"
+	tipOf := func(lines ...string) []tracegit.BlameLine {
+		// Each entry is "sha:text".
+		out := make([]tracegit.BlameLine, 0, len(lines))
+		for _, l := range lines {
+			sha, text, _ := strings.Cut(l, ":")
+			out = append(out, tracegit.BlameLine{SHA: sha, Text: text})
+		}
+
+		return out
+	}
+	five := []string{"a", "b", "c", "d", "e"}
+	ownCommit := func(sha string, added, removed []string) CommitLines {
+		return CommitLines{SHA: sha, SessionIDs: []string{testSession}, Files: []tracegit.FileLines{{Path: testFile, Added: added, Removed: removed}}}
+	}
+
+	testCases := []struct {
+		name    string
+		ledgers map[string]*state.AILineAttribution
+		commits []CommitLines
+		tip     map[string][]tracegit.BlameLine
+		want    split
+	}{
+		{
+			// Case 3 of the spec: a later commit of the session replaces an
+			// AI line by hand. Each line counts once (R-003).
+			name:    "a replaced line of the session counts once",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, five, nil)},
+			commits: []CommitLines{
+				ownCommit(c1, five, nil),
+				ownCommit(c2, []string{"C"}, []string{"c"}),
+			},
+			tip:  map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e")},
+			want: split{aiAdded: 4, humanAdded: 1, humanRemoved: 1},
+		},
+		{
+			// Case 2 of the spec: a commit in no session replaces an AI line
+			// and joins the session (R-010). Its replacing lines are human,
+			// and its removals of the session's lines do not count again.
+			name:    "a joined commit adds human lines of its replacing hunks",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, five, nil)},
+			commits: []CommitLines{
+				ownCommit(c1, five, nil),
+				{SHA: c2, Files: []tracegit.FileLines{{Path: testFile, Added: []string{"C", "x"}, Removed: []string{"c"}}},
+					Joined: map[string][]string{testFile: fps("C")}},
+			},
+			tip:  map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e", c2+":x")},
+			want: split{aiAdded: 4, humanAdded: 1},
+		},
+		{
+			// Case 4 of the spec: a commit of another session replaces the
+			// line. The session keeps only what is still there.
+			name:    "lines that a later commit outside the session replaced are gone",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, five, nil)},
+			commits: []CommitLines{ownCommit(c1, five, nil)},
+			tip:     map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c3+":C", c1+":d", c1+":e")},
+			want:    split{aiAdded: 4},
+		},
+		{
+			name: "a line of another session of the commit counts for neither",
+			ledgers: map[string]*state.AILineAttribution{
+				testSession:  ledger(testSession, testFile, []string{"a"}, nil),
+				otherSession: ledger(otherSession, testFile, []string{"b"}, nil),
+			},
+			commits: []CommitLines{{SHA: c1, SessionIDs: []string{testSession, otherSession},
+				Files: []tracegit.FileLines{{Path: testFile, Added: []string{"a", "b", "h"}}}}},
+			tip:  map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c1+":h")},
+			want: split{aiAdded: 1, humanAdded: 1},
+		},
+		{
+			name:    "a file that the pushed commit does not hold adds nothing",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, five, []string{"z"})},
+			commits: []CommitLines{
+				ownCommit(c1, five, nil),
+				ownCommit(c2, nil, append([]string{"z"}, five...)),
+			},
+			tip:  map[string][]tracegit.BlameLine{testFile: nil},
+			want: split{aiRemoved: 1, humanRemoved: 5},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			changes := &aicodingsession.CodeChanges{Files: []aicodingsession.FileChange{{Path: testFile}}}
+
+			Enrich(testSession, tc.ledgers, tc.commits, tc.tip, changes)
+
+			f := changes.Files[0]
+			assert.Equal(t, tc.want, split{f.AILinesAdded, f.AILinesRemoved, f.HumanLinesAdded, f.HumanLinesRemoved})
+			assert.Equal(t, tc.want, split{changes.AILinesAdded, changes.AILinesRemoved, changes.HumanLinesAdded, changes.HumanLinesRemoved})
 		})
 	}
 }

@@ -25,6 +25,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	lineOne  = "one"
+	lineTwo  = "two"
+	lineFour = "four"
+)
+
 func TestCommitLinesAndFileAt(t *testing.T) {
 	dir := t.TempDir()
 	run := func(args ...string) string { return gitOutput(dir, args...) }
@@ -60,9 +66,10 @@ func TestCommitLinesAndFileAt(t *testing.T) {
 				got, err := c.CommitLines(dir, root)
 				require.NoError(t, err)
 				sortFileLines(got)
+				rootA, rootGone := []string{lineOne, lineTwo, "three"}, []string{"bye"}
 				assert.Equal(t, []FileLines{
-					{Path: "a.txt", Added: []string{"one", "two", "three"}},
-					{Path: "gone.txt", Added: []string{"bye"}},
+					{Path: "a.txt", Added: rootA, Hunks: []Hunk{{OldStart: 1, Added: rootA}}},
+					{Path: "gone.txt", Added: rootGone, Hunks: []Hunk{{OldStart: 1, Added: rootGone}}},
 				}, got, "binary files are left out")
 			})
 
@@ -70,11 +77,15 @@ func TestCommitLinesAndFileAt(t *testing.T) {
 				got, err := c.CommitLines(dir, second)
 				require.NoError(t, err)
 				sortFileLines(got)
+				two, upperTwo, bye := []string{lineTwo}, []string{"TWO"}, []string{"bye"}
 				assert.Equal(t, []FileLines{
-					{Path: "a.txt", Added: []string{"TWO", "four"}, Removed: []string{"two"}},
-					{Path: "gone.txt", Removed: []string{"bye"}},
-					{Path: "new.txt", Added: []string{"hello"}},
-					{Path: "with space.txt", Added: []string{"spaced"}},
+					{Path: "a.txt", Added: []string{upperTwo[0], lineFour}, Removed: two, Hunks: []Hunk{
+						{OldStart: 2, Removed: two, Added: upperTwo},
+						{OldStart: 4, Added: []string{lineFour}},
+					}},
+					{Path: "gone.txt", Removed: bye, Hunks: []Hunk{{OldStart: 1, Removed: bye}}},
+					{Path: "new.txt", Added: []string{"hello"}, Hunks: []Hunk{{OldStart: 1, Added: []string{"hello"}}}},
+					{Path: "with space.txt", Added: []string{"spaced"}, Hunks: []Hunk{{OldStart: 1, Added: []string{"spaced"}}}},
 				}, got)
 			})
 
@@ -99,10 +110,46 @@ func TestCommitLinesAndFileAt(t *testing.T) {
 				_, err := c.CommitLines(dir, "deadbeef00000000000000000000000000000000")
 				assert.Error(t, err)
 			})
+
+			t.Run("blame names the last writer of each line", func(t *testing.T) {
+				got, err := c.Blame(dir, second, "a.txt")
+				require.NoError(t, err)
+				assert.Equal(t, []BlameLine{
+					{SHA: root, Text: lineOne},
+					{SHA: second, Text: "TWO"},
+					{SHA: root, Text: "three"},
+					{SHA: second, Text: lineFour},
+				}, got)
+
+				got, err = c.Blame(dir, second+"^", "a.txt")
+				require.NoError(t, err)
+				assert.Len(t, got, 3, "a revision name resolves")
+
+				got, err = c.Blame(dir, second, "gone.txt")
+				require.NoError(t, err)
+				assert.Nil(t, got, "a file the commit does not hold has no lines")
+			})
 		})
 	}
 }
 
 func sortFileLines(fl []FileLines) {
 	sort.Slice(fl, func(i, j int) bool { return fl[i].Path < fl[j].Path })
+}
+
+func TestGoGitBlameFallback(t *testing.T) {
+	dir := t.TempDir()
+	run := func(args ...string) string { return gitOutput(dir, args...) }
+	run("init", "-b", "main")
+	run("config", "user.email", "test@test.com")
+	run("config", "user.name", "Test")
+	run("config", "commit.gpgsign", "false")
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "a.txt"), []byte("one\ntwo\n"), 0600))
+	run("add", ".")
+	run("commit", "-m", "root")
+	root := run("rev-parse", "HEAD")
+
+	got, err := goGitBlame(dir, "HEAD", "a.txt")
+	require.NoError(t, err)
+	assert.Equal(t, []BlameLine{{SHA: root, Text: lineOne}, {SHA: root, Text: lineTwo}}, got)
 }

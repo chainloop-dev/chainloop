@@ -20,8 +20,10 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strconv"
 	"strings"
 
+	gogit "github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
 	fdiff "github.com/go-git/go-git/v6/plumbing/format/diff"
 	"github.com/go-git/go-git/v6/plumbing/object"
@@ -80,15 +82,39 @@ func (c *GoGitClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 			fl.Path = from.Path()
 		}
 
-		for _, chunk := range fp.Chunks() {
-			switch chunk.Type() {
-			case fdiff.Add:
-				fl.Added = append(fl.Added, splitLines(chunk.Content())...)
-			case fdiff.Delete:
-				fl.Removed = append(fl.Removed, splitLines(chunk.Content())...)
-			case fdiff.Equal:
+		// A hunk is a run of removed and added chunks between two equal ones.
+		// oldLine is the line of the parent's file that the next chunk starts
+		// at.
+		oldLine := 1
+		var cur *Hunk
+		closeHunk := func() {
+			if cur != nil {
+				fl.Hunks = append(fl.Hunks, *cur)
+				cur = nil
 			}
 		}
+		for _, chunk := range fp.Chunks() {
+			lines := splitLines(chunk.Content())
+			switch chunk.Type() {
+			case fdiff.Equal:
+				closeHunk()
+				oldLine += len(lines)
+			case fdiff.Delete:
+				if cur == nil {
+					cur = &Hunk{OldStart: oldLine}
+				}
+				cur.Removed = append(cur.Removed, lines...)
+				fl.Removed = append(fl.Removed, lines...)
+				oldLine += len(lines)
+			case fdiff.Add:
+				if cur == nil {
+					cur = &Hunk{OldStart: oldLine}
+				}
+				cur.Added = append(cur.Added, lines...)
+				fl.Added = append(fl.Added, lines...)
+			}
+		}
+		closeHunk()
 		out = append(out, fl)
 	}
 
@@ -140,8 +166,16 @@ func (c *ExecClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 
 	var out []FileLines
 	var cur *FileLines
+	var hunk *Hunk
 	var binary, inHunk bool
+	closeHunk := func() {
+		if cur != nil && hunk != nil {
+			cur.Hunks = append(cur.Hunks, *hunk)
+		}
+		hunk = nil
+	}
 	flush := func() {
+		closeHunk()
 		if cur != nil && !binary {
 			out = append(out, *cur)
 		}
@@ -172,6 +206,7 @@ func (c *ExecClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 				binary = true
 			case strings.HasPrefix(line, "@@"):
 				inHunk = true
+				hunk = &Hunk{OldStart: hunkOldStart(line)}
 			}
 
 			continue
@@ -179,15 +214,40 @@ func (c *ExecClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 
 		switch {
 		case strings.HasPrefix(line, "@@"):
+			closeHunk()
+			hunk = &Hunk{OldStart: hunkOldStart(line)}
 		case strings.HasPrefix(line, "+"):
 			cur.Added = append(cur.Added, line[1:])
+			hunk.Added = append(hunk.Added, line[1:])
 		case strings.HasPrefix(line, "-"):
 			cur.Removed = append(cur.Removed, line[1:])
+			hunk.Removed = append(hunk.Removed, line[1:])
 		}
 	}
 	flush()
 
 	return out, nil
+}
+
+// hunkOldStart returns the first line of the parent's file that a hunk
+// header "@@ -a,b +c,d @@" covers. A hunk that removes nothing gives a as the
+// line before the insertion, so the hunk starts at a+1.
+func hunkOldStart(header string) int {
+	fields := strings.Fields(header)
+	if len(fields) < 2 {
+		return 0
+	}
+
+	start, count, hasCount := strings.Cut(strings.TrimPrefix(fields[1], "-"), ",")
+	a, err := strconv.Atoi(start)
+	if err != nil {
+		return 0
+	}
+	if hasCount && count == "0" {
+		return a + 1
+	}
+
+	return a
 }
 
 // FileAt returns the content of path at the commit, or nil when the commit
@@ -233,4 +293,97 @@ func splitLines(text string) []string {
 	}
 
 	return lines
+}
+
+// Blame returns the last writer of each line of path at rev. It runs the git
+// binary, which is many times faster than the go-git blame on a long history,
+// and falls back to go-git when no git binary is found.
+func (c *GoGitClient) Blame(repoRoot, rev, path string) ([]BlameLine, error) {
+	if _, err := exec.LookPath("git"); err != nil {
+		return goGitBlame(repoRoot, rev, path)
+	}
+
+	return blamePorcelain(c, repoRoot, rev, path)
+}
+
+// Blame returns the last writer of each line of path at rev.
+func (c *ExecClient) Blame(repoRoot, rev, path string) ([]BlameLine, error) {
+	return blamePorcelain(c, repoRoot, rev, path)
+}
+
+// blamePorcelain runs `git blame --porcelain` and reads the commit and the
+// text of each line. A path that rev does not hold has no lines.
+func blamePorcelain(c Client, repoRoot, rev, path string) ([]BlameLine, error) {
+	content, err := c.FileAt(repoRoot, rev, path)
+	if err != nil {
+		return nil, err
+	}
+	if content == nil {
+		return nil, nil
+	}
+
+	raw, err := gitRawOutput(repoRoot, "blame", "--porcelain", rev, "--", path)
+	if err != nil {
+		return nil, fmt.Errorf("blame %s at %s: %w", path, rev, err)
+	}
+
+	// Each line starts with a header "<sha> <orig> <final> [<count>]",
+	// followed on the first use of a commit by key-value lines, and ends with
+	// its text after a tab.
+	var out []BlameLine
+	var sha string
+	for _, line := range strings.Split(string(raw), "\n") {
+		if text, ok := strings.CutPrefix(line, "\t"); ok {
+			out = append(out, BlameLine{SHA: sha, Text: text})
+			continue
+		}
+		if fields := strings.Fields(line); len(fields) >= 3 && len(fields[0]) == 40 && isHex(fields[0]) {
+			sha = fields[0]
+		}
+	}
+
+	return out, nil
+}
+
+// goGitBlame blames with go-git, for hosts with no git binary.
+func goGitBlame(repoRoot, rev, path string) ([]BlameLine, error) {
+	repo, err := openRepo(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("open repo: %w", err)
+	}
+
+	hash, err := repo.ResolveRevision(plumbing.Revision(rev))
+	if err != nil {
+		return nil, fmt.Errorf("resolve %s: %w", rev, err)
+	}
+	commit, err := repo.CommitObject(*hash)
+	if err != nil {
+		return nil, fmt.Errorf("get commit %s: %w", rev, err)
+	}
+	if _, err := commit.File(path); errors.Is(err, object.ErrFileNotFound) {
+		return nil, nil
+	}
+
+	res, err := gogit.Blame(commit, path)
+	if err != nil {
+		return nil, fmt.Errorf("blame %s at %s: %w", path, rev, err)
+	}
+
+	out := make([]BlameLine, 0, len(res.Lines))
+	for _, l := range res.Lines {
+		out = append(out, BlameLine{SHA: l.Hash.String(), Text: l.Text})
+	}
+
+	return out, nil
+}
+
+// isHex reports whether s holds only lowercase hexadecimal digits.
+func isHex(s string) bool {
+	for _, r := range s {
+		if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
+			return false
+		}
+	}
+
+	return true
 }
