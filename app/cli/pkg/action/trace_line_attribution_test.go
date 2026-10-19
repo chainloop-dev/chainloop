@@ -118,6 +118,7 @@ func (r *lineRepo) push() map[string]pushed {
 	require.NoError(r.t, err)
 
 	client := tracegit.NewGitClient()
+	records = filterCurrentBranchCommits(client, r.dir, records, zerolog.Nop())
 	ledgers := loadLedgers(r.store, zerolog.Nop())
 	affected, failed := scanReplacements(client, r.store, r.dir, records, ledgers, zerolog.Nop())
 	require.Empty(r.t, failed)

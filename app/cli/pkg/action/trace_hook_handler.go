@@ -1076,13 +1076,14 @@ func sessionCodeChanges(gitClient tracegit.Client, repoRoot, sessionID string, c
 
 	attribution.FilterGenerated(codeChanges, isGenerated)
 
-	// A legacy file keeps the range rule, which needs no blame.
+	// A legacy file keeps the range rule, which needs no blame. A file that a
+	// later commit renamed is blamed under its path at HEAD (R-007).
 	tip := make(map[string][]tracegit.BlameLine, len(codeChanges.Files))
 	for _, f := range codeChanges.Files {
 		if l := ledgers[sessionID]; l != nil && l.Legacy[f.Path] {
 			continue
 		}
-		if lines, ok := cache.blame(f.Path); ok {
+		if lines, ok := cache.blame(cache.headPath(shas, f.Path)); ok {
 			tip[f.Path] = lines
 		}
 	}
@@ -1126,6 +1127,7 @@ type lineCache struct {
 	log      zerolog.Logger
 	commits  map[string][]tracegit.FileLines
 	blames   map[string][]tracegit.BlameLine
+	renames  map[string]map[string]string
 }
 
 func newLineCache(client tracegit.Client, repoRoot string, log zerolog.Logger) *lineCache {
@@ -1135,7 +1137,36 @@ func newLineCache(client tracegit.Client, repoRoot string, log zerolog.Logger) *
 		log:      log,
 		commits:  make(map[string][]tracegit.FileLines),
 		blames:   make(map[string][]tracegit.BlameLine),
+		renames:  make(map[string]map[string]string),
 	}
+}
+
+// headPath returns the path at HEAD of a file that the last of the commits
+// that changed it holds at path. A later commit can have renamed the file. It
+// returns path when no commit can be read or the renames cannot be read.
+func (c *lineCache) headPath(shas []string, path string) string {
+	for _, sha := range slices.Backward(shas) {
+		lines, ok := c.commit(sha)
+		if !ok || !slices.ContainsFunc(lines, func(fl tracegit.FileLines) bool { return fl.Path == path }) {
+			continue
+		}
+
+		renames, ok := c.renames[sha]
+		if !ok {
+			var err error
+			if renames, err = c.client.Renames(c.repoRoot, sha, "HEAD"); err != nil {
+				c.log.Debug().Err(err).Str("sha", sha).Msg("could not read the renames since a commit")
+			}
+			c.renames[sha] = renames
+		}
+		if to, ok := renames[path]; ok {
+			return to
+		}
+
+		return path
+	}
+
+	return path
 }
 
 // commit returns the lines that a commit changed, and false when the commit

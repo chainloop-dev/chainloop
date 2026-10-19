@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -129,6 +130,66 @@ func TestCommitLinesAndFileAt(t *testing.T) {
 				got, err = c.Blame(dir, second, "gone.txt")
 				require.NoError(t, err)
 				assert.Nil(t, got, "a file the commit does not hold has no lines")
+			})
+		})
+	}
+}
+
+func TestCommitLinesRenames(t *testing.T) {
+	dir := t.TempDir()
+	run := func(args ...string) string { return gitOutput(dir, args...) }
+	write := func(name, content string) {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, name), []byte(content), 0600))
+	}
+
+	run("init", "-b", "main")
+	run("config", "user.email", "test@test.com")
+	run("config", "user.name", "Test")
+	run("config", "commit.gpgsign", "false")
+	run("config", "diff.renames", "false")
+
+	body := "one\ntwo\nthree\nfour\nfive\nsix\n"
+	write("a.txt", body)
+	write("b.txt", body+"seven\n")
+	run("add", ".")
+	run("commit", "-m", "root")
+	root := run("rev-parse", "HEAD")
+
+	run("mv", "a.txt", "moved.txt")
+	run("mv", "b.txt", "changed.txt")
+	write("changed.txt", strings.Replace(body+"seven\n", lineTwo, "TWO", 1))
+	run("add", "-A")
+	run("commit", "-m", "rename")
+	renamed := run("rev-parse", "HEAD")
+
+	run("mv", "moved.txt", "again.txt")
+	run("commit", "-m", "rename again")
+
+	clients := map[string]Client{"gogit": NewGoGitClient(), "exec": NewExecClient()}
+	for name, c := range clients {
+		t.Run(name, func(t *testing.T) {
+			t.Run("a renamed file keeps its unchanged lines", func(t *testing.T) {
+				got, err := c.CommitLines(dir, renamed)
+				require.NoError(t, err)
+				sortFileLines(got)
+				two, upperTwo := []string{lineTwo}, []string{"TWO"}
+				assert.Equal(t, []FileLines{
+					{Path: "changed.txt", OldPath: "b.txt", Added: upperTwo, Removed: two, Hunks: []Hunk{{OldStart: 2, Removed: two, Added: upperTwo}}},
+					{Path: "moved.txt", OldPath: "a.txt"},
+				}, got)
+			})
+
+			t.Run("renames between two commits", func(t *testing.T) {
+				got, err := c.Renames(dir, root, "HEAD")
+				require.NoError(t, err)
+				assert.Equal(t, map[string]string{"a.txt": "again.txt", "b.txt": "changed.txt"}, got)
+
+				got, err = c.Renames(dir, "HEAD", "HEAD")
+				require.NoError(t, err)
+				assert.Empty(t, got)
+
+				_, err = c.Renames(dir, "deadbeef00000000000000000000000000000000", "HEAD")
+				assert.Error(t, err)
 			})
 		})
 	}
