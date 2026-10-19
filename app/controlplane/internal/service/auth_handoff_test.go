@@ -43,9 +43,10 @@ import (
 )
 
 const (
-	testHMACSecret = "test-secret"
-	testCLIBack    = "http://localhost:1234/auth/callback"
-	testAppBack    = "https://app.chainloop.dev/login/callback"
+	testHMACSecret   = "test-secret"
+	testCLIBack      = "http://localhost:1234/auth/callback"
+	testAppBack      = "https://app.chainloop.dev/login/callback"
+	testDownloadBack = "/download/sha256:abc"
 	// parses with no host, but browsers resolve it off-origin
 	testMultiSlashBack = "////evil.example/cb"
 )
@@ -181,10 +182,24 @@ func TestLoginHandlerCodeChallenge(t *testing.T) {
 			wantCode:    http.StatusTemporaryRedirect,
 		},
 		{
-			name:        "download flow not affected by the legacy setting",
-			params:      map[string]string{oauth.QueryParamCallback: "/download/sha256:abc"},
+			name:          "download flow not affected by the legacy setting",
+			params:        map[string]string{oauth.QueryParamCallback: testDownloadBack, oauth.QueryParamCodeChallenge: testChallenge, oauth.QueryParamCodeChallengeMethod: oauth.CodeChallengeMethodS256},
+			wantChallenge: testChallenge,
+			allowLegacy:   proto.Bool(false),
+			wantCode:      http.StatusTemporaryRedirect,
+		},
+		{
+			name:     "download requires challenge even with legacy allowed",
+			params:   map[string]string{oauth.QueryParamCallback: testDownloadBack},
+			wantCode: http.StatusBadRequest,
+			wantErr:  "download login requires a handoff code",
+		},
+		{
+			name:        "relative callbacks no longer bypass legacy setting",
+			params:      map[string]string{oauth.QueryParamCallback: "/other/callback"},
 			allowLegacy: proto.Bool(false),
-			wantCode:    http.StatusTemporaryRedirect,
+			wantCode:    http.StatusBadRequest,
+			wantErr:     "upgrade",
 		},
 		{
 			// It parses with no host, but browsers resolve it off-origin
@@ -277,7 +292,10 @@ func TestDeliverLogin(t *testing.T) {
 		{name: "code exchange with legacy denied", callback: testCLIBack, challenge: testChallenge, allowLegacy: proto.Bool(false), wantCode: http.StatusTemporaryRedirect, wantHandoff: true},
 		{name: "legacy login", callback: testCLIBack, wantCode: http.StatusTemporaryRedirect, wantToken: true, wantLegacyInc: 1},
 		{name: "legacy login denied", callback: testCLIBack, allowLegacy: proto.Bool(false), wantCode: http.StatusBadRequest},
-		{name: "download flow", callback: "/download/sha256:abc", allowLegacy: proto.Bool(false), wantCode: http.StatusTemporaryRedirect, wantToken: true},
+		{name: "download flow", callback: testDownloadBack, challenge: testChallenge, allowLegacy: proto.Bool(false), wantCode: http.StatusTemporaryRedirect, wantHandoff: true},
+		{name: "download without challenge", callback: testDownloadBack, wantCode: http.StatusBadRequest},
+		{name: "download with token in callback", callback: "/download/sha256:abc?t=old", challenge: testChallenge, wantCode: http.StatusBadRequest},
+		{name: "download with handoff in callback", callback: "/download/sha256:abc?handoff=old", challenge: testChallenge, wantCode: http.StatusBadRequest},
 		{name: "multi-slash callback cookie", callback: testMultiSlashBack, allowLegacy: proto.Bool(false), wantCode: http.StatusBadRequest},
 		{name: "multi-slash callback cookie with legacy allowed", callback: testMultiSlashBack, wantCode: http.StatusBadRequest},
 		{name: "headless", callback: "", wantCode: http.StatusOK},
@@ -327,7 +345,11 @@ func TestDeliverLogin(t *testing.T) {
 				assert.Equal(t, "the-handoff-code", q.Get(oauth.QueryParamHandoff))
 				assert.Empty(t, q.Get(oauth.QueryParamLegacyToken))
 				assert.Equal(t, userID, handoffs.issued.userID)
-				assert.Equal(t, longLivedDuration, handoffs.issued.ttl)
+				if isDownloadCallback(tc.callback) {
+					assert.Equal(t, shortLivedDuration, handoffs.issued.ttl)
+				} else {
+					assert.Equal(t, longLivedDuration, handoffs.issued.ttl)
+				}
 				assert.Equal(t, tc.challenge, handoffs.issued.challenge)
 				assert.Equal(t, tc.callback, handoffs.issued.callback)
 			}
@@ -414,6 +436,23 @@ func TestExchangeHandoff(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, userID.String(), claims.UserID)
 		assert.WithinDuration(t, time.Now().Add(time.Hour), claims.ExpiresAt.Time, time.Minute)
+	})
+
+	t.Run("download clamps previously stored long lifetime", func(t *testing.T) {
+		svc := newHandoffTestService(nil, &fakeLoginHandoffs{exchanged: &biz.LoginHandoff{
+			UserID: userID, TokenTTL: longLivedDuration, Callback: testDownloadBack,
+		}}, nil)
+		resp, err := svc.ExchangeHandoff(context.Background(), &pb.AuthServiceExchangeHandoffRequest{
+			Handoff: "code", CodeVerifier: "verifier", Callback: testDownloadBack,
+		})
+		require.NoError(t, err)
+		claims := &user.CustomClaims{}
+		_, err = jwt.ParseWithClaims(resp.GetToken(), claims, func(_ *jwt.Token) (any, error) {
+			return []byte(testHMACSecret), nil
+		})
+		require.NoError(t, err)
+		assert.Equal(t, userID.String(), claims.UserID)
+		assert.WithinDuration(t, time.Now().Add(shortLivedDuration), claims.ExpiresAt.Time, time.Second)
 	})
 
 	reasons := []string{
