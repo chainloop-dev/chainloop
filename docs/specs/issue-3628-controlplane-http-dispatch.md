@@ -58,7 +58,9 @@ The control plane MUST serve native gRPC, gRPC-Web, HTTP/1.1, and HTTP/2 on its 
 
 ### R-002: Existing behavior
 The shared endpoint MUST retain the existing authentication, authorization, validation, status, tracing, and metrics behavior.
-- Done when: the authentication matrix in the original R-002 passes through the shared and legacy gRPC endpoints.
+- Done when: the control-plane cases in the original R-002 matrix pass through the shared endpoint.
+  Native gRPC cases also pass through the legacy gRPC endpoint.
+- CAS stream and download cases remain part of the separate CAS qualification under the parent ticket.
 - Focused protocol tests do not establish full alignment with this requirement.
 
 ### R-003: Existing endpoints remain available
@@ -155,7 +157,7 @@ None for this control-plane change. CAS transport selection remains separate wor
 ## Milestones
 
 1. **Shared server and ingress.** The control plane dispatches every request and the chart exposes the shared hostname.
-2. **Behavior qualification.** The full authentication matrix passes, and deployed controller tests check the documented configurations.
+2. **Behavior qualification.** The full control-plane authentication matrix passes, and deployed controller tests check the documented configurations.
 
 ## Risks
 
@@ -163,4 +165,4 @@ None for this control-plane change. CAS transport selection remains separate wor
 |------|------------|
 | The HTTP adapter differs from the native gRPC transport in performance or features. | Retain the legacy endpoint. Measure relevant workloads before client migration. Keep CAS on its current transport. |
 | A controller uses HTTP/1.1 upstream or needs extra HTTP/2 settings. | Supply protocol annotations and document prerequisites. Test deployed controller versions before production use. |
-| Focused tests miss authentication or authorization differences. | Keep the full original R-002 matrix as a qualification requirement. |
+| Focused tests miss authentication or authorization differences. | Keep all control-plane cases from the original R-002 matrix as a qualification requirement. |

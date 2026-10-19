@@ -22,7 +22,11 @@ When your code goes against this spec, say so in your PR, and supersede the entr
 
 # Spec issue-3628: Serve gRPC and HTTP from one endpoint per service
 
-Control-plane design superseded by [Spec issue-3628-controlplane-http-dispatch](issue-3628-controlplane-http-dispatch.md). CAS requirements remain open under the parent ticket.
+Control-plane requirements and design superseded by [Spec issue-3628-controlplane-http-dispatch](issue-3628-controlplane-http-dispatch.md).
+For the control plane, the requirements, constraints, proposal, diagram, decision records, milestones, and risks below are historical.
+Use the replacement spec for all control-plane implementation and qualification.
+Only CAS requirements remain in scope here.
+CAS transport selection and qualification remain open under the parent ticket.
 
 ## Summary
 
