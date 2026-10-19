@@ -8,6 +8,20 @@ In the tables, **Yes** means supported, **Partial** means supported with limits,
 
 Claude Code has the most complete support.
 
+## Setup
+
+How Trace is added to a repository and to an agent.
+
+| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
+|---------|---------------|-------------|--------|--------------|------------|
+| Hook installation and deletion | `chainloop trace init` installs the hooks of the selected agent. A second init changes nothing. `chainloop trace uninstall` deletes only the Chainloop hooks and keeps the other hooks of the agent. | Unknown | Unknown | Unknown | Unknown |
+| Trace run wrapper | `chainloop trace run -- <agent command>` gives the agent temporary hooks for one session. When the command exits, the configuration of the agent is the same as before. | Unknown | Unknown | Unknown | Unknown |
+| More than one agent in one repository | Two agents initialized in the same repository record their sessions separately, and each commit names the sessions of the agent that made it. | Unknown | Unknown | Unknown | Unknown |
+
+Why not Yes:
+
+- **All rows, all agents:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
+
 ## Session collection
 
 What the session evidence holds about the conversation.
@@ -18,6 +32,7 @@ What the session evidence holds about the conversation.
 | Token usage and cost | The evidence holds the tokens that the session used and their cost in USD. | Yes | No | Yes | Yes |
 | Model detection | The evidence names the primary model and the other models that the session used. | Yes | Partial | Yes | Yes |
 | Subagents | The evidence holds the conversations of the subagents, and their token usage, as part of the session. | Yes | No | No | No |
+| Missed session start | A session whose session-start hook did not fire is still recorded, from its first tool hook. | Unknown | Unknown | Unknown | Unknown |
 
 Why not Yes:
 
@@ -26,6 +41,7 @@ Why not Yes:
 - **Model detection, Cursor:** the primary model comes from the session-start hook. The transcript does not tell the models, so the evidence does not list the other models.
 - **Subagents, Cursor:** the provider does not read subagent conversations.
 - **Subagents, OpenCode:** a subagent runs in a child session with its own export. It is not part of the evidence of its parent session.
+- **Missed session start, all agents:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
 
 ## Code attribution
 
@@ -70,6 +86,7 @@ What the session was asked to build, and which skills it used.
 | Spec capture instruction | At session start, the agent is told to capture the specs of the session (tickets, documents, plans, images) in the spec folder. A plan is captured only when it comes from an external source or from the plan mode of the agent: an agreement in the chat is not a plan. A pasted image is not captured, also when the agent has a file path for it. The agent tells the user in one line when it captures a file. | Yes | Yes | Yes | Yes |
 | Spec capture reminder | At each user prompt, the agent is reminded to capture new or changed specs. | Yes | No | Yes | Yes |
 | Local spec sources read at push | A capture whose source is a local file holds only a header and a placeholder. Each push reads the file and records its current content, so the evidence follows the edits of the file. Only a regular text file of up to 1 MiB is read. Otherwise the push keeps the body that the agent wrote, or drops the capture with a warning when there is no body (spec issue-3561). | Yes | Yes | Yes | Yes |
+| Spec source role, title, and description | Each captured spec source holds the role, the title, and the description that the agent wrote in its header (spec issue-3531). | Yes | Unknown | Unknown | Unknown |
 | Skills tracking | The evidence lists the skills that the session used, with a copy of each skill as it ran. | Yes | No | Partial | Partial |
 | Spec source pointers | Exact copies of spec sources in the transcript (full file reads and file writes) are replaced with a pointer to the spec material, so the evidence does not hold the same content two or three times (spec issue-3556). | Yes | No | No | No |
 | Pasted image pointers | Each distinct image that the user pasted into the session, including images in prompts sent while the agent was busy, is stored once as an image spec entry, from the data in the transcript, with the title "Pasted image N" and no role. A repeated paste of the same image adds no entry. The inline image in the transcript is replaced with a pointer to that material. An image whose data cannot be decoded, or that the push could not store, stays inline, and the push continues. When the agent captured the same image, its entry is kept and no second entry is added (spec issue-3569). | Yes | No | No | No |
@@ -77,6 +94,7 @@ What the session was asked to build, and which skills it used.
 Why not Yes:
 
 - **Spec capture reminder, Cursor:** Cursor has no hook at each user prompt. The agent gets the session-start instruction only.
+- **Spec source role, title, and description, Cursor and OpenCode:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
 - **Skills tracking, Cursor:** the provider does not track skills. The evidence has no skill entries, which means "not recorded", not "no skill used".
 - **Skills tracking, OpenCode:** only the skills that the model starts with the `skill` tool are counted. Skills that the user starts, and skills used in subagents, are not.
 - **Spec source pointers, Cursor and OpenCode:** the provider has no finder for the copies in its transcript yet. For OpenCode, the rebuilt transcript holds no tool outputs, so only the write copies would apply.
@@ -148,4 +166,4 @@ A feature row maps to its checks by the feature name. When you rename a feature 
 make -C app/cli test-trace-e2e
 ```
 
-`CHAINLOOP_E2E_HARNESS`, `CHAINLOOP_E2E_MODEL`, and `CHAINLOOP_E2E_FEATURE` limit a run to some columns, models, or features (comma-separated). Set `CHAINLOOP_E2E_WORK_DIR` to keep the workspaces and the agent output. The results go to `e2e/results/`, or to `CHAINLOOP_E2E_RESULTS_DIR`. Only a run with no filter becomes the previous result of the next comparison.
+`CHAINLOOP_E2E_HARNESS`, `CHAINLOOP_E2E_MODEL`, and `CHAINLOOP_E2E_FEATURE` limit a run to some columns, models, or features. Separate the values with `;`, because feature names can hold commas. Set `CHAINLOOP_E2E_WORK_DIR` to keep the workspaces and the agent output. The results go to `e2e/results/`, or to `CHAINLOOP_E2E_RESULTS_DIR`. Only a run with no filter becomes the previous result of the next comparison.

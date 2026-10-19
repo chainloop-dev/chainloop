@@ -24,6 +24,9 @@ type Scenario struct {
 	Seed map[string]string
 	// Prompt is the only user prompt of the session.
 	Prompt string
+	// Checkout is the checkout where the agent commits and pushes, relative
+	// to the workspace base. Empty means the repository of the workspace.
+	Checkout string
 }
 
 // The fake secrets of the scenarios. They match the GitHub token rule of the
@@ -48,12 +51,19 @@ const (
 	scenarioEditAndCommit = "edit-and-commit"
 	scenarioTicket        = "ticket"
 	scenarioSkill         = "skill"
+	scenarioSubagent      = "subagent"
+	scenarioClone         = "clone"
 )
 
 const (
-	ticketPath  = "docs/ticket-e2e-42.md"
-	ticketTitle = "E2E-42: Add a farewell file"
-	skillName   = "e2e-farewell"
+	ticketPath   = "docs/ticket-e2e-42.md"
+	ticketTitle  = "E2E-42: Add a farewell file"
+	skillName    = "e2e-farewell"
+	subagentFile = "subagent.txt"
+	// cloneDir is the checkout that the clone scenario creates, relative to
+	// the workspace base. The bare remote is next to it.
+	cloneDir  = "clone"
+	cloneFile = "clone.txt"
 )
 
 // scenarios are the scenarios of the suite, by name.
@@ -94,5 +104,23 @@ Then run: git add farewell.txt && git commit -m "add farewell" && git push
 `,
 		},
 		Prompt: "This is an automated test. Use the " + skillName + " skill.",
+	},
+	scenarioSubagent: {
+		Name: scenarioSubagent,
+		Seed: map[string]string{readmePath: seedReadme},
+		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
+1. Start one subagent with your subagent tool. Tell it to create the file ` + subagentFile + ` with the single line: from the subagent.
+2. When the subagent is done, run this shell command: git add ` + subagentFile + ` && git commit -m "add subagent file" && git push`,
+	},
+	scenarioClone: {
+		Name:     scenarioClone,
+		Seed:     map[string]string{readmePath: seedReadme},
+		Checkout: cloneDir,
+		// Each step is a shell command of its own: a clone gets the git hooks
+		// only after the command that created it.
+		Prompt: `This is an automated test. Do exactly these steps, in order, each as a separate shell command, and nothing else:
+1. git clone ../remote.git ../` + cloneDir + `
+2. cd ../` + cloneDir + ` && printf 'from the clone\n' > ` + cloneFile + `
+3. cd ../` + cloneDir + ` && git add ` + cloneFile + ` && git commit -m "add clone file" && git push`,
 	},
 }

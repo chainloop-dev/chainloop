@@ -333,14 +333,20 @@ func LegacyCallbackAllowed(authConfig *conf.Auth) bool {
 	return authConfig == nil || authConfig.AllowLegacyLoginCallback == nil || authConfig.GetAllowLegacyLoginCallback()
 }
 
-// isLegacyDelivery tells if a login would put the token in an external callback URL. A relative
-// callback is the same-origin download flow, which is not part of the deprecation
+// isLegacyDelivery tells if a login would put the token in a callback URL.
 func isLegacyDelivery(callback, codeChallenge string) bool {
-	return callback != "" && codeChallenge == "" && !isRelativePath(callback)
+	return callback != "" && codeChallenge == ""
 }
 
 // checkLegacyCallback rejects a legacy delivery when the operator denied it
 func (svc *AuthService) checkLegacyCallback(callback, codeChallenge string) error {
+	if isDownloadCallback(callback) {
+		u, _ := url.Parse(callback)
+		query, err := url.ParseQuery(u.RawQuery)
+		if err != nil || query.Has(oauth.QueryParamLegacyToken) || query.Has(oauth.QueryParamHandoff) || codeChallenge == "" {
+			return errors.New("download login requires a handoff code, please open the download link again")
+		}
+	}
 	if isLegacyDelivery(callback, codeChallenge) && !LegacyCallbackAllowed(svc.authConfig) {
 		return errLegacyCallbackDenied
 	}
@@ -594,6 +600,10 @@ func (svc *AuthService) deliverLogin(ctx context.Context, w http.ResponseWriter,
 	}
 
 	callbackValue := callbackURLFromCookie.Value
+	if isDownloadCallback(callbackValue) {
+		// A download must never opt into a long-lived user session.
+		expiration = shortLivedDuration
+	}
 
 	// There is no callback, render the token in an HTML page with a copy button
 	if callbackValue == "" {
@@ -780,7 +790,11 @@ func (svc *AuthService) ExchangeHandoff(ctx context.Context, req *pb.AuthService
 		return nil, errLoginHandoffExchange
 	}
 
-	token, err := svc.userToken(h.UserID.String(), h.TokenTTL)
+	ttl := h.TokenTTL
+	if isDownloadCallback(h.Callback) {
+		ttl = shortLivedDuration
+	}
+	token, err := svc.userToken(h.UserID.String(), ttl)
 	if err != nil {
 		return nil, sl.LogAndMaskErr(ctx, fmt.Errorf("generating user token: %w", err), svc.log)
 	}

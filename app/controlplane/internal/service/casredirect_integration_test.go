@@ -110,7 +110,7 @@ func (s *casDownloadRBACIntegrationSuite) SetupTest() {
 		Logger:         s.L,
 	})
 
-	s.redirectSvc, err = NewCASRedirectService(s.CASMapping, casUC, &conf.Bootstrap_CASServer{DownloadUrl: "https://cas.example.test/download"})
+	s.redirectSvc, err = NewCASRedirectService(s.CASMapping, casUC, &conf.Bootstrap_CASServer{DownloadUrl: "https://cas.example.test/download"}, newHandoffTestService(nil, &fakeLoginHandoffs{}, nil))
 	s.Require().NoError(err)
 
 	s.credentialsSvc = NewCASCredentialsService(casUC, s.CASMapping, s.CASBackend, authzUC)
