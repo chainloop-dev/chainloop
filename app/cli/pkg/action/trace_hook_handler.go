@@ -814,9 +814,13 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 	// R-004), and a commit in no session joins it (R-010).
 	ledgers := loadLedgers(store, log)
 	affected, failed := scanReplacements(gitClient, store, repoRoot, allCommits, ledgers, log)
-	// A commit that could not be read stays untracked, so the next push reads
-	// it again.
-	scanned := slices.DeleteFunc(slices.Clone(allCommits), func(c *state.CommitRecord) bool { return failed[c.SHA] })
+	// A commit in no session that could not be read stays untracked, so the
+	// next push reads it again. It is never sent itself, so the retry does not
+	// send a session twice. A commit of a session is sent with its session, and
+	// is tracked like any other: a replacement in it that the scan missed is
+	// not found later.
+	retry := func(c *state.CommitRecord) bool { return failed[c.SHA] && len(c.SessionIDs) == 0 }
+	scanned := slices.DeleteFunc(slices.Clone(allCommits), retry)
 
 	// Discard commits that neither belong to nor joined a session (no AI
 	// agent involved).
@@ -825,7 +829,7 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 	for _, c := range allCommits {
 		if len(c.AllSessionIDs()) > 0 {
 			aiCommits = append(aiCommits, c)
-			if !c.Tracked {
+			if !c.Tracked && !retry(c) {
 				untrackedAICommits++
 			}
 		}
