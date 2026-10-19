@@ -226,13 +226,24 @@ type LineRange struct {
 
 // FileChange represents a single file modification in the session.
 type FileChange struct {
-	Path         string      `json:"path"`
-	Status       string      `json:"status"`
-	LinesAdded   int         `json:"lines_added,omitempty"`
-	LinesRemoved int         `json:"lines_removed,omitempty"`
-	Attribution  string      `json:"attribution,omitempty"`
-	LineRanges   []LineRange `json:"line_ranges,omitempty"`
-	SessionIDs   []string    `json:"session_ids,omitempty"`
+	Path         string `json:"path"`
+	Status       string `json:"status"`
+	LinesAdded   int    `json:"lines_added,omitempty"`
+	LinesRemoved int    `json:"lines_removed,omitempty"`
+	// Attribution is the file-level marker (ai or human). Platforms that
+	// predate the per-file split below derive the split from it.
+	Attribution string      `json:"attribution,omitempty"`
+	LineRanges  []LineRange `json:"line_ranges,omitempty"`
+	SessionIDs  []string    `json:"session_ids,omitempty"`
+	// AILinesAdded, AILinesRemoved, HumanLinesAdded and HumanLinesRemoved
+	// split the changed lines of the file between the session's agent and
+	// humans. The session totals in CodeChanges are their sums. A line that
+	// only another AI session of the same commit wrote or removed counts for
+	// neither side, so the sums can be lower than LinesAdded and LinesRemoved.
+	AILinesAdded      int `json:"ai_lines_added,omitempty"`
+	AILinesRemoved    int `json:"ai_lines_removed,omitempty"`
+	HumanLinesAdded   int `json:"human_lines_added,omitempty"`
+	HumanLinesRemoved int `json:"human_lines_removed,omitempty"`
 }
 
 // CodeChanges summarizes code modifications made during the session.

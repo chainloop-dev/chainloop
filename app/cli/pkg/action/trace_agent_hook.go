@@ -430,6 +430,7 @@ func shellCallKey(input *trace.HookInput) state.ShellCallKey {
 func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
 	client := tracegit.NewGoGitClient()
 	sigs := make(state.WorktreeSignatures)
+	heads := make(map[string]string)
 	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
 		sig, err := client.SnapshotWorktree(root)
 		if err != nil {
@@ -437,6 +438,11 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 			continue
 		}
 		sigs[root] = sig
+
+		// A checkout with no commit yet has no HEAD; its files count as new.
+		if sha, _, err := client.CommitHeadInfo(root); err == nil {
+			heads[root] = sha
+		}
 	}
 
 	if len(sigs) == 0 {
@@ -445,6 +451,9 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 
 	if err := store.SaveShellPreSignature(key, sigs); err != nil {
 		log.Debug().Err(err).Msg("pre-command: save worktree signature failed")
+	}
+	if err := store.SaveShellPreHeads(key, heads); err != nil {
+		log.Debug().Err(err).Msg("pre-command: save HEAD commits failed")
 	}
 }
 
@@ -796,8 +805,6 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 
 	before := provider.ResolveBeforeContent(store, input, after)
 
-	ranges, changed := attribution.ComputeLineRanges(before, after)
-
 	// Normalize to repo-relative path for storage — git diffs use relative paths,
 	// so ai-lines keys must match for commit correlation and attribution to work.
 	relPath, err := filepath.Rel(repoRoot, input.FilePath)
@@ -805,17 +812,33 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 		relPath = input.FilePath
 	}
 
-	if changed {
-		if err := store.RecordLineRanges(sessionID, relPath, ranges); err != nil {
-			log.Debug().Err(err).Msg("post-tool-use: record line ranges failed")
-		} else {
-			log.Debug().Int("ranges", len(ranges)).Str("file", relPath).Msg("line ranges recorded")
-		}
-	}
+	recordFileEdit(store, sessionID, relPath, before, after, log)
 
 	provider.CleanupAfterEdit(store, input)
 
 	return nil
+}
+
+// recordFileEdit records one agent edit of a file in the session's ledger.
+func recordFileEdit(store *state.Store, sessionID, relPath string, before, after []byte, log zerolog.Logger) {
+	// Lines of the session that changed since its last edit of the file were
+	// changed by someone else (R-002). They close before this edit records its
+	// own lines, so that a line this edit writes again is the edit's.
+	replaced := attribution.ReplacedLines(store.LoadAILineAttribution(sessionID).Open[relPath], before)
+	if err := store.SettleLines(sessionID, relPath, replaced); err != nil {
+		log.Debug().Err(err).Msg("post-tool-use: settle replaced lines failed")
+	}
+
+	edit := attribution.ComputeEdit(before, after)
+	if !edit.Changed {
+		return
+	}
+
+	if err := store.RecordEdit(sessionID, relPath, editRecord(edit)); err != nil {
+		log.Debug().Err(err).Msg("post-tool-use: record line ranges failed")
+	} else {
+		log.Debug().Int("ranges", len(edit.Ranges)).Str("file", relPath).Msg("line ranges recorded")
+	}
 }
 
 // recordCommandLineRanges diffs each worktree signature captured before a
@@ -833,8 +856,19 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 		return
 	}
 	defer store.DeleteShellPreSignature(key)
+	// A pre hook from an older CLI saved no HEAD. That case, and a heads file
+	// that cannot be read, fall back to the current HEAD.
+	heads, err := store.LoadShellPreHeads(key)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Debug().Err(err).Msg("post-command: cannot read pre-command HEAD commits; using the current HEAD")
+	}
 
 	for root, rootBefore := range before {
+		base := heads[root]
+		if base == "" {
+			base = "HEAD"
+		}
+
 		rootStore := store
 		if !sameDir(root, repoRoot) {
 			s, r, err := state.LocateFrom(root)
@@ -846,20 +880,41 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 			rootStore, root = s, r
 		}
 
-		recordRootChanges(rootStore, root, rootBefore, key.SessionID, log)
+		recordRootChanges(rootStore, root, base, rootBefore, key.SessionID, log)
 	}
 }
 
 // recordRootChanges diffs the signature of one checkout captured before a
 // shell command against its current worktree, and records every
-// created/modified file (whole-file range) and every deleted file as
-// AI-attributed. Enrich later caps the AI line count to each file's committed
-// diff totals, so whole-file ranges yield correct counts.
-func recordRootChanges(store *state.Store, repoRoot string, before map[string]string, sessionID string, log zerolog.Logger) {
-	after, err := tracegit.NewGoGitClient().SnapshotWorktree(repoRoot)
+// created/modified file and every deleted file as AI-attributed.
+//
+// The signature holds hashes, not content, so the content before the command
+// is not known. The file at base, the HEAD commit before the command, stands in
+// for it: lines the command did not touch are then not claimed, also when the
+// command commits its own change. Uncommitted lines are in the diff too. Those
+// that an earlier edit of the session recorded are left out (DropOpen); other
+// ones, such as uncommitted human lines, are claimed. An untracked file counts
+// as new.
+func recordRootChanges(store *state.Store, repoRoot, base string, before map[string]string, sessionID string, log zerolog.Logger) {
+	client := tracegit.NewGoGitClient()
+	after, err := client.SnapshotWorktree(repoRoot)
 	if err != nil {
 		log.Debug().Err(err).Str("root", repoRoot).Msg("post-command: worktree snapshot failed")
 		return
+	}
+
+	atBase := func(relPath string) []byte {
+		content, err := client.FileAt(repoRoot, base, filepath.ToSlash(relPath))
+		if err != nil {
+			return nil
+		}
+
+		return content
+	}
+
+	open := store.LoadAILineAttribution(sessionID).Open
+	record := func(relPath string, edit attribution.Edit) error {
+		return store.RecordEdit(sessionID, relPath, editRecord(attribution.DropOpen(edit, open[relPath])))
 	}
 
 	changed, deleted := attribution.ChangedPaths(before, after)
@@ -869,23 +924,31 @@ func recordRootChanges(store *state.Store, repoRoot string, before map[string]st
 			continue
 		}
 		// ChangedPaths already proved the file changed, so record it even when
-		// the result is empty (created empty or truncated) — ComputeLineRanges
-		// returns nil ranges for empty content, which marks the file AI-touched
-		// with zero added lines, matching the deletion-only treatment.
-		ranges, _ := attribution.ComputeLineRanges(nil, content)
-		if err := store.RecordLineRanges(sessionID, relPath, ranges); err != nil {
+		// the diff finds nothing (created empty, or restored to base): the
+		// file is then AI-touched with zero lines, as a deletion-only edit.
+		if err := record(relPath, attribution.ComputeEdit(atBase(relPath), content)); err != nil {
 			log.Debug().Err(err).Str("file", relPath).Msg("post-command: record line ranges failed")
 		}
 	}
 	for _, relPath := range deleted {
-		// nil ranges records the file as AI-touched (deletion-only), matching
-		// the file-writing hook's treatment of deletions.
-		if err := store.RecordLineRanges(sessionID, relPath, nil); err != nil {
+		// The removed lines are the file at base, matching the file-writing
+		// hook's treatment of deletions.
+		if err := record(relPath, attribution.ComputeEdit(atBase(relPath), nil)); err != nil {
 			log.Debug().Err(err).Str("file", relPath).Msg("post-command: record deletion failed")
 		}
 	}
 
 	log.Debug().Int("changed", len(changed)).Int("deleted", len(deleted)).Str("session_id", sessionID).Str("root", repoRoot).Msg("command line ranges recorded")
+}
+
+// editRecord converts a computed edit into its ledger record.
+func editRecord(edit attribution.Edit) state.EditRecord {
+	return state.EditRecord{
+		Ranges:       edit.Ranges,
+		Lines:        state.LineSet{Added: edit.Added, Removed: edit.Removed},
+		AddedCount:   edit.AddedCount,
+		RemovedCount: edit.RemovedCount,
+	}
 }
 
 // autoInstallGitHooks installs git hooks if they're not already present

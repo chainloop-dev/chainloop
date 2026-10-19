@@ -31,6 +31,14 @@ const (
 	StatusRenamed  = "renamed"
 )
 
+// FileLines holds the lines that one commit added to and removed from a file,
+// without their line ends.
+type FileLines struct {
+	Path    string
+	Added   []string
+	Removed []string
+}
+
 // Client abstracts git operations so the implementation can be swapped
 // (e.g. from exec-based to go-git).
 type Client interface {
@@ -48,6 +56,13 @@ type Client interface {
 	// handled correctly. The order in which commits are visited is unspecified;
 	// per-file Status reflects the most recently visited commit's view.
 	CodeChangesForCommits(repoRoot string, shas []string) (*aicodingsession.CodeChanges, error)
+	// CommitLines returns, for each file that the commit changed against its
+	// first parent, the content of the lines it added and removed. Binary
+	// files are left out. Renames show as a removal and an addition.
+	CommitLines(repoRoot, sha string) ([]FileLines, error)
+	// FileAt returns the content of a repo-relative path at a commit, or nil
+	// when the commit does not hold the path.
+	FileAt(repoRoot, sha, path string) ([]byte, error)
 	// CommitHeadInfo returns the SHA and message of HEAD.
 	CommitHeadInfo(repoRoot string) (sha, message string, err error)
 	// HeadAuthorTime returns the author date of HEAD.

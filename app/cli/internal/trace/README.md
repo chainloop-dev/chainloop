@@ -33,12 +33,15 @@ Which lines of a commit the AI wrote.
 
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 |
 |---------|---------------|-------------|--------|--------------|------------|
-| Line attribution | Each changed line of a commit is attributed to the AI or to a human, from a snapshot of each file before and after the agent edits it. | Yes | Partial | Yes | Yes |
-| Shell changes attribution | Changes that the agent makes with shell commands (for example `sed`) are attributed to the AI too, not only changes made with the file tools. | Yes | Partial | Yes | Yes |
+| Line attribution | Each changed line of a commit is attributed to the AI or to a human, from a snapshot of each file before and after the agent edits it. An added line is AI when its content matches a line that an agent edit of the session wrote. A line that a human changed is human, also when a later agent edit keeps it. A whitespace-only change keeps the owner of the line. A removed line is AI only when an agent edit removed it. In a commit of more than one session, a line that only another session wrote or removed counts for neither side in this session's evidence (spec issue-3639). | Yes | Partial | Yes | Yes |
+| Partial commits | A commit that holds only part of the AI lines of a file credits the session with those lines. The other AI lines stay pending, and the next commit with them is credited to the session too (spec issue-3639). | Yes | Partial | Yes | Yes |
+| Generated line counts | The trace state keeps the lines that each agent edit added and removed, also the lines that never reach a commit. The evidence does not report them yet (spec issue-3639). | Yes | Partial | Yes | Yes |
+| Shell changes attribution | Changes that the agent makes with shell commands (for example `sed`) are attributed to the AI too, not only changes made with the file tools. | Partial | Partial | Partial | Partial |
 
 Why not Yes:
 
-- **Line attribution, Cursor:** Cursor has only the `afterFileEdit` hook, which gives the edits but no snapshot before the edit. The provider rebuilds the content before the edit from the edits.
+- **Line attribution, partial commits and generated line counts, Cursor:** Cursor has only the `afterFileEdit` hook, which gives the edits but no snapshot before the edit. The provider rebuilds the content before the edit from the edits.
+- **Shell changes attribution, all agents:** the hook before a shell command records only a hash of each file, not its content. The file at the `HEAD` commit from before the command stands in for the content before the command. Uncommitted lines that an earlier agent edit recorded are not recorded again, but uncommitted human lines of a file that the command changes count as AI.
 - **Shell changes attribution, Cursor:** the provider installs the `preToolUse` and `postToolUse` hooks for the `Shell` tool. These hooks are verified for the Cursor IDE only. It is not verified that the Cursor CLI sends them.
 
 ## User experience
@@ -128,3 +131,21 @@ Why not Yes:
 | OpenCode | `.opencode/plugins/chainloop-trace.ts` | Session start and end, user prompt, and before and after each tool. One plugin covers both versions: `server()` for 1.x (1.3.4 or later) and `setup()` for 2. The provider picks the export command from `opencode --version`. |
 
 All agents share the git hooks `commit-msg`, `post-commit` and `pre-push`.
+
+## End-to-end tests
+
+The `e2e/` package checks the tables of this page against real agents (spec issue-3635). It runs each agent in headless mode with real models, in throwaway repositories with Trace in local storage mode. For now, it runs the Claude Code column only.
+
+A feature row maps to its checks by the feature name. When you rename a feature in a table, rename it in `e2e/checks.go` too. The suite tests a cell marked **Yes**, **Partial**, or **Unknown** only when the row has a registered check. It reports the other cells as follows:
+
+- A cell marked **No** or **Not applicable** is `skipped`.
+- A feature that needs a control plane is `not covered`, because the suite uses local storage mode only.
+- A row with no registered check is `no check`.
+
+`e2e/config.yaml` sets the version of each agent that the suite expects, and the models. The suite does not install the agent. It runs the installed version, and it logs a warning when that version is not the one in the configuration. The suite uses model tokens. To run it:
+
+```bash
+make -C app/cli test-trace-e2e
+```
+
+`CHAINLOOP_E2E_HARNESS`, `CHAINLOOP_E2E_MODEL`, and `CHAINLOOP_E2E_FEATURE` limit a run to some columns, models, or features (comma-separated). Set `CHAINLOOP_E2E_WORK_DIR` to keep the workspaces and the agent output. The results go to `e2e/results/`, or to `CHAINLOOP_E2E_RESULTS_DIR`. Only a run with no filter becomes the previous result of the next comparison.

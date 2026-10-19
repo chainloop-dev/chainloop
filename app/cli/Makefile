@@ -12,6 +12,11 @@ build:
 test:
 	go test ./...
 
+.PHONY: test-trace-e2e
+# run the Chainloop Trace end-to-end suite with real agents and models (uses model tokens)
+test-trace-e2e:
+	go test -tags e2e -run TestTraceMatrix -timeout 60m -v ./internal/trace/e2e/
+
 .PHONY: lint
 # lint
 lint:

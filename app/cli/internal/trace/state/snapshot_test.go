@@ -99,6 +99,31 @@ func TestShellPreSignatureSlots(t *testing.T) {
 	}
 }
 
+func TestShellPreHeads(t *testing.T) {
+	store := NewGitStore(t.TempDir())
+	key := ShellCallKey{SessionID: shellSessionID, ToolUseID: "toolu_1"}
+
+	_, err := store.LoadShellPreHeads(key)
+	require.ErrorIs(t, err, os.ErrNotExist, "a command without saved heads has none")
+
+	heads := map[string]string{"/repo": "0123456789abcdef"}
+	require.NoError(t, store.SaveShellPreSignature(key, WorktreeSignatures{"/repo": {fileA: "h"}}))
+	require.NoError(t, store.SaveShellPreHeads(key, heads))
+	got, err := store.LoadShellPreHeads(key)
+	require.NoError(t, err)
+	assert.Equal(t, heads, got)
+
+	store.DeleteShellPreSignature(key)
+	_, err = store.LoadShellPreHeads(key)
+	require.ErrorIs(t, err, os.ErrNotExist, "the heads go with the signature")
+
+	// A corrupt file is an error, not an absent one.
+	require.NoError(t, os.WriteFile(store.shellPreHeadsPath(key), []byte("{"), 0600))
+	_, err = store.LoadShellPreHeads(key)
+	require.Error(t, err)
+	assert.NotErrorIs(t, err, os.ErrNotExist)
+}
+
 // A CLI upgrade can land between the pre and post hooks of one command. The
 // earlier single-checkout format must then be rejected, not misread.
 func TestShellPreSignatureRejectsSingleCheckoutFormat(t *testing.T) {
