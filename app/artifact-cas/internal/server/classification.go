@@ -28,6 +28,7 @@ const (
 )
 
 // classificationListener owns sockets only until cmux hands them to a server.
+// It never inspects protocol bytes; all matching uses cmux's stock matchers.
 // cmux clears the read deadline at that boundary (SetReadTimeout must be set).
 // The timer also bounds TLS handshakes and SETTINGS writes, and Close releases
 // pending sockets without interrupting streams already owned by HTTP or gRPC.
