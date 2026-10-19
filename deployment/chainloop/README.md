@@ -257,7 +257,11 @@ cas:
     enabled: true
     hostname: cas.example.com
     tls: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
 ```
+
+With `tls: true`, configure a certificate source — the cert-manager issuer annotation above, or a pre-created Secret named `cas.example.com-tls` — so the rendered Ingress references a Secret that exists.
 
 `cas.ingress.enabled` defaults to `false`, so a setup that only copies the documented `cas.ingressAPI` block leaves the shared hostname disabled. Retain `cas.ingressAPI` only while the legacy gRPC endpoint is also required. `cas.serviceAPI`, and the control plane's connection to the legacy CAS endpoint keep their existing settings. CAS adds no gRPC-Web or Connect support. Deployed-controller qualification and the full streaming-performance evidence still need work. See the [experiment instructions](../../app/artifact-cas/README.md#shared-endpoint).
 
