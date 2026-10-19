@@ -506,9 +506,11 @@ func TestAdmissionControlSheds(t *testing.T) {
 		}
 	}, 2*time.Second, 5*time.Millisecond, "the first connection never parked in classification")
 
-	// The second connection cannot get a slot in either matcher, so cmux
-	// closes it without reading anything from it.
+	// The second connection prefaced but cannot get a slot in either
+	// matcher, so cmux closes it without parsing anything from it.
 	shed, err := dial()
+	require.NoError(t, err)
+	_, err = io.WriteString(shed, http2.ClientPreface)
 	require.NoError(t, err)
 	readEOF(t, shed, time.Second)
 
@@ -558,6 +560,62 @@ func TestStalledAfterPrefaceDropped(t *testing.T) {
 	_, err = io.ReadFull(c, make([]byte, 9))
 	require.NoError(t, err)
 	readEOF(t, c, 2*time.Second)
+}
+
+// TestSlowMidFrameClientTakesFallback proves a client whose first request
+// straddles the settings grace is served, not dropped: the grace fires
+// mid-frame, the matcher declines without speaking, and the intact replay
+// lets the HTTP server parse the completed request through the documented
+// fallback (D-014). The framer cannot resume a half-read frame, so speaking
+// there would desynchronize it.
+func TestSlowMidFrameClientTakesFallback(t *testing.T) {
+	m, dial := startMux(t, &Options{SettingsGrace: 150 * time.Millisecond, ClassifyTimeout: 2 * time.Second})
+
+	c, err := dial()
+	require.NoError(t, err)
+	defer c.Close()
+
+	_, err = io.WriteString(c, http2.ClientPreface)
+	require.NoError(t, err)
+	writeFrame(t, c, http2.FrameSettings, 0, 0, nil)
+
+	// Send the HEADERS frame header and half of its payload, then stall past
+	// the grace.
+	var buf bytes.Buffer
+	enc := hpack.NewEncoder(&buf)
+	for _, hf := range []hpack.HeaderField{
+		{Name: hdrMethod, Value: hdrMethodPost},
+		{Name: ":scheme", Value: "http"},
+		{Name: ":path", Value: "/controlplane.v1.FooService/Bar"},
+		{Name: hdrContentType, Value: ctGRPCProto},
+	} {
+		require.NoError(t, enc.WriteField(hf))
+	}
+	block := buf.Bytes()
+	hdr := []byte{
+		byte(len(block) >> 16), byte(len(block) >> 8), byte(len(block)),
+		byte(http2.FrameHeaders), byte(http2.FlagHeadersEndHeaders),
+		0, 0, 0, 1,
+	}
+	_, err = c.Write(hdr)
+	require.NoError(t, err)
+	_, err = c.Write(block[:len(block)/2])
+	require.NoError(t, err)
+	time.Sleep(400 * time.Millisecond)
+
+	// The rest of the request arrives after the grace.
+	_, err = c.Write(block[len(block)/2:])
+	require.NoError(t, err)
+
+	// The connection is not dropped and not poisoned: the HTTP server gets
+	// it with the whole stream replayed.
+	got := acceptWithTimeout(t, m.HTTP())
+	defer got.Close()
+	require.NoError(t, got.SetReadDeadline(time.Now().Add(time.Second)))
+	replay := make([]byte, len(http2.ClientPreface))
+	_, err = io.ReadFull(got, replay)
+	require.NoError(t, err)
+	assert.Equal(t, http2.ClientPreface, string(replay), "preface not replayed intact")
 }
 
 func TestCloseClosesQueuedConnections(t *testing.T) {
@@ -644,8 +702,11 @@ func TestCloseReturnsWhileConnParked(t *testing.T) {
 	require.NoError(t, err)
 	defer c.Close()
 
-	// The connection parks in classification when it holds the admission
-	// slot: exactly the state Close must not ride out.
+	// A connection that produced a byte parks in classification while it
+	// holds the admission slot: exactly the state Close must not ride out. A
+	// silent connection holds no slot at all.
+	_, err = io.WriteString(c, http2.ClientPreface)
+	require.NoError(t, err)
 	require.Eventually(t, func() bool {
 		select {
 		case m.admit <- struct{}{}:

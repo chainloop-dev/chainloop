@@ -228,8 +228,10 @@ func New(l net.Listener, opts *Options) *Mux {
 	// listener, and everything else falls through to the HTTP listener. Both
 	// are MatchWriters so they can reach the connection: the gRPC matcher
 	// writes the server's settings frame to clients that wait for it, and
-	// the HTTP matcher needs the connection to look up poisoned ones.
-	m.grpcL = m.cm.MatchWithWriters(m.admitMatchWriter(m.matchNativeGRPC))
+	// takes its admission slot itself, once the connection prefaced; the
+	// HTTP matcher's wrapper takes its slot when the connection produced a
+	// byte.
+	m.grpcL = m.cm.MatchWithWriters(m.matchNativeGRPC)
 	m.httpL = m.cm.MatchWithWriters(m.admitMatchWriter(m.httpMatcher))
 
 	m.cm.HandleError(func(err error) bool {
@@ -327,11 +329,28 @@ func (m *Mux) IsOrderlyShutdownErr(err error) bool {
 		errors.Is(err, cmux.ErrListenerClosed))
 }
 
-// admitMatchWriter wraps a MatchWriter with classification admission control:
-// it holds a slot while the matcher runs, and reports no match when the
+// admitMatchWriter wraps a MatchWriter with classification admission control.
+// It first waits for the connection to produce a byte: a silent connection
+// buffers nothing, so it must not consume an admission slot — the slots bound
+// buffered bytes, and the file descriptor limit bounds idle connections, as
+// before this package existed. When the connection produces a byte the wrapper
+// holds a slot while the matcher runs, and reports no match when the
 // admission cap is reached, so cmux closes the connection.
 func (m *Mux) admitMatchWriter(match cmux.MatchWriter) cmux.MatchWriter {
 	return func(w io.Writer, r io.Reader) bool {
+		// The byte read is safe: cmux re-serves sniffed bytes to the next
+		// matcher, and the HTTP matcher itself never re-reads within its own
+		// sniffing session.
+		var b [1]byte
+		for {
+			n, err := r.Read(b[:])
+			if n > 0 {
+				break
+			}
+			if err != nil {
+				return false
+			}
+		}
 		select {
 		case m.admit <- struct{}{}:
 		default:
@@ -353,30 +372,23 @@ func isTimeout(err error) bool {
 	return errors.As(err, &ne) && ne.Timeout()
 }
 
-// httpMatcher accepts every remaining connection that produced at least one
-// byte and that the gRPC matcher did not speak to. A connection that produced
-// none, or whose read failed, matches no listener and is closed by cmux.
-func (m *Mux) httpMatcher(w io.Writer, r io.Reader) bool {
-	// cmux passes the raw connection as the writer, and the gRPC matcher
-	// keys poisoned connections by it. A connection that is not identifiable
-	// cannot have been spoken to: the gRPC matcher declines before speaking
-	// unless it can reach the connection too.
+// httpMatcher accepts every remaining connection the gRPC matcher did not
+// speak to. Its admission wrapper has already proved the connection carries
+// traffic. A poisoned connection — one the gRPC matcher sent its settings
+// frame to — is declined so cmux closes it: the client's acknowledgement of
+// that frame is in the replay, and net/http fails a connection that
+// acknowledges settings it never sent.
+func (m *Mux) httpMatcher(w io.Writer, _ io.Reader) bool {
 	if conn, ok := w.(net.Conn); ok {
 		if _, poisoned := m.poisoned.LoadAndDelete(conn); poisoned {
 			m.logger.Warnw("msg", "closing connection: the classifier sent its settings frame, but the first request was not native gRPC")
 			return false
 		}
 	}
-	// One byte proves the connection carries traffic. The read goes through
-	// the sniffing reader, so cmux records it and replays it to the HTTP
-	// server.
-	var b [1]byte
-	for {
-		n, err := r.Read(b[:])
-		if err != nil || n > 0 {
-			return n > 0
-		}
-	}
+	// A connection the gRPC matcher cannot reach cannot have been spoken
+	// to: that matcher declines before speaking unless it can reach the
+	// connection too.
+	return true
 }
 
 // matchNativeGRPC reports whether the connection's first request carries a
@@ -399,15 +411,32 @@ func (m *Mux) httpMatcher(w io.Writer, r io.Reader) bool {
 // server that wins the connection. The matcher bounds how much of the
 // connection it may read.
 func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
-	// The extra byte makes any read past the cap fail instead of stopping
-	// silently at it: a connection that needs more than the cap to classify
-	// goes to the HTTP server, whose own limits dispose of it.
-	lr := &io.LimitedReader{R: r, N: int64(m.maxClassifiedBytes) + 1}
+	// The preface is read before any admission slot is taken: a silent
+	// connection buffers nothing and must not consume one — the slots bound
+	// buffered bytes, and the file descriptor limit bounds idle connections.
+	// A non-prefaced connection (HTTP/1.x, garbage) declines here without
+	// ever touching admission.
+	//
+	// The extra byte in the cap makes any read past it fail instead of
+	// stopping silently at it: a connection that needs more than the cap to
+	// classify goes to the HTTP server, whose own limits dispose of it.
+	cr := &countingReader{r: r}
+	lr := &io.LimitedReader{R: cr, N: int64(m.maxClassifiedBytes) + 1}
 	if !hasHTTP2Preface(lr) {
 		// HTTP/1.x or anything else: the HTTP server produces a proper error
 		// response for malformed traffic. Nothing was written.
 		return false
 	}
+
+	// The connection prefaced, so frames will buffer: take an admission
+	// slot. A connection that cannot get one matches nothing, and cmux
+	// closes it.
+	select {
+	case m.admit <- struct{}{}:
+	default:
+		return false
+	}
+	defer func() { <-m.admit }()
 
 	conn, ok := w.(net.Conn)
 	if !ok {
@@ -426,8 +455,11 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 	// Narrow the read deadline cmux set to the classification window down to
 	// the settings grace: how long to wait for a first request before
 	// speaking. decline reports no match, and poisons the connection when the
-	// matcher has already spoken, so it never reaches net/http.
+	// matcher has already spoken, so it never reaches net/http. boundary is
+	// the byte count at the last completed frame: a timeout with the count
+	// past it fired mid-frame.
 	spoken := false
+	boundary := cr.n
 	_ = conn.SetReadDeadline(time.Now().Add(m.settingsGrace))
 	decline := func() bool {
 		if spoken {
@@ -451,6 +483,16 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 		f, err := framer.ReadFrame()
 		if err != nil {
 			if !spoken && isTimeout(err) {
+				if cr.n > boundary {
+					// The grace fired mid-frame: a slow sender, not a client
+					// waiting for the server's settings. The framer cannot
+					// resume a half-read frame, and speaking now would feed
+					// it the rest of the frame as garbage. Decline without
+					// speaking: the replay holds everything the client sent,
+					// and the HTTP server serves the request through the
+					// documented fallback (D-014).
+					return false
+				}
 				// The client is waiting for the server to speak first.
 				if !speak() {
 					return decline()
@@ -461,6 +503,7 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 			// connection cannot go to the HTTP server.
 			return decline()
 		}
+		boundary = cr.n
 		// HEADERS and CONTINUATION are the only frames that carry header
 		// block fragments; SETTINGS (including the acknowledgement of the
 		// injected frame), PING, WINDOW_UPDATE, ... are skipped and stay in
@@ -480,6 +523,20 @@ func (m *Mux) matchNativeGRPC(w io.Writer, r io.Reader) bool {
 			}
 		}
 	}
+}
+
+// countingReader counts the bytes its caller has consumed from the connection,
+// so the matcher can tell a frame boundary from a half-read frame when the
+// settings grace fires.
+type countingReader struct {
+	r io.Reader
+	n int64
+}
+
+func (c *countingReader) Read(p []byte) (int, error) {
+	n, err := c.r.Read(p)
+	c.n += int64(n)
+	return n, err
 }
 
 // hasHTTP2Preface reports whether the connection starts with the HTTP/2 client

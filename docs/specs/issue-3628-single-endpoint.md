@@ -42,7 +42,7 @@ The control plane and the Artifact CAS will each serve gRPC and HTTP on one port
 - Goal: one port and one hostname per service, for all gRPC, gRPC-Web, and HTTP traffic.
 - Goal: existing clients and configuration keep working without change during the deprecation period.
 - Goal: large CAS uploads and downloads keep their current streaming behavior and throughput.
-- Non-goal: move the services to another RPC framework (for example Connect). The single port does not need it (see D-001).
+- Non-goal: move the services to another RPC framework (for example Connect). The single port does not need it (see D-013).
 - Non-goal: merge the Prometheus metrics port or the profiler port into the single port. These ports are internal and must not be on the public hostname (see D-006).
 - Non-goal: add Gateway API resources to the Helm chart. It is a separate chart feature, and the single port works without it (see D-004).
 - Non-goal: change the CLI's default endpoints or its configuration format. The CLI holds hostnames on the ingress port, so it needs no change (see R-005).
@@ -115,7 +115,7 @@ The classifier speaks only when a connection stays silent. gRPC clients wait for
 
 The classifier decides once per connection, from its first request. A connection that starts with gRPC carries only gRPC: the native gRPC server cannot serve a later plain HTTP request on it. The other direction works. When a gRPC request arrives on a connection that the HTTP server owns, the HTTP server gives it to the gRPC server. The gRPC-Web wrapper already works in this way. The request gets the right result through the HTTP adapter of the gRPC server. That adapter is a separate transport. Its performance and features may differ from the native one (D-013).
 
-Thus the single port supports clients and proxies that keep gRPC and plain HTTP on separate HTTP/2 connections. These include direct clients such as the CLI, nginx ingress, and Traefik with HTTP/1.1 for the HTTP path. A proxy that sends both on one shared upstream connection is not supported (see D-010 and Open Questions).
+Thus the single port supports clients and proxies that keep gRPC and plain HTTP on separate HTTP/2 connections. These include direct clients such as the CLI, nginx ingress, and Traefik with HTTP/1.1 for the HTTP path. A proxy that sends both on one shared upstream connection is not supported (see D-014).
 
 CAS streams on the single port use the same native gRPC transport as today, so uploads keep their disk spill and their throughput (R-003). Browser downloads stay on HTTP/1.1 through the ingress, so the kernel copy path stays.
 
