@@ -34,7 +34,8 @@ import (
 )
 
 // This compares the production CAS service and interceptors over the unchanged
-// legacy listener and the shared cmux endpoint, both on the native transport
+// legacy listener and the shared endpoint (per-request dispatch with the reverse
+// proxy to the private native server), both on the native transport
 // with the same disk-backed test backend.
 // It is a transport experiment, not the original R-003 release/S3 qualification.
 // Use a disk-backed TMPDIR: /tmp may be tmpfs on development machines.

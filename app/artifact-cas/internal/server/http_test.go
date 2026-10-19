@@ -305,8 +305,9 @@ func TestCASByteStreamTransportParity(t *testing.T) {
 					require.Equal(t, codes.InvalidArgument, status.Code(err))
 
 					// The HTTP download remains usable regardless of which RPC listener uploaded the blob.
-					// HTTP/1.1 only (D-017/R-009): the HTTP side of the shared
-					// endpoint does not take plain HTTP/2 connections.
+					// The download uses HTTP/1.1: the shared endpoint serves
+					// plain HTTP over HTTP/1.1 and HTTP/2 (D-020), and the
+					// legacy behavior over HTTP/1.1 must keep working.
 					tr := &http.Transport{Protocols: new(http.Protocols), TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec // test certificate
 					tr.Protocols.SetHTTP1(true)
 					defer tr.CloseIdleConnections()
@@ -342,7 +343,7 @@ func casTestTLS(t testing.TB) *conf.Server_TLS {
 	return &conf.Server_TLS{Certificate: certPath, PrivateKey: keyPath}
 }
 
-// Each protocol uses its own connections through the shared port (D-017).
+// Native gRPC and ordinary HTTP must work through the shared port (D-020).
 func TestCASSharedProtocols(t *testing.T) {
 	for _, useTLS := range []bool{false, true} {
 		t.Run(map[bool]string{false: "h2c", true: "TLS"}[useTLS], func(t *testing.T) {

@@ -81,7 +81,6 @@ Supersedes R-009. On its single port, the CAS MUST serve native gRPC over HTTP/2
 - Done when: the 1 GiB transport comparison through the shared endpoint stays within 10% of the legacy native listener with memory bounded and not growing with artifact size.
 - Done when: browser downloads through a configured ingress work.
 
-
 ### R-005: Existing configuration keeps working
 An installation that does not change its configuration MUST keep working during the deprecation period. The legacy gRPC port keeps serving gRPC at its current address during that period. CLI configurations that use ingress hostnames keep working when the ingress backend moves to the single port. The control plane connection to the CAS, and any other client that uses the legacy gRPC address, MUST move to the single HTTP address before the legacy gRPC port is disabled.
 - Done when: the release notes name this migration step for the CAS connection and for direct gRPC clients.
@@ -342,7 +341,9 @@ The CAS shared endpoint is `server.http.addr`, owned by one standard HTTP listen
 - Chart: one Service port and one catch-all Ingress on the same hostname, matching the control-plane shape — one path `/` with nginx `backend-protocol: GRPC` (HTTP/2 upstream), `grpc-services`, and the upload body-size annotations, and the Traefik h2c Service annotation. No RPC path rules, no second Ingress, no Service port alias.
 - Measured (local, three runs per operation, 1 GiB, disk-backed staging): shared-endpoint median upload 212.89 MB/s against legacy native 233.92 MB/s (−9.0%), and median download 177.11 MB/s against 192.82 MB/s (−8.1%), with sampled peak live heap of about 32–43 MiB against about 29–32 MiB. Within the R-003 10% shape with a thin margin; the release and object-store qualification remains open.
 - Evidence limits: mixed-connection, h2c and TLS, authentication/error, cancellation, and shutdown-drain tests pass on the branch, and a standalone probe covered gzip, binary metadata, trailers, rich error details, and downstream cancellation through the standard proxy. The full R-002 matrix, the original R-003 qualification, and F5/Traefik controller qualification remain outstanding.
+- The branch carries the production change only. The local kind ingress-nginx harness and the raw benchmark output file were removed at the owner's request; the raw benchmark numbers and the kind reproduction live in the [PR #3663 discussion](https://github.com/chainloop-dev/chainloop/pull/3663), and the benchmark harness and its command stay in `app/artifact-cas`.
 - Sources: [proxy review and compatibility probe](https://github.com/chainloop-dev/chainloop/pull/3663#issuecomment-6278243434), and the [PR #3663](https://github.com/chainloop-dev/chainloop/pull/3663) implementation.
+
 ## Open Questions
 
 - [x] **Must the single port support proxies that share one upstream connection for gRPC and plain HTTP?** Examples: Envoy-based proxies, service meshes. Answered by D-014: not required. Setups that share one upstream pool can route gRPC to the legacy gRPC port during the deprecation period. The chart documents the supported nginx and Traefik configurations, which keep the two kinds of traffic on separate upstream connections. Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927).
