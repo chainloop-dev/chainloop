@@ -373,7 +373,7 @@ func wireApp(contextContext context.Context, bootstrap *conf.Bootstrap, readerWr
 		Credentials:         readerWriter,
 		Validator:           validator,
 	}
-	grpcServers, err := server.NewGRPCServer(opts)
+	grpcServers, err := server.NewGRPCServers(opts)
 	if err != nil {
 		cleanup3()
 		cleanup2()

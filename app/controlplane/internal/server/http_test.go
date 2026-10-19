@@ -68,7 +68,7 @@ func startSinglePortApp(t *testing.T, legacyListener *bool) (string, string, int
 func startSinglePortAppWithConfig(t *testing.T, serverConfig *conf.Server) (string, string, int) {
 	t.Helper()
 	opts := testServerOpts(t, serverConfig)
-	gs, err := NewGRPCServer(opts)
+	gs, err := NewGRPCServers(opts)
 	require.NoError(t, err)
 	api, err := NewHTTPServer(opts, gs)
 	require.NoError(t, err)

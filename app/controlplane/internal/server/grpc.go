@@ -117,11 +117,22 @@ type GRPCServers struct {
 	Legacy  *grpc.Server
 }
 
-// NewGRPCServer builds both servers with the same services and middleware.
-func NewGRPCServer(opts *Opts) (*GRPCServers, error) {
-	// Opt-in histogram metrics for the interceptor
-	grpc_prometheus.EnableHandlingTimeHistogram()
+// NewGRPCServers assembles the HTTP handler and optional native listener.
+func NewGRPCServers(opts *Opts) (*GRPCServers, error) {
+	servers := &GRPCServers{Handler: newGRPCHandler(opts)}
+	if legacyGRPCListenerEnabled(opts.ServerConfig) {
+		// Ignore unused legacy certificates when this listener is disabled.
+		legacy, err := NewGRPCServer(opts)
+		if err != nil {
+			return nil, err
+		}
+		servers.Legacy = legacy
+	}
+	return servers, nil
+}
 
+// newGRPCHandler builds the handler served on the shared HTTP endpoint.
+func newGRPCHandler(opts *Opts) *grpc.Server {
 	// Kratos' stream interceptor needs a non-nil endpoint even when the gRPC
 	// handler never starts a native listener. Supply it explicitly rather than
 	// calling Endpoint(), which would bind an otherwise unused socket.
@@ -129,31 +140,19 @@ func NewGRPCServer(opts *Opts) (*GRPCServers, error) {
 	if opts.ServerConfig.GetHttp().GetTlsConfig().GetCertificate() != "" {
 		scheme = "grpcs"
 	}
-	handler := newGRPCServer(opts, grpc.Endpoint(&url.URL{
+	return newGRPCServer(opts, grpc.Endpoint(&url.URL{
 		Scheme: scheme,
 		Host:   opts.ServerConfig.GetHttp().GetAddr(),
 	}))
-	servers := &GRPCServers{Handler: handler}
-	if legacyGRPCListenerEnabled(opts.ServerConfig) {
-		// Ignore unused legacy certificates when this listener is disabled.
-		legacyOpts, err := legacyGRPCServerOptions(opts)
-		if err != nil {
-			return nil, err
-		}
-		servers.Legacy = newGRPCServer(opts, legacyOpts...)
-	}
-	return servers, nil
 }
 
 func legacyGRPCListenerEnabled(c *conf.Server) bool {
 	return c.LegacyGrpcListener == nil || *c.LegacyGrpcListener
 }
 
-// legacyGRPCServerOptions binds the deprecated gRPC-only listener: its
-// configured network and address, with its TLS settings when present — the
-// behavior the dedicated gRPC port had before the single port existed. A
-// partial TLS configuration keeps this listener plaintext, as it always did.
-func legacyGRPCServerOptions(opts *Opts) ([]grpc.ServerOption, error) {
+// NewGRPCServer builds the native gRPC listener with its existing configuration.
+// A partial TLS configuration keeps this listener plaintext, as it always did.
+func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 	var serverOpts []grpc.ServerOption
 	if v := opts.ServerConfig.Grpc.Network; v != "" {
 		serverOpts = append(serverOpts, grpc.Network(v))
@@ -175,13 +174,16 @@ func legacyGRPCServerOptions(opts *Opts) ([]grpc.ServerOption, error) {
 			}))
 		}
 	}
-	return serverOpts, nil
+	return newGRPCServer(opts, serverOpts...), nil
 }
 
 // newGRPCServer builds one gRPC server with the shared middleware chain,
 // interceptors and service registrations, bound through the given extra
 // options.
 func newGRPCServer(opts *Opts, extraOpts ...grpc.ServerOption) *grpc.Server {
+	// Opt-in histogram metrics for the interceptor.
+	grpc_prometheus.EnableHandlingTimeHistogram()
+
 	var serverOpts = append([]grpc.ServerOption{
 		grpc.Middleware(craftMiddleware(opts)...),
 		grpc.UnaryInterceptor(
