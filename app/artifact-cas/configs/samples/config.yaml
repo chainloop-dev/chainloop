@@ -8,7 +8,9 @@ server:
   http:
     addr: 0.0.0.0:8001
     timeout: 300s
-    # Shared endpoint: HTTP/1.1 and native gRPC (cmux). HTTP/2 is native gRPC only.
+    # Shared endpoint: HTTP/1.1, HTTP/2, and native gRPC, dispatched per
+    # request; native gRPC reaches the native transport through an in-process
+    # reverse proxy (spec D-020).
     # Optional TLS for both transports on port 8001. Independent of grpc.tls_config.
     # tls_config:
     #   certificate: "./configs/tls/shared.crt"

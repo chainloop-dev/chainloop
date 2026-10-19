@@ -20,7 +20,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/tls"
 	"fmt"
-	"net/url"
+	"net"
 	"os"
 	"regexp"
 
@@ -64,37 +64,43 @@ type Opts struct {
 	Logger       log.Logger
 }
 
-// GRPCServers keeps the shared endpoint's native gRPC server separate from
-// the optional legacy listener. Both run the same services and interceptors.
-// Handler receives connections from cmux and does not bind its own socket.
+// GRPCServers keeps the shared endpoint's private native gRPC server separate
+// from the optional legacy listener. Both run the same services and
+// interceptors. Private binds an ephemeral loopback listener that the shared
+// endpoint's reverse proxy dials; it is independent of the legacy listener's
+// address, TLS configuration, and flag, and exists whether or not the legacy
+// listener is enabled.
 type GRPCServers struct {
-	Handler *grpc.Server
-	Legacy  *grpc.Server
+	Private     *grpc.Server
+	PrivateAddr string
+	Legacy      *grpc.Server
 }
 
 func legacyGRPCListenerEnabled(c *conf.Server) bool {
 	return c.LegacyGrpcListener == nil || *c.LegacyGrpcListener
 }
 
-// NewGRPCServers builds both transports with the same services and interceptors.
+// NewGRPCServers builds the private native server for the shared endpoint and
+// the optional legacy listener, with the same services and interceptors.
 func NewGRPCServers(opts *Opts) (*GRPCServers, error) {
-	scheme := "grpc"
-	if opts.ServerConfig.GetHttp().GetTlsConfig().GetCertificate() != "" {
-		scheme = "grpcs"
-	}
-	// Kratos stream interceptors require endpoint metadata even though this
-	// handler never binds a native socket.
-	handler, err := newGRPCServer(opts, grpc.Endpoint(&url.URL{
-		Scheme: scheme, Host: opts.ServerConfig.GetHttp().GetAddr(),
-	}))
+	// Bind the private listener here so the shared endpoint's proxy knows its
+	// address at construction. Loopback-only, ephemeral: never public, never
+	// configurable, and independent of server.grpc.addr (which may carry TLS).
+	privateLis, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
+		return nil, fmt.Errorf("binding the shared endpoint's private gRPC listener: %w", err)
+	}
+	private, err := newGRPCServer(opts, grpc.Listener(privateLis))
+	if err != nil {
+		_ = privateLis.Close()
 		return nil, err
 	}
-	servers := &GRPCServers{Handler: handler}
+	servers := &GRPCServers{Private: private, PrivateAddr: privateLis.Addr().String()}
 	if legacyGRPCListenerEnabled(opts.ServerConfig) {
 		servers.Legacy, err = NewGRPCServer(opts)
 		if err != nil {
-			handler.Server.Stop()
+			private.Server.Stop()
+			_ = privateLis.Close()
 			return nil, err
 		}
 	}

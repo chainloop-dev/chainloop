@@ -1096,12 +1096,10 @@ cas:
     type: ClusterIP
 
     ## @param cas.service.ports.http cas service HTTP port
-    ## @param cas.service.ports.grpcShared Service port alias for shared-ingress gRPC (same CAS HTTP listener).
     ## @param cas.service.ports.https cas service HTTPS port
     ##
     ports:
       http: 80
-      grpcShared: 81
       https: 443
     ## Node ports to expose
     ## @param cas.service.nodePorts.http Node port for HTTP
@@ -1131,12 +1129,11 @@ cas:
     ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
     ##
     externalTrafficPolicy: Cluster
-    ## @param cas.service.annotations Additional custom annotations for cas service.
-    ## NOTE: do not set a Traefik `service.serversscheme: h2c` default here. The
-    ## shared endpoint's HTTP routes must be dialed HTTP/1.1, and a per-Service
-    ## scheme annotation cannot differ per upstream pool (spec D-017/D-018).
+    ## @extra cas.service.annotations Annotations for the shared HTTP and gRPC service. Traefik uses h2c for HTTP/2 upstream traffic.
     ##
-    annotations: {}
+    annotations:
+      ## @skip cas.service.annotations.traefik.ingress.kubernetes.io/service.serversscheme
+      traefik.ingress.kubernetes.io/service.serversscheme: h2c
     ## @param cas.service.extraPorts Extra ports to expose in cas service (normally used with the `sidecars` value)
     ##
     extraPorts: []
@@ -1240,63 +1237,34 @@ cas:
     ## NOTE: You may need to set this to '/*' in order to use this with ALB ingress controllers
     ##
     path: /
-    ## @extra cas.ingress.annotations Annotations for the shared CAS HTTP ingress (downloads, status).
-    ## Do not set a gRPC backend protocol here: the HTTP routes must use an
-    ## HTTP/1.1 upstream (spec D-017/D-018). The gRPC routes are configured in
-    ## cas.ingress.grpc below.
-    ## Use this parameter to set the required annotations for cert-manager, see
+    ## @extra cas.ingress.annotations Annotations for the shared HTTP, download and native gRPC ingress (spec D-020).
+    ## The CAS dispatches each request on one listener; native gRPC reaches the
+    ## native transport through an in-process reverse proxy, so one catch-all
+    ## location with an HTTP/2 upstream serves every protocol, as on the
+    ## control plane. Use this parameter to set the required annotations for
+    ## cert-manager, see
     ## ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
     ## e.g:
     ## annotations:
     ##   kubernetes.io/cas.ingress.class: nginx
     ##   cert-manager.io/cluster-issuer: cluster-issuer-name
     ##
-    annotations: {}
-    ## @extra cas.ingress.grpc gRPC routes of the shared CAS endpoint.
-    ## The second Ingress uses a dedicated Service port alias on the same
-    ## listener. ingress-nginx dials its ClusterIP for gRPC and pod endpoints
-    ## for HTTP, isolating connection reuse by backend identity and address.
-    ## Native gRPC keeps HTTP/2 while the HTTP routes keep HTTP/1.1 (D-018).
-    grpc:
-      ## @param cas.ingress.grpc.paths RPC path prefixes served by the gRPC upstream pool.
-      paths:
-        - /google.bytestream.ByteStream/
-        - /cas.v1.ResourceService/
-        - /cas.v1.StatusService/
-        - /grpc.health.v1.Health/
-        - /grpc.reflection.v1.ServerReflection/
-        - /grpc.reflection.v1alpha.ServerReflection/
-        - /kratos.api.Metadata/
-        - /grpc.channelz.v1.Channelz/
-      ## @extra cas.ingress.grpc.annotations Annotations for the gRPC-path Ingress.
-      ## Use this to override the gRPC upstream settings, for example
-      ## `backend-protocol: GRPCS` when TLS runs to the pod. Do not set these
-      ## in cas.ingress.annotations: that object belongs to the HTTP routes.
-      ## e.g:
-      ## annotations:
-      ##   nginx.ingress.kubernetes.io/backend-protocol: "GRPCS"
-      annotations: {}
-      ## @extra cas.ingress.grpc.defaultAnnotations Chart defaults for the gRPC-path Ingress.
-      ## cas.ingress.grpc.annotations and commonAnnotations override these.
-      defaultAnnotations:
-        ## @skip cas.ingress.grpc.defaultAnnotations.nginx.ingress.kubernetes.io/backend-protocol
-        ## Tell nginx Ingress Controller to expect gRPC traffic on these paths
-        nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-        ## @skip cas.ingress.grpc.defaultAnnotations.nginx.ingress.kubernetes.io/service-upstream
-        # Dial the ClusterIP for gRPC; HTTP uses pod endpoints. ingress-nginx
-        # keys keepalive connections by upstream address, not Ingress resource.
-        nginx.ingress.kubernetes.io/service-upstream: "true"
-        ## @skip cas.ingress.grpc.defaultAnnotations.nginx.org/grpc-services
-        nginx.org/grpc-services: '{{ include "chainloop.cas.fullname" . }}'
-        ## @skip cas.ingress.grpc.defaultAnnotations.nginx.org/http2
-        nginx.org/http2: "true"
-        ## @skip cas.ingress.grpc.defaultAnnotations.nginx.ingress.kubernetes.io/proxy-body-size
-        # Same upload limit as the independent legacy gRPC ingress. Set 0 to disable.
-        nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-        ## @skip cas.ingress.grpc.defaultAnnotations.nginx.ingress.kubernetes.io/client-body-buffer-size
-        # Improve upload speed by adding client buffering used by http2 control-flows
-        # https://github.com/chainloop-dev/chainloop/issues/375
-        nginx.ingress.kubernetes.io/client-body-buffer-size: "3M"
+    annotations:
+      ## @skip cas.ingress.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      ## Tell nginx Ingress Controller to expect gRPC traffic
+      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      ## @skip cas.ingress.annotations.nginx.org/grpc-services
+      nginx.org/grpc-services: '{{ include "chainloop.cas.fullname" . }}'
+      ## @skip cas.ingress.annotations.nginx.org/http2
+      nginx.org/http2: "true"
+      ## @skip cas.ingress.annotations.nginx.ingress.kubernetes.io/proxy-body-size
+      # Same upload limit as the independent legacy gRPC ingress. Set 0 to disable.
+      # Even though we send data in chunks of 1MB, this size refers to all the data sent during the whole streaming session
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      ## @skip cas.ingress.annotations.nginx.ingress.kubernetes.io/client-body-buffer-size
+      # Improve upload speed by adding client buffering used by http2 control-flows
+      # https://github.com/chainloop-dev/chainloop/issues/375
+      nginx.ingress.kubernetes.io/client-body-buffer-size: "3M"
     ## @param cas.ingress.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
     ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.controlplane.ingress.hostname }}`
     ## You can:

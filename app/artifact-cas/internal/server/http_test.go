@@ -32,6 +32,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -351,25 +352,23 @@ func TestCASSharedProtocols(t *testing.T) {
 			}
 			sharedURL, _ := startCASTestServers(t, opts)
 
-			perform := func(kind string) {
-				tr := &http.Transport{Protocols: new(http.Protocols), TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec // test certificate
-				if kind == casGRPCRequest {
-					// Native gRPC arrives over HTTP/2, as the gRPC upstream
-					// pool of a configured ingress dials it.
-					tr.Protocols.SetHTTP2(true)
-					tr.Protocols.SetUnencryptedHTTP2(true)
-				} else {
-					// D-017/R-009: the HTTP side of the shared endpoint
-					// supports HTTP/1.1 only. A plain HTTP/2 client
-					// acknowledges the matcher's injected SETTINGS frame,
-					// and net/http rejects that acknowledgement (GOAWAY,
-					// PROTOCOL_ERROR). The HTTP upstream pool therefore dials
-					// HTTP/1.1 (D-018).
-					tr.Protocols.SetHTTP1(true)
-				}
-				defer tr.CloseIdleConnections()
-				client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
+			var connections atomic.Int32
+			// One catch-all upstream connection that carries both protocols, as
+			// a single-location ingress with an h2c (or TLS h2) upstream sends
+			// them. HTTP/1 must stay off in the client: net/http only uses h2c
+			// prior knowledge when HTTP/1 is disabled.
+			tr := &http.Transport{Protocols: new(http.Protocols), TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec // test certificate
+			tr.Protocols.SetHTTP2(true)
+			tr.Protocols.SetUnencryptedHTTP2(true)
+			tr.Protocols.SetHTTP1(false)
+			tr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+				connections.Add(1)
+				return (&net.Dialer{}).DialContext(ctx, network, addr)
+			}
+			defer tr.CloseIdleConnections()
+			client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
 
+			perform := func(kind string) {
 				path, method := "/cas.v1.StatusService/Statusz", http.MethodPost
 				if kind == casHTTPRequest {
 					path, method = "/statusz", http.MethodGet
@@ -398,26 +397,26 @@ func TestCASSharedProtocols(t *testing.T) {
 				}
 				require.Equal(t, expected, resp.StatusCode, kind)
 				if kind == casGRPCRequest {
+					// Native gRPC requires HTTP/2 and its trailers round-trip
+					// through the reverse proxy to the private native server.
 					require.Equal(t, 2, resp.ProtoMajor)
 					require.Equal(t, "0", resp.Trailer.Get("Grpc-Status"))
-				} else {
-					// D-017/R-009: the HTTP side of the shared endpoint is HTTP/1.1.
-					require.Equal(t, 1, resp.ProtoMajor)
 				}
 			}
 
-			// Each protocol works through the shared port on its own
-			// connections, as a proxy with separate upstream pools sends them.
-			// A plain HTTP/2 connection cannot fall through to the HTTP side:
-			// D-017 records that the matcher's SETTINGS injection makes
-			// net/http reject the client's acknowledgement (GOAWAY,
-			// PROTOCOL_ERROR), so mixed native-gRPC and plain-HTTP reuse of
-			// one upstream HTTP/2 connection is unsupported by contract.
+			// D-020: the shared endpoint dispatches each request, so native
+			// gRPC and ordinary HTTP interleave in any order — including on
+			// one pooled upstream HTTP/2 connection, as a single-location
+			// ingress sends them.
 			perform(casGRPCRequest)
 			perform(casHTTPRequest)
+			perform(casGRPCRequest)
 			perform(casPreflightRequest)
 			perform(casHTTPRequest)
 			perform(casGRPCRequest)
+
+			// All six requests reused one HTTP/2 connection.
+			require.EqualValues(t, 1, connections.Load())
 		})
 	}
 }
@@ -515,7 +514,7 @@ func TestCASLegacyListenerAndTLSConfiguration(t *testing.T) {
 			opts.ServerConfig.LegacyGrpcListener = new(false)
 			servers, err := NewGRPCServers(opts)
 			require.NoError(t, err)
-			defer servers.Handler.Server.Stop()
+			defer func() { require.NoError(t, servers.Private.Stop(context.Background())) }()
 			_, err = NewHTTPServer(opts, servers)
 			require.ErrorContains(t, err, tc.wantErr)
 		})
@@ -604,48 +603,12 @@ func TestCASSharedShutdownDrainsUpload(t *testing.T) {
 	}
 }
 
-// Slow clients must not survive shutdown while cmux is still reading their first request.
-func TestCASSharedShutdownClosesUnclassifiedConnections(t *testing.T) {
-	for _, useTLS := range []bool{false, true} {
-		t.Run(map[bool]string{false: "plaintext", true: "TLS handshake"}[useTLS], func(t *testing.T) {
-			opts := casTestOpts(t)
-			opts.ServerConfig.LegacyGrpcListener = new(false)
-			if useTLS {
-				opts.ServerConfig.Http.TlsConfig = casTestTLS(t)
-			}
-			servers, err := NewGRPCServers(opts)
-			require.NoError(t, err)
-			api, err := NewHTTPServer(opts, servers)
-			require.NoError(t, err)
-			endpoint, err := api.Endpoint()
-			require.NoError(t, err)
-			startCASTestTransport(t, api)
-			conn, err := net.Dial("tcp", endpoint.Host)
-			require.NoError(t, err)
-			defer conn.Close()
-			if !useTLS {
-				_, err = conn.Write([]byte("PRI "))
-				require.NoError(t, err)
-			}
-			// Allow the connection to reach the classifier, including a TLS handshake.
-			time.Sleep(50 * time.Millisecond)
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			require.NoError(t, api.Stop(ctx))
-			require.NoError(t, conn.SetReadDeadline(time.Now().Add(200*time.Millisecond)))
-			var data [1]byte
-			_, err = conn.Read(data[:])
-			require.ErrorIs(t, err, io.EOF, "shutdown must close a socket still waiting for classification")
-		})
-	}
-}
-
 func TestCASSharedInitializationDoesNotBindOnInvalidKey(t *testing.T) {
 	opts := casTestOpts(t)
 	opts.ServerConfig.LegacyGrpcListener = new(false)
 	servers, err := NewGRPCServers(opts)
 	require.NoError(t, err)
-	defer func() { require.NoError(t, servers.Handler.Stop(context.Background())) }()
+	defer func() { require.NoError(t, servers.Private.Stop(context.Background())) }()
 	reserved, err := net.Listen("tcp", casAnyAddr)
 	require.NoError(t, err)
 	opts.ServerConfig.Http.Addr = reserved.Addr().String()

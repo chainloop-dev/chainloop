@@ -6,8 +6,9 @@ server:
   # Keep 9001 available to compare native gRPC with the shared 8001 endpoint.
   legacy_grpc_listener: true
   http:
-    # Shared endpoint: HTTP/1.1 and native gRPC. cmux classifies each
-    # connection by its first request; HTTP/2 reaches it only as native gRPC.
+    # Shared endpoint: HTTP/1.1, HTTP/2, and native gRPC. Each request is
+    # dispatched; native gRPC reaches the native transport through an
+    # in-process reverse proxy (spec D-020).
     addr: 0.0.0.0:8001
     # Timeouts for http downloads
     # grpc downloads/uploads don't require this because they don't have timeouts

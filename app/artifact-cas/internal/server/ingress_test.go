@@ -53,7 +53,7 @@ func TestCASIngressNGINX(t *testing.T) {
 	require.NotNil(t, net.ParseIP(backendIP), "CAS_INGRESS_BACKEND_IP must be reachable from the cluster nodes")
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
-	namespace := fmt.Sprintf("cas-cmux-%d", time.Now().UnixNano())
+	namespace := fmt.Sprintf("cas-shared-%d", time.Now().UnixNano())
 	kubectl := func(input []byte, args ...string) []byte {
 		t.Helper()
 		full := append([]string{"--kubeconfig", kubeconfig, "--namespace", namespace}, args...)
@@ -84,7 +84,7 @@ func TestCASIngressNGINX(t *testing.T) {
 		"--set", "development=true", "--set", "fullnameOverride=cas-probe",
 		"--set", "cas.ingress.enabled=true", "--set", "cas.ingress.ingressClassName=nginx",
 		"--set", "cas.ingress.hostname="+hostname, "--set", "cas.ingress.tls=true",
-		"--show-only", "templates/cas/service-http.yaml", "--show-only", "templates/cas/ingress.yaml", "--show-only", "templates/cas/ingress-grpc-shared.yaml")
+		"--show-only", "templates/cas/service-http.yaml", "--show-only", "templates/cas/ingress.yaml")
 	helm.Env = append(os.Environ(), "HELM_PLUGINS="+t.TempDir())
 	manifest, err := helm.Output()
 	require.NoError(t, err)
@@ -101,14 +101,11 @@ ports:
   - name: http
     protocol: TCP
     port: %s
-  - name: grpc-shared
-    protocol: TCP
-    port: %s
 endpoints:
   - addresses: ["%s"]
     conditions:
       ready: true
-`, port, port, backendIP)
+`, port, backendIP)
 	kubectl([]byte(endpointSlice), "apply", "-f", "-")
 	lis, err := net.Listen("tcp", casAnyAddr)
 	require.NoError(t, err)
