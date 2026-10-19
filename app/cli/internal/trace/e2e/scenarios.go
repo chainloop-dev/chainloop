@@ -27,6 +27,21 @@ type Scenario struct {
 	// Checkout is the checkout where the agent commits and pushes, relative
 	// to the workspace base. Empty means the repository of the workspace.
 	Checkout string
+	// Images are PNG images that the user pastes with the prompt.
+	Images [][]byte
+	// NoAgent runs no harness session. The checks run commands in the
+	// workspace themselves.
+	NoAgent bool
+	// NoInit skips `chainloop trace init` in the workspace.
+	NoInit bool
+	// WrapTraceRun runs the harness with `chainloop trace run --local`.
+	WrapTraceRun bool
+	// SeedUserHooks writes a hook configuration of the harness with one hook
+	// of the user before `chainloop trace init`.
+	SeedUserHooks bool
+	// DisableSessionStart removes the session-start hook after
+	// `chainloop trace init`.
+	DisableSessionStart bool
 }
 
 // The fake secrets of the scenarios. They match the GitHub token rule of the
@@ -53,6 +68,18 @@ const (
 	scenarioSkill         = "skill"
 	scenarioSubagent      = "subagent"
 	scenarioClone         = "clone"
+	scenarioSetup         = "setup"
+	scenarioTraceRun      = "trace-run"
+	scenarioNoStart       = "no-session-start"
+	scenarioPartial       = "partial-commit"
+	scenarioPastedImage   = "pasted-image"
+	scenarioMedia         = "media"
+)
+
+const (
+	wrappedFile = "wrapped.txt"
+	partialFile = "partial.txt"
+	mediaFile   = "diagram.png"
 )
 
 const (
@@ -122,5 +149,58 @@ Then run: git add farewell.txt && git commit -m "add farewell" && git push
 1. git clone ../remote.git ../` + cloneDir + `
 2. cd ../` + cloneDir + ` && printf 'from the clone\n' > ` + cloneFile + `
 3. cd ../` + cloneDir + ` && git add ` + cloneFile + ` && git commit -m "add clone file" && git push`,
+	},
+	// setup runs no agent. Its check runs `trace init` and `trace uninstall`
+	// over a hook configuration that already has a hook of the user.
+	scenarioSetup: {
+		Name:          scenarioSetup,
+		Seed:          map[string]string{readmePath: seedReadme},
+		NoAgent:       true,
+		SeedUserHooks: true,
+	},
+	scenarioTraceRun: {
+		Name:          scenarioTraceRun,
+		Seed:          map[string]string{readmePath: seedReadme},
+		NoInit:        true,
+		WrapTraceRun:  true,
+		SeedUserHooks: true,
+		Prompt:        "This is an automated test. With your file-writing tool, create the file " + wrappedFile + " with the single line: wrapped. Do nothing else.",
+	},
+	scenarioNoStart: {
+		Name:                scenarioNoStart,
+		Seed:                map[string]string{readmePath: seedReadme},
+		DisableSessionStart: true,
+		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
+1. With your file-writing tool, create the file greeting.txt with the single line: hello.
+2. Run this shell command: git add greeting.txt && git commit -m "add greeting" && git push`,
+	},
+	// partial-commit commits the first two AI lines of a file, then the
+	// other two. The first commit stages a blob that holds only the first
+	// two lines, with no change to the working tree.
+	scenarioPartial: {
+		Name: scenarioPartial,
+		Seed: map[string]string{readmePath: seedReadme},
+		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
+1. With your file-writing tool, create the file ` + partialFile + ` with exactly these four lines: one, two, three, four.
+2. Run this shell command: git update-index --add --cacheinfo "100644,$(head -n 2 ` + partialFile + ` | git hash-object -w --stdin),` + partialFile + `" && git commit -m "first half"
+3. Run this shell command: git add ` + partialFile + ` && git commit -m "second half" && git push`,
+	},
+	scenarioPastedImage: {
+		Name:   scenarioPastedImage,
+		Seed:   map[string]string{readmePath: seedReadme},
+		Images: [][]byte{pastedPNG()},
+		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
+1. With your file-writing tool, create the file color.txt with one word: the main color of the pasted image.
+2. Run this shell command: git add color.txt && git commit -m "add color" && git push`,
+	},
+	// media has the agent read an image file. The image stays inline in the
+	// tool result of the transcript, and its base64 holds a fake secret.
+	scenarioMedia: {
+		Name: scenarioMedia,
+		Seed: map[string]string{readmePath: seedReadme, mediaFile: string(mediaPNG())},
+		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
+1. Read the image ` + mediaFile + ` with your file-reading tool.
+2. With your file-writing tool, create the file seen.txt with the single line: seen.
+3. Run this shell command: git add seen.txt && git commit -m "add seen" && git push`,
 	},
 }

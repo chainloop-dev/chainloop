@@ -19,9 +19,12 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -79,9 +82,31 @@ func (c *Claude) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 		"--allowedTools", strings.Join(claudeTools, ","),
 	}
 
-	cmd := exec.CommandContext(ctx, c.bin(), args...) //nolint:gosec // the harness binary under test, with the prompt of a scenario
+	// A pasted image goes in a stream-json user message on stdin, the same
+	// content block that an interactive paste makes.
+	var stdin []byte
+	if len(req.Images) > 0 {
+		msg, err := claudeUserMessage(req.Prompt, req.Images)
+		if err != nil {
+			return nil, err
+		}
+		stdin = msg
+		// The prompt is in the message, so -p takes no argument.
+		args = append([]string{"-p", "--input-format", "stream-json"}, args[2:]...)
+	}
+
+	name := c.bin()
+	if len(req.Wrapper) > 0 {
+		name = req.Wrapper[0]
+		args = append(append(append([]string{}, req.Wrapper[1:]...), c.bin()), args...)
+	}
+
+	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // the harness binary under test, with the prompt of a scenario
 	cmd.Dir = req.Dir
 	cmd.Env = req.Env
+	if stdin != nil {
+		cmd.Stdin = bytes.NewReader(stdin)
+	}
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -96,6 +121,100 @@ func (c *Claude) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 	}
 
 	return &RunOutput{Raw: raw, Hooks: hooks, HooksReported: true}, nil
+}
+
+// claudeContent is one content block of a stream-json user message.
+type claudeContent struct {
+	Type   string             `json:"type"`
+	Text   string             `json:"text,omitempty"`
+	Source *claudeImageSource `json:"source,omitempty"`
+}
+
+type claudeImageSource struct {
+	Type      string `json:"type"`
+	MediaType string `json:"media_type"`
+	Data      string `json:"data"`
+}
+
+// claudeUserMessage builds the stream-json user message of a prompt with
+// pasted PNG images.
+func claudeUserMessage(prompt string, images [][]byte) ([]byte, error) {
+	content := make([]claudeContent, 0, len(images)+1)
+	for _, img := range images {
+		content = append(content, claudeContent{Type: "image", Source: &claudeImageSource{
+			Type: "base64", MediaType: "image/png", Data: base64.StdEncoding.EncodeToString(img),
+		}})
+	}
+	content = append(content, claudeContent{Type: "text", Text: prompt})
+
+	msg := struct {
+		Type    string `json:"type"`
+		Message struct {
+			Role    string          `json:"role"`
+			Content []claudeContent `json:"content"`
+		} `json:"message"`
+	}{Type: "user"}
+	msg.Message.Role = "user"
+	msg.Message.Content = content
+
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return nil, fmt.Errorf("encode claude user message: %w", err)
+	}
+	return append(data, '\n'), nil
+}
+
+// claudeSettingsPath is the project settings file where `trace init` installs
+// the Claude Code hooks.
+const claudeSettingsPath = ".claude/settings.json"
+
+// HookConfig implements Harness.
+func (c *Claude) HookConfig() HookConfig {
+	return HookConfig{
+		Path:            claudeSettingsPath,
+		ChainloopMarker: "chainloop trace hook claude",
+		UserConfig: `{
+  "hooks": {
+    "Stop": [
+      {"hooks": [{"type": "command", "command": "echo e2e-user-hook"}]}
+    ]
+  }
+}
+`,
+		UserMarker: "e2e-user-hook",
+	}
+}
+
+// DisableSessionStart implements Harness. It deletes the SessionStart entry
+// from the hooks of the project settings and keeps the other entries as
+// they are.
+func (c *Claude) DisableSessionStart(repo string) error {
+	path := filepath.Join(repo, claudeSettingsPath)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var settings map[string]json.RawMessage
+	if err := json.Unmarshal(data, &settings); err != nil {
+		return fmt.Errorf("decode %s: %w", claudeSettingsPath, err)
+	}
+	var hooks map[string]json.RawMessage
+	if err := json.Unmarshal(settings["hooks"], &hooks); err != nil {
+		return fmt.Errorf("decode the hooks of %s: %w", claudeSettingsPath, err)
+	}
+	if _, ok := hooks["SessionStart"]; !ok {
+		return fmt.Errorf("%s has no SessionStart hook", claudeSettingsPath)
+	}
+	delete(hooks, "SessionStart")
+
+	if settings["hooks"], err = json.Marshal(hooks); err != nil {
+		return err
+	}
+	if data, err = json.MarshalIndent(settings, "", "  "); err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0o600)
 }
 
 // claudeStreamEvent is the part of a stream-json line that the suite reads. A

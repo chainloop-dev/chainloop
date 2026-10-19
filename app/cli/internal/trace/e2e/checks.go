@@ -39,8 +39,11 @@ var errNotCovered = errors.New("not covered")
 type Session struct {
 	Scenario  string
 	Model     string
+	Harness   Harness
 	Workspace *Workspace
-	Output    *RunOutput
+	// Checkout is the checkout where the agent committed and pushed.
+	Checkout string
+	Output   *RunOutput
 	// Stored is the session that the push stored in local storage mode.
 	Stored *StoredSession
 	// HeadMessage is the message of the commit that the agent made.
@@ -59,6 +62,10 @@ type Feature struct {
 	// ControlPlane is true for a feature that needs a control plane. The suite
 	// runs in local storage mode only, so its cells are "not covered" (D-007).
 	ControlPlane bool
+	// NotCovered is the reason why the suite cannot see the feature at all,
+	// for example because neither the user nor the evidence can observe it.
+	// Its cells are "not covered".
+	NotCovered string
 	// ModelDriven is true for a feature that depends on the model following an
 	// instruction. Its cells run more than once (R-006).
 	ModelDriven bool
@@ -69,7 +76,18 @@ type Feature struct {
 // features are the test definitions of the feature rows. A row of the table
 // with no entry here is reported as "no check".
 var features = map[string]Feature{
+	// Setup
+	"Hook installation and deletion": {Checks: []Check{{scenarioSetup, checkHookInstallation}}},
+	"Trace run wrapper": {Checks: []Check{
+		{scenarioTraceRun, checkHookConfigRestored},
+		{scenarioTraceRun, checkGenericSessionStored},
+	}},
+
 	// Session collection
+	"Missed session start": {Checks: []Check{
+		{scenarioNoStart, checkNoSessionStartHook},
+		{scenarioNoStart, checkCommitTrailer},
+	}},
 	"Transcript":           {Checks: []Check{{scenarioEditAndCommit, checkTranscript}}},
 	"Token usage and cost": {Checks: []Check{{scenarioEditAndCommit, checkTokenUsage}}},
 	"Model detection":      {Checks: []Check{{scenarioEditAndCommit, checkModel}}},
@@ -78,6 +96,10 @@ var features = map[string]Feature{
 	// Code attribution
 	"Line attribution":          {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI("greeting.txt")}}},
 	"Shell changes attribution": {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI("shell.txt")}}},
+	"Partial commits":           {Checks: []Check{{scenarioPartial, checkBothCommitsCredited}}},
+	"Generated line counts": {
+		NotCovered: "neither the user nor the evidence can see the generated line counts yet",
+	},
 
 	// User experience
 	"Welcome message":         {Checks: []Check{{scenarioEditAndCommit, checkWelcomeMessage}}},
@@ -93,10 +115,12 @@ var features = map[string]Feature{
 	"Spec source role, title, and description": {
 		ModelDriven: true, Checks: []Check{{scenarioTicket, checkTicketHeader}},
 	},
+	"Pasted image pointers": {Checks: []Check{{scenarioPastedImage, checkPastedImage}}},
 
 	// Security
 	"Secret redaction":           {Checks: []Check{{scenarioEditAndCommit, checkSecretRedacted}}},
 	"Allow markers in redaction": {Checks: []Check{{scenarioEditAndCommit, checkAllowedSecretKept}}},
+	"Media skipped by redaction": {Checks: []Check{{scenarioMedia, checkMediaKept}}},
 
 	// Git integration
 	"Commit trailer":        {Checks: []Check{{scenarioEditAndCommit, checkCommitTrailer}}},
