@@ -16,6 +16,8 @@
 package git
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -28,6 +30,10 @@ import (
 	fdiff "github.com/go-git/go-git/v6/plumbing/format/diff"
 	"github.com/go-git/go-git/v6/plumbing/object"
 )
+
+// renameOptions find a rename that keeps at least half of the file, as git
+// does by default.
+var renameOptions = &object.DiffTreeOptions{DetectRenames: true, RenameScore: 50}
 
 // CommitLines returns the lines that the commit added and removed, per file,
 // against its first parent.
@@ -59,7 +65,7 @@ func (c *GoGitClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 		}
 	}
 
-	changes, err := object.DiffTree(baseTree, tree)
+	changes, err := object.DiffTreeWithOptions(context.Background(), baseTree, tree, renameOptions)
 	if err != nil {
 		return nil, fmt.Errorf("diff %s: %w", sha, err)
 	}
@@ -76,10 +82,13 @@ func (c *GoGitClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 
 		from, to := fp.Files()
 		fl := FileLines{}
-		if to != nil {
-			fl.Path = to.Path()
-		} else if from != nil {
+		switch {
+		case to == nil:
 			fl.Path = from.Path()
+		case from != nil && from.Path() != to.Path():
+			fl.Path, fl.OldPath = to.Path(), from.Path()
+		default:
+			fl.Path = to.Path()
 		}
 
 		// A hunk is a run of removed and added chunks between two equal ones.
@@ -116,6 +125,46 @@ func (c *GoGitClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 		}
 		closeHunk()
 		out = append(out, fl)
+	}
+
+	return out, nil
+}
+
+// Renames returns the new path of each file renamed between two revisions, by
+// its old path.
+func (c *GoGitClient) Renames(repoRoot, from, to string) (map[string]string, error) {
+	repo, err := openRepo(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("open repo: %w", err)
+	}
+
+	trees := make([]*object.Tree, 0, 2)
+	for _, rev := range []string{from, to} {
+		hash, err := repo.ResolveRevision(plumbing.Revision(rev))
+		if err != nil {
+			return nil, fmt.Errorf("resolve %s: %w", rev, err)
+		}
+		commit, err := repo.CommitObject(*hash)
+		if err != nil {
+			return nil, fmt.Errorf("get commit %s: %w", rev, err)
+		}
+		tree, err := commit.Tree()
+		if err != nil {
+			return nil, fmt.Errorf("get tree of %s: %w", rev, err)
+		}
+		trees = append(trees, tree)
+	}
+
+	changes, err := object.DiffTreeWithOptions(context.Background(), trees[0], trees[1], renameOptions)
+	if err != nil {
+		return nil, fmt.Errorf("diff %s %s: %w", from, to, err)
+	}
+
+	out := make(map[string]string)
+	for _, ch := range changes {
+		if ch.From.Name != "" && ch.To.Name != "" && ch.From.Name != ch.To.Name {
+			out[ch.From.Name] = ch.To.Name
+		}
 	}
 
 	return out, nil
@@ -158,7 +207,7 @@ func (c *GoGitClient) FileAt(repoRoot, sha, path string) ([]byte, error) {
 func (c *ExecClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 	base := commitParentOrEmptyTree(repoRoot, sha)
 	raw, err := gitRawOutput(repoRoot, "-c", "core.quotePath=false", "diff", "--no-color", "--no-ext-diff",
-		"--no-renames", "-U0", base, sha)
+		"-M", "-U0", base, sha)
 	if err != nil {
 		return nil, fmt.Errorf("diff %s: %w", sha, err)
 	}
@@ -202,6 +251,11 @@ func (c *ExecClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 				cur.Path = strings.TrimSuffix(strings.TrimPrefix(line, "--- a/"), "\t")
 			case strings.HasPrefix(line, "+++ b/"):
 				cur.Path = strings.TrimSuffix(strings.TrimPrefix(line, "+++ b/"), "\t")
+			// A rename with no changed line has no "---" and "+++" headers.
+			case strings.HasPrefix(line, "rename from "):
+				cur.OldPath = unquotePath(strings.TrimPrefix(line, "rename from "))
+			case strings.HasPrefix(line, "rename to "):
+				cur.Path = unquotePath(strings.TrimPrefix(line, "rename to "))
 			case strings.HasPrefix(line, "Binary files "):
 				binary = true
 			case strings.HasPrefix(line, "@@"):
@@ -227,6 +281,38 @@ func (c *ExecClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 	flush()
 
 	return out, nil
+}
+
+// Renames reads `git diff --name-status` between two revisions, with rename
+// detection on, whatever the configuration of the user says.
+func (c *ExecClient) Renames(repoRoot, from, to string) (map[string]string, error) {
+	raw, err := gitRawOutput(repoRoot, "diff", "--no-ext-diff", "-M", "--name-status", "-z", "--diff-filter=R", from, to)
+	if err != nil {
+		return nil, fmt.Errorf("diff %s %s: %w", from, to, err)
+	}
+
+	// Each rename is three fields: its status, the old path, and the new
+	// path.
+	fields := bytes.Split(bytes.TrimSuffix(raw, []byte{0}), []byte{0})
+	out := make(map[string]string)
+	for i := 0; i+2 < len(fields); i += 3 {
+		out[string(fields[i+1])] = string(fields[i+2])
+	}
+
+	return out, nil
+}
+
+// unquotePath decodes a path that git wrote in quotes, with C escapes, as it
+// does for a path with a control character or a quote in it.
+func unquotePath(path string) string {
+	if !strings.HasPrefix(path, `"`) {
+		return path
+	}
+	if unquoted, err := strconv.Unquote(path); err == nil {
+		return unquoted
+	}
+
+	return path
 }
 
 // hunkOldStart returns the first line of the parent's file that a hunk
