@@ -87,6 +87,11 @@ func (i *Issuer) Issue(ctx context.Context, claims *Claims) (string, error) {
 		return "", errors.New("the control plane did not mark the certificate for a sandbox identity")
 	}
 
+	// Verify rejects a certificate of another organization, so fail here and not later in the CLI
+	if len(chain[0].Subject.Organization) != 1 || chain[0].Subject.Organization[0] != toSign.OrganizationID {
+		return "", errors.New("the certificate is not for the organization of the identity")
+	}
+
 	toSign.IssuedAt = jwt.NewNumericDate(time.Now())
 
 	return Sign(key, chain, &toSign)
