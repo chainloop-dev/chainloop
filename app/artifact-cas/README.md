@@ -102,22 +102,6 @@ Run the isolated functional checks without Vault or an object store:
 go test -race ./app/artifact-cas/internal/server ./app/artifact-cas/cmd ./deployment/chainloop -count=1
 ```
 
-To check the chart through a real ingress-nginx controller, use a disposable local kind cluster on Linux with Docker:
-
-```sh
-kind create cluster --name cas-cmux --kubeconfig /tmp/cas-cmux-kubeconfig
-kubectl --kubeconfig /tmp/cas-cmux-kubeconfig apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.15.1/deploy/static/provider/kind/deploy.yaml
-kubectl --kubeconfig /tmp/cas-cmux-kubeconfig label node cas-cmux-control-plane ingress-ready=true
-kubectl --kubeconfig /tmp/cas-cmux-kubeconfig -n ingress-nginx wait --for=condition=Available deployment/ingress-nginx-controller --timeout=120s
-kubectl --kubeconfig /tmp/cas-cmux-kubeconfig -n ingress-nginx patch configmap ingress-nginx-controller --type merge -p '{"data":{"worker-processes":"1"}}'
-CAS_INGRESS_KUBECONFIG=/tmp/cas-cmux-kubeconfig \
-CAS_INGRESS_BACKEND_IP="$(docker network inspect kind --format '{{json .IPAM.Config}}' | jq -r '.[] | select(.Subnet | contains(":") | not) | .Gateway')" \
-go test -race ./app/artifact-cas/internal/server -run '^TestCASIngressNGINX$' -count=1 -v
-kind delete cluster --name cas-cmux
-```
-
-The test requires one controller worker so both protocols exercise the same keepalive cache. It creates and deletes a namespace containing the rendered CAS Service and Ingress objects. Its CAS server runs in the test process, reachable through the kind bridge gateway. It checks authenticated ByteStream upload/download, reflection, status, and repeated HTTP downloads with HTTP/1.1 and HTTP/2 clients. The controller sends HTTP/1.1 to the CAS for both browser protocols. This does not qualify other controllers or production object storage.
-
 Compare real ByteStream upload and download paths over TCP with a synthetic 1 GiB zero-filled artifact, streamed from a fixed-size buffer and checked by SHA256. Both listeners use the same file-backed test backend and real CAS staging and authentication. Select a disk-backed temporary directory; `/tmp` can be tmpfs.
 
 ```sh
@@ -131,7 +115,7 @@ TMPDIR="$HOME/.cache/chainloop-cas-bench" go test ./app/artifact-cas/internal/se
 
 #### Observed local results
 
-Three 1 GiB transfers per operation, Go 1.27.2, grpc-go 1.84.0, Linux amd64, disk-backed btrfs staging. These medians come from the [raw benchmark output](experiments/shared-endpoint-benchmark.txt).
+Three 1 GiB transfers per operation, Go 1.27.2, grpc-go 1.84.0, Linux amd64, disk-backed btrfs staging. These medians come from the [raw benchmark output](https://github.com/chainloop-dev/chainloop/pull/3663), reproduced with the command above.
 
 | Listener | Operation | Throughput (MB/s) | Sampled peak live heap (MiB) |
 | --- | --- | ---: | ---: |
