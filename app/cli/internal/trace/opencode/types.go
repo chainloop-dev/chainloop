@@ -122,7 +122,10 @@ type toolState struct {
 
 // toolMetadata holds the fields of the tool metadata that the provider reads.
 type toolMetadata struct {
+	// Dir is the skill folder in OpenCode 1.x.
 	Dir string `json:"dir,omitempty"`
+	// Directory is the skill folder in OpenCode 2.
+	Directory string `json:"directory,omitempty"`
 }
 
 // exportDataV2 is the top-level shape of `opencode session export`, the
