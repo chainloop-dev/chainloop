@@ -51,6 +51,11 @@ type commonService struct {
 	existence cache.Cache[casexistence.Entry]
 	// clients caches the backend clients loaded for uploads, nil when disabled
 	clients *expirable.LRU[string, backend.UploaderDownloader]
+	// paceHook, when set, is called once per transferred chunk (uploads and
+	// downloads) with the bytes transferred so far. Production wiring never
+	// sets it; transfer-pace tests use it to stall the consumer mid-stream and
+	// observe the end-to-end HTTP/2 backpressure through the shared endpoint.
+	paceHook func(transferred int64)
 }
 
 func (s *commonService) loadBackend(ctx context.Context, providerType, secretID string) (backend.UploaderDownloader, error) {
@@ -92,6 +97,15 @@ func WithAuditDispatcher(d *AuditDispatcher) NewOpt {
 func WithStagingDir(dir string) NewOpt {
 	return func(s *commonService) {
 		s.stagingDir = dir
+	}
+}
+
+// WithPaceHook installs a per-chunk pacing callback for transfer-pace tests.
+// Production wiring never sets it: the callback runs on every chunk of every
+// transfer, so anything but a nil default would sit on the streaming hot path.
+func WithPaceHook(hook func(transferred int64)) NewOpt {
+	return func(s *commonService) {
+		s.paceHook = hook
 	}
 }
 

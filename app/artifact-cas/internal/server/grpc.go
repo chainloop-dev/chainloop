@@ -73,7 +73,23 @@ type Opts struct {
 type GRPCServers struct {
 	Private     *grpc.Server
 	PrivateAddr string
-	Legacy      *grpc.Server
+	// PrivateLis holds the private listener so a caller that never starts
+	// the server can still close the socket: before Start registers the
+	// listener with grpc-go, Private.Stop does not close it.
+	PrivateLis net.Listener
+	Legacy     *grpc.Server
+}
+
+// Close releases the private socket without serving. Callers that hand the
+// servers to the application lifecycle must not call it; construction-failure
+// paths use it to avoid leaking the bound address.
+func (s *GRPCServers) Close() error {
+	if s.PrivateLis == nil {
+		return nil
+	}
+	err := s.PrivateLis.Close()
+	s.PrivateLis = nil
+	return err
 }
 
 func legacyGRPCListenerEnabled(c *conf.Server) bool {
@@ -95,12 +111,12 @@ func NewGRPCServers(opts *Opts) (*GRPCServers, error) {
 		_ = privateLis.Close()
 		return nil, err
 	}
-	servers := &GRPCServers{Private: private, PrivateAddr: privateLis.Addr().String()}
+	servers := &GRPCServers{Private: private, PrivateAddr: privateLis.Addr().String(), PrivateLis: privateLis}
 	if legacyGRPCListenerEnabled(opts.ServerConfig) {
 		servers.Legacy, err = NewGRPCServer(opts)
 		if err != nil {
 			private.Server.Stop()
-			_ = privateLis.Close()
+			_ = servers.Close()
 			return nil, err
 		}
 	}

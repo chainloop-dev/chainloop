@@ -61,16 +61,16 @@ The control plane and the Artifact CAS will each serve gRPC and HTTP on one port
 Superseded by R-009 for the CAS. The control-plane scope moved to [the replacement spec](issue-3628-controlplane-http-dispatch.md).
 
 ~~On its single port, each service MUST serve gRPC (HTTP/2) and plain HTTP (HTTP/1.1 and HTTP/2). The control plane MUST also serve gRPC-Web. The CAS has no gRPC-Web today and does not get it (see D-011). This includes every endpoint that the gRPC port and the HTTP port serve today.~~
-- ~~Done when: these clients work against only the single port:~~
-  - ~~the CLI and the web UI~~
-  - ~~the OIDC login and the status probes~~
-  - ~~the referrer discovery and the OpenAPI document~~
-  - ~~CAS browser downloads~~
-- ~~Done when: the same checks pass through nginx ingress and through Traefik ingress.~~
+~~- ~~Done when: these clients work against only the single port:~~~~
+~~  - ~~the CLI and the web UI~~~~
+~~  - ~~the OIDC login and the status probes~~~~
+~~  - ~~the referrer discovery and the OpenAPI document~~~~
+~~  - ~~CAS browser downloads~~~~
+~~- ~~Done when: the same checks pass through nginx ingress and through Traefik ingress.~~~~
 
 ### ~~R-009: CAS shared endpoint protocol scope~~
 Superseded by R-010.
-Supersedes R-001 for the CAS. On its single port, the CAS MUST serve native gRPC over HTTP/2 and plain HTTP over HTTP/1.1, through cmux connection classification with the native gRPC transport (D-017). Plain HTTP/2 other than native gRPC is not supported on the CAS shared port: the gRPC matcher's SETTINGS injection breaks such a connection once it falls through to the HTTP server. Plain HTTP/2 and mixed connections remain control-plane scope under the replacement spec.
+~~Supersedes R-001 for the CAS. On its single port, the CAS MUST serve native gRPC over HTTP/2 and plain HTTP over HTTP/1.1, through cmux connection classification with the native gRPC transport (D-017). Plain HTTP/2 other than native gRPC is not supported on the CAS shared port: the gRPC matcher's SETTINGS injection breaks such a connection once it falls through to the HTTP server. Plain HTTP/2 and mixed connections remain control-plane scope under the replacement spec.~~
 ~~- Done when: focused tests cover native gRPC over h2c and TLS, HTTP/1.1 downloads, the status endpoints, and the CORS preflight through the shared port.~~
 ~~- Done when: the chart routes the gRPC paths and the HTTP paths into separate upstream pools, with HTTP/1.1 for the HTTP routes (D-018/D-019).~~
 ~~- Done when: browser downloads through a configured ingress work, and the documentation states that a browser downloading directly from a TLS-configured shared port is not a supported deployment.~~
@@ -175,11 +175,11 @@ The current HTTP address becomes the single port. It gets its own TLS settings, 
 Superseded by D-013.
 
 ~~The service splits by connection in front of the current gRPC and HTTP servers.~~
-- ~~Why: it keeps the whole middleware chain and the native gRPC transport for CAS streams, and it needs the smallest change.~~
-- ~~Alternatives considered:~~
-  - ~~One HTTP handler that routes each request: gRPC calls then use the HTTP adapter of the gRPC server. The gRPC library documents that path as slower and with fewer features. That puts R-003 at risk.~~
-  - ~~A move to Connect: it replaces every middleware and route, which is a large migration for the same result.~~
-- ~~Source: drafting~~
+~~- ~~Why: it keeps the whole middleware chain and the native gRPC transport for CAS streams, and it needs the smallest change.~~~~
+~~- ~~Alternatives considered:~~~~
+~~  - ~~One HTTP handler that routes each request: gRPC calls then use the HTTP adapter of the gRPC server. The gRPC library documents that path as slower and with fewer features. That puts R-003 at risk.~~~~
+~~  - ~~A move to Connect: it replaces every middleware and route, which is a large migration for the same result.~~~~
+~~- ~~Source: drafting~~~~
 
 ### D-003: Deprecation default
 The legacy gRPC port is on by default, then off by default, then deleted.
@@ -200,10 +200,10 @@ The chart uses one Service and one hostname per service. Only where the controll
 Superseded by D-015.
 
 ~~The services solve it in the server.~~
-- ~~Why: it works with any ingress, any proxy, and outside Kubernetes.~~
-- ~~Alternatives considered:~~
-  - ~~A chart-level proxy or Gateway API routes (#2642): they need extra infrastructure and leave two ports in the service.~~
-- ~~Source: drafting~~
+~~- ~~Why: it works with any ingress, any proxy, and outside Kubernetes.~~~~
+~~- ~~Alternatives considered:~~~~
+~~  - ~~A chart-level proxy or Gateway API routes (#2642): they need extra infrastructure and leave two ports in the service.~~~~
+~~- ~~Source: drafting~~~~
 
 ### D-006: Metrics and profiler ports
 The metrics and profiler ports stay separate.
@@ -235,10 +235,10 @@ The Helm chart change stays in this spec, as milestone 2.
 Superseded by D-014.
 
 ~~The single port routes each connection once. It supports only clients and proxies that keep gRPC and plain HTTP on separate HTTP/2 connections.~~
-- ~~Why: a connection that the native gRPC server owns cannot pass single requests to the HTTP server. Native gRPC transport for CAS streams (R-003) needs the connection split of D-001.~~
-- ~~Alternatives considered:~~
-  - ~~Route each request on one HTTP/2 server: it supports every proxy. But all gRPC calls then use the slower HTTP adapter of the gRPC server, which puts R-003 at risk.~~
-- ~~Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927)~~
+~~- ~~Why: a connection that the native gRPC server owns cannot pass single requests to the HTTP server. Native gRPC transport for CAS streams (R-003) needs the connection split of D-001.~~~~
+~~- ~~Alternatives considered:~~~~
+~~  - ~~Route each request on one HTTP/2 server: it supports every proxy. But all gRPC calls then use the slower HTTP adapter of the gRPC server, which puts R-003 at risk.~~~~
+~~- ~~Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927)~~~~
 
 ### D-011: gRPC-Web only on the control plane
 The single port serves gRPC-Web on the control plane only. The CAS serves gRPC and HTTP.
@@ -262,13 +262,13 @@ Drops D-002. The current HTTP port becomes the single port, not the gRPC port. T
 Superseded by D-016.
 
 ~~Supersedes D-001. The service splits by connection in front of the current gRPC and HTTP servers, with the cmux library as the connection classifier. The library owns the connection buffering and the listener plumbing. The service owns only a small matcher and the HTTP request dispatcher. The matcher sends the server's HTTP/2 settings frame to clients that wait for it. It reads the first request's content type through the standard HTTP/2 library. The matcher closes the connection when its first request is not native gRPC. The dispatcher carries the gRPC-Web wrapper and the native-gRPC fallback.~~
-- ~~Why: it keeps the whole middleware chain and the native gRPC transport for CAS streams. It also takes HTTP/2 parsing out of the code this project maintains. Argo CD and etcd run the same library split in production.~~
-- ~~Why: the gRPC library documents that its HTTP adapter may differ in performance and features from the native transport. It does not document the adapter as slower, and this project has not measured a difference. The native transport stays the normal path for gRPC connections, so R-003 does not rest on the adapter.~~
-- ~~Alternatives considered:~~
-  - ~~The custom connection parser of the first implementation: it works, but the project then maintains its own HTTP/2 frame parsing, replay, and resource bounds.~~
-  - ~~One HTTP handler that routes each request: every gRPC call, on every connection, then uses the HTTP adapter of the gRPC server.~~
-  - ~~A move to Connect: it requires migrating the generated server interfaces and the interceptors. Ordinary HTTP routes can stay, but the migration is larger than the classifier swap for the same single port.~~
-- ~~Source: [PR comment](https://github.com/chainloop-dev/chainloop/pull/3647#issuecomment-6266145446)~~
+~~- ~~Why: it keeps the whole middleware chain and the native gRPC transport for CAS streams. It also takes HTTP/2 parsing out of the code this project maintains. Argo CD and etcd run the same library split in production.~~~~
+~~- ~~Why: the gRPC library documents that its HTTP adapter may differ in performance and features from the native transport. It does not document the adapter as slower, and this project has not measured a difference. The native transport stays the normal path for gRPC connections, so R-003 does not rest on the adapter.~~~~
+~~- ~~Alternatives considered:~~~~
+~~  - ~~The custom connection parser of the first implementation: it works, but the project then maintains its own HTTP/2 frame parsing, replay, and resource bounds.~~~~
+~~  - ~~One HTTP handler that routes each request: every gRPC call, on every connection, then uses the HTTP adapter of the gRPC server.~~~~
+~~  - ~~A move to Connect: it requires migrating the generated server interfaces and the interceptors. Ordinary HTTP routes can stay, but the migration is larger than the classifier swap for the same single port.~~~~
+~~- ~~Source: [PR comment](https://github.com/chainloop-dev/chainloop/pull/3647#issuecomment-6266145446)~~~~
 
 ### D-014: Separate upstream connections, one-way fallback
 Supersedes D-010. The single port routes each connection once. It supports clients and proxies that keep native gRPC and plain HTTP on separate upstream HTTP/2 connections. Supported ingress configurations use separate upstream pools for the two kinds of traffic. The chart documents and tests them for nginx and Traefik. A connection that the HTTP server owns may carry a native gRPC request later. The HTTP server then gives the request to the gRPC server through the documented fallback, on the adapter transport. The reverse is not supported: a connection that the native gRPC server owns cannot carry a plain HTTP request. Arbitrary mixed native-gRPC and plain-HTTP requests on one shared upstream connection are not required.
@@ -289,16 +289,16 @@ Supersedes D-005. The services solve the multiplexing in the server process. The
 Superseded by D-017.
 
 ~~Supersedes D-013. The service keeps cmux connection classification, the native gRPC server, and the HTTP request dispatcher with its gRPC-Web wrapper and native-gRPC fallback. Both native gRPC and ordinary HTTP/2 clients may wait for server SETTINGS before their first request. Silence does not identify the protocol of that request.~~
-- ~~The matcher uses the standard HTTP/2 framer and HPACK decoder. It limits incoming frames to the initial 16 KiB maximum before reading their payloads, as well as limiting classification bytes, time, and concurrency.~~
-- ~~When the matcher sends an empty SETTINGS frame and the first request is HTTP, it waits within the classification bounds for that SETTINGS acknowledgement. It records the validated ACK's exact offset in cmux's replay. The HTTP listener removes only that nine-byte frame before the HTTP server reads the connection. The HTTP server owns all subsequent SETTINGS exchanges. An incomplete injected handshake is closed.~~
-- ~~Native gRPC connections still go to the existing native server with their original replay. HTTP connections that did not need an injected SETTINGS frame also retain their original replay. HTTP requests and later streams are not parsed again by the handoff adapter.~~
-- ~~Why: rejecting every non-gRPC request after the matcher sends SETTINGS also rejects valid HTTP-only clients. Forwarding the extra ACK unchanged makes net/http reject the connection after the client acknowledges the HTTP server's own SETTINGS. Removing the one ACK preserves its ownership without adding an ongoing frame parser.~~
-- ~~Evidence: focused tests cover HTTP and gRPC-Web content types over plaintext and TLS, ACKs before and after the first request, subsequent requests on the same connection, incomplete handshakes, and an oversized frame header without its payload. These tests do not establish full R-002 parity or R-003 CAS performance.~~
-- ~~Source: [implementation review](https://github.com/chainloop-dev/chainloop/pull/3647#pullrequestreview-5573391966).~~
+~~- ~~The matcher uses the standard HTTP/2 framer and HPACK decoder. It limits incoming frames to the initial 16 KiB maximum before reading their payloads, as well as limiting classification bytes, time, and concurrency.~~~~
+~~- ~~When the matcher sends an empty SETTINGS frame and the first request is HTTP, it waits within the classification bounds for that SETTINGS acknowledgement. It records the validated ACK's exact offset in cmux's replay. The HTTP listener removes only that nine-byte frame before the HTTP server reads the connection. The HTTP server owns all subsequent SETTINGS exchanges. An incomplete injected handshake is closed.~~~~
+~~- ~~Native gRPC connections still go to the existing native server with their original replay. HTTP connections that did not need an injected SETTINGS frame also retain their original replay. HTTP requests and later streams are not parsed again by the handoff adapter.~~~~
+~~- ~~Why: rejecting every non-gRPC request after the matcher sends SETTINGS also rejects valid HTTP-only clients. Forwarding the extra ACK unchanged makes net/http reject the connection after the client acknowledges the HTTP server's own SETTINGS. Removing the one ACK preserves its ownership without adding an ongoing frame parser.~~~~
+~~- ~~Evidence: focused tests cover HTTP and gRPC-Web content types over plaintext and TLS, ACKs before and after the first request, subsequent requests on the same connection, incomplete handshakes, and an oversized frame header without its payload. These tests do not establish full R-002 parity or R-003 CAS performance.~~~~
+~~- ~~Source: [implementation review](https://github.com/chainloop-dev/chainloop/pull/3647#pullrequestreview-5573391966).~~~~
 
 ### ~~D-017: CAS shared endpoint: cmux with the native transport, and the corrected SETTINGS contract~~
 Superseded by D-020.
-Supersedes D-016 for the CAS endpoint. The control-plane parts of D-014 to D-016 were already superseded by [the replacement spec](issue-3628-controlplane-http-dispatch.md).
+~~Supersedes D-016 for the CAS endpoint. The control-plane parts of D-014 to D-016 were already superseded by [the replacement spec](issue-3628-controlplane-http-dispatch.md).~~
 
 ~~The CAS shared endpoint is `server.http.addr`. cmux reads the start of each new connection and hands the whole connection to one of the two existing transports: an HTTP/2 connection whose first request declares a native gRPC content type goes to the existing native gRPC listener (`grpc.Server.Serve`); every other connection goes to the existing HTTP server. ByteStream uploads and downloads therefore keep the grpc-go native transport, so R-003 does not rest on the HTTP adapter.~~
 ~~- Why not the merged control-plane design, per-request `ServeHTTP` dispatch: the [PR #3663 1 GiB comparison](https://github.com/chainloop-dev/chainloop/pull/3663) measured about 1.25 GiB of combined client/server sampled peak live heap for adapter uploads, against about 28 MiB for the native transport, and download throughput 11.8% lower, already past the R-003 limit. grpc-go's handler transport reads the HTTP body in a separate goroutine into an unbounded receive buffer, so read-ahead is not bounded by the application's pace. CAS moves gigabyte streams; the control plane does not. The two services keep different transport designs on purpose.~~
@@ -310,7 +310,7 @@ Supersedes D-016 for the CAS endpoint. The control-plane parts of D-014 to D-016
 
 ### ~~D-018: CAS chart: one hostname, path-split upstream pools, HTTP/1.1 for the HTTP routes~~
 Superseded by D-020.
-The chart exposes one CAS hostname and one public port, and splits the routes by protocol into separate upstream pools: the Google ByteStream, CAS, health, reflection, metadata, and channelz RPC paths go to the gRPC pool with an HTTP/2 upstream (nginx `backend-protocol: GRPC` and `grpc-services`; the upload body-size annotations move with them), and `/download/*`, `/statusz`, and `/infoz` go to the HTTP pool, which dials HTTP/1.1, not h2c. One certificate terminates at the edge.
+~~The chart exposes one CAS hostname and one public port, and splits the routes by protocol into separate upstream pools: the Google ByteStream, CAS, health, reflection, metadata, and channelz RPC paths go to the gRPC pool with an HTTP/2 upstream (nginx `backend-protocol: GRPC` and `grpc-services`; the upload body-size annotations move with them), and `/download/*`, `/statusz`, and `/infoz` go to the HTTP pool, which dials HTTP/1.1, not h2c. One certificate terminates at the edge.~~
 ~~- Why the path split is exact for CAS: CAS has no gRPC-Web (D-011), so its gRPC paths and its HTTP paths are disjoint. No path can carry both protocols. The control plane could not use this split because native gRPC and gRPC-Web share RPC paths; the [PR #3647 NGINX reproduction](https://github.com/chainloop-dev/chainloop/pull/3647#issuecomment-6272007730) showed the path-only split failing there with 415 on gRPC-Web. CAS does not have that failure mode.~~
 ~~- Why HTTP/1.1 upstream on the HTTP pool: D-017. An HTTP/2 upstream for the HTTP routes triggers the matcher's SETTINGS injection, and the client's acknowledgement then breaks the HTTP server connection with GOAWAY.~~
 ~~- Controller notes: community nginx merges same-host paths from multiple Ingress resources and sets the backend protocol per resource, which expresses the split. F5 NGINX conflicts on unrelated same-host Ingresses; use its VirtualServer resource. Traefik applies the `service.serversscheme` annotation per Service, so one Service cannot be dialed h2c for the gRPC routes and HTTP/1.1 for the HTTP routes; the Traefik split needs a second Service for the HTTP routes or a controller-specific resource. The browser download endpoint stays on the HTTP routes: it is published API ([docs](https://docs.chainloop.dev/api-reference/downloadservice/download-artifacts-from-cas)), and CAS does not drop it.~~
@@ -318,7 +318,7 @@ The chart exposes one CAS hostname and one public port, and splits the routes by
 
 ### ~~D-019: CAS ingress connection reuse and certificate ownership~~
 Superseded by D-020.
-Supplements D-018. Ingress-nginx shares a global keepalive cache. Separate Ingress resources alone do not isolate their connections.
+~~Supplements D-018. Ingress-nginx shares a global keepalive cache. Separate Ingress resources alone do not isolate their connections.~~
 
 ~~The CAS Service has an HTTP port and a gRPC port alias. Both target the same application listener. The HTTP routes use pod endpoints. The gRPC routes use the Service ClusterIP and the alias. Each protocol gets a different backend identity and upstream address. This keeps one Service, one hostname, and one application listener (R-008).~~
 
@@ -334,7 +334,7 @@ Supplements D-018. Ingress-nginx shares a global keepalive cache. Separate Ingre
 ### D-020: CAS shared endpoint: per-request dispatch with a standard-library reverse proxy to a private native server
 Supersedes D-017, D-018, and D-019. The merged control-plane design stays unchanged.
 
-The CAS shared endpoint is `server.http.addr`, owned by one standard HTTP listener (HTTP/1.1, HTTP/2, optional TLS). Each request is dispatched: native gRPC (HTTP/2 + `application/grpc*`) goes through an in-process `httputil.ReverseProxy` to a private native gRPC server bound to an ephemeral loopback address; every other request uses the existing HTTP routes. The private server runs the same services and interceptors as the legacy listener and is independent of it: the legacy flag, address, and TLS settings are unchanged, and the private listener exists whether or not the legacy listener is enabled.
+The CAS shared endpoint is `server.http.addr`, owned by one standard HTTP listener (HTTP/1.1, HTTP/2, optional TLS). Each request is dispatched: native gRPC — HTTP/2 with a content type in the `application/grpc` family, excluding `application/grpc-web*`, which CAS does not serve (D-011) — goes through an in-process `httputil.ReverseProxy` to a private native gRPC server bound to an ephemeral loopback address; every other request uses the existing HTTP routes. The private server runs the same services and interceptors as the legacy listener and is independent of it: the legacy flag, address, and TLS settings are unchanged, and the private listener exists whether or not the legacy listener is enabled.
 - Why not cmux (D-017): connection classification cannot serve the single-location all-HTTP/2 upstream that the control-plane chart shape produces. Once the SETTINGS-writing matcher has spoken, the connection is gRPC-only, and pooled mixed connections then fail — the 502 reproduction that D-019's Service port alias worked around. Per-request dispatch removes that contract instead of working around it: mixed native-gRPC and plain-HTTP requests share one upstream connection in any order.
 - Why the proxy and not `grpc.Server.ServeHTTP` for gRPC: the measured adapter read-ahead, about 1.25 GiB of live heap on a 1 GiB upload against about 28 MiB on the native transport. `httputil.ReverseProxy` streams the request body into the private connection, whose HTTP/2 flow-control window paces the proxy's reads while the shared listener's own window paces the client, so no unbounded read-ahead exists in either direction. gRPC frames, compression, metadata, and response trailers pass through without decoding or rebuilding.
 - Why a private loopback listener and not the legacy listener: the legacy listener carries independent address and TLS settings and is optional. An h2c proxy cannot dial a TLS-configured address, and the shared endpoint must work with the legacy listener disabled.
@@ -346,7 +346,7 @@ The CAS shared endpoint is `server.http.addr`, owned by one standard HTTP listen
 
 ## Open Questions
 
-- [x] **Must the single port support proxies that share one upstream connection for gRPC and plain HTTP?** Examples: Envoy-based proxies, service meshes. Answered by D-014: not required. Setups that share one upstream pool can route gRPC to the legacy gRPC port during the deprecation period. The chart documents the supported nginx and Traefik configurations, which keep the two kinds of traffic on separate upstream connections. Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927).
+- [x] **Must the single port support proxies that share one upstream connection for gRPC and plain HTTP?** Examples: Envoy-based proxies, service meshes. Answered by D-014 for the connection-classification designs, which could not accept them. Superseded for the CAS by R-010 and D-020: the per-request dispatcher accepts mixed native-gRPC and plain-HTTP requests on one upstream HTTP/2 connection in any order, so a shared upstream pool works for the CAS shared endpoint. The control-plane replacement spec accepts mixed connections from the start. The legacy gRPC port remains available during the deprecation period. Source: [cubic review](https://github.com/chainloop-dev/chainloop/pull/3629#discussion_r4286475927).
 
 D-007 and D-008 record the answers to the questions from drafting.
 

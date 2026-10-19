@@ -247,7 +247,19 @@ The existing gRPC ingress stays available. Existing clients can keep their curre
 To test the shared endpoint, point a gRPC client to the control plane HTTP hostname on port 443.
 The CAS shared endpoint mirrors the control plane (spec D-020): one standard HTTP listener dispatches each request, and native gRPC reaches the native transport through an in-process reverse proxy. `cas.ingress` is one catch-all route on the same hostname — one path `/` with an HTTP/2 (gRPC) upstream — so ByteStream uploads and downloads, browser downloads, and status probes share one Service port and one certificate, including mixed requests on one upstream connection.
 
-Set gRPC transport annotations under `cas.ingress.annotations`, such as `backend-protocol: GRPCS` for TLS to the pod. The upload body-size annotations keep their existing defaults. `cas.ingressAPI`, `cas.serviceAPI`, and the control plane's connection to the legacy CAS endpoint keep their existing settings. CAS adds no gRPC-Web or Connect support. Deployed-controller qualification and the full streaming-performance evidence still need work. See the [experiment instructions](../../app/artifact-cas/README.md#shared-endpoint).
+Set gRPC transport annotations under `cas.ingress.annotations`, such as `backend-protocol: GRPCS` for TLS to the pod. The upload body-size annotations keep their existing defaults.
+
+Enable the shared endpoint with a `cas.ingress` block — for example:
+
+```yaml
+cas:
+  ingress:
+    enabled: true
+    hostname: cas.example.com
+    tls: true
+```
+
+`cas.ingress.enabled` defaults to `false`, so a setup that only copies the documented `cas.ingressAPI` block leaves the shared hostname disabled. Retain `cas.ingressAPI` only while the legacy gRPC endpoint is also required. `cas.serviceAPI`, and the control plane's connection to the legacy CAS endpoint keep their existing settings. CAS adds no gRPC-Web or Connect support. Deployed-controller qualification and the full streaming-performance evidence still need work. See the [experiment instructions](../../app/artifact-cas/README.md#shared-endpoint).
 
 The chart configures HTTP/2 upstream traffic for these controllers:
 

@@ -255,6 +255,175 @@ func TestSharedCASStatus(t *testing.T) {
 	}
 }
 
+// TestCASProxyPreservesAuthority pins the proxy Rewrite contract: the native
+// server must observe the client's original :authority, the same value a
+// direct connection to the legacy listener would carry, so authority-based
+// interceptors and telemetry do not see the loopback dial target.
+func TestCASProxyPreservesAuthority(t *testing.T) {
+	opts := casTestOpts(t)
+	sharedURL, _ := startCASTestServers(t, opts)
+	host, port, err := net.SplitHostPort(sharedURL[len("http://"):])
+	require.NoError(t, err)
+
+	// Use an authority that differs from the dial address so a cleared Out.Host
+	// would be visible in the :authority the native server receives.
+	const authority = "cas.authority.test:443"
+	conn, err := grpcLib.NewClient(net.JoinHostPort(host, port), grpcLib.WithAuthority(authority), grpcLib.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+	ctx, cancel := casTestContext("")
+	defer cancel()
+	_, err = v1.NewStatusServiceClient(conn).Statusz(ctx, &v1.StatuszRequest{})
+	require.NoError(t, err)
+}
+
+// pacedUploads gates a ByteStream service so each direction can pause its
+// consumer at a fixed transferred byte count. The hook stays inert until arm
+// is closed (so a setup upload through the same service is not paused), and
+// the gate wait is bounded: the hook runs on the server's stream goroutine,
+// where an unbounded wait would deadlock cancellation, because the hook never
+// sees the stream context. Production wiring never sets the hook.
+func pacedUploads(t *testing.T, pauseAt int64) (arm func(), release chan struct{}, hook func(int64)) {
+	armed, release := make(chan struct{}), make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	return func() { close(armed) }, release, func(transferred int64) {
+		select {
+		case <-armed:
+		default:
+			return
+		}
+		if transferred >= pauseAt {
+			select {
+			case <-release:
+			case <-time.After(3 * time.Second):
+			}
+		}
+	}
+}
+
+// TestCASSharedPausedConsumerBackpressure is the durable regression for the
+// read-ahead property: with the consumer paused mid-stream, the producer must
+// stop advancing after bounded buffering, and cancellation must release both
+// sides. A whole-stream buffer anywhere on the path (the measured failure of
+// grpc.Server.ServeHTTP) would let the upload keep advancing to its full size.
+func TestCASSharedPausedConsumerBackpressure(t *testing.T) {
+	const pauseAt = 8 << 20 // pause once 8 MiB have transferred
+	t.Run("upload", func(t *testing.T) {
+		opts := casTestOpts(t)
+		arm, release, hook := pacedUploads(t, pauseAt)
+		opts.ByteService = service.NewByteStreamService(opts.Providers, append(serviceOptsForTest(t, opts), service.WithPaceHook(hook))...)
+		sharedURL, _ := startCASTestServers(t, opts)
+		client := bytestream.NewByteStreamClient(casTestConn(t, sharedURL[len("http://"):], false))
+		up := casTestToken(t, casJWT.Uploader, 0, time.Hour)
+
+		const size = 64 << 20
+		hash := sha256.New()
+		_, err := io.CopyN(hash, zeroReader{}, size)
+		require.NoError(t, err)
+		digest := hex.EncodeToString(hash.Sum(nil))
+
+		arm()
+		ctx, cancel := casTestContext(up)
+		defer cancel()
+		stream, err := client.Write(ctx)
+		require.NoError(t, err)
+		resource := casResourceName(t, &v1.CASResource{Digest: digest, FileName: "artifact.bin"})
+		chunk := make([]byte, 1<<20)
+		var sent atomic.Int64
+		sendErr := make(chan error, 1)
+		go func() {
+			for sent.Load() < size {
+				n := min(int64(len(chunk)), size-sent.Load())
+				err := stream.Send(&bytestream.WriteRequest{ResourceName: resource, Data: chunk[:n]})
+				if err != nil {
+					sendErr <- err
+					return
+				}
+				sent.Add(n)
+			}
+			sendErr <- stream.CloseSend()
+		}()
+
+		// Wait until the consumer has absorbed pauseAt bytes, then give the
+		// pipeline a moment: if any hop buffered whole streams, the client
+		// would keep advancing far past pauseAt.
+		require.Eventually(t, func() bool { return sent.Load() >= pauseAt }, 30*time.Second, 5*time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
+		sentWhenPaused := sent.Load()
+
+		// Cancellation must release the paused stream on both sides.
+		cancel()
+		select {
+		case err := <-sendErr:
+			require.Error(t, err, "the canceled upload must surface an error client-side")
+		case <-time.After(10 * time.Second):
+			require.FailNow(t, "cancellation did not release the paused upload")
+		}
+
+		// Assert the stall only after the stream is torn down, so a failed
+		// assertion cannot leak the sender goroutine into cleanup.
+		require.Less(t, sentWhenPaused, int64(size)/4,
+			"an unbounded buffer let the producer advance past the paused consumer; sent %d bytes", sentWhenPaused)
+		_ = release // closed by t.Cleanup
+	})
+
+	t.Run("download", func(t *testing.T) {
+		opts := casTestOpts(t)
+		arm, release, hook := pacedUploads(t, pauseAt)
+		opts.ByteService = service.NewByteStreamService(opts.Providers, append(serviceOptsForTest(t, opts), service.WithPaceHook(hook))...)
+		sharedURL, _ := startCASTestServers(t, opts)
+		client := bytestream.NewByteStreamClient(casTestConn(t, sharedURL[len("http://"):], false))
+		up, down := casTestToken(t, casJWT.Uploader, 0, time.Hour), casTestToken(t, casJWT.Downloader, 0, time.Hour)
+
+		const size = 64 << 20
+		hash := sha256.New()
+		_, err := io.CopyN(hash, zeroReader{}, size)
+		require.NoError(t, err)
+		digest := hex.EncodeToString(hash.Sum(nil))
+		// Upload the fixture with the gate still inert.
+		require.NoError(t, casTestUpload(t, client, up, digest, io.LimitReader(zeroReader{}, size), size))
+
+		arm()
+		ctx, cancel := casTestContext(down)
+		defer cancel()
+		stream, err := client.Read(ctx, &bytestream.ReadRequest{ResourceName: digest})
+		require.NoError(t, err)
+		var received atomic.Int64
+		recvErr := make(chan error, 1)
+		go func() {
+			for {
+				resp, err := stream.Recv()
+				if err != nil {
+					recvErr <- err
+					return
+				}
+				received.Add(int64(len(resp.GetData())))
+			}
+		}()
+
+		require.Eventually(t, func() bool { return received.Load() >= pauseAt }, 30*time.Second, 5*time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
+		receivedWhenPaused := received.Load()
+
+		cancel()
+		select {
+		case <-recvErr:
+		case <-time.After(10 * time.Second):
+			require.FailNow(t, "cancellation did not release the paused download")
+		}
+
+		require.Less(t, receivedWhenPaused, int64(size)/4,
+			"an unbounded buffer let the server stream past the paused consumer; received %d bytes", receivedWhenPaused)
+		_ = release // closed by t.Cleanup
+	})
+}
+
+// serviceOptsForTest mirrors the test wiring in casTestOpts so pace-hook
+// variants get the same staging option.
+func serviceOptsForTest(tb testing.TB, opts *Opts) []service.NewOpt {
+	return []service.NewOpt{service.WithStagingDir(tb.TempDir())}
+}
+
 func TestCASByteStreamTransportParity(t *testing.T) {
 	for _, useTLS := range []bool{false, true} {
 		t.Run(map[bool]string{false: "h2c", true: "TLS"}[useTLS], func(t *testing.T) {
@@ -515,7 +684,7 @@ func TestCASLegacyListenerAndTLSConfiguration(t *testing.T) {
 			opts.ServerConfig.LegacyGrpcListener = new(false)
 			servers, err := NewGRPCServers(opts)
 			require.NoError(t, err)
-			defer func() { require.NoError(t, servers.Private.Stop(context.Background())) }()
+			// A failed NewHTTPServer must close the private socket itself.
 			_, err = NewHTTPServer(opts, servers)
 			require.ErrorContains(t, err, tc.wantErr)
 		})
@@ -668,4 +837,23 @@ func TestCASSharedInitializationDoesNotBindOnInvalidKey(t *testing.T) {
 	retry, err := net.Listen("tcp", opts.ServerConfig.Http.Addr)
 	require.NoError(t, err, "failed initialization must leave the listener address available")
 	require.NoError(t, retry.Close())
+	// The failed constructor closed the private socket: connections are refused.
+	require.NoError(t, servers.Close(), "Close after a failed construction is safe")
+	_, err = net.DialTimeout("tcp", servers.PrivateAddr, time.Second)
+	require.Error(t, err, "the private socket must refuse connections after the failed construction")
+}
+
+// TestCASPrivateSocketClosedWhenNeverStarted covers the stop-before-serve
+// path: the socket must be closable and stop accepting after Close, even
+// though Private.Stop alone does not close a listener registered through
+// grpc.Listener before Serve runs.
+func TestCASPrivateSocketClosedWhenNeverStarted(t *testing.T) {
+	opts := casTestOpts(t)
+	opts.ServerConfig.LegacyGrpcListener = new(false)
+	servers, err := NewGRPCServers(opts)
+	require.NoError(t, err)
+	require.NoError(t, servers.Close())
+	_, err = net.DialTimeout("tcp", servers.PrivateAddr, time.Second)
+	require.Error(t, err, "the private socket must refuse connections after Close")
+	require.NoError(t, servers.Close(), "Close is idempotent")
 }
