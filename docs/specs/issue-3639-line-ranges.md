@@ -63,7 +63,7 @@ The change MUST be additive in the evidence schema. A range with no attribution 
 
 ## Constraints
 
-- This spec needs the push-time owner rebuild and the net numbers of milestone 2 of the parent spec.
+- This spec needs the ledger match and the net numbers of milestone 2 of the parent spec. It does not need the blame step of that milestone, which covers only removed lines.
 - The CLI keeps all attribution data in the trace state of the local clone, as the parent spec requires.
 - The repository is public. The spec and the evidence hold no customer data.
 
@@ -71,7 +71,7 @@ The change MUST be additive in the evidence schema. A range with no attribution 
 
 The user sees no new step. After a push, the session page can mark the lines of each file in the pushed code. AI lines get one color, and human lines get another.
 
-**Positions.** Milestone 2 of the parent spec rebuilds the owner of each line at push time. It uses blame of the pushed commit and the session's ledger. The same pass knows the position of each line in the pushed file. For each file of the session, the CLI keeps the lines that the session added and that are still there. It gives each line its owner, AI or human. Then it joins adjacent lines with the same owner into one range.
+**Positions.** The parent spec blames only the lines that a pushed commit removed. This spec adds a blame of each file of the session at the pushed commit. The blame gives each line of the file its position and the commit that last wrote it. The CLI keeps the lines whose commit is a commit of the session. It matches each of these lines to the session's ledger, as milestone 2 of the parent spec does. The match gives the line its owner, AI or human. Then it joins adjacent lines with the same owner into one range.
 
 **Evidence.** The ranges stay in the same list of each file entry. Each range gets one new property, its attribution. The counts of the file stay as they are, and the ranges agree with them (R-003).
 
@@ -83,7 +83,7 @@ sequenceDiagram
     participant L as Trace state (ledger and commit records)
     participant B as Git history (blame of the pushed commit)
     participant P as Platform
-    G->>B: Find the last writer of each line in the pushed commit
+    G->>B: Blame each file of the session at the pushed commit
     G->>L: Match the lines of the session to the ledger
     G->>G: Keep the lines that the session added and that are still there
     G->>G: Join adjacent lines with the same owner into ranges
@@ -129,7 +129,7 @@ A CLI release first lets each range carry the attribution property. A later rele
 - Source: drafting
 
 ### D-006: The CLI writes attributed ranges before the platform reads them
-The CLI writes the attributed ranges as soon as the schema is open. It does not wait for the platform.
+The CLI writes the attributed ranges in the attributed-ranges milestone, after milestone 2 of the parent spec and after the schema is open. It does not wait for the platform.
 - Why: the evidence becomes accurate at once. Until the platform follow-up ships, a platform that treats every range as AI shows the human ranges as AI. The team accepts that for this time.
 - Alternatives considered:
   - The platform reads the attribution first: no wrong view, but the CLI change waits on the platform.
@@ -151,4 +151,4 @@ None.
 |------|------------|
 | A reader with an older schema copy rejects evidence with the new property. | Open the schema one release before the CLI writes the property (D-005). |
 | An older platform shows human ranges as AI. | Accepted until the platform follow-up reads the attribution (D-006). |
-| Blame of large files makes a push slow. | Use the blame pass of the parent spec's milestone 2. Compute ranges only for files of the sessions in the push. |
+| Blame of large files makes a push slow. | Blame only the files of the sessions in the push, and blame each file one time for all its sessions. |
