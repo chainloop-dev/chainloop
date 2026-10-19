@@ -56,7 +56,8 @@ func (p *Provider) ReplaceSpecCopies(raw map[string][]json.RawMessage, sources p
 
 	replacePastedImages(raw, sources, report)
 
-	r := &specCopies{sources: sources, files: make(map[string]fileDigest), report: report}
+	r := &specCopies{sources: sources, files: make(map[string]fileDigest), report: report,
+		results: make(map[string]replacedCopy), inputs: make(map[string]replacedCopy)}
 	for _, lines := range raw {
 		r.stream(lines)
 	}
@@ -70,6 +71,18 @@ type specCopies struct {
 	// times is read from disk one time.
 	files  map[string]fileDigest
 	report pointer.Report
+	// results and inputs hold the copies that the entries of a stream had,
+	// by tool call ID, so that the same copies in its request blobs get the
+	// same pointers.
+	results map[string]replacedCopy
+	inputs  map[string]replacedCopy
+}
+
+// replacedCopy is a field that held a copy of a spec source: its value
+// before the replacement, and the pointer that replaced it.
+type replacedCopy struct {
+	original json.RawMessage
+	pointer  json.RawMessage
 }
 
 type fileDigest struct {
@@ -108,8 +121,13 @@ func (r *specCopies) stream(lines []json.RawMessage) {
 	calls := make(map[string]*toolCall)
 	var order []*toolCall
 
+	// A request blob repeats blocks of the entries with the same tool call
+	// IDs. It is left out here, so that a call and its result are the ones
+	// of the entries, and gets the same pointers after them.
+	blobs := requestBlobLines(lines)
+
 	for i, l := range lines {
-		if !hasBlock(l, blockToolUse, func(t, name, _ string) bool { return t == blockToolUse && (name == toolRead || name == toolWrite) }) {
+		if blobs[i] || !hasBlock(l, blockToolUse, func(t, name, _ string) bool { return t == blockToolUse && (name == toolRead || name == toolWrite) }) {
 			continue
 		}
 		e := decodeEntry(l)
@@ -130,12 +148,8 @@ func (r *specCopies) stream(lines []json.RawMessage) {
 		}
 	}
 
-	if len(calls) == 0 {
-		return
-	}
-
 	for i, l := range lines {
-		if !hasBlock(l, blockToolResult, func(t, _, id string) bool { return t == blockToolResult && calls[id] != nil }) {
+		if len(calls) == 0 || blobs[i] || !hasBlock(l, blockToolResult, func(t, _, id string) bool { return t == blockToolResult && calls[id] != nil }) {
 			continue
 		}
 		e := entries[i]
@@ -158,6 +172,12 @@ func (r *specCopies) stream(lines []json.RawMessage) {
 			r.read(c)
 		case toolWrite:
 			r.write(c)
+		}
+	}
+
+	for i := range blobs {
+		if e := r.requestBlob(lines[i]); e != nil {
+			entries[i] = e
 		}
 	}
 
@@ -228,7 +248,9 @@ func (r *specCopies) read(c *toolCall) {
 
 	if kind == resultText {
 		removed += len(c.resultBlock["content"])
-		c.resultBlock["content"] = json.RawMessage("[" + string(p) + "]")
+		replacement := json.RawMessage("[" + string(p) + "]")
+		r.results[c.resultBlock.str("tool_use_id")] = replacedCopy{original: c.resultBlock["content"], pointer: replacement}
+		c.resultBlock["content"] = replacement
 		replaced++
 	} else if blocks := c.resultBlock.objects("content"); blocks != nil {
 		// A media block keeps its type, and the pointer becomes its source.
@@ -292,6 +314,7 @@ func (r *specCopies) write(c *toolCall) {
 
 	p := pointer.New(material)
 
+	r.inputs[c.block.str("id")] = replacedCopy{original: c.input["content"], pointer: p}
 	res.BytesRemoved += swap(c.input, "content", p)
 	c.entry.set(c.block, "input", c.input)
 	res.Replaced++
