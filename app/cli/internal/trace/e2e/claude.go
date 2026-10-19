@@ -217,6 +217,11 @@ func (c *Claude) DisableSessionStart(repo string) error {
 	return os.WriteFile(path, data, 0o600)
 }
 
+// SkillPath implements Harness.
+func (c *Claude) SkillPath(name string) string {
+	return ".claude/skills/" + name + "/SKILL.md"
+}
+
 // claudeStreamEvent is the part of a stream-json line that the suite reads. A
 // hook event has type "system" and subtype "hook_response". Its stdout is
 // the response that the hook printed.

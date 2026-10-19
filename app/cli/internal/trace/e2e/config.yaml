@@ -9,6 +9,11 @@ harnesses:
     version: "2.1.301"
     models:
       - haiku
+  # The OpenRouter models need OPENROUTER_API_KEY in the environment.
+  OpenCode 2:
+    version: "2.0.22"
+    models:
+      - openrouter/anthropic/claude-haiku-5.5
 
 # Runs and pass threshold of a cell whose feature depends on the model
 # following an instruction (R-006, D-004). A cell of any other feature runs
