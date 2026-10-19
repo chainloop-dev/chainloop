@@ -625,10 +625,10 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 	// Find any material of kind attestation and make sure they exist already
 	for _, m := range predicate.GetMaterials() {
 		if m.Type == schemaapi.CraftingSchema_Material_ATTESTATION.String() {
-			run, err := uc.wfRunRepo.FindByAttestationDigest(ctx, m.Hash.String())
+			depRun, err := uc.wfRunRepo.FindByAttestationDigest(ctx, m.Hash.String())
 			if err != nil {
 				return nil, fmt.Errorf("finding attestation: %w", err)
-			} else if run == nil {
+			} else if depRun == nil {
 				return nil, NewErrValidation(fmt.Errorf("dependent attestation not found: %s", m.Hash))
 			}
 		}
