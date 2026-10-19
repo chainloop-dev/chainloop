@@ -28,6 +28,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -182,4 +183,26 @@ func checkMediaKept(s *Session) error {
 		return errors.New("the stored transcript does not hold the image that the agent read, unchanged")
 	}
 	return nil
+}
+
+// checkLineRanges checks that the evidence gives the lines of a file that the
+// agent wrote as one AI range, at their positions in the pushed commit.
+func checkLineRanges(path string, lines int) func(s *Session) error {
+	return func(s *Session) error {
+		cc := evidence(s).CodeChanges
+		if cc == nil {
+			return errors.New("the evidence has no code changes")
+		}
+		want := []aicodingsession.LineRange{{Start: 1, End: lines, Attribution: trace.AttributionAI}}
+		for _, f := range cc.Files {
+			if f.Path != path {
+				continue
+			}
+			if !slices.Equal(f.LineRanges, want) {
+				return fmt.Errorf("%s: line ranges %+v, want %+v", path, f.LineRanges, want)
+			}
+			return nil
+		}
+		return fmt.Errorf("the code changes do not list %s", path)
+	}
 }

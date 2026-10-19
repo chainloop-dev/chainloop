@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -359,6 +360,96 @@ func TestLineAttribution_Case4OtherSessionReplaces(t *testing.T) {
 
 	require.Contains(t, got, other)
 	assert.Equal(t, lineSplit{humanAdded: 1, humanRemoved: 1}, fileSplitOf(t, got[other].changes, "a.go"))
+}
+
+func rangesOf(t *testing.T, cc *aicodingsession.CodeChanges, path string) []aicodingsession.LineRange {
+	t.Helper()
+	for _, f := range cc.Files {
+		if f.Path == path {
+			return f.LineRanges
+		}
+	}
+	require.Failf(t, "file not in the code changes", "%s", path)
+
+	return nil
+}
+
+func aiRange(start, end int) aicodingsession.LineRange {
+	return aicodingsession.LineRange{Start: start, End: end, Attribution: trace.AttributionAI}
+}
+
+func humanRange(start, end int) aicodingsession.LineRange {
+	return aicodingsession.LineRange{Start: start, End: end, Attribution: trace.AttributionHuman}
+}
+
+// Spec issue-3639 line ranges R-001 and R-004: the AI writes 100 lines, and a
+// later commit replaces 20 of them by hand. Each push sends ranges at the
+// positions of the pushed commit, with their owner.
+func TestLineAttribution_RangesPointIntoPushedCommit(t *testing.T) {
+	testCases := []struct {
+		name string
+		// session is the session of the later commit, empty for none.
+		session string
+	}{
+		{name: "later commit in no session (cases 2 and 5)"},
+		{name: "later commit in the same session (case 3)", session: lineSession},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			r := newLineRepo(t)
+
+			lines := numbered("ai", 100)
+			r.agentWrite(lineSession, "a.go", content(lines))
+			r.commit("feat: a", "a.go")
+			first := r.push()
+			require.Contains(t, first, lineSession)
+			assert.Equal(t, []aicodingsession.LineRange{aiRange(1, 100)}, rangesOf(t, first[lineSession].changes, "a.go"))
+
+			for i := 40; i < 60; i++ {
+				lines[i] = "human " + lines[i]
+			}
+			r.humanWrite("a.go", content(lines))
+			files := []string{"a.go"}
+			if tc.session != "" {
+				r.agentWrite(tc.session, "b.go", "package b\n")
+				files = append(files, "b.go")
+			}
+			r.commit("fix: by hand", files...)
+
+			second := r.push()
+			require.Contains(t, second, lineSession, "the session is sent again")
+			cc := second[lineSession].changes
+			split := fileSplitOf(t, cc, "a.go")
+			assert.Equal(t, 80, split.aiAdded)
+			assert.Equal(t, 20, split.humanAdded)
+			assert.Equal(t, []aicodingsession.LineRange{aiRange(1, 40), humanRange(41, 60), aiRange(61, 100)}, rangesOf(t, cc, "a.go"))
+		})
+	}
+}
+
+// Spec issue-3639 line ranges R-002: in case 4, each session gets ranges only
+// for its own lines.
+func TestLineAttribution_RangesOfTwoSessions(t *testing.T) {
+	r := newLineRepo(t)
+	const other = "sess-other"
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+	r.push()
+
+	lines[1] = "human in b"
+	r.humanWrite("a.go", content(lines))
+	r.agentWrite(other, "b.go", "package b\n")
+	r.commit("feat: b", "a.go", "b.go")
+
+	got := r.push()
+	require.Contains(t, got, lineSession)
+	require.Contains(t, got, other)
+	assert.Equal(t, []aicodingsession.LineRange{aiRange(1, 1), aiRange(3, 5)}, rangesOf(t, got[lineSession].changes, "a.go"))
+	assert.Equal(t, []aicodingsession.LineRange{humanRange(2, 2)}, rangesOf(t, got[other].changes, "a.go"))
+	assert.Equal(t, []aicodingsession.LineRange{aiRange(1, 1)}, rangesOf(t, got[other].changes, "b.go"))
 }
 
 // R-005: lines that the agent removed are AI removals.

@@ -97,6 +97,7 @@ var features = map[string]Feature{
 	"Line attribution":          {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI("greeting.txt")}}},
 	"Shell changes attribution": {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI("shell.txt")}}},
 	"Partial commits":           {Checks: []Check{{scenarioPartial, checkBothCommitsCredited}}},
+	"Line ranges":               {Checks: []Check{{scenarioEditAndCommit, checkLineRanges("greeting.txt", 3)}}},
 	"Generated line counts": {
 		NotCovered: "neither the user nor the evidence can see the generated line counts yet",
 	},
