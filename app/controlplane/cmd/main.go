@@ -17,9 +17,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"math/rand"
-	"net"
 	"os"
 	"time"
 
@@ -65,9 +63,10 @@ func init() {
 }
 
 // cleanShutdownServer tolerates the shutdown race with the mux: kratos starts
-// and stops servers concurrently, so the mux may close its virtual listeners
-// before the gRPC/HTTP servers flag their own shutdown. Their Start then
-// returns net.ErrClosed even though the shutdown is orderly — kratos would
+// and stops servers concurrently, and the mux's sub-listeners close together
+// with the root listener, so the gRPC/HTTP servers may see their listener
+// close before they flag their own shutdown. Their Start then returns the
+// mux's shutdown error even though the shutdown is orderly — kratos would
 // surface it and main would panic on every SIGTERM the mux wins. The race is
 // only tolerated when the mux is actually stopping: a fatal accept-loop
 // failure surfaces as an error, so the process restarts instead of serving a
@@ -79,7 +78,7 @@ type cleanShutdownServer struct {
 
 func (s *cleanShutdownServer) Start(ctx context.Context) error {
 	err := s.Server.Start(ctx)
-	if errors.Is(err, net.ErrClosed) && s.mux.Stopping() {
+	if s.mux.IsOrderlyShutdownErr(err) {
 		return nil
 	}
 	return err
