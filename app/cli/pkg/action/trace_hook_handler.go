@@ -73,7 +73,7 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 		return nil
 	}
 
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 
 	// An amend with a new message replaces HEAD's trailer, and its sessions
 	// cannot be matched again because HEAD already consumed their pending
@@ -249,7 +249,7 @@ func handlePostCommit(_ context.Context, log zerolog.Logger) error {
 
 	log.Debug().Str("git_dir", gitDir).Msg("post-commit hook invoked")
 
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	sha, message, err := client.CommitHeadInfo(repoRoot)
 	if err != nil {
 		return fmt.Errorf("get commit info: %w", err)
@@ -803,7 +803,7 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 	}
 	log.Debug().Int("commit_count", len(allCommits)).Msg("loaded commit records")
 
-	gitClient := tracegit.NewGoGitClient()
+	gitClient := tracegit.NewGitClient()
 
 	// Drop orphan records (SHAs no longer in the branch — typically left over
 	// by a rebase) and any record that turns out to belong to a merge commit.
@@ -919,7 +919,7 @@ func finalizePush(store *state.Store, repoRoot string, commits []*state.CommitRe
 
 	_ = store.WipeTraceDir()
 
-	gitClient := tracegit.NewGoGitClient()
+	gitClient := tracegit.NewGitClient()
 	if liveSHAs, err := gitClient.LocalReachableSHAs(repoRoot); err == nil {
 		if err := store.GCOrphans(liveSHAs); err != nil {
 			log.Debug().Err(err).Msg("orphan GC failed; trace state is intact but not pruned")

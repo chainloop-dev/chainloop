@@ -116,7 +116,7 @@ func (r *lineRepo) push() map[string]pushed {
 	records, err := r.store.LoadAllCommitRecords()
 	require.NoError(r.t, err)
 
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	ledgers := loadLedgers(r.store, zerolog.Nop())
 	affected := scanReplacements(client, r.store, r.dir, records, ledgers, zerolog.Nop())
 
@@ -383,7 +383,7 @@ func TestLineAttribution_SurvivesCherryPick(t *testing.T) {
 
 	// Drop the feature branch and its record, as the post-push GC does.
 	runGit(t, r.dir, "branch", "-D", "feature")
-	live, err := tracegit.NewGoGitClient().LocalReachableSHAs(r.dir)
+	live, err := tracegit.NewGitClient().LocalReachableSHAs(r.dir)
 	require.NoError(t, err)
 	require.NoError(t, r.store.GCOrphans(live))
 

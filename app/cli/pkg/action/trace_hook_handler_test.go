@@ -778,7 +778,7 @@ func TestRebaseLifecycle(t *testing.T) {
 	assert.Len(t, all, 2)
 
 	// --- 3. The pre-push filter should drop the orphan and keep the new SHA. ---
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	filtered := filterCurrentBranchCommits(client, dir, all, zerolog.Nop())
 	require.Len(t, filtered, 1)
 	assert.Equal(t, newSHA, filtered[0].SHA, "only the in-branch SHA should survive the filter")
@@ -854,7 +854,7 @@ func TestCommitLifecycle_AmendKeepsSessions(t *testing.T) {
 
 	all, err := store.LoadAllCommitRecords()
 	require.NoError(t, err)
-	filtered := filterCurrentBranchCommits(tracegit.NewGoGitClient(), dir, all, zerolog.Nop())
+	filtered := filterCurrentBranchCommits(tracegit.NewGitClient(), dir, all, zerolog.Nop())
 	require.Len(t, filtered, 1)
 	assert.Equal(t, newSHA, filtered[0].SHA)
 }
@@ -1172,7 +1172,7 @@ func TestPushRebasePushPreservesAIAttribution(t *testing.T) {
 	//        end of runTracePush. ai-lines/ and commits/ for sessionID must
 	//        survive because the SHA is reachable from feature. ---
 	require.NoError(t, store.WipeTraceDir())
-	gitClient := tracegit.NewGoGitClient()
+	gitClient := tracegit.NewGitClient()
 	liveSHAs, err := gitClient.LocalReachableSHAs(dir)
 	require.NoError(t, err)
 	require.NotEmpty(t, liveSHAs, "post-push GC must see reachable SHAs")
@@ -1219,7 +1219,7 @@ func TestPushRebasePushPreservesAIAttribution(t *testing.T) {
 // Returns the resulting CodeChanges so the caller can assert on it.
 func buildSessionCodeChanges(t *testing.T, store *state.Store, dir, sha, sessionID string) *aicodingsession.CodeChanges {
 	t.Helper()
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	cc, err := client.CodeChangesForCommits(dir, []string{sha})
 	require.NoError(t, err)
 	commits := []*state.CommitRecord{{SHA: sha, SessionIDs: []string{sessionID}}}

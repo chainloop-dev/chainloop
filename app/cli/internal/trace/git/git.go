@@ -16,10 +16,22 @@
 package git
 
 import (
+	"os/exec"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
+
+// NewGitClient returns the client that runs the git binary when one is on
+// the PATH, and the go-git client otherwise. The git binary is many times
+// faster on a long history, for example for blame.
+func NewGitClient() Client {
+	if _, err := exec.LookPath("git"); err == nil {
+		return NewExecClient()
+	}
+
+	return NewGoGitClient()
+}
 
 // File statuses reported in aicodingsession.FileChange.Status. The control
 // plane buckets on these exact strings when it ingests the evidence, so they

@@ -295,15 +295,11 @@ func splitLines(text string) []string {
 	return lines
 }
 
-// Blame returns the last writer of each line of path at rev. It runs the git
-// binary, which is many times faster than the go-git blame on a long history,
-// and falls back to go-git when no git binary is found.
+// Blame returns the last writer of each line of path at rev. On a long history
+// it is many times slower than the git binary, which is why NewGitClient
+// prefers the exec client.
 func (c *GoGitClient) Blame(repoRoot, rev, path string) ([]BlameLine, error) {
-	if _, err := exec.LookPath("git"); err != nil {
-		return goGitBlame(repoRoot, rev, path)
-	}
-
-	return blamePorcelain(c, repoRoot, rev, path)
+	return goGitBlame(repoRoot, rev, path)
 }
 
 // Blame returns the last writer of each line of path at rev.
@@ -313,7 +309,7 @@ func (c *ExecClient) Blame(repoRoot, rev, path string) ([]BlameLine, error) {
 
 // blamePorcelain runs `git blame --porcelain` and reads the commit and the
 // text of each line. A path that rev does not hold has no lines.
-func blamePorcelain(c Client, repoRoot, rev, path string) ([]BlameLine, error) {
+func blamePorcelain(c *ExecClient, repoRoot, rev, path string) ([]BlameLine, error) {
 	content, err := c.FileAt(repoRoot, rev, path)
 	if err != nil {
 		return nil, err
@@ -345,7 +341,7 @@ func blamePorcelain(c Client, repoRoot, rev, path string) ([]BlameLine, error) {
 	return out, nil
 }
 
-// goGitBlame blames with go-git, for hosts with no git binary.
+// goGitBlame blames with go-git.
 func goGitBlame(repoRoot, rev, path string) ([]BlameLine, error) {
 	repo, err := openRepo(repoRoot)
 	if err != nil {
