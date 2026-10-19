@@ -222,6 +222,10 @@ type GitContext struct {
 type LineRange struct {
 	Start int `json:"start"`
 	End   int `json:"end"`
+	// Attribution is the owner of the lines, ai or human. A range with an
+	// attribution is a position in the file at the pushed commit. A range
+	// with no attribution is an AI range at edit time, as older CLIs write it.
+	Attribution string `json:"attribution,omitempty"`
 }
 
 // FileChange represents a single file modification in the session.

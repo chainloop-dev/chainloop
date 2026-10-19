@@ -445,6 +445,50 @@ func TestValidateAICodingSessionSpec(t *testing.T) {
 	}
 }
 
+// TestValidateAICodingSessionLineRanges covers code_changes.files[].line_ranges.
+// A range can say if its lines are AI or human (spec issue-3639, line ranges
+// D-005). A range with no attribution keeps its earlier meaning, so the
+// property is optional.
+func TestValidateAICodingSessionLineRanges(t *testing.T) {
+	withRange := func(t *testing.T, r map[string]any) map[string]any {
+		t.Helper()
+		f, err := os.ReadFile("./testdata/ai_coding_session_valid.json")
+		require.NoError(t, err)
+
+		var payload map[string]any
+		require.NoError(t, json.Unmarshal(f, &payload))
+		payload["code_changes"] = map[string]any{
+			"files": []any{
+				map[string]any{"path": "main.go", "status": "modified", "line_ranges": []any{r}},
+			},
+		}
+		return payload
+	}
+
+	testCases := []struct {
+		name    string
+		r       map[string]any
+		wantErr bool
+	}{
+		{name: "accepts a range with no attribution", r: map[string]any{"start": 1, "end": 3}},
+		{name: "accepts an AI range", r: map[string]any{"start": 1, "end": 3, "attribution": "ai"}},
+		{name: "accepts a human range", r: map[string]any{"start": 4, "end": 4, "attribution": "human"}},
+		{name: "rejects a non-string attribution", r: map[string]any{"start": 1, "end": 3, "attribution": 1}, wantErr: true},
+		{name: "rejects an unknown property", r: map[string]any{"start": 1, "end": 3, "owner": "ai"}, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := schemavalidators.ValidateAICodingSession(withRange(t, tc.r), "")
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestValidateSecurityContext(t *testing.T) {
 	testCases := []struct {
 		name     string

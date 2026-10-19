@@ -233,6 +233,10 @@
                     "end": {
                       "type": "integer",
                       "description": "End line number"
+                    },
+                    "attribution": {
+                      "type": "string",
+                      "description": "Owner of the lines in the range: ai or human. A range with an attribution is a position in the file at the pushed commit. A range with no attribution is an AI range at edit time."
                     }
                   },
                   "additionalProperties": false
