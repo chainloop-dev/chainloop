@@ -31,7 +31,8 @@ import (
 // Environment of a run of the suite.
 const (
 	// envHarness, envModel and envFeature filter a manual run. Each is a
-	// comma-separated list. A filtered run does not become the previous result.
+	// semicolon-separated list, because feature names can hold commas. A
+	// filtered run does not become the previous result.
 	envHarness = "CHAINLOOP_E2E_HARNESS"
 	envModel   = "CHAINLOOP_E2E_MODEL"
 	envFeature = "CHAINLOOP_E2E_FEATURE"
@@ -143,7 +144,7 @@ func envList(name string) []string {
 	if v == "" {
 		return nil
 	}
-	parts := strings.Split(v, ",")
+	parts := strings.Split(v, ";")
 	for i := range parts {
 		parts[i] = strings.TrimSpace(parts[i])
 	}
