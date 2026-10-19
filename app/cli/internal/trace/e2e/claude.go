@@ -28,7 +28,7 @@ import (
 // claudeTools are the tools that a scenario session may use with no
 // permission prompt. The session runs in a throwaway repository, and the list
 // keeps the session from asking, which a headless run cannot answer.
-var claudeTools = []string{"Read", "Write", "Edit", "Glob", "Grep", "Bash", "Skill"}
+var claudeTools = []string{"Read", "Write", "Edit", "Glob", "Grep", "Bash", "Skill", "Task", "Agent"}
 
 // Claude is the harness adapter of Claude Code.
 type Claude struct {

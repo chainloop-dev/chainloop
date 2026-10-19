@@ -234,11 +234,21 @@ func (r *Runner) runScenario(ctx context.Context, h Harness, model string, sc Sc
 	// the session: the session end removes the captured specs, so a later push
 	// stores the session with no spec. A session that did not push stores
 	// nothing, and its checks fail.
-	if s.HeadMessage, err = ws.Git(ctx, "log", "-1", "--format=%B"); err != nil {
+	checkout := ws.Dir
+	if sc.Checkout != "" {
+		checkout = filepath.Join(base, sc.Checkout)
+		if _, err := os.Stat(checkout); err != nil {
+			// The agent did not create the checkout, so it stored nothing.
+			r.Logf("%s / %s / %s #%d: no checkout %s", h.Column(), model, sc.Name, i+1, sc.Checkout)
+			return s, nil
+		}
+	}
+
+	if s.HeadMessage, err = ws.run(ctx, checkout, "git", "log", "-1", "--format=%B"); err != nil {
 		return nil, err
 	}
 
-	stored, err := ws.StoredSessions()
+	stored, err := StoredSessions(checkout)
 	if err != nil {
 		return nil, err
 	}

@@ -159,10 +159,11 @@ func (s *StoredSession) HasStatement() bool {
 	return err == nil
 }
 
-// StoredSessions reads the sessions that local storage mode stored. Each
-// session directory holds the AI coding session evidence among its materials.
-func (w *Workspace) StoredSessions() ([]StoredSession, error) {
-	root := filepath.Join(w.Dir, localSessionsDir)
+// StoredSessions reads the sessions that local storage mode stored in a
+// checkout. Each session directory holds the AI coding session evidence among
+// its materials.
+func StoredSessions(checkout string) ([]StoredSession, error) {
+	root := filepath.Join(checkout, localSessionsDir)
 	dirs, err := os.ReadDir(root)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil

@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
@@ -72,6 +73,7 @@ var features = map[string]Feature{
 	"Transcript":           {Checks: []Check{{scenarioEditAndCommit, checkTranscript}}},
 	"Token usage and cost": {Checks: []Check{{scenarioEditAndCommit, checkTokenUsage}}},
 	"Model detection":      {Checks: []Check{{scenarioEditAndCommit, checkModel}}},
+	"Subagents":            {Checks: []Check{{scenarioSubagent, checkSubagents}}},
 
 	// Code attribution
 	"Line attribution":          {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI("greeting.txt")}}},
@@ -87,6 +89,10 @@ var features = map[string]Feature{
 	"Spec capture reminder":           {Checks: []Check{{scenarioEditAndCommit, checkPromptReminder}}},
 	"Local spec sources read at push": {ModelDriven: true, Checks: []Check{{scenarioTicket, checkTicketContentStored}}},
 	"Skills tracking":                 {ModelDriven: true, Checks: []Check{{scenarioSkill, checkSkillTracked}}},
+	"Spec source pointers":            {ModelDriven: true, Checks: []Check{{scenarioTicket, checkTicketPointer}}},
+	"Spec source role, title, and description": {
+		ModelDriven: true, Checks: []Check{{scenarioTicket, checkTicketHeader}},
+	},
 
 	// Security
 	"Secret redaction":           {Checks: []Check{{scenarioEditAndCommit, checkSecretRedacted}}},
@@ -96,6 +102,10 @@ var features = map[string]Feature{
 	"Commit trailer":        {Checks: []Check{{scenarioEditAndCommit, checkCommitTrailer}}},
 	"Attestation at push":   {ControlPlane: true},
 	"Local storage at push": {Checks: []Check{{scenarioEditAndCommit, checkLocalStorage}}},
+	"Shell commands in another checkout": {Checks: []Check{
+		{scenarioClone, checkCommitTrailer},
+		{scenarioClone, checkFileAttributedToAI(cloneFile)},
+	}},
 }
 
 func evidence(s *Session) *aicodingsession.Data {
@@ -222,6 +232,48 @@ func checkTicketContentStored(s *Session) error {
 		return errors.New("the spec material does not hold the text of the ticket file")
 	}
 	return nil
+}
+
+// checkTicketHeader checks that the capture of the ticket holds the role, the
+// title, and the description that the agent wrote in its header.
+func checkTicketHeader(s *Session) error {
+	e, err := ticketSpec(s)
+	if err != nil {
+		return err
+	}
+	if e.Role == "" || e.Title == "" || e.Description == "" {
+		return fmt.Errorf("the ticket entry has role %q, title %q, description %q: want all three", e.Role, e.Title, e.Description)
+	}
+	return nil
+}
+
+// checkTicketPointer checks that a copy of the ticket in the transcript, for
+// example the full read of the ticket file, is replaced with a pointer to the
+// spec material.
+func checkTicketPointer(s *Session) error {
+	e, err := ticketSpec(s)
+	if err != nil {
+		return err
+	}
+	for _, msg := range evidence(s).RawSession["main"] {
+		if bytes.Contains(msg, []byte(pointer.Marker)) && bytes.Contains(msg, []byte(e.Digest)) {
+			return nil
+		}
+	}
+	return errors.New("the transcript has no pointer to the ticket material")
+}
+
+func checkSubagents(s *Session) error {
+	subs := evidence(s).Subagents
+	if len(subs) == 0 {
+		return errors.New("the evidence has no subagent")
+	}
+	for _, sub := range subs {
+		if sub.Tokens.Input+sub.Tokens.Output > 0 {
+			return nil
+		}
+	}
+	return errors.New("no subagent has token usage")
 }
 
 func checkSkillTracked(s *Session) error {
