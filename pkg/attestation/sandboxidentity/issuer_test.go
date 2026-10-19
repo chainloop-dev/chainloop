@@ -41,6 +41,8 @@ type fakeSigningClient struct {
 	markDenied bool
 	err        error
 	gotIssuer  bool
+	// org is the organization that the CA writes in the subject. Empty means testOrg.
+	org string
 }
 
 func (c *fakeSigningClient) GenerateSigningCert(_ context.Context, req *pb.GenerateSigningCertRequest, _ ...grpc.CallOption) (*pb.GenerateSigningCertResponse, error) {
@@ -52,7 +54,12 @@ func (c *fakeSigningClient) GenerateSigningCert(_ context.Context, req *pb.Gener
 	csr, err := cryptoutils.ParseCSR(req.GetCertificateSigningRequest())
 	require.NoError(c.t, err)
 
-	subject := pkix.Name{Organization: []string{testOrg}}
+	org := testOrg
+	if c.org != "" {
+		org = c.org
+	}
+
+	subject := pkix.Name{Organization: []string{org}}
 	if req.GetSandboxIdentityIssuer() && !c.markDenied {
 		subject.OrganizationalUnit = []string{CertificateMark}
 	}
@@ -93,6 +100,11 @@ func TestIssuer(t *testing.T) {
 	t.Run("a certificate without the mark gives no identity", func(t *testing.T) {
 		_, err := NewIssuer(&fakeSigningClient{t: t, ca: ca, markDenied: true}).Issue(context.Background(), validClaims(time.Time{}))
 		require.Error(t, err)
+	})
+
+	t.Run("a certificate for another organization gives no identity", func(t *testing.T) {
+		_, err := NewIssuer(&fakeSigningClient{t: t, ca: ca, org: "another-org"}).Issue(context.Background(), validClaims(time.Time{}))
+		require.ErrorContains(t, err, "not for the organization of the identity")
 	})
 
 	t.Run("a control plane error gives no identity", func(t *testing.T) {
