@@ -156,18 +156,18 @@ func (s *Store) SaveShellPreHeads(key ShellCallKey, heads map[string]string) err
 }
 
 // LoadShellPreHeads loads the HEAD commits saved before a shell command. A
-// command whose pre hook ran on an older CLI has none, and the result is
-// empty.
-func (s *Store) LoadShellPreHeads(key ShellCallKey) map[string]string {
+// command whose pre hook ran on an older CLI has none, and the error then
+// wraps os.ErrNotExist.
+func (s *Store) LoadShellPreHeads(key ShellCallKey) (map[string]string, error) {
 	data, err := os.ReadFile(s.shellPreHeadsPath(key))
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	var heads map[string]string
 	if err := json.Unmarshal(data, &heads); err != nil {
-		return nil
+		return nil, fmt.Errorf("parse shell heads: %w", err)
 	}
 
-	return heads
+	return heads, nil
 }

@@ -856,11 +856,14 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 		return
 	}
 	defer store.DeleteShellPreSignature(key)
-	heads := store.LoadShellPreHeads(key)
+	// A pre hook from an older CLI saved no HEAD. That case, and a heads file
+	// that cannot be read, fall back to the current HEAD.
+	heads, err := store.LoadShellPreHeads(key)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Debug().Err(err).Msg("post-command: cannot read pre-command HEAD commits; using the current HEAD")
+	}
 
 	for root, rootBefore := range before {
-		// A pre hook from an older CLI saved no HEAD: the current HEAD
-		// stands in for it.
 		base := heads[root]
 		if base == "" {
 			base = "HEAD"

@@ -305,7 +305,9 @@ func (r *lineRepo) shellWrite(sessionID string, run func()) {
 
 	sigs, err := r.store.LoadShellPreSignature(key)
 	require.NoError(r.t, err)
-	base := r.store.LoadShellPreHeads(key)[r.dir]
+	heads, err := r.store.LoadShellPreHeads(key)
+	require.NoError(r.t, err)
+	base := heads[r.dir]
 	require.NotEmpty(r.t, base, "the pre hook saves the HEAD commit")
 	recordRootChanges(r.store, r.dir, base, sigs[r.dir], sessionID, zerolog.Nop())
 	r.store.DeleteShellPreSignature(key)
