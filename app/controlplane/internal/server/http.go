@@ -62,7 +62,7 @@ func NewHTTPServer(opts *Opts, grpcServers *GRPCServers) (*APIServer, error) {
 	if opts.ServerConfig.GetHttp().GetAddr() == "" {
 		return nil, errors.New("server.http.addr must be set: the shared endpoint cannot bind an empty address")
 	}
-	srv, err := newHTTPServer(opts, grpcServers.Handler, http.Address(opts.ServerConfig.GetHttp().GetAddr()))
+	srv, err := newHTTPServer(opts, grpcServers.Handler)
 	if err != nil {
 		return nil, err
 	}
@@ -72,16 +72,16 @@ func NewHTTPServer(opts *Opts, grpcServers *GRPCServers) (*APIServer, error) {
 	return &APIServer{Server: srv, grpcHandler: grpcServers.Handler}, nil
 }
 
-// newHTTPServer builds one HTTP server that serves the routes, the gRPC-Web
-// wrapper and the transcoded handlers, bound through the given extra options.
-func newHTTPServer(opts *Opts, grpcSrv *grpc.Server, extraOpts ...http.ServerOption) (*http.Server, error) {
+// newHTTPServer builds the shared HTTP listener and its request dispatcher.
+func newHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	tlsConfig, err := loadServerTLSConfig(opts.ServerConfig.GetHttp().GetTlsConfig())
 	if err != nil {
 		return nil, err
 	}
-	var serverOpts = append([]http.ServerOption{
+	serverOpts := []http.ServerOption{
 		http.Middleware(httpMiddlewares(opts)...),
-	}, extraOpts...)
+		http.Address(opts.ServerConfig.GetHttp().GetAddr()),
+	}
 	// Prevent unmatched routes from falling through to http.DefaultServeMux,
 	// which would otherwise expose net/http/pprof's /debug/pprof/* endpoints
 	// unauthenticated on the public API listener.
@@ -97,7 +97,6 @@ func newHTTPServer(opts *Opts, grpcSrv *grpc.Server, extraOpts ...http.ServerOpt
 		serverOpts = append(serverOpts, http.TLSConfig(tlsConfig))
 	}
 
-	// initialize the underneath http server
 	httpSrv := http.NewServer(serverOpts...)
 	// Relax secure cookie settings in development mode
 	opts.AuthSvc.SetDevMode(Version == "dev")

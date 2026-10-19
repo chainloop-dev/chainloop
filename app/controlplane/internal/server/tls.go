@@ -26,9 +26,6 @@ import (
 // paths of the server configuration. It returns nil when no TLS is configured.
 // For the single port the config negotiates HTTP/2 and HTTP/1.1 through ALPN.
 func loadServerTLSConfig(tlsConf *conf.Server_TLS) (*tls.Config, error) {
-	if tlsConf == nil {
-		return nil, nil
-	}
 	cert := tlsConf.GetCertificate()
 	privKey := tlsConf.GetPrivateKey()
 	switch {
