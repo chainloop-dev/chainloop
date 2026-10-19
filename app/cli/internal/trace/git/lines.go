@@ -31,6 +31,10 @@ import (
 	"github.com/go-git/go-git/v6/plumbing/object"
 )
 
+// renameOptions find a rename that keeps at least half of the file, as git
+// does by default.
+var renameOptions = &object.DiffTreeOptions{DetectRenames: true, RenameScore: 50}
+
 // CommitLines returns the lines that the commit added and removed, per file,
 // against its first parent.
 func (c *GoGitClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
@@ -61,7 +65,7 @@ func (c *GoGitClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 		}
 	}
 
-	changes, err := object.DiffTreeWithOptions(context.Background(), baseTree, tree, object.DefaultDiffTreeOptions)
+	changes, err := object.DiffTreeWithOptions(context.Background(), baseTree, tree, renameOptions)
 	if err != nil {
 		return nil, fmt.Errorf("diff %s: %w", sha, err)
 	}
@@ -151,7 +155,7 @@ func (c *GoGitClient) Renames(repoRoot, from, to string) (map[string]string, err
 		trees = append(trees, tree)
 	}
 
-	changes, err := object.DiffTreeWithOptions(context.Background(), trees[0], trees[1], object.DefaultDiffTreeOptions)
+	changes, err := object.DiffTreeWithOptions(context.Background(), trees[0], trees[1], renameOptions)
 	if err != nil {
 		return nil, fmt.Errorf("diff %s %s: %w", from, to, err)
 	}
@@ -249,9 +253,9 @@ func (c *ExecClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 				cur.Path = strings.TrimSuffix(strings.TrimPrefix(line, "+++ b/"), "\t")
 			// A rename with no changed line has no "---" and "+++" headers.
 			case strings.HasPrefix(line, "rename from "):
-				cur.OldPath = strings.TrimPrefix(line, "rename from ")
+				cur.OldPath = unquotePath(strings.TrimPrefix(line, "rename from "))
 			case strings.HasPrefix(line, "rename to "):
-				cur.Path = strings.TrimPrefix(line, "rename to ")
+				cur.Path = unquotePath(strings.TrimPrefix(line, "rename to "))
 			case strings.HasPrefix(line, "Binary files "):
 				binary = true
 			case strings.HasPrefix(line, "@@"):
@@ -296,6 +300,19 @@ func (c *ExecClient) Renames(repoRoot, from, to string) (map[string]string, erro
 	}
 
 	return out, nil
+}
+
+// unquotePath decodes a path that git wrote in quotes, with C escapes, as it
+// does for a path with a control character or a quote in it.
+func unquotePath(path string) string {
+	if !strings.HasPrefix(path, `"`) {
+		return path
+	}
+	if unquoted, err := strconv.Unquote(path); err == nil {
+		return unquoted
+	}
+
+	return path
 }
 
 // hunkOldStart returns the first line of the parent's file that a hunk

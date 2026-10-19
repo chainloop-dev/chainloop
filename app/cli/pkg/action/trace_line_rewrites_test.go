@@ -16,11 +16,13 @@
 package action
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -185,4 +187,66 @@ func TestLineAttribution_AgentRenamesHumanFile(t *testing.T) {
 	r.commit("refactor: g", "g.go")
 
 	assert.Equal(t, lineSplit{aiAdded: 1, aiRemoved: 1}, fileSplitOf(t, r.sessionChanges(lineSession), "g.go"))
+}
+
+// A human commit that replaces a line that an earlier joined commit added
+// joins the session, also when a commit renamed the file in between.
+func TestLineAttribution_ChainedJoinAfterRename(t *testing.T) {
+	r := newLineRepo(t)
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+	r.push()
+
+	lines[1] = "first by hand"
+	r.humanWrite("a.go", content(lines))
+	r.commit("fix: first", "a.go")
+	require.Contains(t, r.push(), lineSession)
+
+	runGit(t, r.dir, "mv", "a.go", "b.go")
+	r.commit("refactor: rename", "b.go")
+	r.push()
+
+	lines[1] = "second by hand"
+	r.humanWrite("b.go", content(lines))
+	r.commit("fix: second", "b.go")
+	second := headSHA(t, r.dir)
+
+	got := r.push()
+	require.Contains(t, got, lineSession, "the session is sent again")
+	assert.Equal(t, lineSplit{aiAdded: 4, humanAdded: 1}, fileSplitOf(t, got[lineSession].changes, "a.go"))
+	assert.Contains(t, got[lineSession].commits, second)
+}
+
+// failingRenamesClient fails to read the renames.
+type failingRenamesClient struct {
+	tracegit.Client
+}
+
+func (failingRenamesClient) Renames(string, string, string) (map[string]string, error) {
+	return nil, errors.New("read failed")
+}
+
+// A commit that changes a renamed file, when the renames cannot be read, is
+// reported, so that the push keeps it untracked and reads it again.
+func TestScanReplacements_ReportsFailedRenames(t *testing.T) {
+	r := newLineRepo(t)
+
+	r.agentWrite(lineSession, "a.go", content(numbered("ai", 3)))
+	r.commit("feat: a", "a.go")
+	r.push()
+	runGit(t, r.dir, "mv", "a.go", "b.go")
+	r.commit("refactor: rename", "b.go")
+	r.push()
+	r.humanWrite("b.go", "changed\n")
+	r.commit("fix: by hand", "b.go")
+	human := headSHA(t, r.dir)
+
+	records, err := r.store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	client := failingRenamesClient{Client: tracegit.NewGitClient()}
+	_, failed := scanReplacements(client, r.store, r.dir, records, loadLedgers(r.store, zerolog.Nop()), zerolog.Nop())
+
+	assert.Equal(t, map[string]bool{human: true}, failed)
 }

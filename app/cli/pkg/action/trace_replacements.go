@@ -16,6 +16,7 @@
 package action
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
 	"sort"
@@ -126,8 +127,10 @@ type replacementScan struct {
 	// paths of the ledgers, and the paths that a commit renamed them to.
 	ledgerFiles map[string]bool
 	// pushedRenames is set once ledgerFiles holds the paths that pushed
-	// commits renamed the ledger files to.
+	// commits renamed the ledger files to. renamesErr is set when the renames
+	// could not be read.
 	pushedRenames bool
+	renamesErr    error
 	lines         map[string][]tracegit.FileLines
 	blames        map[[2]string][]tracegit.BlameLine
 	log           zerolog.Logger
@@ -137,21 +140,30 @@ type replacementScan struct {
 // session. A rename in a commit that a push already read is not seen in the
 // commits that the scan reads, so on the first file that is not a ledger
 // file, the paths at HEAD of the files of the pushed session commits are
-// added.
-func (s *replacementScan) holdsSessionLines(path string) bool {
-	if s.ledgerFiles[path] || s.pushedRenames {
-		return s.ledgerFiles[path]
+// added. An error means the renames could not be read, so the commit must be
+// read again on the next push.
+func (s *replacementScan) holdsSessionLines(path string) (bool, error) {
+	if s.ledgerFiles[path] {
+		return true, nil
 	}
-	s.pushedRenames = true
+	if !s.pushedRenames {
+		s.pushedRenames = true
+		s.renamesErr = s.addPushedRenames()
+	}
 
+	return s.ledgerFiles[path], s.renamesErr
+}
+
+// addPushedRenames adds to ledgerFiles the paths at HEAD of the ledger files
+// that the pushed session commits changed.
+func (s *replacementScan) addPushedRenames() error {
 	for _, r := range s.records {
 		if !r.Tracked || len(r.AllSessionIDs()) == 0 {
 			continue
 		}
 		renames, err := s.client.Renames(s.repoRoot, r.SHA, "HEAD")
 		if err != nil {
-			s.log.Debug().Err(err).Str("sha", r.SHA).Msg("could not read the renames since a commit")
-			continue
+			return fmt.Errorf("read the renames since %s: %w", r.SHA, err)
 		}
 		for from, to := range renames {
 			if s.ledgerFiles[from] {
@@ -160,7 +172,7 @@ func (s *replacementScan) holdsSessionLines(path string) bool {
 		}
 	}
 
-	return s.ledgerFiles[path]
+	return nil
 }
 
 // replacedSessions adds to affected each session that owns a line that the
@@ -191,7 +203,14 @@ func (s *replacementScan) replacedSessions(rec *state.CommitRecord, affected map
 		}
 
 		// A root commit removes nothing, so its parent is never blamed.
-		if len(fl.Removed) == 0 || !s.holdsSessionLines(parentPath) {
+		if len(fl.Removed) == 0 {
+			continue
+		}
+		holds, err := s.holdsSessionLines(parentPath)
+		if err != nil {
+			return nil, err
+		}
+		if !holds {
 			continue
 		}
 
@@ -208,7 +227,7 @@ func (s *replacementScan) replacedSessions(rec *state.CommitRecord, affected map
 		}
 
 		for _, h := range fl.Hunks {
-			for _, sid := range hunkOwners(h, blame, s.bySHA, rec.SHA, parentPath) {
+			for _, sid := range hunkOwners(h, blame, s.bySHA, rec.SHA) {
 				affected[sid] = struct{}{}
 				if len(rec.SessionIDs) > 0 {
 					continue
@@ -233,8 +252,10 @@ func (s *replacementScan) replacedSessions(rec *state.CommitRecord, affected map
 // hunkOwners returns the sessions that own a line that the hunk removed, by
 // the record of the commit that last wrote the line. A commit owns its line
 // for each of its sessions, and for each session it joined when its
-// replacing hunks added that line.
-func hunkOwners(h tracegit.Hunk, blame []tracegit.BlameLine, bySHA map[string]*state.CommitRecord, self, path string) []string {
+// replacing hunks added that line. The join holds the line under the path of
+// the file at that commit, which a later commit can have renamed, so the
+// line is looked up in each file of the join.
+func hunkOwners(h tracegit.Hunk, blame []tracegit.BlameLine, bySHA map[string]*state.CommitRecord, self string) []string {
 	var owners []string
 	for i, text := range h.Removed {
 		idx := h.OldStart - 1 + i
@@ -253,8 +274,14 @@ func hunkOwners(h tracegit.Hunk, blame []tracegit.BlameLine, bySHA map[string]*s
 		}
 		fp := attribution.Fingerprint(text)
 		for sid, files := range owner.Joined {
-			if slices.Contains(files[path], fp) && !slices.Contains(owners, sid) {
-				owners = append(owners, sid)
+			if slices.Contains(owners, sid) {
+				continue
+			}
+			for _, fps := range files {
+				if slices.Contains(fps, fp) {
+					owners = append(owners, sid)
+					break
+				}
 			}
 		}
 	}

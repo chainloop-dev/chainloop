@@ -58,6 +58,9 @@ func ledger(sessionID, file string, written, erased []string) *state.AILineAttri
 	}
 }
 
+// oldFile is the path of testFile before a rename.
+const oldFile = "old.go"
+
 // counts holds the fingerprints of lines.
 func counts(lines ...string) state.LineCounts {
 	c := state.LineCounts{}
@@ -265,9 +268,9 @@ func TestEnrich_Lines(t *testing.T) {
 			// R-007: the agent edited the file under its old name, and the
 			// commit renamed it.
 			name:    "a renamed file matches the ledger of its old path",
-			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, "old.go", []string{"a"}, []string{"x"})},
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, oldFile, []string{"a"}, []string{"x"})},
 			commits: []CommitLines{{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{
-				{Path: testFile, OldPath: "old.go", Added: []string{"a", "b"}, Removed: []string{"x", "y"}},
+				{Path: testFile, OldPath: oldFile, Added: []string{"a", "b"}, Removed: []string{"x", "y"}},
 			}}},
 			want: split{aiAdded: 1, aiRemoved: 1, humanAdded: 1, humanRemoved: 1},
 		},
@@ -380,16 +383,16 @@ func TestEnrich_Net(t *testing.T) {
 			ledgers: map[string]*state.AILineAttribution{testSession: {
 				SessionID: testSession,
 				Written: map[string]state.LineCounts{
-					"old.go": counts(five...),
+					oldFile:  counts(five...),
 					testFile: counts("f"),
 				},
 			}},
 			commits: []CommitLines{
-				{SHA: c1, SessionIDs: []string{testSession}, Files: []tracegit.FileLines{{Path: "old.go", Added: five}}},
+				{SHA: c1, SessionIDs: []string{testSession}, Files: []tracegit.FileLines{{Path: oldFile, Added: five}}},
 				ownCommit(c2, []string{"f"}, nil),
 			},
 			tip: map[string][]tracegit.BlameLine{
-				"old.go": tipOf(c1+":a", c1+":b", c1+":c", c1+":d", c1+":e", c2+":f"),
+				oldFile:  tipOf(c1+":a", c1+":b", c1+":c", c1+":d", c1+":e", c2+":f"),
 				testFile: tipOf(c1+":a", c1+":b", c1+":c", c1+":d", c1+":e", c2+":f"),
 			},
 			want: split{aiAdded: 1},
