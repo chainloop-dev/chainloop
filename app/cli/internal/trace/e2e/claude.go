@@ -101,7 +101,7 @@ func (c *Claude) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 		args = append(append(append([]string{}, req.Wrapper[1:]...), c.bin()), args...)
 	}
 
-	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // the harness binary under test, with the prompt of a scenario
+	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // the harness binary under test, with the prompt of a scenario // nosemgrep
 	cmd.Dir = req.Dir
 	cmd.Env = req.Env
 	if stdin != nil {
