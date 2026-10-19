@@ -19,27 +19,63 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEnrich(t *testing.T) {
+const (
+	testSession  = "sess"
+	otherSession = "other"
+	testFile     = "a.go"
+)
+
+// legacyLedger is the ledger of a session whose edits were recorded before
+// line fingerprints existed: ranges only.
+func legacyLedger(sessionID string, files map[string][]aicodingsession.LineRange) *state.AILineAttribution {
+	attr := &state.AILineAttribution{SessionID: sessionID, Files: files, Legacy: map[string]bool{}}
+	for f := range files {
+		attr.Legacy[f] = true
+	}
+
+	return attr
+}
+
+// ledger is the ledger of a session that wrote and erased the given lines
+// of one file.
+func ledger(sessionID, file string, written, erased []string) *state.AILineAttribution {
+	w, e := state.LineCounts{}, state.LineCounts{}
+	w.Add(fps(written...)...)
+	e.Add(fps(erased...)...)
+
+	return &state.AILineAttribution{
+		SessionID: sessionID,
+		Files:     map[string][]aicodingsession.LineRange{file: nil},
+		Written:   map[string]state.LineCounts{file: w},
+		Erased:    map[string]state.LineCounts{file: e},
+	}
+}
+
+func TestEnrich_Legacy(t *testing.T) {
 	t.Run("no AI data attributes all changes to human", func(t *testing.T) {
 		changes := &aicodingsession.CodeChanges{
 			LinesAdded:   10,
 			LinesRemoved: 4,
 			Files: []aicodingsession.FileChange{
-				{Path: "a.go", LinesAdded: 10, LinesRemoved: 4},
+				{Path: testFile, LinesAdded: 10, LinesRemoved: 4},
 			},
 		}
 
-		Enrich("sess", nil, changes)
+		Enrich(testSession, nil, nil, changes)
 
 		assert.Equal(t, 10, changes.HumanLinesAdded)
 		assert.Equal(t, 4, changes.HumanLinesRemoved)
 		assert.Equal(t, 0, changes.AILinesAdded)
 		assert.Equal(t, 0, changes.AILinesRemoved)
 		assert.Equal(t, trace.AttributionHuman, changes.Files[0].Attribution)
+		assert.Equal(t, 10, changes.Files[0].HumanLinesAdded)
+		assert.Equal(t, 4, changes.Files[0].HumanLinesRemoved)
 	})
 
 	t.Run("shell-generated file recorded as AI is not counted as human (PFM-6684)", func(t *testing.T) {
@@ -47,10 +83,10 @@ func TestEnrich(t *testing.T) {
 		// command, once recorded in the AI-line map (whole-file range), must be
 		// attributed to AI — not dumped into the human bucket where it drowns
 		// the small edits and yields a misleading 0% AI.
-		aiFiles := map[string][]aicodingsession.LineRange{
+		ledgers := map[string]*state.AILineAttribution{testSession: legacyLedger(testSession, map[string][]aicodingsession.LineRange{
 			"policies/foo.rego": {{Start: 1, End: 222}},
 			"policies/integration-tests/materials/sbom.cyclonedx.json": {{Start: 1, End: 177764}},
-		}
+		})}
 		changes := &aicodingsession.CodeChanges{
 			LinesAdded: 177986,
 			Files: []aicodingsession.FileChange{
@@ -59,7 +95,7 @@ func TestEnrich(t *testing.T) {
 			},
 		}
 
-		Enrich("sess", aiFiles, changes)
+		Enrich(testSession, ledgers, nil, changes)
 
 		assert.Equal(t, trace.AttributionAI, changes.Files[0].Attribution)
 		assert.Equal(t, trace.AttributionAI, changes.Files[1].Attribution)
@@ -68,65 +104,67 @@ func TestEnrich(t *testing.T) {
 	})
 
 	t.Run("file with AI ranges is attributed to AI", func(t *testing.T) {
-		aiFiles := map[string][]aicodingsession.LineRange{
-			"a.go": {{Start: 1, End: 5}},
-		}
+		ledgers := map[string]*state.AILineAttribution{testSession: legacyLedger(testSession, map[string][]aicodingsession.LineRange{
+			testFile: {{Start: 1, End: 5}},
+		})}
 		changes := &aicodingsession.CodeChanges{
 			LinesAdded:   5,
 			LinesRemoved: 2,
 			Files: []aicodingsession.FileChange{
-				{Path: "a.go", LinesAdded: 5, LinesRemoved: 2},
+				{Path: testFile, LinesAdded: 5, LinesRemoved: 2},
 			},
 		}
 
-		Enrich("sess", aiFiles, changes)
+		Enrich(testSession, ledgers, nil, changes)
 
 		assert.Equal(t, trace.AttributionAI, changes.Files[0].Attribution)
-		assert.Equal(t, []string{"sess"}, changes.Files[0].SessionIDs)
+		assert.Equal(t, []string{testSession}, changes.Files[0].SessionIDs)
 		assert.Equal(t, 5, changes.AILinesAdded)
 		assert.Equal(t, 2, changes.AILinesRemoved)
 		assert.Equal(t, 0, changes.HumanLinesAdded)
 		assert.Equal(t, 0, changes.HumanLinesRemoved)
+		assert.Equal(t, 5, changes.Files[0].AILinesAdded)
+		assert.Equal(t, 2, changes.Files[0].AILinesRemoved)
 	})
 
 	t.Run("deletion-only file with empty ranges is attributed to AI", func(t *testing.T) {
 		// AI removed lines from a file — there are no "after" ranges, but
 		// the file is still listed in the session's attribution map.
-		aiFiles := map[string][]aicodingsession.LineRange{
-			"a.go": nil,
-		}
+		ledgers := map[string]*state.AILineAttribution{testSession: legacyLedger(testSession, map[string][]aicodingsession.LineRange{
+			testFile: nil,
+		})}
 		changes := &aicodingsession.CodeChanges{
 			LinesAdded:   0,
 			LinesRemoved: 4,
 			Files: []aicodingsession.FileChange{
-				{Path: "a.go", LinesAdded: 0, LinesRemoved: 4},
+				{Path: testFile, LinesAdded: 0, LinesRemoved: 4},
 			},
 		}
 
-		Enrich("sess", aiFiles, changes)
+		Enrich(testSession, ledgers, nil, changes)
 
 		assert.Equal(t, trace.AttributionAI, changes.Files[0].Attribution)
-		assert.Equal(t, []string{"sess"}, changes.Files[0].SessionIDs)
+		assert.Equal(t, []string{testSession}, changes.Files[0].SessionIDs)
 		assert.Equal(t, 0, changes.AILinesAdded)
 		assert.Equal(t, 4, changes.AILinesRemoved)
 		assert.Equal(t, 0, changes.HumanLinesAdded)
 		assert.Equal(t, 0, changes.HumanLinesRemoved)
 	})
 
-	t.Run("files not in aiFiles are attributed to human", func(t *testing.T) {
-		aiFiles := map[string][]aicodingsession.LineRange{
-			"a.go": {{Start: 1, End: 2}},
-		}
+	t.Run("files not in the ledger are attributed to human", func(t *testing.T) {
+		ledgers := map[string]*state.AILineAttribution{testSession: legacyLedger(testSession, map[string][]aicodingsession.LineRange{
+			testFile: {{Start: 1, End: 2}},
+		})}
 		changes := &aicodingsession.CodeChanges{
 			LinesAdded:   6,
 			LinesRemoved: 3,
 			Files: []aicodingsession.FileChange{
-				{Path: "a.go", LinesAdded: 2, LinesRemoved: 1},
+				{Path: testFile, LinesAdded: 2, LinesRemoved: 1},
 				{Path: "b.go", LinesAdded: 4, LinesRemoved: 2},
 			},
 		}
 
-		Enrich("sess", aiFiles, changes)
+		Enrich(testSession, ledgers, nil, changes)
 
 		assert.Equal(t, trace.AttributionAI, changes.Files[0].Attribution)
 		assert.Equal(t, trace.AttributionHuman, changes.Files[1].Attribution)
@@ -135,4 +173,165 @@ func TestEnrich(t *testing.T) {
 		assert.Equal(t, 4, changes.HumanLinesAdded)
 		assert.Equal(t, 2, changes.HumanLinesRemoved)
 	})
+}
+
+func TestEnrich_Lines(t *testing.T) {
+	type split struct{ aiAdded, aiRemoved, humanAdded, humanRemoved int }
+
+	testCases := []struct {
+		name    string
+		ledgers map[string]*state.AILineAttribution
+		commits []CommitLines
+		want    split
+	}{
+		{
+			// R-001: the AI writes five lines, and a human changes one of them
+			// before the commit.
+			name:    "a human change to an AI line is human",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, []string{"a", "b", "c", "d", "e"}, nil)},
+			commits: []CommitLines{{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{
+				{Path: testFile, Added: []string{"a", "b", "C", "d", "e"}},
+			}}},
+			want: split{aiAdded: 4, humanAdded: 1},
+		},
+		{
+			name:    "a re-indented AI line stays AI",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, []string{"\tfoo()"}, nil)},
+			commits: []CommitLines{{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{
+				{Path: testFile, Added: []string{"    foo()"}},
+			}}},
+			want: split{aiAdded: 1},
+		},
+		{
+			name:    "a repeated line counts as AI only as often as the AI wrote it",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, []string{"}", "}"}, nil)},
+			commits: []CommitLines{{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{
+				{Path: testFile, Added: []string{"}", "}", "}"}},
+			}}},
+			want: split{aiAdded: 2, humanAdded: 1},
+		},
+		{
+			// R-005: only the lines that an agent edit removed are AI removals.
+			name:    "removals count for the remover",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, nil, []string{"x"})},
+			commits: []CommitLines{{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{
+				{Path: testFile, Removed: []string{"x", "y"}},
+			}}},
+			want: split{aiRemoved: 1, humanRemoved: 1},
+		},
+		{
+			name: "lines of another session of the commit count for neither",
+			ledgers: map[string]*state.AILineAttribution{
+				testSession:  ledger(testSession, testFile, []string{"a"}, nil),
+				otherSession: ledger(otherSession, testFile, []string{"b"}, []string{"x"}),
+			},
+			commits: []CommitLines{{SessionIDs: []string{testSession, otherSession}, Files: []tracegit.FileLines{
+				{Path: testFile, Added: []string{"a", "b", "c"}, Removed: []string{"x"}},
+			}}},
+			want: split{aiAdded: 1, humanAdded: 1},
+		},
+		{
+			name: "a session not named by the commit does not own its lines",
+			ledgers: map[string]*state.AILineAttribution{
+				testSession:  ledger(testSession, testFile, []string{"a"}, nil),
+				otherSession: ledger(otherSession, testFile, []string{"b"}, nil),
+			},
+			commits: []CommitLines{{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{
+				{Path: testFile, Added: []string{"a", "b"}},
+			}}},
+			want: split{aiAdded: 1, humanAdded: 1},
+		},
+		{
+			// Each commit of the session adds to the split. Milestone 2 of the
+			// spec replaces this sum with the net contribution (R-003).
+			name:    "commits of the session add up",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, []string{"a", "b"}, nil)},
+			commits: []CommitLines{
+				{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{{Path: testFile, Added: []string{"a", "b"}}}},
+				{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{{Path: testFile, Added: []string{"B"}, Removed: []string{"b"}}}},
+			},
+			want: split{aiAdded: 2, humanAdded: 1, humanRemoved: 1},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			changes := &aicodingsession.CodeChanges{Files: []aicodingsession.FileChange{{Path: testFile}}}
+
+			Enrich(testSession, tc.ledgers, tc.commits, changes)
+
+			f := changes.Files[0]
+			assert.Equal(t, tc.want, split{f.AILinesAdded, f.AILinesRemoved, f.HumanLinesAdded, f.HumanLinesRemoved}, "file split")
+			assert.Equal(t, tc.want, split{changes.AILinesAdded, changes.AILinesRemoved, changes.HumanLinesAdded, changes.HumanLinesRemoved},
+				"session totals are the sum of the files")
+			assert.Equal(t, trace.AttributionAI, f.Attribution, "the marker for older platforms still names the files that the session edited")
+			assert.Equal(t, []string{testSession}, f.SessionIDs)
+		})
+	}
+}
+
+func TestSettleCommit(t *testing.T) {
+	open := func(added, removed []string) *state.OpenLines {
+		o := &state.OpenLines{Added: state.LineCounts{}, Removed: state.LineCounts{}}
+		o.Added.Add(fps(added...)...)
+		o.Removed.Add(fps(removed...)...)
+
+		return o
+	}
+
+	testCases := []struct {
+		name      string
+		open      *state.OpenLines
+		committed tracegit.FileLines
+		worktree  string
+		clean     bool
+		want      state.LineSet
+	}{
+		{
+			name:      "the commit takes the open lines it holds (R-006)",
+			open:      open([]string{"a", "b"}, []string{"x", "y"}),
+			committed: tracegit.FileLines{Added: []string{"a", "h"}, Removed: []string{"x"}},
+			worktree:  "a\nb\n",
+			want:      state.LineSet{Added: fps("a"), Removed: fps("x")},
+		},
+		{
+			// R-002: a human changed b before the commit. The line is gone, so
+			// it cannot reach a later commit.
+			name:      "open lines gone from the worktree close",
+			open:      open([]string{"a", "b"}, nil),
+			committed: tracegit.FileLines{Added: []string{"a", "B"}},
+			worktree:  "a\nB\n",
+			want:      state.LineSet{Added: fps("a", "b")},
+		},
+		{
+			name:      "a fully committed file closes all its open lines",
+			open:      open([]string{"a", "b"}, []string{"x"}),
+			committed: tracegit.FileLines{Added: []string{"a"}},
+			worktree:  "a\nb\n",
+			clean:     true,
+			want:      state.LineSet{Added: fps("a", "b"), Removed: fps("x")},
+		},
+		{
+			name:      "nothing open",
+			committed: tracegit.FileLines{Added: []string{"a"}},
+			worktree:  "a\n",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := SettleCommit(tc.open, tc.committed, []byte(tc.worktree), tc.clean)
+			assert.ElementsMatch(t, tc.want.Added, got.Added)
+			assert.ElementsMatch(t, tc.want.Removed, got.Removed)
+		})
+	}
+}
+
+func TestReplacedLines(t *testing.T) {
+	o := &state.OpenLines{Added: state.LineCounts{}, Removed: state.LineCounts{}}
+	o.Added.Add(fps("a", "b", "b")...)
+
+	assert.ElementsMatch(t, fps("b"), ReplacedLines(o, []byte("a\nb\nB\n")).Added)
+	assert.Empty(t, ReplacedLines(o, []byte("b\nb\na\n")).Added)
+	assert.True(t, ReplacedLines(nil, []byte("a\n")).IsEmpty())
 }

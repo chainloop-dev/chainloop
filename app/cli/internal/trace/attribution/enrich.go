@@ -17,44 +17,224 @@ package attribution
 
 import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
 
-// Enrich adds AI/human attribution to code changes based on AI line range data.
-// The sessionID identifies which session produced the changes, and aiFiles maps
-// file paths to the line ranges modified by the AI in that session.
-func Enrich(sessionID string, aiFiles map[string][]aicodingsession.LineRange, changes *aicodingsession.CodeChanges) {
-	if len(aiFiles) == 0 {
-		// No AI line data — all changes are human
-		changes.HumanLinesAdded = changes.LinesAdded
-		changes.HumanLinesRemoved = changes.LinesRemoved
-		for i := range changes.Files {
-			changes.Files[i].Attribution = trace.AttributionHuman
-		}
+// CommitLines is one commit of a session: the lines it changed and the
+// sessions that its record names.
+type CommitLines struct {
+	SessionIDs []string
+	Files      []tracegit.FileLines
+}
 
-		return
+// Enrich adds AI/human attribution to the code changes of a session.
+//
+// ledgers holds the AI line ledger of each session by ID. commits holds the
+// session's commits, oldest first. Each line that a commit added is AI when its
+// content matches a line that an edit of the session wrote (R-001), and each
+// removed line is AI when an edit of the session removed it (R-005). Each
+// ledger line matches one commit line at most. A line that matches another session of the same commit counts for
+// neither: it is that session's work. All other lines are human.
+//
+// A file with an edit recorded before line fingerprints existed keeps the
+// earlier rule: AI lines are the recorded ranges, capped at the file's diff.
+func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commits []CommitLines, changes *aicodingsession.CodeChanges) {
+	self := ledgers[sessionID]
+	if self == nil {
+		self = &state.AILineAttribution{SessionID: sessionID}
 	}
 
+	byPath := splitByPath(sessionID, self, ledgers, commits)
+
+	changes.AILinesAdded, changes.AILinesRemoved = 0, 0
+	changes.HumanLinesAdded, changes.HumanLinesRemoved = 0, 0
 	for i := range changes.Files {
 		f := &changes.Files[i]
-		// An empty ranges slice is valid: the agent only deleted lines.
-		if aiRanges, ok := aiFiles[f.Path]; ok {
+
+		// The marker keeps its earlier meaning, a file that the session
+		// edited, for platforms that do not read the split (R-009). An empty
+		// ranges slice is valid: the agent only deleted lines.
+		if aiRanges, ok := self.Files[f.Path]; ok {
 			f.Attribution = trace.AttributionAI
 			f.LineRanges = aiRanges
 			f.SessionIDs = []string{sessionID}
-			// Count AI lines as the lines covered by AI ranges, capped at the file's diff totals
-			aiLineCount := 0
-			for _, r := range aiRanges {
-				aiLineCount += r.End - r.Start + 1
-			}
-			aiAdded := min(aiLineCount, f.LinesAdded)
-			changes.AILinesAdded += aiAdded
-			changes.HumanLinesAdded += f.LinesAdded - aiAdded
-			changes.AILinesRemoved += f.LinesRemoved
 		} else {
 			f.Attribution = trace.AttributionHuman
-			changes.HumanLinesAdded += f.LinesAdded
-			changes.HumanLinesRemoved += f.LinesRemoved
+		}
+
+		switch s, ok := byPath[f.Path]; {
+		case self.Legacy[f.Path]:
+			legacySplit(f, self.Files[f.Path])
+		case ok:
+			f.AILinesAdded, f.AILinesRemoved = s.aiAdded, s.aiRemoved
+			f.HumanLinesAdded, f.HumanLinesRemoved = s.humanAdded, s.humanRemoved
+		case f.Attribution == trace.AttributionHuman:
+			// No line content for the file (a binary file, or a commit that
+			// could not be read): the diff totals are human, as before.
+			f.HumanLinesAdded, f.HumanLinesRemoved = f.LinesAdded, f.LinesRemoved
+		default:
+			legacySplit(f, self.Files[f.Path])
+		}
+
+		changes.AILinesAdded += f.AILinesAdded
+		changes.AILinesRemoved += f.AILinesRemoved
+		changes.HumanLinesAdded += f.HumanLinesAdded
+		changes.HumanLinesRemoved += f.HumanLinesRemoved
+	}
+}
+
+// fileSplit is the AI/human split of the changed lines of one file.
+type fileSplit struct {
+	aiAdded, aiRemoved, humanAdded, humanRemoved int
+}
+
+// splitByPath matches the lines of each commit against the ledgers, and
+// returns the split of each file that the commits changed.
+func splitByPath(sessionID string, self *state.AILineAttribution, ledgers map[string]*state.AILineAttribution, commits []CommitLines) map[string]*fileSplit {
+	written := linePool{pick: func(a *state.AILineAttribution) map[string]state.LineCounts { return a.Written }}
+	erased := linePool{pick: func(a *state.AILineAttribution) map[string]state.LineCounts { return a.Erased }}
+
+	out := make(map[string]*fileSplit)
+	for _, commit := range commits {
+		var others []*state.AILineAttribution
+		for _, id := range commit.SessionIDs {
+			if l := ledgers[id]; id != sessionID && l != nil {
+				others = append(others, l)
+			}
+		}
+
+		for _, fl := range commit.Files {
+			s, ok := out[fl.Path]
+			if !ok {
+				s = &fileSplit{}
+				out[fl.Path] = s
+			}
+
+			for _, line := range fl.Added {
+				fp := Fingerprint(line)
+				switch {
+				case written.take(self, fl.Path, fp):
+					s.aiAdded++
+				case written.takeAny(others, fl.Path, fp):
+				default:
+					s.humanAdded++
+				}
+			}
+			for _, line := range fl.Removed {
+				fp := Fingerprint(line)
+				switch {
+				case erased.take(self, fl.Path, fp):
+					s.aiRemoved++
+				case erased.takeAny(others, fl.Path, fp):
+				default:
+					s.humanRemoved++
+				}
+			}
 		}
 	}
+
+	return out
+}
+
+// linePool hands out the lines of the ledgers, one copy per match. Each
+// session's lines of a file are copied on first use and drawn down across
+// the commits, so a line matches at most as often as the ledger holds it.
+type linePool struct {
+	// pick selects the lines of a ledger that the pool draws from.
+	pick   func(*state.AILineAttribution) map[string]state.LineCounts
+	counts map[[2]string]state.LineCounts
+}
+
+// take takes one copy of fp from the lines of ledger l for path.
+func (p *linePool) take(l *state.AILineAttribution, path, fp string) bool {
+	if p.counts == nil {
+		p.counts = make(map[[2]string]state.LineCounts)
+	}
+
+	key := [2]string{l.SessionID, path}
+	c, ok := p.counts[key]
+	if !ok {
+		c = p.pick(l)[path].Clone()
+		p.counts[key] = c
+	}
+
+	return c.Take(fp)
+}
+
+// takeAny takes fp from the first ledger that holds it.
+func (p *linePool) takeAny(ledgers []*state.AILineAttribution, path, fp string) bool {
+	for _, l := range ledgers {
+		if p.take(l, path, fp) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// legacySplit is the split of a file from its recorded ranges: the lines that
+// the ranges cover are AI, capped at the file's diff, and every removal is AI.
+func legacySplit(f *aicodingsession.FileChange, aiRanges []aicodingsession.LineRange) {
+	aiLineCount := 0
+	for _, r := range aiRanges {
+		aiLineCount += r.End - r.Start + 1
+	}
+	f.AILinesAdded = min(aiLineCount, f.LinesAdded)
+	f.HumanLinesAdded = f.LinesAdded - f.AILinesAdded
+	f.AILinesRemoved = f.LinesRemoved
+	f.HumanLinesRemoved = 0
+}
+
+// SettleCommit returns the open lines of one file that a commit closes: the
+// open lines that the commit added or removed, and the open added lines that
+// the worktree no longer holds, because something other than the session
+// changed them (R-002). The other open lines stay open for a later commit
+// (R-006). When clean is true, the worktree holds the file as the commit
+// does, so nothing of the file is left to commit and all of it closes.
+func SettleCommit(open *state.OpenLines, committed tracegit.FileLines, worktree []byte, clean bool) state.LineSet {
+	var out state.LineSet
+	if open == nil {
+		return out
+	}
+
+	added, removed := open.Added.Clone(), open.Removed.Clone()
+	for _, line := range committed.Added {
+		if fp := Fingerprint(line); added.Take(fp) {
+			out.Added = append(out.Added, fp)
+		}
+	}
+	for _, line := range committed.Removed {
+		if fp := Fingerprint(line); removed.Take(fp) {
+			out.Removed = append(out.Removed, fp)
+		}
+	}
+
+	if clean {
+		out.Added = append(out.Added, added.Missing(nil)...)
+		out.Removed = append(out.Removed, removed.Missing(nil)...)
+
+		return out
+	}
+
+	present := state.LineCounts{}
+	present.Add(FingerprintLines(worktree)...)
+	out.Added = append(out.Added, added.Missing(present)...)
+
+	return out
+}
+
+// ReplacedLines returns the open added lines of a file that its current
+// content no longer holds. Before an agent edit, these are the lines that a
+// human or another session changed since the session's last edit (R-002).
+func ReplacedLines(open *state.OpenLines, current []byte) state.LineSet {
+	if open == nil || len(open.Added) == 0 {
+		return state.LineSet{}
+	}
+
+	present := state.LineCounts{}
+	present.Add(FingerprintLines(current)...)
+
+	return state.LineSet{Added: open.Added.Missing(present)}
 }

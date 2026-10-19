@@ -295,6 +295,12 @@ func (f *fakeBranchClient) CodeChangesForCommits(string, []string) (*aicodingses
 	return &aicodingsession.CodeChanges{}, nil
 }
 
+func (f *fakeBranchClient) CommitLines(string, string) ([]tracegit.FileLines, error) {
+	return nil, nil
+}
+
+func (f *fakeBranchClient) FileAt(string, string, string) ([]byte, error) { return nil, nil }
+
 func (f *fakeBranchClient) CommitHeadInfo(string) (string, string, error) { return "", "", nil }
 func (f *fakeBranchClient) HeadAuthorTime(string) (time.Time, error)      { return time.Time{}, nil }
 func (f *fakeBranchClient) GeneratedMatcher(string) func(string) bool {
@@ -1213,8 +1219,15 @@ func buildSessionCodeChanges(t *testing.T, store *state.Store, dir, sha, session
 	client := tracegit.NewGoGitClient()
 	cc, err := client.CodeChangesForCommits(dir, []string{sha})
 	require.NoError(t, err)
-	attr := store.LoadAILineAttribution(sessionID)
-	attribution.Enrich(sessionID, attr.Files, cc)
+	attrs, err := store.LoadAllAILineAttributions()
+	require.NoError(t, err)
+	ledgers := make(map[string]*state.AILineAttribution, len(attrs))
+	for _, a := range attrs {
+		ledgers[a.SessionID] = a
+	}
+	commits := []*state.CommitRecord{{SHA: sha, SessionIDs: []string{sessionID}}}
+	lines := sessionCommitLines(client, dir, commits, map[string][]tracegit.FileLines{}, zerolog.Nop())
+	attribution.Enrich(sessionID, ledgers, lines, cc)
 
 	return cc
 }
