@@ -101,7 +101,7 @@ Why not Yes:
 - **Spec capture reminder, Cursor:** Cursor has no hook at each user prompt. The agent gets the session-start instruction only.
 - **Spec source role, title, and description, Cursor and OpenCode:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
 - **Skills tracking, Cursor:** the provider does not track skills. The evidence has no skill entries, which means "not recorded", not "no skill used".
-- **Skills tracking, OpenCode:** only the skills that the model starts with the `skill` tool are counted. Skills that the user starts, and skills used in subagents, are not.
+- **Skills tracking, OpenCode:** only the skills that the model starts with the `skill` tool are counted. Skills that the user starts, and skills used in subagents, are not. A plugin installed by an earlier version does not send the skill folder for OpenCode 2: install the hooks again to update it.
 - **Spec source pointers, Cursor and OpenCode:** the provider has no finder for the copies in its transcript yet. For OpenCode, the rebuilt transcript holds no tool outputs, so only the write copies would apply.
 - **Pasted image pointers, Cursor and OpenCode:** the provider has no finder for pasted images yet. Each agent puts pasted images in a different block shape. The pasted images stay inline in the transcript. The agent is told not to capture them in the spec folder.
 

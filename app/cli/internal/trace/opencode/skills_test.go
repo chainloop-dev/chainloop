@@ -78,6 +78,20 @@ func TestSessionSkills(t *testing.T) {
 				{Name: "pdf", Dir: "/repo/.opencode/skills/pdf", FirstUsedAt: "2026-10-07T10:03:00Z", ByModel: 1},
 			},
 		},
+		{
+			// OpenCode 2 names the skill in "id" and puts the folder in
+			// metadata.directory. Its tool state has no output.
+			name: "OpenCode 2 export",
+			export: `{"info":{"id":"` + sessionID + `","location":{"directory":"/repo"},"time":{"created":1}},"messages":[` +
+				`{"type":"user","id":"msg_1","text":"use the skill","time":{"created":1791367140000}},` +
+				`{"type":"assistant","id":"msg_2","time":{"created":1791367200000},"content":[` +
+				`{"type":"tool","id":"call_1","name":"skill","state":{"status":"completed","input":{"id":"e2e-farewell"},` +
+				`"metadata":{"name":"e2e-farewell","directory":"/repo/.opencode/skills/e2e-farewell","truncated":false},` +
+				`"content":[{"type":"text","text":"<skill_content name=\"e2e-farewell\">"}]}}]}]}`,
+			want: []trace.SkillUse{
+				{Name: "e2e-farewell", Dir: "/repo/.opencode/skills/e2e-farewell", FirstUsedAt: "2026-10-07T10:00:00Z", ByModel: 1},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
