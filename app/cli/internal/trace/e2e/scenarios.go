@@ -27,13 +27,15 @@ type Scenario struct {
 }
 
 // The fake secrets of the scenarios. They match the GitHub token rule of the
-// secret scanner, and they are not real tokens.
+// secret scanner, and they are not real tokens. The allow markers on these
+// source lines keep the repository secret scan quiet. They do not reach the
+// session: the prompt and the seed files carry only the token values.
 const (
 	// fakeSecret is in the prompt. The stored session must not hold it.
-	fakeSecret = "ghp_8fK2mQ9xLp4ZrT7vWc1NbH6yJd3sGa5eUo0i" //nolint:gosec // a fake token that the suite expects redaction to remove
-	// fakeAllowedSecret is on a line with an allow marker. The stored session
-	// keeps it.
-	fakeAllowedSecret = "ghp_Zx7Lq2Wm9Rt4Yp6Vn3Bk8Hd1Jf5Gs0CaEu2o" //nolint:gosec // a fake token on a line with an allow marker
+	fakeSecret = "ghp_8fK2mQ9xLp4ZrT7vWc1NbH6yJd3sGa5eUo0i" //nolint:gosec // gitleaks:allow a fake token that the suite expects redaction to remove
+	// fakeAllowedSecret is on a line with an allow marker in the seed file.
+	// The stored session keeps it.
+	fakeAllowedSecret = "ghp_Zx7Lq2Wm9Rt4Yp6Vn3Bk8Hd1Jf5Gs0CaEu2o" //nolint:gosec // gitleaks:allow a fake token on a line with an allow marker
 )
 
 // The README of every scenario repository.

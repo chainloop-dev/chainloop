@@ -131,9 +131,15 @@ All agents share the git hooks `commit-msg`, `post-commit` and `pre-push`.
 
 ## End-to-end tests
 
-The `e2e/` package checks the tables of this page against real agents (spec issue-3635). It runs each agent in headless mode with real models, in throwaway repositories with Trace in local storage mode. It tests each cell marked **Yes**, **Partial**, or **Unknown**, and it skips the other cells. A feature row maps to its checks by the feature name. When you rename a feature in a table, rename it in `e2e/checks.go` too.
+The `e2e/` package checks the tables of this page against real agents (spec issue-3635). It runs each agent in headless mode with real models, in throwaway repositories with Trace in local storage mode. For now, it runs the Claude Code column only.
 
-`e2e/config.yaml` pins the version of each agent and lists the models. The suite uses model tokens. To run it:
+A feature row maps to its checks by the feature name. When you rename a feature in a table, rename it in `e2e/checks.go` too. The suite tests a cell marked **Yes**, **Partial**, or **Unknown** only when the row has a registered check. It reports the other cells as follows:
+
+- A cell marked **No** or **Not applicable** is `skipped`.
+- A feature that needs a control plane is `not covered`, because the suite uses local storage mode only.
+- A row with no registered check is `no check`.
+
+`e2e/config.yaml` sets the version of each agent that the suite expects, and the models. The suite does not install the agent. It runs the installed version, and it logs a warning when that version is not the one in the configuration. The suite uses model tokens. To run it:
 
 ```bash
 make -C app/cli test-trace-e2e
