@@ -24,7 +24,6 @@ import (
 
 	"buf.build/go/protovalidate"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
-	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/go-kratos/kratos/v2/log"
 	kratoshttp "github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/stretchr/testify/assert"
@@ -65,47 +64,27 @@ func spanNames(exporter *tracetest.InMemoryExporter) []string {
 func TestGRPCServerSpanWithMaxRecvMsgSize(t *testing.T) {
 	exporter := withInMemoryTracing(t)
 
-	validator, err := protovalidate.New()
-	require.NoError(t, err)
-
-	srvs, err := NewGRPCServer(&Opts{
-		ServerConfig: &conf.Server{
-			Grpc: &conf.Server_GRPC{
-				Addr:           testAnyAddr,
-				MaxRecvMsgSize: 8 * 1024 * 1024,
-			},
+	addr, legacyPort, _ := startSinglePortAppWithConfig(t, &conf.Server{
+		Grpc: &conf.Server_GRPC{
+			Addr:           testAnyAddr,
+			MaxRecvMsgSize: 8 * 1024 * 1024,
 		},
-		AuthConfig: &conf.Auth{},
-		Logger:     log.NewStdLogger(io.Discard),
-		Validator:  validator,
-		AuthSvc:    &service.AuthService{AuthURLs: &service.AuthURLs{Login: testLoginURL}},
+		Http: &conf.Server_HTTP{Addr: testAnyAddr},
 	})
-	require.NoError(t, err)
-
-	// Endpoint() binds the listener so the address is known before Start.
-	endpoint, err := srvs[0].Endpoint()
-	require.NoError(t, err)
-	go func() { _ = srvs[0].Start(context.Background()) }()
-	defer func() { _ = srvs[0].Stop(context.Background()) }()
-
-	conn, err := grpcLib.NewClient(endpoint.Host, grpcLib.WithTransportCredentials(insecure.NewCredentials()))
-	require.NoError(t, err)
-	defer conn.Close()
-
-	// The request itself is rejected by the auth middleware, but the
-	// transport-level stats handler records the server span regardless.
-	deadline := time.Now().Add(10 * time.Second)
-	for time.Now().Before(deadline) {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	for _, endpoint := range []string{addr, "127.0.0.1:" + legacyPort} {
+		exporter.Reset()
+		conn, err := grpcLib.NewClient(endpoint, grpcLib.WithTransportCredentials(insecure.NewCredentials()))
+		require.NoError(t, err)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		_, _ = grpc_health_v1.NewHealthClient(conn).Check(ctx, &grpc_health_v1.HealthCheckRequest{})
 		cancel()
-		if names := spanNames(exporter); len(names) > 0 {
-			assert.Contains(t, names, "grpc.health.v1.Health/Check")
-			return
-		}
-		time.Sleep(50 * time.Millisecond)
+		require.NoError(t, conn.Close())
+		// The transport records a span even when authentication rejects the RPC.
+		require.Eventually(t, func() bool {
+			return len(spanNames(exporter)) > 0
+		}, time.Second, time.Millisecond)
+		assert.Contains(t, spanNames(exporter), "grpc.health.v1.Health/Check", endpoint)
 	}
-	require.Fail(t, "expected gRPC server span from otelgrpc stats handler")
 }
 
 // The HTTP server must produce a transport-level server span so transcoded

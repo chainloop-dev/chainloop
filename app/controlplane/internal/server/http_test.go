@@ -54,67 +54,88 @@ const (
 	testLoginURL = "http://localhost"
 )
 
-// startSinglePortApp boots the real gRPC and HTTP servers over an API mux on
-// 127.0.0.1:0 and returns the single port address, the deprecated legacy gRPC
-// port (empty when the legacy listener is off) and the number of gRPC servers
-// in use.
+// startSinglePortApp starts the real HTTP-owned endpoint and optional legacy
+// native gRPC listener. The HTTP-served gRPC handler never starts a listener.
 func startSinglePortApp(t *testing.T, legacyListener *bool) (string, string, int) {
 	t.Helper()
-
-	validator, err := protovalidate.New()
-	require.NoError(t, err)
-
-	serverConfig := &conf.Server{
+	return startSinglePortAppWithConfig(t, &conf.Server{
 		Grpc:               &conf.Server_GRPC{Addr: testAnyAddr},
 		Http:               &conf.Server_HTTP{Addr: testAnyAddr},
 		LegacyGrpcListener: legacyListener,
-	}
+	})
+}
 
-	mux, cleanup, err := NewAPIMux(serverConfig, log.NewStdLogger(io.Discard))
+func startSinglePortAppWithConfig(t *testing.T, serverConfig *conf.Server) (string, string, int) {
+	t.Helper()
+	opts := testServerOpts(t, serverConfig)
+	gs, err := NewGRPCServer(opts)
 	require.NoError(t, err)
-	t.Cleanup(cleanup)
+	api, err := NewHTTPServer(opts, gs)
+	require.NoError(t, err)
+	endpoint, err := api.Endpoint()
+	require.NoError(t, err)
+	_, port, err := net.SplitHostPort(endpoint.Host)
+	require.NoError(t, err)
 
-	opts := &Opts{
+	legacyPort := ""
+	serverCount := 1
+	if gs.Legacy != nil {
+		serverCount++
+	}
+	errs := make(chan error, serverCount)
+	if g := gs.Legacy; g != nil {
+		endpoint, err := g.Endpoint()
+		require.NoError(t, err)
+		_, legacyPort, err = net.SplitHostPort(endpoint.Host)
+		require.NoError(t, err)
+		go func() { errs <- g.Start(context.Background()) }()
+	}
+	go func() { errs <- api.Start(context.Background()) }()
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		require.NoError(t, api.Stop(ctx))
+		if g := gs.Legacy; g != nil {
+			require.NoError(t, g.Stop(ctx))
+		}
+		for range serverCount {
+			select {
+			case err := <-errs:
+				require.NoError(t, err)
+			case <-ctx.Done():
+				require.FailNow(t, "API servers did not stop")
+			}
+		}
+	})
+	// Wait for the legacy server to enter Serve before a test can stop it.
+	// Endpoint binds its socket, but Start runs in another goroutine.
+	if legacyPort != "" {
+		legacyCreds := insecure.NewCredentials()
+		if cfg := serverConfig.GetGrpc().GetTlsConfig(); cfg.GetCertificate() != "" && cfg.GetPrivateKey() != "" {
+			legacyCreds = credentials.NewTLS(&tls.Config{InsecureSkipVerify: true}) //nolint:gosec // test certificate
+		}
+		conn, err := grpcLib.NewClient(net.JoinHostPort("127.0.0.1", legacyPort), grpcLib.WithTransportCredentials(legacyCreds))
+		require.NoError(t, err)
+		defer conn.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, err = grpc_health_v1.NewHealthClient(conn).Check(ctx, &grpc_health_v1.HealthCheckRequest{})
+		require.Equal(t, codes.Unauthenticated, status.Code(err))
+	}
+	return net.JoinHostPort("127.0.0.1", port), legacyPort, serverCount
+}
+
+func testServerOpts(t *testing.T, serverConfig *conf.Server) *Opts {
+	t.Helper()
+	validator, err := protovalidate.New()
+	require.NoError(t, err)
+	return &Opts{
 		ServerConfig: serverConfig,
 		AuthConfig:   &conf.Auth{},
 		Logger:       log.NewStdLogger(io.Discard),
 		Validator:    validator,
 		AuthSvc:      &service.AuthService{AuthURLs: &service.AuthURLs{Login: testLoginURL}},
-		APIMux:       mux,
 	}
-
-	gs, err := NewGRPCServer(opts)
-	require.NoError(t, err)
-	httpServers, err := NewHTTPServer(opts, gs)
-	require.NoError(t, err)
-
-	legacyPort := ""
-	if len(gs) > 1 {
-		// Resolve the legacy gRPC port before the servers start; kratos
-		// resolves the advertise host on Endpoint(), so only the port is
-		// reused here and dialed on the loopback bind address.
-		ep, err := gs[1].Endpoint()
-		require.NoError(t, err)
-		_, port, err := net.SplitHostPort(ep.Host)
-		require.NoError(t, err)
-		legacyPort = port
-	}
-
-	require.NoError(t, mux.Start(context.Background()))
-	t.Cleanup(func() { _ = mux.Stop(context.Background()) })
-
-	for _, g := range gs {
-		gsrv := g
-		go func() { _ = gsrv.Start(context.Background()) }()
-		t.Cleanup(func() { _ = gsrv.Stop(context.Background()) })
-	}
-	for _, s := range httpServers {
-		srv := s
-		go func() { _ = srv.Start(context.Background()) }()
-		t.Cleanup(func() { _ = srv.Stop(context.Background()) })
-	}
-
-	return mux.GRPC().Addr().String(), legacyPort, len(gs)
 }
 
 func TestSinglePortServesAllProtocols(t *testing.T) {
@@ -128,7 +149,7 @@ func TestSinglePortServesAllProtocols(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		_, err = grpc_health_v1.NewHealthClient(conn).Check(ctx, &grpc_health_v1.HealthCheckRequest{})
-		// The RPC must reach the native gRPC server, whose middleware chain
+		// The RPC must reach the HTTP-served gRPC handler, whose middleware chain
 		// rejects unauthenticated calls exactly as it does today on the
 		// dedicated gRPC port (R-002: same behavior as today).
 		require.Error(t, err)
@@ -255,20 +276,17 @@ func TestPartialTLSConfigRejected(t *testing.T) {
 		},
 	}
 
-	_, _, err := NewAPIMux(serverConfig, log.NewStdLogger(io.Discard))
+	_, err := newHTTPServer(&Opts{ServerConfig: serverConfig}, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "incomplete TLS configuration")
 
 	serverConfig.Http.TlsConfig = &conf.Server_TLS{PrivateKey: keyPath} // certificate missing
-	_, _, err = NewAPIMux(serverConfig, log.NewStdLogger(io.Discard))
+	_, err = newHTTPServer(&Opts{ServerConfig: serverConfig}, nil)
 	require.Error(t, err)
 }
 
 func TestSinglePortTLS(t *testing.T) {
 	certPath, keyPath := writeSelfSignedCert(t)
-
-	validator, err := protovalidate.New()
-	require.NoError(t, err)
 
 	serverConfig := &conf.Server{
 		Grpc: &conf.Server_GRPC{
@@ -283,38 +301,7 @@ func TestSinglePortTLS(t *testing.T) {
 		},
 	}
 
-	mux, cleanup, err := NewAPIMux(serverConfig, log.NewStdLogger(io.Discard))
-	require.NoError(t, err)
-	t.Cleanup(cleanup)
-
-	opts := &Opts{
-		ServerConfig: serverConfig,
-		AuthConfig:   &conf.Auth{},
-		Logger:       log.NewStdLogger(io.Discard),
-		Validator:    validator,
-		AuthSvc:      &service.AuthService{AuthURLs: &service.AuthURLs{Login: testLoginURL}},
-		APIMux:       mux,
-	}
-
-	gs, err := NewGRPCServer(opts)
-	require.NoError(t, err)
-	httpServers, err := NewHTTPServer(opts, gs)
-	require.NoError(t, err)
-	require.Len(t, httpServers, 1)
-
-	require.NoError(t, mux.Start(context.Background()))
-	t.Cleanup(func() { _ = mux.Stop(context.Background()) })
-	for _, g := range gs {
-		gsrv := g
-		go func() { _ = gsrv.Start(context.Background()) }()
-		t.Cleanup(func() { _ = gsrv.Stop(context.Background()) })
-	}
-	for _, s := range httpServers {
-		srv := s
-		go func() { _ = srv.Start(context.Background()) }()
-		t.Cleanup(func() { _ = srv.Stop(context.Background()) })
-	}
-	addr := mux.GRPC().Addr().String()
+	addr, _, _ := startSinglePortAppWithConfig(t, serverConfig)
 
 	// TLS client without ALPN restriction: HTTP/1.1 over TLS must work.
 	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}} //nolint:gosec // test server with a self-signed certificate
@@ -323,7 +310,7 @@ func TestSinglePortTLS(t *testing.T) {
 	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
-	// Native gRPC over TLS: handed to the gRPC server through the mux.
+	// Native gRPC over TLS uses the gRPC HTTP adapter.
 	gconn, err := grpcLib.NewClient(addr, grpcLib.WithTransportCredentials(credentials.NewTLS(&tls.Config{InsecureSkipVerify: true}))) //nolint:gosec // test server with a self-signed certificate
 	require.NoError(t, err)
 	defer gconn.Close()
@@ -357,6 +344,33 @@ func TestSinglePortTLS(t *testing.T) {
 	assert.Equal(t, "HTTP/2.0", resp.Proto)
 }
 
+func TestLegacyTLSIsIndependentFromSharedEndpoint(t *testing.T) {
+	cert, key := writeSelfSignedCert(t)
+	for _, sharedTLS := range []bool{false, true} {
+		t.Run(map[bool]string{false: "plaintext shared port", true: "TLS shared port"}[sharedTLS], func(t *testing.T) {
+			cfg := &conf.Server{
+				Grpc: &conf.Server_GRPC{Addr: testAnyAddr, TlsConfig: &conf.Server_TLS{Certificate: cert, PrivateKey: key}},
+				Http: &conf.Server_HTTP{Addr: testAnyAddr},
+			}
+			sharedCreds := insecure.NewCredentials()
+			if sharedTLS {
+				cfg.Http.TlsConfig = cfg.Grpc.TlsConfig
+				sharedCreds = credentials.NewTLS(&tls.Config{InsecureSkipVerify: true}) //nolint:gosec // test certificate
+			}
+			addr, _, _ := startSinglePortAppWithConfig(t, cfg)
+			// The helper verifies that the legacy listener requires TLS. This
+			// call verifies that its credentials do not affect the HTTP handler.
+			conn, err := grpcLib.NewClient(addr, grpcLib.WithTransportCredentials(sharedCreds))
+			require.NoError(t, err)
+			defer conn.Close()
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_, err = grpc_health_v1.NewHealthClient(conn).Check(ctx, &grpc_health_v1.HealthCheckRequest{})
+			require.Equal(t, codes.Unauthenticated, status.Code(err))
+		})
+	}
+}
+
 func writeSelfSignedCert(t *testing.T) (string, string) {
 	t.Helper()
 
@@ -387,7 +401,7 @@ func TestEmptyHTTPAddrRejected(t *testing.T) {
 		Grpc: &conf.Server_GRPC{Addr: testAnyAddr},
 		Http: &conf.Server_HTTP{}, // addr omitted
 	}
-	_, _, err := NewAPIMux(serverConfig, log.NewStdLogger(io.Discard))
+	_, err := NewHTTPServer(&Opts{ServerConfig: serverConfig}, nil)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "server.http.addr must be set")
 }

@@ -19,6 +19,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net/url"
 	"regexp"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -35,7 +36,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
-	"github.com/chainloop-dev/chainloop/pkg/httpgrpcmux"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/golang-jwt/jwt/v5"
 
@@ -91,12 +91,8 @@ type Opts struct {
 	GroupSvc            *service.GroupService
 	ProjectSvc          *service.ProjectService
 	// Utils
-	Logger       log.Logger
-	ServerConfig *conf.Server
-	// APIMux serves gRPC, gRPC-Web and HTTP from the single HTTP port. When
-	// set, both the gRPC and the HTTP server consume connections from it
-	// instead of opening their own listeners (issue-3628 single endpoint).
-	APIMux              *httpgrpcmux.Mux
+	Logger              log.Logger
+	ServerConfig        *conf.Server
 	AuthConfig          *conf.Auth
 	FederatedConfig     *conf.FederatedAuthentication
 	OperationAuthConfig *conf.OperationAuthorizationProvider
@@ -114,54 +110,43 @@ var (
 	allButOrganizationOperationsSkipRegexp = regexp.MustCompile("/controlplane.v1.OrganizationService/Create|/controlplane.v1.UserService/ListMemberships|/controlplane.v1.ContextService/Current|/controlplane.v1.AuthService/DeleteAccount")
 )
 
-// NewGRPCServer builds the gRPC server(s) that serve native gRPC.
-//
-// In single-port mode (API mux present) the first server consumes the
-// connections that the classifier marks as native gRPC; while the legacy gRPC
-// listener is on (default) a second, deprecated server also binds the
-// gRPC-only port with its configured TLS — the behavior the dedicated gRPC
-// port had before the single port existed. Without the mux, a single server
-// binds the gRPC-only port, as before.
-func NewGRPCServer(opts *Opts) ([]*grpc.Server, error) {
+// GRPCServers separates the HTTP handler from the optional native listener.
+// Only Legacy must be started as a transport server.
+type GRPCServers struct {
+	Handler *grpc.Server
+	Legacy  *grpc.Server
+}
+
+// NewGRPCServer builds both servers with the same services and middleware.
+func NewGRPCServer(opts *Opts) (*GRPCServers, error) {
 	// Opt-in histogram metrics for the interceptor
 	grpc_prometheus.EnableHandlingTimeHistogram()
 
-	if opts.APIMux != nil {
-		// Single port mode: the mux owns the listener on the HTTP address
-		// (and its TLS); this server only consumes the connections that the
-		// classifier marks as native gRPC.
-		single, err := newGRPCServer(opts, grpc.Listener(opts.APIMux.GRPC()))
+	// Kratos' stream interceptor needs a non-nil endpoint even when the gRPC
+	// handler never starts a native listener. Supply it explicitly rather than
+	// calling Endpoint(), which would bind an otherwise unused socket.
+	scheme := "grpc"
+	if opts.ServerConfig.GetHttp().GetTlsConfig().GetCertificate() != "" {
+		scheme = "grpcs"
+	}
+	handler := newGRPCServer(opts, grpc.Endpoint(&url.URL{
+		Scheme: scheme,
+		Host:   opts.ServerConfig.GetHttp().GetAddr(),
+	}))
+	servers := &GRPCServers{Handler: handler}
+	if legacyGRPCListenerEnabled(opts.ServerConfig) {
+		// Ignore unused legacy certificates when this listener is disabled.
+		legacyOpts, err := legacyGRPCServerOptions(opts)
 		if err != nil {
 			return nil, err
 		}
+		servers.Legacy = newGRPCServer(opts, legacyOpts...)
+	}
+	return servers, nil
+}
 
-		servers := []*grpc.Server{single}
-		if legacyGRPCListenerEnabled(opts.ServerConfig) {
-			// The legacy TLS options are loaded only when the deprecated
-			// listener actually starts: an operator turning it off must not
-			// be blocked by a dangling cert mount.
-			legacyOpts, err := legacyGRPCServerOptions(opts)
-			if err != nil {
-				return nil, err
-			}
-			legacy, err := newGRPCServer(opts, legacyOpts...)
-			if err != nil {
-				return nil, err
-			}
-			servers = append(servers, legacy)
-		}
-		return servers, nil
-	}
-
-	legacyOpts, err := legacyGRPCServerOptions(opts)
-	if err != nil {
-		return nil, err
-	}
-	srv, err := newGRPCServer(opts, legacyOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return []*grpc.Server{srv}, nil
+func legacyGRPCListenerEnabled(c *conf.Server) bool {
+	return c.LegacyGrpcListener == nil || *c.LegacyGrpcListener
 }
 
 // legacyGRPCServerOptions binds the deprecated gRPC-only listener: its
@@ -196,7 +181,7 @@ func legacyGRPCServerOptions(opts *Opts) ([]grpc.ServerOption, error) {
 // newGRPCServer builds one gRPC server with the shared middleware chain,
 // interceptors and service registrations, bound through the given extra
 // options.
-func newGRPCServer(opts *Opts, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+func newGRPCServer(opts *Opts, extraOpts ...grpc.ServerOption) *grpc.Server {
 	var serverOpts = append([]grpc.ServerOption{
 		grpc.Middleware(craftMiddleware(opts)...),
 		grpc.UnaryInterceptor(
@@ -243,7 +228,7 @@ func newGRPCServer(opts *Opts, extraOpts ...grpc.ServerOption) (*grpc.Server, er
 	// Register Prometheus metrics
 	grpc_prometheus.Register(srv.Server)
 
-	return srv, nil
+	return srv
 }
 
 func craftMiddleware(opts *Opts) []middleware.Middleware {

@@ -18,6 +18,8 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/apitoken"
@@ -27,7 +29,7 @@ import (
 	"buf.build/go/protovalidate"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/service"
-	"github.com/chainloop-dev/chainloop/pkg/httpgrpcmux"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
@@ -42,34 +44,41 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/http"
 )
 
-// NewHTTPServer builds the HTTP server that serves plain HTTP and gRPC-Web.
-//
-// In single-port mode (API mux present, see
-// docs/specs/issue-3628-single-endpoint.md) it consumes the connections that
-// the classifier did not mark as native gRPC, so gRPC-Web and HTTP are served
-// from the single port. The gRPC-Web wrapper and the native-gRPC fallback wrap
-// the mux-fed gRPC server (grpcServers[0]); the legacy gRPC server, when
-// present, serves its own deprecated port. Without the mux, the server binds
-// the HTTP-only port, as before.
-func NewHTTPServer(opts *Opts, grpcServers []*grpc.Server) ([]*http.Server, error) {
-	if opts.APIMux != nil {
-		single, err := newHTTPServer(opts, grpcServers[0], http.Listener(opts.APIMux.HTTP()))
-		if err != nil {
-			return nil, err
-		}
-		return []*http.Server{single}, nil
-	}
+// APIServer owns the public HTTP listener and its gRPC handler. The HTTP
+// server must drain before the handler is stopped, so in-flight RPCs finish.
+type APIServer struct {
+	*http.Server
+	grpcHandler *grpc.Server
+}
 
-	srv, err := newHTTPServer(opts, grpcServers[0], http.Address(opts.ServerConfig.GetHttp().GetAddr()))
+func (s *APIServer) Stop(ctx context.Context) error {
+	httpErr := s.Server.Stop(ctx)
+	return errors.Join(httpErr, s.grpcHandler.Stop(ctx))
+}
+
+// NewHTTPServer serves HTTP, gRPC-Web and native gRPC per request on one
+// HTTP/1.1 and HTTP/2 listener, without classifying connections.
+func NewHTTPServer(opts *Opts, grpcServers *GRPCServers) (*APIServer, error) {
+	if opts.ServerConfig.GetHttp().GetAddr() == "" {
+		return nil, errors.New("server.http.addr must be set: the shared endpoint cannot bind an empty address")
+	}
+	srv, err := newHTTPServer(opts, grpcServers.Handler, http.Address(opts.ServerConfig.GetHttp().GetAddr()))
 	if err != nil {
 		return nil, err
 	}
-	return []*http.Server{srv}, nil
+	if legacyGRPCListenerEnabled(opts.ServerConfig) {
+		log.NewHelper(opts.Logger).Warnw("msg", fmt.Sprintf("the gRPC-only listener on %q is deprecated; use the shared HTTP endpoint and set server.legacy_grpc_listener to false when all clients have moved", opts.ServerConfig.GetGrpc().GetAddr()))
+	}
+	return &APIServer{Server: srv, grpcHandler: grpcServers.Handler}, nil
 }
 
 // newHTTPServer builds one HTTP server that serves the routes, the gRPC-Web
 // wrapper and the transcoded handlers, bound through the given extra options.
 func newHTTPServer(opts *Opts, grpcSrv *grpc.Server, extraOpts ...http.ServerOption) (*http.Server, error) {
+	tlsConfig, err := loadServerTLSConfig(opts.ServerConfig.GetHttp().GetTlsConfig())
+	if err != nil {
+		return nil, err
+	}
 	var serverOpts = append([]http.ServerOption{
 		http.Middleware(httpMiddlewares(opts)...),
 	}, extraOpts...)
@@ -83,6 +92,9 @@ func newHTTPServer(opts *Opts, grpcSrv *grpc.Server, extraOpts ...http.ServerOpt
 	}
 	if v := opts.ServerConfig.Http.Timeout; v != nil {
 		serverOpts = append(serverOpts, http.Timeout(v.AsDuration()))
+	}
+	if tlsConfig != nil {
+		serverOpts = append(serverOpts, http.TLSConfig(tlsConfig))
 	}
 
 	// initialize the underneath http server
@@ -122,9 +134,8 @@ func newHTTPServer(opts *Opts, grpcSrv *grpc.Server, extraOpts ...http.ServerOpt
 	// Include the OpenAPI spec handler
 	r.GET("/openapi.yaml", statusSvc.HandleOpenAPISpec)
 
-	// Handle grpc-web requests or fallback. Unencrypted HTTP/2 (h2c) is enabled
-	// natively so that connections that are not native gRPC still work: browsers
-	// doing gRPC-Web over HTTP/2 and h2c-aware proxies.
+	// The standard HTTP server owns every connection and dispatches each
+	// stream independently, including mixed HTTP/2 upstream proxy pools.
 	wrappedServer.Protocols = new(h.Protocols)
 	wrappedServer.Protocols.SetHTTP1(true)
 	wrappedServer.Protocols.SetHTTP2(true)
@@ -137,10 +148,10 @@ func newHTTPServer(opts *Opts, grpcSrv *grpc.Server, extraOpts ...http.ServerOpt
 	wrappedServer.ReadHeaderTimeout = 60 * time.Second
 
 	wrappedServer.Handler = h.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		// Native gRPC requests that arrive on a connection the classifier
-		// gave to the HTTP server: hand them to the gRPC server, which runs
-		// the same middleware chain as on the dedicated gRPC port.
-		if httpgrpcmux.IsNativeGRPCContentType(req.Header.Get("Content-Type")) {
+		// Native gRPC uses grpc-go's HTTP adapter and its existing middleware.
+		// gRPC-Web must reach its wrapper even though its content type shares
+		// the application/grpc prefix. Native gRPC requires HTTP/2.
+		if req.ProtoMajor == 2 && isNativeGRPCContentType(req.Header.Get("Content-Type")) {
 			grpcSrv.ServeHTTP(res, req)
 			return
 		}
@@ -152,6 +163,12 @@ func newHTTPServer(opts *Opts, grpcSrv *grpc.Server, extraOpts ...http.ServerOpt
 	})
 
 	return wrappedServer, nil
+}
+
+func isNativeGRPCContentType(contentType string) bool {
+	contentType = strings.ToLower(contentType)
+	return strings.HasPrefix(contentType, "application/grpc") &&
+		!strings.HasPrefix(contentType, "application/grpc-web")
 }
 
 // httpMiddlewares returns the middleware chain for the HTTP server.

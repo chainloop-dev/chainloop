@@ -32,7 +32,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	"github.com/chainloop-dev/chainloop/pkg/credentials/manager"
-	"github.com/chainloop-dev/chainloop/pkg/httpgrpcmux"
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
@@ -42,8 +41,6 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
-	"github.com/go-kratos/kratos/v2/transport/grpc"
-	"github.com/go-kratos/kratos/v2/transport/http"
 )
 
 var (
@@ -62,41 +59,15 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../configs", "config path, eg: -conf config.yaml")
 }
 
-// cleanShutdownServer tolerates the shutdown race with the mux: kratos starts
-// and stops servers concurrently, and the mux's sub-listeners close together
-// with the root listener, so the gRPC/HTTP servers may see their listener
-// close before they flag their own shutdown. Their Start then returns the
-// mux's shutdown error even though the shutdown is orderly — kratos would
-// surface it and main would panic on every SIGTERM the mux wins. The race is
-// only tolerated when the mux is actually stopping: a fatal accept-loop
-// failure surfaces as an error, so the process restarts instead of serving a
-// dead single port.
-type cleanShutdownServer struct {
-	transport.Server
-	mux *httpgrpcmux.Mux
-}
-
-func (s *cleanShutdownServer) Start(ctx context.Context) error {
-	err := s.Server.Start(ctx)
-	if s.mux.IsOrderlyShutdownErr(err) {
-		return nil
-	}
-	return err
-}
-
-func newApp(logger log.Logger, am *httpgrpcmux.Mux, gs []*grpc.Server, hs []*http.Server, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer,
+func newApp(logger log.Logger, gs *server.GRPCServers, api *server.APIServer, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer,
 	expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins,
 	userAccessSyncer *biz.UserAccessSyncerUseCase, casBackendChecker *biz.CASBackendChecker,
 	apiTokenStaleRevoker *biz.APITokenStaleRevoker, loginHandoffs *biz.LoginHandoffUseCase, cfg *conf.Bootstrap) *app {
-	servers := make([]transport.Server, 0, len(gs)+len(hs)+3)
-	// The mux owns the single-port listener; kratos starts servers concurrently,
-	// so no ordering is required — the virtual listeners work before Start.
-	servers = append(servers, am, ms)
-	for _, g := range gs {
-		servers = append(servers, &cleanShutdownServer{Server: g, mux: am})
-	}
-	for _, h := range hs {
-		servers = append(servers, &cleanShutdownServer{Server: h, mux: am})
+	servers := []transport.Server{api, ms}
+	// APIServer owns the gRPC handler's lifecycle. Only the legacy server
+	// starts a native gRPC listener.
+	if gs.Legacy != nil {
+		servers = append(servers, gs.Legacy)
 	}
 	if cfg.EnableProfiler {
 		servers = append(servers, profilerSvc)

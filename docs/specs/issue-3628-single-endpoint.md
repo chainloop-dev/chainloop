@@ -22,6 +22,8 @@ When your code goes against this spec, say so in your PR, and supersede the entr
 
 # Spec issue-3628: Serve gRPC and HTTP from one endpoint per service
 
+Control-plane design superseded by [Spec issue-3628-controlplane-http-dispatch](issue-3628-controlplane-http-dispatch.md). CAS requirements remain open under the parent ticket.
+
 ## Summary
 
 The control plane and the Artifact CAS will each serve gRPC and HTTP on one port. The control plane also serves gRPC-Web on it, as it does today. Today each service has a gRPC port and an HTTP port. An installation thus needs two Services, two ingresses, two hostnames, and two TLS settings per service. The service will accept all connections on its current HTTP port, the one that serves the human-facing hostname today. It will look at each new connection and give it to the gRPC server or to the HTTP server that runs today. The middleware, the authentication, and the native gRPC transport for large CAS streams do not change. The legacy gRPC port stays on by default for a deprecation period, behind a config flag. The Helm chart moves to one Service and one hostname per service.
