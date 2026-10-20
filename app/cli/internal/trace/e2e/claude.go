@@ -74,7 +74,7 @@ func (c *Claude) Version(ctx context.Context) (string, error) {
 func (c *Claude) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 	args := []string{
 		"-p", req.Prompt,
-		"--model", req.Model,
+		flagModel, req.Model,
 		"--output-format", "stream-json",
 		"--verbose",
 		"--include-hook-events",
@@ -181,7 +181,7 @@ func (c *Claude) HookConfig() HookConfig {
   }
 }
 `,
-		UserMarker: "e2e-user-hook",
+		UserMarker: userHookMarker,
 	}
 }
 
@@ -215,6 +215,11 @@ func (c *Claude) DisableSessionStart(repo string) error {
 		return err
 	}
 	return os.WriteFile(path, data, 0o600)
+}
+
+// SkillPath implements Harness.
+func (c *Claude) SkillPath(name string) string {
+	return ".claude/skills/" + name + "/SKILL.md"
 }
 
 // claudeStreamEvent is the part of a stream-json line that the suite reads. A

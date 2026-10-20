@@ -58,6 +58,17 @@ func ledger(sessionID, file string, written, erased []string) *state.AILineAttri
 	}
 }
 
+// oldFile is the path of testFile before a rename.
+const oldFile = "old.go"
+
+// counts holds the fingerprints of lines.
+func counts(lines ...string) state.LineCounts {
+	c := state.LineCounts{}
+	c.Add(fps(lines...)...)
+
+	return c
+}
+
 func TestEnrich_Legacy(t *testing.T) {
 	t.Run("no AI data attributes all changes to human", func(t *testing.T) {
 		changes := &aicodingsession.CodeChanges{
@@ -255,6 +266,16 @@ func TestEnrich_Lines(t *testing.T) {
 			},
 			want: split{aiAdded: 2, humanAdded: 1, humanRemoved: 1},
 		},
+		{
+			// R-007: the agent edited the file under its old name, and the
+			// commit renamed it.
+			name:    "a renamed file matches the ledger of its old path",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, oldFile, []string{"a"}, []string{"x"})},
+			commits: []CommitLines{{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{
+				{Path: testFile, OldPath: oldFile, Added: []string{"a", "b"}, Removed: []string{"x", "y"}},
+			}}},
+			want: split{aiAdded: 1, aiRemoved: 1, humanAdded: 1, humanRemoved: 1},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -377,6 +398,44 @@ func TestEnrich_Net(t *testing.T) {
 			tip:     map[string][]tracegit.BlameLine{testFile: tipOf(c3+":k", c1+":x", c1+":y")},
 			want:    split{humanAdded: 2},
 			ranges:  []aicodingsession.LineRange{human(2, 3)},
+		},
+		{
+			// R-007: the session wrote old.go, a commit renamed it to the
+			// file, and a later commit of the session changed the file. The
+			// tip of both paths is the file at HEAD, and each line counts for
+			// the path that its commit changed.
+			name: "a line counts for the path that its commit changed",
+			ledgers: map[string]*state.AILineAttribution{testSession: {
+				SessionID: testSession,
+				Written: map[string]state.LineCounts{
+					oldFile:  counts(five...),
+					testFile: counts("f"),
+				},
+			}},
+			commits: []CommitLines{
+				{SHA: c1, SessionIDs: []string{testSession}, Files: []tracegit.FileLines{{Path: oldFile, Added: five}}},
+				ownCommit(c2, []string{"f"}, nil),
+			},
+			tip: map[string][]tracegit.BlameLine{
+				oldFile:  tipOf(c1+":a", c1+":b", c1+":c", c1+":d", c1+":e", c2+":f"),
+				testFile: tipOf(c1+":a", c1+":b", c1+":c", c1+":d", c1+":e", c2+":f"),
+			},
+			want:   split{aiAdded: 1},
+			ranges: []aicodingsession.LineRange{ai(6, 6)},
+		},
+		{
+			// R-007: a commit in no session renamed the file and replaced a
+			// line of the session in it.
+			name:    "a joined commit counts in a renamed file",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, five, nil)},
+			commits: []CommitLines{
+				ownCommit(c1, five, nil),
+				{SHA: c2, Files: []tracegit.FileLines{{Path: "new.go", OldPath: testFile, Added: []string{"C"}, Removed: []string{"c"}}},
+					Joined: map[string][]string{"new.go": fps("C")}},
+			},
+			tip:    map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e")},
+			want:   split{aiAdded: 4, humanAdded: 1},
+			ranges: []aicodingsession.LineRange{ai(1, 2), human(3, 3), ai(4, 5)},
 		},
 	}
 

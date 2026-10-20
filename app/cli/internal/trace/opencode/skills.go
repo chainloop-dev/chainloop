@@ -16,6 +16,7 @@
 package opencode
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -75,13 +76,18 @@ func exportSkills(export *exportData) []trace.SkillUse {
 				continue
 			}
 
+			// OpenCode 1.x names the skill in "name", OpenCode 2 in "id".
 			var input struct {
 				Name string `json:"name"`
+				ID   string `json:"id"`
 			}
-			if json.Unmarshal(part.State.Input, &input) != nil || strings.TrimSpace(input.Name) == "" {
+			if json.Unmarshal(part.State.Input, &input) != nil {
 				continue
 			}
-			name := strings.TrimSpace(input.Name)
+			name := strings.TrimSpace(cmp.Or(input.Name, input.ID))
+			if name == "" {
+				continue
+			}
 
 			use, ok := uses[name]
 			if !ok {
@@ -101,8 +107,11 @@ func exportSkills(export *exportData) []trace.SkillUse {
 // toolSkillDir returns the skill folder of a skill tool call: from the tool
 // metadata, or else from the base directory line of the tool output.
 func toolSkillDir(st *toolState) string {
-	if st.Metadata != nil && filepath.IsAbs(st.Metadata.Dir) {
-		return filepath.Clean(st.Metadata.Dir)
+	if st.Metadata != nil {
+		// OpenCode 1.x puts the folder in "dir", OpenCode 2 in "directory".
+		if dir := cmp.Or(st.Metadata.Dir, st.Metadata.Directory); filepath.IsAbs(dir) {
+			return filepath.Clean(dir)
+		}
 	}
 
 	var output string

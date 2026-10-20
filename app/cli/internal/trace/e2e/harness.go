@@ -20,6 +20,13 @@ import "context"
 // HarnessClaudeCode is the column name of Claude Code in the feature table.
 const HarnessClaudeCode = "Claude Code"
 
+const (
+	// flagModel is the model flag that all the harnesses share.
+	flagModel = "--model"
+	// userHookMarker is in the hook of the user that a scenario seeds.
+	userHookMarker = "e2e-user-hook"
+)
+
 // RunRequest is one headless session of a harness.
 type RunRequest struct {
 	// Dir is the repository the session runs in.
@@ -38,17 +45,29 @@ type RunRequest struct {
 	Images [][]byte
 }
 
-// HookConfig describes the file where the harness reads its hooks.
+// HookConfig describes the files where the harness reads its hooks.
 type HookConfig struct {
-	// Path is the file, relative to the repository root.
+	// Path is the file of the Chainloop hooks, relative to the repository
+	// root.
 	Path string
 	// ChainloopMarker is a text that only a Chainloop hook in the file holds.
 	ChainloopMarker string
-	// UserConfig is the content of the file with one hook of the user and no
-	// Chainloop hook.
+	// UserPath is the file of the hook of the user, relative to the
+	// repository root. Empty means Path: the hooks share one file.
+	UserPath string
+	// UserConfig is the content of the user file with one hook of the user
+	// and no Chainloop hook.
 	UserConfig string
 	// UserMarker is a text that only the hook of the user holds.
 	UserMarker string
+}
+
+// UserFile returns the file of the hook of the user.
+func (c HookConfig) UserFile() string {
+	if c.UserPath != "" {
+		return c.UserPath
+	}
+	return c.Path
 }
 
 // HookMessage is a message that a Trace hook returned to the harness.
@@ -93,4 +112,7 @@ type Harness interface {
 	// installed in the repository, so that a session starts with no
 	// session-start hook.
 	DisableSessionStart(repo string) error
+	// SkillPath returns the file of a project skill, relative to the
+	// repository root.
+	SkillPath(name string) string
 }

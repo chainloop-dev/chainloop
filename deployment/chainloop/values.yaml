@@ -345,9 +345,11 @@ controlplane:
     ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
     ##
     externalTrafficPolicy: Cluster
-    ## @param controlplane.service.annotations Additional custom annotations for controlplane service
+    ## @extra controlplane.service.annotations Annotations for the shared HTTP and gRPC service. Traefik uses h2c for HTTP/2 upstream traffic.
     ##
-    annotations: {}
+    annotations:
+      ## @skip controlplane.service.annotations.traefik.ingress.kubernetes.io/service.serversscheme
+      traefik.ingress.kubernetes.io/service.serversscheme: h2c
     ## @param controlplane.service.extraPorts Extra ports to expose in controlplane service (normally used with the `sidecars` value)
     ##
     extraPorts: []
@@ -432,7 +434,7 @@ controlplane:
 
   ## ref: http://kubernetes.io/docs/user-guide/ingress/
   ingress:
-    ## @param controlplane.ingress.enabled Enable ingress record generation for controlplane
+    ## @param controlplane.ingress.enabled Enable the shared HTTP, gRPC-Web and native gRPC ingress for controlplane
     ##
     enabled: false
     ## @param controlplane.ingress.pathType Ingress path type
@@ -450,7 +452,7 @@ controlplane:
     ## NOTE: You may need to set this to '/*' in order to use this with ALB ingress controllers
     ##
     path: /
-    ## @param controlplane.ingress.annotations Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.
+    ## @extra controlplane.ingress.annotations Annotations for the shared ingress. NGINX uses HTTP/2 upstream for every request. Add cert-manager annotations here.
     ## Use this parameter to set the required annotations for cert-manager, see
     ## ref: https://cert-manager.io/docs/usage/ingress/#supported-annotations
     ## e.g:
@@ -458,7 +460,13 @@ controlplane:
     ##   kubernetes.io/controlplane.ingress.class: nginx
     ##   cert-manager.io/cluster-issuer: cluster-issuer-name
     ##
-    annotations: {}
+    annotations:
+      ## @skip controlplane.ingress.annotations.nginx.ingress.kubernetes.io/backend-protocol
+      nginx.ingress.kubernetes.io/backend-protocol: GRPC
+      ## @skip controlplane.ingress.annotations.nginx.org/grpc-services
+      nginx.org/grpc-services: '{{ include "chainloop.controlplane.fullname" . }}'
+      ## @skip controlplane.ingress.annotations.nginx.org/http2
+      nginx.org/http2: "true"
     ## @param controlplane.ingress.tls Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter
     ## TLS certificates will be retrieved from a TLS secret with name: `{{- printf "%s-tls" .Values.controlplane.ingress.hostname }}`
     ## You can:

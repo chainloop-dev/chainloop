@@ -627,9 +627,15 @@ type Server struct {
 	Http  *Server_HTTP           `protobuf:"bytes,1,opt,name=http,proto3" json:"http,omitempty"`
 	Grpc  *Server_GRPC           `protobuf:"bytes,2,opt,name=grpc,proto3" json:"grpc,omitempty"`
 	// HTTPMetrics defines the HTTP server that exposes prometheus metrics
-	HttpMetrics   *Server_HTTP `protobuf:"bytes,3,opt,name=http_metrics,json=httpMetrics,proto3" json:"http_metrics,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	HttpMetrics *Server_HTTP `protobuf:"bytes,3,opt,name=http_metrics,json=httpMetrics,proto3" json:"http_metrics,omitempty"`
+	// Legacy gRPC-only listener that serves native gRPC on its own port, next
+	// to the single port that already serves gRPC, gRPC-Web and HTTP. It exists
+	// for the deprecation period of docs/specs/issue-3628-single-endpoint.md.
+	// Defaults to true when unset. Set it to false to listen on the single port
+	// only, plus the internal metrics and profiler ports.
+	LegacyGrpcListener *bool `protobuf:"varint,4,opt,name=legacy_grpc_listener,json=legacyGrpcListener,proto3,oneof" json:"legacy_grpc_listener,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Server) Reset() {
@@ -681,6 +687,13 @@ func (x *Server) GetHttpMetrics() *Server_HTTP {
 		return x.HttpMetrics
 	}
 	return nil
+}
+
+func (x *Server) GetLegacyGrpcListener() bool {
+	if x != nil && x.LegacyGrpcListener != nil {
+		return *x.LegacyGrpcListener
+	}
+	return false
 }
 
 type Data struct {
@@ -1363,8 +1376,14 @@ type Server_HTTP struct {
 	Addr    string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
 	// In the form of [scheme]://[host] i.e https://instance.chainloop.dev
 	// Optional
-	ExternalUrl   string               `protobuf:"bytes,4,opt,name=external_url,json=externalUrl,proto3" json:"external_url,omitempty"`
-	Timeout       *durationpb.Duration `protobuf:"bytes,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	ExternalUrl string               `protobuf:"bytes,4,opt,name=external_url,json=externalUrl,proto3" json:"external_url,omitempty"`
+	Timeout     *durationpb.Duration `protobuf:"bytes,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	// TLS for the single port, which serves gRPC, gRPC-Web and HTTP: the
+	// listener negotiates HTTP/2 and HTTP/1.1 through ALPN. A partial
+	// configuration (only one of certificate/private_key) is a startup
+	// error. Note: server.http_metrics reuses this message type but does
+	// not support TLS.
+	TlsConfig     *Server_TLS `protobuf:"bytes,6,opt,name=tls_config,json=tlsConfig,proto3" json:"tls_config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1423,6 +1442,13 @@ func (x *Server_HTTP) GetExternalUrl() string {
 func (x *Server_HTTP) GetTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.Timeout
+	}
+	return nil
+}
+
+func (x *Server_HTTP) GetTlsConfig() *Server_TLS {
+	if x != nil {
+		return x.TlsConfig
 	}
 	return nil
 }
@@ -1941,16 +1967,19 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\x12\x18\n" +
 	"\adefault\x18\x02 \x01(\bR\adefault\x12\x16\n" +
 	"\x04host\x18\x03 \x01(\tB\x02\x18\x01R\x04host\x12\x10\n" +
-	"\x03url\x18\x04 \x01(\tR\x03url\"\xfe\x04\n" +
+	"\x03url\x18\x04 \x01(\tR\x03url\"\x91\x06\n" +
 	"\x06Server\x127\n" +
 	"\x04http\x18\x01 \x01(\v2#.controlplane.config.v1.Server.HTTPR\x04http\x127\n" +
 	"\x04grpc\x18\x02 \x01(\v2#.controlplane.config.v1.Server.GRPCR\x04grpc\x12F\n" +
-	"\fhttp_metrics\x18\x03 \x01(\v2#.controlplane.config.v1.Server.HTTPR\vhttpMetrics\x1a\x8c\x01\n" +
+	"\fhttp_metrics\x18\x03 \x01(\v2#.controlplane.config.v1.Server.HTTPR\vhttpMetrics\x125\n" +
+	"\x14legacy_grpc_listener\x18\x04 \x01(\bH\x00R\x12legacyGrpcListener\x88\x01\x01\x1a\xcf\x01\n" +
 	"\x04HTTP\x12\x18\n" +
 	"\anetwork\x18\x01 \x01(\tR\anetwork\x12\x12\n" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\x12!\n" +
 	"\fexternal_url\x18\x04 \x01(\tR\vexternalUrl\x123\n" +
-	"\atimeout\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x1aH\n" +
+	"\atimeout\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12A\n" +
+	"\n" +
+	"tls_config\x18\x06 \x01(\v2\".controlplane.config.v1.Server.TLSR\ttlsConfig\x1aH\n" +
 	"\x03TLS\x12 \n" +
 	"\vcertificate\x18\x01 \x01(\tR\vcertificate\x12\x1f\n" +
 	"\vprivate_key\x18\x02 \x01(\tR\n" +
@@ -1961,7 +1990,8 @@ const file_controlplane_config_v1_conf_proto_rawDesc = "" +
 	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12A\n" +
 	"\n" +
 	"tls_config\x18\x04 \x01(\v2\".controlplane.config.v1.Server.TLSR\ttlsConfig\x12)\n" +
-	"\x11max_recv_msg_size\x18\x05 \x01(\x05R\x0emaxRecvMsgSize\"\x9a\x02\n" +
+	"\x11max_recv_msg_size\x18\x05 \x01(\x05R\x0emaxRecvMsgSizeB\x17\n" +
+	"\x15_legacy_grpc_listener\"\x9a\x02\n" +
 	"\x04Data\x12A\n" +
 	"\bdatabase\x18\x01 \x01(\v2%.controlplane.config.v1.Data.DatabaseR\bdatabase\x1a\xce\x01\n" +
 	"\bDatabase\x12\x16\n" +
@@ -2085,14 +2115,15 @@ var file_controlplane_config_v1_conf_proto_depIdxs = []int32{
 	16, // 28: controlplane.config.v1.Bootstrap.Observability.tracing:type_name -> controlplane.config.v1.Bootstrap.Observability.Tracing
 	19, // 29: controlplane.config.v1.Bootstrap.CASServer.grpc:type_name -> controlplane.config.v1.Server.GRPC
 	26, // 30: controlplane.config.v1.Server.HTTP.timeout:type_name -> google.protobuf.Duration
-	26, // 31: controlplane.config.v1.Server.GRPC.timeout:type_name -> google.protobuf.Duration
-	18, // 32: controlplane.config.v1.Server.GRPC.tls_config:type_name -> controlplane.config.v1.Server.TLS
-	26, // 33: controlplane.config.v1.Data.Database.max_conn_idle_time:type_name -> google.protobuf.Duration
-	34, // [34:34] is the sub-list for method output_type
-	34, // [34:34] is the sub-list for method input_type
-	34, // [34:34] is the sub-list for extension type_name
-	34, // [34:34] is the sub-list for extension extendee
-	0,  // [0:34] is the sub-list for field type_name
+	18, // 31: controlplane.config.v1.Server.HTTP.tls_config:type_name -> controlplane.config.v1.Server.TLS
+	26, // 32: controlplane.config.v1.Server.GRPC.timeout:type_name -> google.protobuf.Duration
+	18, // 33: controlplane.config.v1.Server.GRPC.tls_config:type_name -> controlplane.config.v1.Server.TLS
+	26, // 34: controlplane.config.v1.Data.Database.max_conn_idle_time:type_name -> google.protobuf.Duration
+	35, // [35:35] is the sub-list for method output_type
+	35, // [35:35] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_config_v1_conf_proto_init() }
@@ -2101,6 +2132,7 @@ func file_controlplane_config_v1_conf_proto_init() {
 		return
 	}
 	file_controlplane_config_v1_conf_proto_msgTypes[2].OneofWrappers = []any{}
+	file_controlplane_config_v1_conf_proto_msgTypes[6].OneofWrappers = []any{}
 	file_controlplane_config_v1_conf_proto_msgTypes[8].OneofWrappers = []any{}
 	file_controlplane_config_v1_conf_proto_msgTypes[10].OneofWrappers = []any{
 		(*CA_FileCa)(nil),

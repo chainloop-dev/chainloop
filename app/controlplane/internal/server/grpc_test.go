@@ -22,13 +22,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Operations used across the matcher tests.
+const (
+	opWorkflowServiceList    = "/controlplane.v1.WorkflowService/List"
+	opWorkflowRunServiceList = "/controlplane.v1.WorkflowRunService/List"
+)
+
 func TestRequireCurrentUserMatcher(t *testing.T) {
 	testCases := []struct {
 		operation string
 		matches   bool
 	}{
-		{"/controlplane.v1.WorkflowService/List", true},
-		{"/controlplane.v1.WorkflowRunService/List", true},
+		{opWorkflowServiceList, true},
+		{opWorkflowRunServiceList, true},
 		{"/controlplane.v1.StatusService/Infoz", false},
 		{"/controlplane.v1.StatusService/Statusz", false},
 		{"/controlplane.v1.AttestationService/Init", false},
@@ -71,11 +77,11 @@ func TestRequireRobotAccountMatcher(t *testing.T) {
 		operation string
 		matches   bool
 	}{
-		{"/controlplane.v1.WorkflowService/List", false},
+		{opWorkflowServiceList, false},
 		{"/controlplane.v1.StatusService/Infoz", false},
 		{"/controlplane.v1.AttestationService/Init", true},
 		{"/controlplane.v1.AttestationService/Store", true},
-		{"/controlplane.v1.WorkflowRunService/List", false},
+		{opWorkflowRunServiceList, false},
 	}
 
 	matchFunc := requireRobotAccountMatcher()
@@ -89,8 +95,8 @@ func TestRequireAllButOrganizationOperationsMatcher(t *testing.T) {
 		operation string
 		matches   bool
 	}{
-		{"/controlplane.v1.WorkflowService/List", true},
-		{"/controlplane.v1.WorkflowRunService/List", true},
+		{opWorkflowServiceList, true},
+		{opWorkflowRunServiceList, true},
 		{"/controlplane.v1.OrganizationService/Create", false},
 		{"/controlplane.v1.CASBackendService/List", true},
 		{"/controlplane.v1.CASBackendService/Add", true},

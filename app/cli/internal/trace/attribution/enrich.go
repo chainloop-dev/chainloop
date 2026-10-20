@@ -16,6 +16,9 @@
 package attribution
 
 import (
+	"maps"
+	"slices"
+
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
@@ -63,6 +66,12 @@ type CommitLines struct {
 // (R-003). A file that tip does not hold keeps the AI ranges at edit time,
 // with no attribution, as older CLIs write them (R-005).
 //
+// A file that was renamed after a commit of the session has the lines of its
+// new path in tip (R-007). A line there counts for the path that its commit
+// changed, so a session that changed the file under both paths counts each
+// line once. A commit that renamed a file matches the ledger of the new path,
+// then of the old one.
+//
 // A file with an edit recorded before line fingerprints existed keeps the
 // earlier rule: AI lines are the recorded ranges, capped at the file's diff.
 func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commits []CommitLines, tip map[string][]tracegit.BlameLine, changes *aicodingsession.CodeChanges) {
@@ -83,15 +92,25 @@ func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commi
 		positioned[path] = net.ranges
 	}
 
+	oldPaths := make(map[string][]string)
+	for _, c := range commits {
+		for _, fl := range c.Files {
+			if fl.OldPath != "" && !slices.Contains(oldPaths[fl.Path], fl.OldPath) {
+				oldPaths[fl.Path] = append(oldPaths[fl.Path], fl.OldPath)
+			}
+		}
+	}
+
 	changes.AILinesAdded, changes.AILinesRemoved = 0, 0
 	changes.HumanLinesAdded, changes.HumanLinesRemoved = 0, 0
 	for i := range changes.Files {
 		f := &changes.Files[i]
 
 		// The marker keeps its earlier meaning, a file that the session
-		// edited, for platforms that do not read the split (R-009). An empty
-		// ranges slice is valid: the agent only deleted lines.
-		if aiRanges, ok := self.Files[f.Path]; ok {
+		// edited, also under the path that a commit renamed, for platforms
+		// that do not read the split (R-009). An empty ranges slice is valid:
+		// the agent only deleted lines.
+		if aiRanges, ok := editedRanges(self, f.Path, oldPaths[f.Path]); ok {
 			f.Attribution = trace.AttributionAI
 			f.LineRanges = aiRanges
 			f.SessionIDs = []string{sessionID}
@@ -141,6 +160,18 @@ func (s *fileSplit) addLine(n int, owner string) {
 	s.ranges = append(s.ranges, aicodingsession.LineRange{Start: n, End: n, Attribution: owner})
 }
 
+// editedRanges returns the recorded ranges of the session's edits of a file,
+// under its path or, when a commit renamed it, under an old path.
+func editedRanges(l *state.AILineAttribution, path string, oldPaths []string) ([]aicodingsession.LineRange, bool) {
+	for _, p := range append([]string{path}, oldPaths...) {
+		if ranges, ok := l.Files[p]; ok {
+			return ranges, true
+		}
+	}
+
+	return nil, false
+}
+
 // splitByPath matches the lines of each commit against the ledgers, and
 // returns the split of each file that the commits changed.
 func splitByPath(sessionID string, self *state.AILineAttribution, ledgers map[string]*state.AILineAttribution, commits []CommitLines) map[string]*fileSplit {
@@ -166,9 +197,9 @@ func splitByPath(sessionID string, self *state.AILineAttribution, ledgers map[st
 			for _, line := range fl.Added {
 				fp := Fingerprint(line)
 				switch {
-				case written.take(self, fl.Path, fp):
+				case written.takeFile(self, fl, fp):
 					s.aiAdded++
-				case written.takeAny(others, fl.Path, fp):
+				case written.takeAny(others, fl, fp):
 				default:
 					s.humanAdded++
 				}
@@ -176,9 +207,9 @@ func splitByPath(sessionID string, self *state.AILineAttribution, ledgers map[st
 			for _, line := range fl.Removed {
 				fp := Fingerprint(line)
 				switch {
-				case erased.take(self, fl.Path, fp):
+				case erased.takeFile(self, fl, fp):
 					s.aiRemoved++
-				case erased.takeAny(others, fl.Path, fp):
+				case erased.takeAny(others, fl, fp):
 				default:
 					s.humanRemoved++
 				}
@@ -202,12 +233,14 @@ func netAdded(sessionID string, self *state.AILineAttribution, ledgers map[strin
 	written := linePool{pick: func(a *state.AILineAttribution) map[string]state.LineCounts { return a.Written }}
 	joined := make(map[[2]string]state.LineCounts)
 
+	// Two paths of the session can have the same lines in tip, after a
+	// rename. The order makes the split of such lines the same on each push.
 	out := make(map[string]*fileSplit, len(tip))
-	for path, lines := range tip {
+	for _, path := range slices.Sorted(maps.Keys(tip)) {
 		s := &fileSplit{}
 		out[path] = s
 
-		for i, l := range lines {
+		for i, l := range tip[path] {
 			commit, ok := bySHA[l.SHA]
 			if !ok {
 				continue
@@ -215,14 +248,7 @@ func netAdded(sessionID string, self *state.AILineAttribution, ledgers map[strin
 			fp := Fingerprint(l.Text)
 
 			if commit.Joined != nil {
-				key := [2]string{commit.SHA, path}
-				pool, ok := joined[key]
-				if !ok {
-					pool = state.LineCounts{}
-					pool.Add(commit.Joined[path]...)
-					joined[key] = pool
-				}
-				if pool.Take(fp) {
+				if joinedPool(joined, commit, path, tip).Take(fp) {
 					s.humanAdded++
 					s.addLine(i+1, trace.AttributionHuman)
 				}
@@ -230,11 +256,18 @@ func netAdded(sessionID string, self *state.AILineAttribution, ledgers map[strin
 				continue
 			}
 
+			// A line that the commit wrote under another path of the
+			// session counts for that path.
+			fl, ok := commit.file(path)
+			if !ok {
+				continue
+			}
+
 			switch {
-			case written.take(self, path, fp):
+			case written.takeFile(self, fl, fp):
 				s.aiAdded++
 				s.addLine(i+1, trace.AttributionAI)
-			case written.takeAny(otherLedgers(sessionID, ledgers, commit.SessionIDs), path, fp):
+			case written.takeAny(otherLedgers(sessionID, ledgers, commit.SessionIDs), fl, fp):
 			default:
 				s.humanAdded++
 				s.addLine(i+1, trace.AttributionHuman)
@@ -243,6 +276,47 @@ func netAdded(sessionID string, self *state.AILineAttribution, ledgers map[strin
 	}
 
 	return out
+}
+
+// file returns the lines that the commit changed in path.
+func (c CommitLines) file(path string) (tracegit.FileLines, bool) {
+	for _, fl := range c.Files {
+		if fl.Path == path {
+			return fl, true
+		}
+	}
+
+	return tracegit.FileLines{}, false
+}
+
+// joinedPool returns the human lines that a joined commit added to path, one
+// copy per match. A joined commit that changed the file under a path that tip
+// does not hold, because a later commit renamed it, shares one pool of those
+// lines across the paths of tip.
+func joinedPool(pools map[[2]string]state.LineCounts, commit CommitLines, path string, tip map[string][]tracegit.BlameLine) state.LineCounts {
+	key := [2]string{commit.SHA, path}
+	if _, direct := commit.Joined[path]; !direct {
+		key[1] = ""
+	}
+
+	pool, ok := pools[key]
+	if ok {
+		return pool
+	}
+
+	pool = state.LineCounts{}
+	if key[1] != "" {
+		pool.Add(commit.Joined[path]...)
+	} else {
+		for p, fps := range commit.Joined {
+			if _, inTip := tip[p]; !inTip {
+				pool.Add(fps...)
+			}
+		}
+	}
+	pools[key] = pool
+
+	return pool
 }
 
 // otherLedgers returns the ledgers of the sessions in ids other than
@@ -283,10 +357,16 @@ func (p *linePool) take(l *state.AILineAttribution, path, fp string) bool {
 	return c.Take(fp)
 }
 
-// takeAny takes fp from the first ledger that holds it.
-func (p *linePool) takeAny(ledgers []*state.AILineAttribution, path, fp string) bool {
+// takeFile takes fp from the lines of ledger l for the file, under its path,
+// and then under its old path when the commit renamed it.
+func (p *linePool) takeFile(l *state.AILineAttribution, fl tracegit.FileLines, fp string) bool {
+	return p.take(l, fl.Path, fp) || (fl.OldPath != "" && p.take(l, fl.OldPath, fp))
+}
+
+// takeAny takes fp from the first ledger that holds it for the file.
+func (p *linePool) takeAny(ledgers []*state.AILineAttribution, fl tracegit.FileLines, fp string) bool {
 	for _, l := range ledgers {
-		if p.take(l, path, fp) {
+		if p.takeFile(l, fl, fp) {
 			return true
 		}
 	}

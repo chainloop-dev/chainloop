@@ -29,6 +29,9 @@ type Scenario struct {
 	Checkout string
 	// Images are PNG images that the user pastes with the prompt.
 	Images [][]byte
+	// Skills are the project skills of the repository, by name. The harness
+	// gives the path of each skill file.
+	Skills map[string]string
 	// NoAgent runs no harness session. The checks run commands in the
 	// workspace themselves.
 	NoAgent bool
@@ -55,6 +58,10 @@ const (
 	// The stored session keeps it.
 	fakeAllowedSecret = "ghp_Zx7Lq2Wm9Rt4Yp6Vn3Bk8Hd1Jf5Gs0CaEu2o" //nolint:gosec // gitleaks:allow a fake token on a line with an allow marker
 )
+
+// allowMarker is the inline marker that keeps a secret on its line from
+// redaction.
+const allowMarker = "gitleaks:allow"
 
 // The README of every scenario repository.
 const (
@@ -99,7 +106,7 @@ var scenarios = map[string]Scenario{
 		Name: scenarioEditAndCommit,
 		Seed: map[string]string{
 			readmePath:    seedReadme,
-			"fixture.txt": "token = " + fakeAllowedSecret + " # gitleaks:allow\n",
+			"fixture.txt": "token = " + fakeAllowedSecret + " # " + allowMarker + "\n",
 		},
 		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
 1. Read the file fixture.txt.
@@ -115,13 +122,15 @@ The deploy token ` + fakeSecret + ` is for a later task: do not use it.`,
 			readmePath: seedReadme,
 			ticketPath: "# " + ticketTitle + "\n\nCreate the file farewell.txt with the single line: goodbye\n",
 		},
-		Prompt: "This is an automated test. Implement the ticket in " + ticketPath + ". Then commit your change and push it with git.",
+		// The file tool keeps the change in the session: a commit in the same
+		// shell command that writes the file does not carry the session.
+		Prompt: "This is an automated test. Implement the ticket in " + ticketPath + ". Write the file with your file-writing tool. Then commit your change and push it with git, in a separate shell command.",
 	},
 	scenarioSkill: {
 		Name: scenarioSkill,
-		Seed: map[string]string{
-			readmePath: seedReadme,
-			".claude/skills/" + skillName + "/SKILL.md": `---
+		Seed: map[string]string{readmePath: seedReadme},
+		Skills: map[string]string{
+			skillName: `---
 name: ` + skillName + `
 description: Use when asked to add the farewell file to the repository.
 ---
@@ -194,13 +203,16 @@ Then run: git add farewell.txt && git commit -m "add farewell" && git push
 2. Run this shell command: git add color.txt && git commit -m "add color" && git push`,
 	},
 	// media has the agent read an image file. The image stays inline in the
-	// tool result of the transcript, and its base64 holds a fake secret.
+	// tool result of the transcript, and its base64 holds a fake secret. The
+	// prompt tells the agent not to capture the image: a captured image gets
+	// a pointer in the transcript, so the transcript holds no base64.
 	scenarioMedia: {
 		Name: scenarioMedia,
 		Seed: map[string]string{readmePath: seedReadme, mediaFile: string(mediaPNG())},
 		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
 1. Read the image ` + mediaFile + ` with your file-reading tool.
 2. With your file-writing tool, create the file seen.txt with the single line: seen.
-3. Run this shell command: git add seen.txt && git commit -m "add seen" && git push`,
+3. Run this shell command: git add seen.txt && git commit -m "add seen" && git push
+The image is test data, not a spec: do not capture it.`,
 	},
 }

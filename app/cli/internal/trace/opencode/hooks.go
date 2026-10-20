@@ -68,17 +68,26 @@ const commandTools = {{CommandToolsArray}}
 const skillTool = {{SkillTool}}
 
 // skillDirFrom returns the folder of the skill that a skill tool call loaded:
-// the dir field of the result metadata, or else the base directory line of
-// the result text. Each OpenCode major gives the result in its own shape, so
-// each candidate is tried in turn.
+// the dir (1.x) or directory (2) field of the result metadata, or else the
+// base directory line of the result text. Each OpenCode major gives the
+// result in its own shape, so each candidate is tried in turn.
 function skillDirFrom(...results: any[]): string {
   for (const r of results) {
-    const dir = r?.metadata?.dir
-    if (typeof dir === "string" && dir) return dir
-    const text = typeof r === "string" ? r : typeof r?.output === "string" ? r.output : ""
-    const m = /^Base directory for this skill:\s*(.+)$/m.exec(text)
+    for (const dir of [r?.metadata?.dir, r?.metadata?.directory]) {
+      if (typeof dir === "string" && dir) return dir
+    }
+    const m = /^Base directory for this skill:\s*(.+)$/m.exec(resultText(r))
     if (m) return m[1].trim()
   }
+  return ""
+}
+
+// resultText returns the text of a tool result: the result itself, its
+// output (1.x), or the text items of its content (2).
+function resultText(r: any): string {
+  if (typeof r === "string") return r
+  if (typeof r?.output === "string") return r.output
+  if (Array.isArray(r?.content)) return r.content.map((c: any) => (typeof c?.text === "string" ? c.text : "")).join("\n")
   return ""
 }
 

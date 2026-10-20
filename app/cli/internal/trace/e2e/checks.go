@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -166,7 +167,11 @@ func checkModel(s *Session) error {
 	if m == nil || m.Primary == "" {
 		return errors.New("the evidence has no primary model")
 	}
-	if !strings.Contains(strings.ToLower(m.Primary), strings.ToLower(s.Model)) {
+	// A model can have a provider prefix, for example
+	// amazon-bedrock/eu.anthropic.claude-haiku-5-5, that the evidence leaves
+	// out, and a short name, for example haiku, that the evidence spells out.
+	primary, want := strings.ToLower(m.Primary), strings.ToLower(path.Base(s.Model))
+	if !strings.Contains(primary, want) && !strings.Contains(want, primary) {
 		return fmt.Errorf("primary model %q is not the model of the session %q", m.Primary, s.Model)
 	}
 	return nil
@@ -357,15 +362,23 @@ func checkSecretRedacted(s *Session) error {
 // secret, as internal/redaction writes it.
 const redactedPlaceholder = "[CHAINLOOP_TRACE_REDACTED"
 
+// checkAllowedSecretKept checks that the secret on the line with an allow
+// marker is in the stored session. The line comes from the output of the
+// tool that read the fixture. A transcript with no tool outputs holds no
+// copy of the line, so it cannot show the feature.
 func checkAllowedSecretKept(s *Session) error {
 	found, err := storedContains(s, fakeAllowedSecret)
+	if err != nil || found {
+		return err
+	}
+	marked, err := storedContains(s, allowMarker)
 	if err != nil {
 		return err
 	}
-	if !found {
-		return errors.New("the secret on the line with an allow marker was redacted, or the session did not read it")
+	if !marked {
+		return fmt.Errorf("%w: the stored session holds no copy of the fixture line, for example because the transcript has no tool outputs", errNotCovered)
 	}
-	return nil
+	return errors.New("the secret on the line with an allow marker was redacted")
 }
 
 func checkCommitTrailer(s *Session) error {

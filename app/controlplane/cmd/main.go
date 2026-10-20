@@ -41,8 +41,6 @@ import (
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/transport"
-	"github.com/go-kratos/kratos/v2/transport/grpc"
-	"github.com/go-kratos/kratos/v2/transport/http"
 )
 
 var (
@@ -61,11 +59,16 @@ func init() {
 	flag.StringVar(&flagconf, "conf", "../configs", "config path, eg: -conf config.yaml")
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer,
+func newApp(logger log.Logger, gs *server.GRPCServers, api *server.APIServer, ms *server.HTTPMetricsServer, profilerSvc *server.HTTPProfilerServer,
 	expirer *biz.WorkflowRunExpirerUseCase, plugins sdk.AvailablePlugins,
 	userAccessSyncer *biz.UserAccessSyncerUseCase, casBackendChecker *biz.CASBackendChecker,
 	apiTokenStaleRevoker *biz.APITokenStaleRevoker, loginHandoffs *biz.LoginHandoffUseCase, cfg *conf.Bootstrap) *app {
-	servers := []transport.Server{gs, hs, ms}
+	servers := []transport.Server{api, ms}
+	// APIServer owns the gRPC handler's lifecycle. Only the legacy server
+	// starts a native gRPC listener.
+	if gs.Legacy != nil {
+		servers = append(servers, gs.Legacy)
+	}
 	if cfg.EnableProfiler {
 		servers = append(servers, profilerSvc)
 	}

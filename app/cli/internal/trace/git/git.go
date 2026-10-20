@@ -49,7 +49,10 @@ const (
 // FileLines holds the lines that one commit added to and removed from a file,
 // without their line ends.
 type FileLines struct {
-	Path    string
+	Path string
+	// OldPath is the path of the file in the parent, set when the commit
+	// renamed the file.
+	OldPath string
 	Added   []string
 	Removed []string
 	// Hunks holds the same lines, split into the hunks of the diff.
@@ -91,8 +94,12 @@ type Client interface {
 	CodeChangesForCommits(repoRoot string, shas []string) (*aicodingsession.CodeChanges, error)
 	// CommitLines returns, for each file that the commit changed against its
 	// first parent, the content of the lines it added and removed. Binary
-	// files are left out. Renames show as a removal and an addition.
+	// files are left out. A renamed file shows the lines that changed, under
+	// its new path, with its old path.
 	CommitLines(repoRoot, sha string) ([]FileLines, error)
+	// Renames returns, for each file that was renamed between two revisions,
+	// its new path by its old path.
+	Renames(repoRoot, from, to string) (map[string]string, error)
 	// FileAt returns the content of a repo-relative path at a commit, or nil
 	// when the commit does not hold the path.
 	FileAt(repoRoot, sha, path string) ([]byte, error)
