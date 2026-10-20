@@ -55,7 +55,7 @@ func (p *Pi) TraceFlag() string { return "--pi" }
 
 // Version implements Harness. `pi --version` prints "0.79.6".
 func (p *Pi) Version(ctx context.Context) (string, error) {
-	out, err := exec.CommandContext(ctx, p.bin(), "--version").Output() //nolint:gosec // the harness binary under test
+	out, err := exec.CommandContext(ctx, p.bin(), "--version").Output() //nolint:gosec // the harness binary under test // nosemgrep
 	if err != nil {
 		return "", fmt.Errorf("pi --version: %w", err)
 	}
