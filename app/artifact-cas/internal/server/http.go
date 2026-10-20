@@ -189,6 +189,9 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 	})
 
 	log.NewHelper(logger).Infof("[shared] CAS endpoint (%s) listening on: %s", scheme, lis.Addr().String())
+	if legacyGRPCListenerEnabled(c) {
+		log.NewHelper(logger).Warnw("msg", fmt.Sprintf("the gRPC-only listener on %q is deprecated; use the shared HTTP endpoint and set server.legacy_grpc_listener to false when all clients have moved", c.GetGrpc().GetAddr()))
+	}
 
 	return &APIServer{
 		lis:     lis,

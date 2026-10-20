@@ -31,6 +31,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -642,6 +643,34 @@ func TestCASAuthenticationAndUploadErrors(t *testing.T) {
 					require.Equal(t, tc.code, status.Code(err), "%v", err)
 				})
 			}
+		})
+	}
+}
+
+// TestCASLegacyListenerDeprecationWarning covers the R-006 startup warning:
+// the shared endpoint logs a deprecation warning when the legacy gRPC
+// listener is enabled, matching the control plane.
+func TestCASLegacyListenerDeprecationWarning(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		enabled *bool
+		wantLog bool
+	}{
+		{name: "default on", wantLog: true},
+		{name: "explicit on", enabled: new(true), wantLog: true},
+		{name: "explicit off", enabled: new(false), wantLog: false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opts := casTestOpts(t)
+			opts.ServerConfig.LegacyGrpcListener = tc.enabled
+			var buf bytes.Buffer
+			opts.Logger = log.NewStdLogger(&buf)
+			servers, err := NewGRPCServers(opts)
+			require.NoError(t, err)
+			api, err := NewHTTPServer(opts, servers)
+			require.NoError(t, err)
+			require.Equal(t, tc.wantLog, strings.Contains(buf.String(), "the gRPC-only listener"), "logs: %s", buf.String())
+			require.NoError(t, api.Stop(context.Background()))
 		})
 	}
 }
