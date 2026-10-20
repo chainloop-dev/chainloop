@@ -18,7 +18,7 @@ $ chainloop integration registered add discord-webhook --name [my-registration] 
 2. Attach the integration to your workflow.
 
 ```console
-chainloop integration attached add --workflow $WID --integration $IID
+chainloop integration attached add --workflow [workflow-name] --project [project-name] --integration [my-registration]
 ```
 
 ## Registration Input Schema
