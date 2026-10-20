@@ -829,6 +829,42 @@ func TestCASSharedConcurrentUploadsMemoryBounded(t *testing.T) {
 		"four concurrent 128 MiB uploads must not buffer whole streams; peak heap %d bytes", peak)
 }
 
+// TestCASSharedDualTransportFailureDoesNotLeak proves the errCh contract: when
+// both transports fail before Start reads the first error, the second
+// transport's report is still buffered (capacity equals the worker count), so
+// its goroutine finishes and is not leaked. Stop's workers.Wait() would hang
+// if the second send blocked.
+func TestCASSharedDualTransportFailureDoesNotLeak(t *testing.T) {
+	opts := casTestOpts(t)
+	opts.ServerConfig.LegacyGrpcListener = new(false)
+	servers, err := NewGRPCServers(opts)
+	require.NoError(t, err)
+	api, err := NewHTTPServer(opts, servers)
+	require.NoError(t, err)
+	// Fail both transports before Start: close the shared HTTP listener and
+	// the private gRPC listener.
+	require.NoError(t, api.lis.Close())
+	require.NoError(t, servers.Close())
+
+	done := make(chan error, 1)
+	go func() { done <- api.Start(context.Background()) }()
+	select {
+	case err := <-done:
+		require.Error(t, err, "Start must fail when both transports fail")
+	case <-time.After(10 * time.Second):
+		require.FailNow(t, "Start did not return on dual-transport failure")
+	}
+	// The second writer must not be stuck: Stop would otherwise block forever
+	// in workers.Wait().
+	stopped := make(chan struct{})
+	go func() { _ = api.Stop(context.Background()); close(stopped) }()
+	select {
+	case <-stopped:
+	case <-time.After(10 * time.Second):
+		require.FailNow(t, "Stop hung: a transport goroutine is still blocked on errCh")
+	}
+}
+
 func TestCASSharedShutdownDrainsUpload(t *testing.T) {
 	opts := casTestOpts(t)
 	opts.ServerConfig.LegacyGrpcListener = new(false)
