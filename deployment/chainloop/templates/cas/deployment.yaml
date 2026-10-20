@@ -89,15 +89,24 @@ spec:
             httpGet:
               path: /statusz
               port: http
+              {{- if include "cas.tls-secret-name" . }}
+              scheme: HTTPS
+              {{- end }}
             periodSeconds: 5
           livenessProbe:
             httpGet:
               path: /statusz
               port: http
+              {{- if include "cas.tls-secret-name" . }}
+              scheme: HTTPS
+              {{- end }}
           readinessProbe:
             httpGet:
               path: /statusz?readiness=1
               port: http
+              {{- if include "cas.tls-secret-name" . }}
+              scheme: HTTPS
+              {{- end }}
           {{- if .Values.cas.resources }}
           resources: {{- toYaml .Values.cas.resources | nindent 12 }}
           {{- else if ne .Values.cas.resourcesPreset "none" }}

@@ -212,16 +212,21 @@ func testSharedCASIngress(t *testing.T) {
 }
 
 type chartResource struct {
-	Kind     string `yaml:"kind"`
+	Kind     string            `yaml:"kind"`
+	Data     map[string]string `yaml:"data"`
 	Metadata struct {
 		Name        string            `yaml:"name"`
 		Annotations map[string]string `yaml:"annotations"`
 	} `yaml:"metadata"`
 	Spec struct {
+		Template struct {
+			Spec chartPodSpec `yaml:"spec"`
+		} `yaml:"template"`
 		Ports []struct {
-			Name       string `yaml:"name"`
-			Port       int    `yaml:"port"`
-			TargetPort string `yaml:"targetPort"`
+			Name        string `yaml:"name"`
+			Port        int    `yaml:"port"`
+			TargetPort  string `yaml:"targetPort"`
+			AppProtocol string `yaml:"appProtocol"`
 		} `yaml:"ports"`
 		TLS []struct {
 			Hosts      []string `yaml:"hosts"`
@@ -244,6 +249,32 @@ type chartResource struct {
 			} `yaml:"http"`
 		} `yaml:"rules"`
 	} `yaml:"spec"`
+}
+
+type chartPodSpec struct {
+	Containers []struct {
+		StartupProbe   chartProbe `yaml:"startupProbe"`
+		LivenessProbe  chartProbe `yaml:"livenessProbe"`
+		ReadinessProbe chartProbe `yaml:"readinessProbe"`
+		VolumeMounts   []struct {
+			Name      string `yaml:"name"`
+			MountPath string `yaml:"mountPath"`
+		} `yaml:"volumeMounts"`
+	} `yaml:"containers"`
+	Volumes []struct {
+		Name   string `yaml:"name"`
+		Secret *struct {
+			SecretName string `yaml:"secretName"`
+		} `yaml:"secret"`
+	} `yaml:"volumes"`
+}
+
+type chartProbe struct {
+	HTTPGet struct {
+		Path   string `yaml:"path"`
+		Port   string `yaml:"port"`
+		Scheme string `yaml:"scheme"`
+	} `yaml:"httpGet"`
 }
 
 func TestCASSharedIngressTLS(t *testing.T) {

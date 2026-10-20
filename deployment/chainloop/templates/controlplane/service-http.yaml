@@ -41,6 +41,7 @@ spec:
       targetPort: {{ .Values.controlplane.containerPorts.http }}
       {{- end }}
       protocol: TCP
+      appProtocol: {{ if include "controlplane.tls-secret-name" . }}kubernetes.io/h2{{ else }}kubernetes.io/h2c{{ end }}
       {{- if and (or (eq .Values.controlplane.service.type "NodePort") (eq .Values.controlplane.service.type "LoadBalancer")) (not (empty .Values.controlplane.service.nodePorts.http)) }}
       nodePort: {{ .Values.controlplane.service.nodePorts.http }}
       {{- else if eq .Values.controlplane.service.type "ClusterIP" }}

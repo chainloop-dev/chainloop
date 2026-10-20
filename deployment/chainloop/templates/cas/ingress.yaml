@@ -11,8 +11,12 @@ metadata:
   name: {{ $fullName }}
   namespace: {{ include "common.names.namespace" . | quote }}
   labels: {{- include "chainloop.cas.labels" . | nindent 4 }}
-  {{- if or .Values.cas.ingress.annotations .Values.commonAnnotations }}
-  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.cas.ingress.annotations .Values.commonAnnotations) "context" .) }}
+  {{- $tlsAnnotations := dict }}
+  {{- if include "cas.tls-secret-name" . }}
+  {{- $_ := set $tlsAnnotations "nginx.org/ssl-services" $fullName }}
+  {{- end }}
+  {{- if or .Values.cas.ingress.annotations .Values.commonAnnotations $tlsAnnotations }}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.cas.ingress.annotations .Values.commonAnnotations $tlsAnnotations) "context" .) }}
   annotations: {{- include "common.tplvalues.render" (dict "value" $annotations "context" $) | nindent 4 }}
   {{- end }}
 spec:

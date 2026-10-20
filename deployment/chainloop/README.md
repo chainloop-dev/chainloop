@@ -247,7 +247,7 @@ The existing gRPC ingress stays available. Existing clients can keep their curre
 To test the shared endpoint, point a gRPC client to the control plane HTTP hostname on port 443.
 The CAS shared endpoint mirrors the control plane (spec D-020): one standard HTTP listener dispatches each request, and native gRPC reaches the native transport through an in-process reverse proxy. `cas.ingress` is one catch-all route on the same hostname — one path `/` with an HTTP/2 (gRPC) upstream — so ByteStream uploads and downloads, browser downloads, and status probes share one Service port and one certificate, including mixed requests on one upstream connection.
 
-Set gRPC transport annotations under `cas.ingress.annotations`, such as `backend-protocol: GRPCS` for TLS to the pod. The upload body-size annotations keep their existing defaults.
+The chart selects gRPC transport annotations from the pod TLS configuration. You can override them under `cas.ingress.annotations`. The upload body-size annotations keep their existing defaults.
 
 Enable the shared endpoint with a `cas.ingress` block — for example:
 
@@ -275,11 +275,29 @@ The chart configures HTTP/2 upstream traffic for these controllers:
   Native gRPC clients normally use TLS on the ingress. Plaintext client HTTP/2 needs controller configuration too.
 - Traefik: `controlplane.service.annotations` includes `traefik.ingress.kubernetes.io/service.serversscheme: h2c`.
 
-These defaults apply to plaintext traffic between the ingress and the pod. Public ingress TLS still works as before.
-If you enable TLS on the pod listener, configure the controller for encrypted HTTP/2 upstream traffic instead.
-For ingress-nginx, use `GRPCS`. For F5 NGINX, also configure `nginx.org/ssl-services`.
-For Traefik, use the `https` service scheme and configure certificate trust as required.
+To enable pod TLS, provide each component with a Secret containing `tls.crt` and `tls.key`:
+
+```yaml
+controlplane:
+  tls:
+    existingSecret: cp-tls
+cas:
+  tls:
+    existingSecret: cas-tls
+```
+
+For each component, the chart reuses that Secret and its existing mount for both `server.http.tls_config` and `server.grpc.tls_config`.
+The legacy `tlsConfig.secret.name` setting also enables both listeners; `tls.existingSecret` takes precedence when both are set.
+Startup, readiness, and liveness probes switch to HTTPS. These settings also apply when no Ingress is enabled.
+The chart selects `GRPCS` for ingress-nginx, adds `nginx.org/ssl-services` for F5 NGINX, and selects the `https` service scheme for Traefik.
+Explicit annotation overrides take precedence. Configure the controller's certificate trust as required.
 Other controllers need their own upstream protocol settings.
+
+The shared Service ports derive `appProtocol` from the same TLS setting: `kubernetes.io/h2` with TLS and `kubernetes.io/h2c` without TLS.
+When routing through a Gateway, Gateway-to-pod TLS also requires infrastructure-managed `BackendTLSPolicy` resources with certificate hostname validation and CA trust. The Service protocol alone does not configure that trust or upstream TLS.
+
+Public TLS termination remains controlled by `ingress.tls` and `ingressAPI.tls`, independently of pod TLS.
+When upgrading a deployment that already sets a pod TLS Secret for gRPC, the shared HTTP listener also switches to TLS. Direct clients of that listener must use TLS; HTTP requests must use HTTPS.
 
 The NGINX gRPC module path supports the shared endpoint without path or content-type rules.
 The regression suite checks that path with NGINX Open Source. It does not certify every controller or NGINX Plus release.
@@ -616,7 +634,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.containerPorts.grpc`             | controlplane gRPC container port                                                                                                                                                                                                                               | `9000`            |
 | `controlplane.containerPorts.metrics`          | controlplane prometheus metrics container port                                                                                                                                                                                                                 | `5000`            |
 | `controlplane.enableProfiler`                  | Enable pprof profiling on port 6060                                                                                                                                                                                                                            | `false`           |
-| `controlplane.tls.existingSecret`              | Existing secret name containing TLS certificate to be used by the controlplane grpc server. NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key. | `""`              |
+| `controlplane.tls.existingSecret`              | Secret with tls.crt and tls.key for both listeners. Direct clients must use TLS. Public Ingress TLS termination remains separate. The legacy tlsConfig.secret.name value is also supported. | `""`              |
 | `controlplane.pluginsDir`                      | Directory where to look for plugins                                                                                                                                                                                                                            | `/plugins`        |
 | `controlplane.pluginsNetworkPolicy`            | Outbound network policy for the plugins that accept an arbitrary target URL, currently the generic webhook and Dependency-Track plugins. Plugins whose destination is a known public service, such as the Slack and Discord webhooks, always refuse non-public destinations. |                   |
 | `controlplane.pluginsNetworkPolicy.blockPrivateTargets` | Refuse requests to destinations that are not publicly routable, such as loopback, private ranges and cloud metadata endpoints                                                                                                                                  | `false`           |
@@ -679,7 +697,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.service.loadBalancerIP`              | controlplane service Load Balancer IP                                                                                            | `""`                     |
 | `controlplane.service.loadBalancerSourceRanges`    | controlplane service Load Balancer sources                                                                                       | `[]`                     |
 | `controlplane.service.externalTrafficPolicy`       | controlplane service external traffic policy                                                                                     | `Cluster`                |
-| `controlplane.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c upstream.                                                         | See values.yaml          |
+| `controlplane.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c or HTTPS to match shared listener TLS. | See values.yaml          |
 | `controlplane.service.extraPorts`                  | Extra ports to expose in controlplane service (normally used with the `sidecars` value)                                          | `[]`                     |
 | `controlplane.service.sessionAffinity`             | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
 | `controlplane.service.sessionAffinityConfig`       | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
@@ -846,7 +864,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.containerPorts.http`    | controlplane HTTP container port                                                                                                                                                                                                                      | `8000`            |
 | `cas.containerPorts.grpc`    | controlplane gRPC container port                                                                                                                                                                                                                      | `9000`            |
 | `cas.containerPorts.metrics` | controlplane prometheus metrics container port                                                                                                                                                                                                        | `5000`            |
-| `cas.tls.existingSecret`     | Existing secret name containing TLS certificate to be used by the cas grpc server. NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key. | `""`              |
+| `cas.tls.existingSecret`     | Secret with tls.crt and tls.key for both listeners. Direct clients must use TLS. Public Ingress TLS termination remains separate. The legacy tlsConfig.secret.name value is also supported. | `""`              |
 
 ### CAS Networking
 
@@ -861,7 +879,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.service.loadBalancerIP`              | cas service Load Balancer IP                                                                                                     | `""`                     |
 | `cas.service.loadBalancerSourceRanges`    | cas service Load Balancer sources                                                                                                | `[]`                     |
 | `cas.service.externalTrafficPolicy`       | cas service external traffic policy                                                                                              | `Cluster`                |
-| `cas.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c for HTTP/2 upstream traffic. | See values.yaml          |
+| `cas.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c or HTTPS to match shared listener TLS. | See values.yaml          |
 | `cas.service.extraPorts`                  | Extra ports to expose in cas service (normally used with the `sidecars` value)                                                   | `[]`                     |
 | `cas.service.sessionAffinity`             | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
 | `cas.service.sessionAffinityConfig`       | Additional settings for the sessionAffinity                                                                                      | `{}`                     |

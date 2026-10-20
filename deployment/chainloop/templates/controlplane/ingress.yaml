@@ -11,8 +11,12 @@ metadata:
   name: {{ $fullName }}
   namespace: {{ include "common.names.namespace" . | quote }}
   labels: {{- include "chainloop.controlplane.labels" . | nindent 4 }}
-  {{- if or .Values.controlplane.ingress.annotations .Values.commonAnnotations }}
-  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.ingress.annotations .Values.commonAnnotations) "context" .) }}
+  {{- $tlsAnnotations := dict }}
+  {{- if include "controlplane.tls-secret-name" . }}
+  {{- $_ := set $tlsAnnotations "nginx.org/ssl-services" $fullName }}
+  {{- end }}
+  {{- if or .Values.controlplane.ingress.annotations .Values.commonAnnotations $tlsAnnotations }}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.controlplane.ingress.annotations .Values.commonAnnotations $tlsAnnotations) "context" .) }}
   annotations: {{- include "common.tplvalues.render" (dict "value" $annotations "context" $) | nindent 4 }}
   {{- end }}
 spec:

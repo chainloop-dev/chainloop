@@ -19,6 +19,11 @@ data:
     staging_dir: {{ include "chainloop.cas.staging_dir" . | quote }}
     server:
       http:
+        {{- if include "cas.tls-secret-name" . }}
+        tls_config:
+          certificate: /data/server-certs/tls.crt
+          private_key: /data/server-certs/tls.key
+        {{- end }}
         addr: "0.0.0.0:{{ .Values.cas.containerPorts.http }}"
         # Timeouts for http downloads
         # grpc downloads/uploads don't require this because they don't have timeouts
