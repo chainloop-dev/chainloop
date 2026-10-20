@@ -567,7 +567,8 @@ func sameDir(a, b string) bool {
 // Idempotent so any hook entry point can call it safely. Per-input metadata
 // (e.g., AgentVersion, Cwd) is captured on the first call only — subsequent
 // hooks for the same session are no-ops, no upsert. The one exception is
-// TranscriptPath, which a later hook fills in when the first one lacked it.
+// TranscriptPath, which a later hook fills in when the first one lacked it,
+// or replaces when the recorded file is gone.
 func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot string, input *trace.HookInput, log zerolog.Logger) {
 	// Run install before any early return so hooks recover from missing
 	// state (deleted .git/hooks, project YAML appearing after session start).
@@ -619,9 +620,10 @@ func ensureSessionTracked(provider trace.Provider, store *state.Store, repoRoot 
 }
 
 // backfillTranscriptPath records the transcript path on an existing session
-// record that lacks it, and copies the session data from there. Without it,
-// a record created by a hook that carried no transcript path would fall back
-// to the cwd lookup for the life of the session.
+// record that lacks it, or whose transcript moved, and copies the session
+// data from there. Without it, a record created by a hook that carried no
+// transcript path would fall back to the cwd lookup for the life of the
+// session, and a moved transcript would never reach pre-push.
 func backfillTranscriptPath(provider trace.Provider, store *state.Store, repoRoot string, rec *state.SessionRecord, transcriptPath string, log zerolog.Logger) {
 	if !recordTranscriptPath(store, rec, transcriptPath, log) {
 		return
@@ -632,11 +634,22 @@ func backfillTranscriptPath(provider trace.Provider, store *state.Store, repoRoo
 	}
 }
 
-// recordTranscriptPath saves transcriptPath on rec when rec has none yet,
-// and reports whether it did.
+// recordTranscriptPath saves transcriptPath on rec when rec has none yet, or
+// when the file of its path is gone, and reports whether it did. The agent
+// can move the transcript of a running session: Claude Code files a resumed
+// session under the project folder of the directory it resumes from. While
+// the recorded file exists, another path, such as the transcript of a
+// subagent, does not replace it.
 func recordTranscriptPath(store *state.Store, rec *state.SessionRecord, transcriptPath string, log zerolog.Logger) bool {
-	if rec == nil || transcriptPath == "" || rec.TranscriptPath != "" {
+	if rec == nil || transcriptPath == "" || rec.TranscriptPath == transcriptPath {
 		return false
+	}
+	// Only a file that is gone is replaced. Another stat error does not show
+	// that the transcript moved.
+	if rec.TranscriptPath != "" {
+		if _, err := os.Stat(rec.TranscriptPath); !errors.Is(err, os.ErrNotExist) {
+			return false
+		}
 	}
 
 	rec.TranscriptPath = transcriptPath
