@@ -465,16 +465,22 @@ func TestValidateAICodingSessionLineRanges(t *testing.T) {
 		return payload
 	}
 
+	const (
+		keyStart       = "start"
+		keyEnd         = "end"
+		keyAttribution = "attribution"
+	)
+
 	testCases := []struct {
 		name    string
 		r       map[string]any
 		wantErr bool
 	}{
-		{name: "accepts a range with no attribution", r: map[string]any{"start": 1, "end": 3}},
-		{name: "accepts an AI range", r: map[string]any{"start": 1, "end": 3, "attribution": "ai"}},
-		{name: "accepts a human range", r: map[string]any{"start": 4, "end": 4, "attribution": "human"}},
-		{name: "rejects a non-string attribution", r: map[string]any{"start": 1, "end": 3, "attribution": 1}, wantErr: true},
-		{name: "rejects an unknown property", r: map[string]any{"start": 1, "end": 3, "owner": "ai"}, wantErr: true},
+		{name: "accepts a range with no attribution", r: map[string]any{keyStart: 1, keyEnd: 3}},
+		{name: "accepts an AI range", r: map[string]any{keyStart: 1, keyEnd: 3, keyAttribution: "ai"}},
+		{name: "accepts a human range", r: map[string]any{keyStart: 4, keyEnd: 4, keyAttribution: "human"}},
+		{name: "rejects a non-string attribution", r: map[string]any{keyStart: 1, keyEnd: 3, keyAttribution: 1}, wantErr: true},
+		{name: "rejects an unknown property", r: map[string]any{keyStart: 1, keyEnd: 3, "owner": "ai"}, wantErr: true},
 	}
 
 	for _, tc := range testCases {
