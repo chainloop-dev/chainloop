@@ -15,9 +15,9 @@
 package pi
 
 import (
+	"context"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -52,10 +52,19 @@ func TestCopySessionDataUsesReportedPath(t *testing.T) {
 	copied, err = os.ReadFile(destination)
 	require.NoError(t, err)
 	assert.Equal(t, "original\n", string(copied), "the store parses its private copy, not the live session")
+
+	require.NoError(t, New().CopySessionData(store, trace.SessionLocation{
+		SessionID:      sessionID,
+		TranscriptPath: source,
+	}))
+	copied, err = os.ReadFile(destination)
+	require.NoError(t, err)
+	assert.Equal(t, "changed\n", string(copied), "a successful refresh replaces the stored copy")
 }
 
-func TestCopySessionDataFailureRemovesStaleCopy(t *testing.T) {
+func TestCopySessionDataFailureKeepsBestAvailableCopy(t *testing.T) {
 	const sessionID = "pi-session-1"
+	previous := []byte(`{"type":"session","version":3,"id":"pi-session-1","timestamp":"2026-01-02T03:04:00Z","cwd":"/work/repo"}` + "\n")
 
 	for _, tc := range []struct {
 		name           string
@@ -69,72 +78,29 @@ func TestCopySessionDataFailureRemovesStaleCopy(t *testing.T) {
 			store := state.NewGitStore(t.TempDir())
 			destination := state.RawSessionPath(store.RawSessionDir(), sessionID)
 			require.NoError(t, os.MkdirAll(filepath.Dir(destination), 0o755))
-			require.NoError(t, os.WriteFile(destination, []byte("stale\n"), 0o600))
+			require.NoError(t, os.WriteFile(destination, previous, 0o600))
 
 			source := tc.transcriptPath(t)
 			err := New().CopySessionData(store, trace.SessionLocation{SessionID: sessionID, TranscriptPath: source})
-			require.ErrorIs(t, err, trace.ErrSessionDataNotFresh)
+			require.Error(t, err)
 			if source != "" {
 				assert.NotContains(t, err.Error(), source)
 			}
-			assert.ErrorIs(t, fileError(destination), os.ErrNotExist, "a failed refresh must not leave stale evidence")
+			copied, readErr := os.ReadFile(destination)
+			require.NoError(t, readErr)
+			assert.Equal(t, previous, copied, "a failed refresh must preserve the last usable copy")
 
 			matches, globErr := filepath.Glob(filepath.Join(store.RawSessionDir(), ".pi-session-*"))
 			require.NoError(t, globErr)
 			assert.Empty(t, matches, "temporary copies must be removed")
+			result, parseErr := New().ParseSession(context.Background(), &trace.ParseOpts{
+				SessionDir: store.RawSessionDir(),
+				SessionID:  sessionID,
+			})
+			require.NoError(t, parseErr)
+			assert.Equal(t, sessionID, result.Data.Session.ID)
 		})
 	}
-}
-
-func TestCopySessionDataInvalidatesStaleCopyWhenQuarantineFails(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("directory mode bits do not make rename fail on Windows")
-	}
-
-	const sessionID = "pi-session-1"
-	store := state.NewGitStore(t.TempDir())
-	destination := state.RawSessionPath(store.RawSessionDir(), sessionID)
-	require.NoError(t, os.MkdirAll(filepath.Dir(destination), 0o755))
-	require.NoError(t, os.WriteFile(destination, []byte("stale\n"), 0o600))
-	require.NoError(t, os.Chmod(store.RawSessionDir(), 0o500))
-	t.Cleanup(func() { _ = os.Chmod(store.RawSessionDir(), 0o755) })
-
-	err := New().CopySessionData(store, trace.SessionLocation{
-		SessionID:      sessionID,
-		TranscriptPath: filepath.Join(t.TempDir(), "missing.jsonl"),
-	})
-	require.ErrorIs(t, err, trace.ErrSessionDataNotFresh)
-
-	content, readErr := os.ReadFile(destination)
-	require.NoError(t, readErr)
-	assert.Empty(t, content, "an unmovable previous copy must be made unparseable")
-}
-
-func TestCopySessionDataMarksUnrecoverableStaleCopyUnsafe(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("directory mode bits do not make rename fail on Windows")
-	}
-
-	const sessionID = "pi-session-1"
-	store := state.NewGitStore(t.TempDir())
-	destination := state.RawSessionPath(store.RawSessionDir(), sessionID)
-	require.NoError(t, os.MkdirAll(filepath.Dir(destination), 0o755))
-	require.NoError(t, os.WriteFile(destination, []byte("stale\n"), 0o400))
-	require.NoError(t, os.Chmod(store.RawSessionDir(), 0o500))
-	t.Cleanup(func() {
-		_ = os.Chmod(store.RawSessionDir(), 0o755)
-		_ = os.Chmod(destination, 0o600)
-	})
-
-	err := New().CopySessionData(store, trace.SessionLocation{
-		SessionID:      sessionID,
-		TranscriptPath: filepath.Join(t.TempDir(), "missing.jsonl"),
-	})
-	require.ErrorIs(t, err, trace.ErrSessionDataNotFresh)
-
-	content, readErr := os.ReadFile(destination)
-	require.NoError(t, readErr)
-	assert.Equal(t, "stale\n", string(content), "the caller must skip parsing when the provider cannot invalidate its old copy")
 }
 
 func TestCopySessionDataRejectsInvalidSessionID(t *testing.T) {
@@ -142,11 +108,6 @@ func TestCopySessionDataRejectsInvalidSessionID(t *testing.T) {
 		SessionID:      "../escape",
 		TranscriptPath: filepath.Join(t.TempDir(), "session.jsonl"),
 	})
-	assert.ErrorIs(t, err, trace.ErrSessionDataNotFresh)
+	require.Error(t, err)
 	assert.ErrorContains(t, err, "copy Pi session: invalid session")
-}
-
-func fileError(path string) error {
-	_, err := os.Stat(path)
-	return err
 }

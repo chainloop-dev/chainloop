@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
@@ -48,10 +47,9 @@ func (p *Provider) Name() string {
 // session. Pi reports the authoritative path through its extension; there is
 // no cwd-derived fallback because --no-session has no transcript to discover.
 //
-// The old copy is removed before the source is opened. The shared pre-push
-// path still attempts parsing after a refresh error, so leaving the old file
-// in place could attest stale evidence. A successful refresh becomes visible
-// only after its temporary file is closed and atomically renamed.
+// A successful refresh becomes visible only after its temporary file is
+// closed and atomically renamed. A failed refresh leaves the previous copy in
+// place so the push can send the best version available.
 func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation) error {
 	if store == nil || !state.ValidSessionID(loc.SessionID) {
 		return copyError("invalid session")
@@ -63,12 +61,6 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 	}
 
 	dst := state.RawSessionPath(rawDir, loc.SessionID)
-	cleanupPrevious, err := quarantinePrevious(dst)
-	if err != nil {
-		return err
-	}
-	defer cleanupPrevious()
-
 	if loc.TranscriptPath == "" {
 		return copyError("transcript unavailable")
 	}
@@ -106,31 +98,8 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 	return nil
 }
 
-// quarantinePrevious moves the old copy out of the exact path ParseSession
-// reads. If the directory cannot rename it, truncation is a last-resort
-// invalidation so the shared pre-push flow cannot parse stale evidence after
-// this refresh returns an error.
-func quarantinePrevious(dst string) (func(), error) {
-	if _, err := os.Stat(dst); errors.Is(err, os.ErrNotExist) {
-		return func() {}, nil
-	} else if err != nil {
-		return nil, copyError("inspect previous copy")
-	}
-
-	quarantine := fmt.Sprintf("%s.stale-%d-%d", dst, os.Getpid(), time.Now().UnixNano())
-	if err := os.Rename(dst, quarantine); err == nil {
-		return func() { _ = os.Remove(quarantine) }, nil
-	}
-
-	if err := os.Truncate(dst, 0); err == nil {
-		return nil, copyError("quarantine previous copy")
-	}
-
-	return nil, copyError("quarantine previous copy")
-}
-
 func copyError(stage string) error {
-	return fmt.Errorf("%w: copy Pi session: %s", trace.ErrSessionDataNotFresh, stage)
+	return fmt.Errorf("copy Pi session: %s", stage)
 }
 
 // ParseSession reads the copied Pi JSONL and maps its selected branch to AI
