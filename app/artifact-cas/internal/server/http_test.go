@@ -59,6 +59,7 @@ import (
 
 const (
 	casAnyAddr          = "127.0.0.1:0"
+	casTestFileName     = "artifact.bin"
 	casSharedEndpoint   = "shared"
 	casLegacyEndpoint   = "legacy"
 	casGRPCRequest      = "grpc"
@@ -97,7 +98,7 @@ func (b *diskBackend) Describe(_ context.Context, digest string) (*v1.CASResourc
 	if err != nil {
 		return nil, err
 	}
-	return &v1.CASResource{Digest: digest, FileName: "artifact.bin", Size: info.Size()}, nil
+	return &v1.CASResource{Digest: digest, FileName: casTestFileName, Size: info.Size()}, nil
 }
 func (b *diskBackend) Exists(_ context.Context, digest string) (bool, error) {
 	_, err := os.Stat(filepath.Join(b.dir, digest))
@@ -209,7 +210,7 @@ func casTestUpload(t testing.TB, client bytestream.ByteStreamClient, token, dige
 	if err != nil {
 		return err
 	}
-	resource := casResourceName(t, &v1.CASResource{Digest: digest, FileName: "artifact.bin"})
+	resource := casResourceName(t, &v1.CASResource{Digest: digest, FileName: casTestFileName})
 	chunk := make([]byte, 64<<10)
 	for {
 		n, readErr := payload.Read(chunk)
@@ -311,7 +312,7 @@ func TestCASSharedPausedConsumerBackpressure(t *testing.T) {
 	t.Run("upload", func(t *testing.T) {
 		opts := casTestOpts(t)
 		arm, release, hook := pacedUploads(t, pauseAt)
-		opts.ByteService = service.NewByteStreamService(opts.Providers, append(serviceOptsForTest(t, opts), service.WithPaceHook(hook))...)
+		opts.ByteService = service.NewByteStreamService(opts.Providers, append(serviceOptsForTest(t), service.WithPaceHook(hook))...)
 		sharedURL, _ := startCASTestServers(t, opts)
 		client := bytestream.NewByteStreamClient(casTestConn(t, sharedURL[len("http://"):], false))
 		up := casTestToken(t, casJWT.Uploader, 0, time.Hour)
@@ -327,7 +328,7 @@ func TestCASSharedPausedConsumerBackpressure(t *testing.T) {
 		defer cancel()
 		stream, err := client.Write(ctx)
 		require.NoError(t, err)
-		resource := casResourceName(t, &v1.CASResource{Digest: digest, FileName: "artifact.bin"})
+		resource := casResourceName(t, &v1.CASResource{Digest: digest, FileName: casTestFileName})
 		chunk := make([]byte, 1<<20)
 		var sent atomic.Int64
 		sendErr := make(chan error, 1)
@@ -370,7 +371,7 @@ func TestCASSharedPausedConsumerBackpressure(t *testing.T) {
 	t.Run("download", func(t *testing.T) {
 		opts := casTestOpts(t)
 		arm, release, hook := pacedUploads(t, pauseAt)
-		opts.ByteService = service.NewByteStreamService(opts.Providers, append(serviceOptsForTest(t, opts), service.WithPaceHook(hook))...)
+		opts.ByteService = service.NewByteStreamService(opts.Providers, append(serviceOptsForTest(t), service.WithPaceHook(hook))...)
 		sharedURL, _ := startCASTestServers(t, opts)
 		client := bytestream.NewByteStreamClient(casTestConn(t, sharedURL[len("http://"):], false))
 		up, down := casTestToken(t, casJWT.Uploader, 0, time.Hour), casTestToken(t, casJWT.Downloader, 0, time.Hour)
@@ -420,7 +421,7 @@ func TestCASSharedPausedConsumerBackpressure(t *testing.T) {
 
 // serviceOptsForTest mirrors the test wiring in casTestOpts so pace-hook
 // variants get the same staging option.
-func serviceOptsForTest(tb testing.TB, opts *Opts) []service.NewOpt {
+func serviceOptsForTest(tb testing.TB) []service.NewOpt {
 	return []service.NewOpt{service.WithStagingDir(tb.TempDir())}
 }
 
