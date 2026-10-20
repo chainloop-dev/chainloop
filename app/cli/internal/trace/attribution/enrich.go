@@ -60,6 +60,12 @@ type CommitLines struct {
 // back to the sum of the added lines of each commit. Removed lines are always
 // the sum over the session's own commits.
 //
+// The line ranges of a file in tip are the positions of the session's net
+// added lines in the pushed commit, each range AI or human (spec issue-3639,
+// line ranges R-001, R-002). They hold as many lines as the net counts
+// (R-003). A file that tip does not hold keeps the AI ranges at edit time,
+// with no attribution, as older CLIs write them (R-005).
+//
 // A file that was renamed after a commit of the session has the lines of its
 // new path in tip (R-007). A line there counts for the path that its commit
 // changed, so a session that changed the file under both paths counts each
@@ -75,6 +81,7 @@ func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commi
 	}
 
 	byPath := splitByPath(sessionID, self, ledgers, commits)
+	positioned := make(map[string][]aicodingsession.LineRange, len(tip))
 	for path, net := range netAdded(sessionID, self, ledgers, commits, tip) {
 		s, ok := byPath[path]
 		if !ok {
@@ -82,6 +89,7 @@ func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commi
 			byPath[path] = s
 		}
 		s.aiAdded, s.humanAdded = net.aiAdded, net.humanAdded
+		positioned[path] = net.ranges
 	}
 
 	oldPaths := make(map[string][]string)
@@ -109,6 +117,9 @@ func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commi
 		} else {
 			f.Attribution = trace.AttributionHuman
 		}
+		if ranges, ok := positioned[f.Path]; ok {
+			f.LineRanges = ranges
+		}
 
 		switch s, ok := byPath[f.Path]; {
 		case self.Legacy[f.Path]:
@@ -134,6 +145,19 @@ func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commi
 // fileSplit is the AI/human split of the changed lines of one file.
 type fileSplit struct {
 	aiAdded, aiRemoved, humanAdded, humanRemoved int
+	// ranges are the positions of the net added lines in the pushed commit.
+	ranges []aicodingsession.LineRange
+}
+
+// addLine adds line number n, owned by owner, to the ranges. A line next to
+// the last range with the same owner extends it.
+func (s *fileSplit) addLine(n int, owner string) {
+	if last := len(s.ranges) - 1; last >= 0 && s.ranges[last].End == n-1 && s.ranges[last].Attribution == owner {
+		s.ranges[last].End = n
+		return
+	}
+
+	s.ranges = append(s.ranges, aicodingsession.LineRange{Start: n, End: n, Attribution: owner})
 }
 
 // editedRanges returns the recorded ranges of the session's edits of a file,
@@ -197,9 +221,9 @@ func splitByPath(sessionID string, self *state.AILineAttribution, ledgers map[st
 }
 
 // netAdded splits the lines of each file in tip that the session's commits
-// wrote. A line from a commit outside the session is not the session's. A
-// line from a joined commit counts as human when its replacing hunks added
-// it, and not at all otherwise.
+// wrote, and records the position of each one. A line from a commit outside
+// the session is not the session's. A line from a joined commit counts as
+// human when its replacing hunks added it, and not at all otherwise.
 func netAdded(sessionID string, self *state.AILineAttribution, ledgers map[string]*state.AILineAttribution, commits []CommitLines, tip map[string][]tracegit.BlameLine) map[string]*fileSplit {
 	bySHA := make(map[string]CommitLines, len(commits))
 	for _, c := range commits {
@@ -216,7 +240,7 @@ func netAdded(sessionID string, self *state.AILineAttribution, ledgers map[strin
 		s := &fileSplit{}
 		out[path] = s
 
-		for _, l := range tip[path] {
+		for i, l := range tip[path] {
 			commit, ok := bySHA[l.SHA]
 			if !ok {
 				continue
@@ -226,6 +250,7 @@ func netAdded(sessionID string, self *state.AILineAttribution, ledgers map[strin
 			if commit.Joined != nil {
 				if joinedPool(joined, commit, path, tip).Take(fp) {
 					s.humanAdded++
+					s.addLine(i+1, trace.AttributionHuman)
 				}
 
 				continue
@@ -241,9 +266,11 @@ func netAdded(sessionID string, self *state.AILineAttribution, ledgers map[strin
 			switch {
 			case written.takeFile(self, fl, fp):
 				s.aiAdded++
+				s.addLine(i+1, trace.AttributionAI)
 			case written.takeAny(otherLedgers(sessionID, ledgers, commit.SessionIDs), fl, fp):
 			default:
 				s.humanAdded++
+				s.addLine(i+1, trace.AttributionHuman)
 			}
 		}
 	}

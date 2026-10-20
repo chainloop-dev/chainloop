@@ -131,6 +131,8 @@ func TestEnrich_Legacy(t *testing.T) {
 
 		assert.Equal(t, trace.AttributionAI, changes.Files[0].Attribution)
 		assert.Equal(t, []string{testSession}, changes.Files[0].SessionIDs)
+		assert.Equal(t, []aicodingsession.LineRange{{Start: 1, End: 5}}, changes.Files[0].LineRanges,
+			"a file with no blame keeps the ranges at edit time, with no attribution (R-005)")
 		assert.Equal(t, 5, changes.AILinesAdded)
 		assert.Equal(t, 2, changes.AILinesRemoved)
 		assert.Equal(t, 0, changes.HumanLinesAdded)
@@ -307,6 +309,12 @@ func TestEnrich_Net(t *testing.T) {
 		return out
 	}
 	five := []string{"a", "b", "c", "d", "e"}
+	ai := func(start, end int) aicodingsession.LineRange {
+		return aicodingsession.LineRange{Start: start, End: end, Attribution: trace.AttributionAI}
+	}
+	human := func(start, end int) aicodingsession.LineRange {
+		return aicodingsession.LineRange{Start: start, End: end, Attribution: trace.AttributionHuman}
+	}
 	ownCommit := func(sha string, added, removed []string) CommitLines {
 		return CommitLines{SHA: sha, SessionIDs: []string{testSession}, Files: []tracegit.FileLines{{Path: testFile, Added: added, Removed: removed}}}
 	}
@@ -317,6 +325,9 @@ func TestEnrich_Net(t *testing.T) {
 		commits []CommitLines
 		tip     map[string][]tracegit.BlameLine
 		want    split
+		// ranges are the positions of the session's lines at the pushed
+		// commit (line ranges spec R-001, R-002).
+		ranges []aicodingsession.LineRange
 	}{
 		{
 			// Case 3 of the spec: a later commit of the session replaces an
@@ -327,8 +338,9 @@ func TestEnrich_Net(t *testing.T) {
 				ownCommit(c1, five, nil),
 				ownCommit(c2, []string{"C"}, []string{"c"}),
 			},
-			tip:  map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e")},
-			want: split{aiAdded: 4, humanAdded: 1, humanRemoved: 1},
+			tip:    map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e")},
+			want:   split{aiAdded: 4, humanAdded: 1, humanRemoved: 1},
+			ranges: []aicodingsession.LineRange{ai(1, 2), human(3, 3), ai(4, 5)},
 		},
 		{
 			// Case 2 of the spec: a commit in no session replaces an AI line
@@ -341,8 +353,9 @@ func TestEnrich_Net(t *testing.T) {
 				{SHA: c2, Files: []tracegit.FileLines{{Path: testFile, Added: []string{"C", "x"}, Removed: []string{"c"}}},
 					Joined: map[string][]string{testFile: fps("C")}},
 			},
-			tip:  map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e", c2+":x")},
-			want: split{aiAdded: 4, humanAdded: 1},
+			tip:    map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e", c2+":x")},
+			want:   split{aiAdded: 4, humanAdded: 1},
+			ranges: []aicodingsession.LineRange{ai(1, 2), human(3, 3), ai(4, 5)},
 		},
 		{
 			// Case 4 of the spec: a commit of another session replaces the
@@ -352,6 +365,7 @@ func TestEnrich_Net(t *testing.T) {
 			commits: []CommitLines{ownCommit(c1, five, nil)},
 			tip:     map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c3+":C", c1+":d", c1+":e")},
 			want:    split{aiAdded: 4},
+			ranges:  []aicodingsession.LineRange{ai(1, 2), ai(4, 5)},
 		},
 		{
 			name: "a line of another session of the commit counts for neither",
@@ -361,8 +375,9 @@ func TestEnrich_Net(t *testing.T) {
 			},
 			commits: []CommitLines{{SHA: c1, SessionIDs: []string{testSession, otherSession},
 				Files: []tracegit.FileLines{{Path: testFile, Added: []string{"a", "b", "h"}}}}},
-			tip:  map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c1+":h")},
-			want: split{aiAdded: 1, humanAdded: 1},
+			tip:    map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c1+":h")},
+			want:   split{aiAdded: 1, humanAdded: 1},
+			ranges: []aicodingsession.LineRange{ai(1, 1), human(3, 3)},
 		},
 		{
 			name:    "a file that the pushed commit does not hold adds nothing",
@@ -373,6 +388,16 @@ func TestEnrich_Net(t *testing.T) {
 			},
 			tip:  map[string][]tracegit.BlameLine{testFile: nil},
 			want: split{aiRemoved: 1, humanRemoved: 5},
+		},
+		{
+			// D-003: the human lines of the session get ranges too, also in a
+			// file that no agent edit of the session touched.
+			name:    "a file that only a human changed in the session has human ranges",
+			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, "b.go", nil, nil)},
+			commits: []CommitLines{ownCommit(c1, []string{"x", "y"}, nil)},
+			tip:     map[string][]tracegit.BlameLine{testFile: tipOf(c3+":k", c1+":x", c1+":y")},
+			want:    split{humanAdded: 2},
+			ranges:  []aicodingsession.LineRange{human(2, 3)},
 		},
 		{
 			// R-007: the session wrote old.go, a commit renamed it to the
@@ -395,7 +420,8 @@ func TestEnrich_Net(t *testing.T) {
 				oldFile:  tipOf(c1+":a", c1+":b", c1+":c", c1+":d", c1+":e", c2+":f"),
 				testFile: tipOf(c1+":a", c1+":b", c1+":c", c1+":d", c1+":e", c2+":f"),
 			},
-			want: split{aiAdded: 1},
+			want:   split{aiAdded: 1},
+			ranges: []aicodingsession.LineRange{ai(6, 6)},
 		},
 		{
 			// R-007: a commit in no session renamed the file and replaced a
@@ -407,8 +433,9 @@ func TestEnrich_Net(t *testing.T) {
 				{SHA: c2, Files: []tracegit.FileLines{{Path: "new.go", OldPath: testFile, Added: []string{"C"}, Removed: []string{"c"}}},
 					Joined: map[string][]string{"new.go": fps("C")}},
 			},
-			tip:  map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e")},
-			want: split{aiAdded: 4, humanAdded: 1},
+			tip:    map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e")},
+			want:   split{aiAdded: 4, humanAdded: 1},
+			ranges: []aicodingsession.LineRange{ai(1, 2), human(3, 3), ai(4, 5)},
 		},
 	}
 
@@ -421,6 +448,15 @@ func TestEnrich_Net(t *testing.T) {
 			f := changes.Files[0]
 			assert.Equal(t, tc.want, split{f.AILinesAdded, f.AILinesRemoved, f.HumanLinesAdded, f.HumanLinesRemoved})
 			assert.Equal(t, tc.want, split{changes.AILinesAdded, changes.AILinesRemoved, changes.HumanLinesAdded, changes.HumanLinesRemoved})
+			assert.Equal(t, tc.ranges, f.LineRanges)
+
+			// R-003: the ranges hold as many lines as the net added lines.
+			covered := map[string]int{}
+			for _, r := range f.LineRanges {
+				covered[r.Attribution] += r.End - r.Start + 1
+			}
+			assert.Equal(t, f.AILinesAdded, covered[trace.AttributionAI], "AI ranges agree with the AI count")
+			assert.Equal(t, f.HumanLinesAdded, covered[trace.AttributionHuman], "human ranges agree with the human count")
 		})
 	}
 }
