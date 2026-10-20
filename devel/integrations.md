@@ -88,7 +88,7 @@ $ chainloop integration registered add oci-registry \
 
 Once the integration is registered, we can attach it to any workflow. In practice this means that attestations and material information generated in this workflow will be sent to the registered integration.
 
-The attachment process has three required parameters: the workflow name, the name of the project it belongs to, and the name of the registered integration. Additionally each integration might have additional to customize its behavior per-workflow. In our case, on the table above, we can see that the `oci-registry` integration has an optional parameter called `prefix` that allows you to customize the name of the image that will be pushed to the registry. 
+The attachment process has three required parameters: the workflow name, the name of the project it belongs to, and the name of the registered integration. Additionally, each integration might have additional options to customize its behavior per-workflow. In our case, on the table above, we can see that the `oci-registry` integration has an optional parameter called `prefix` that allows you to customize the name of the image that will be pushed to the registry. 
 
 ```console 
 $ chainloop integration attached add --workflow [workflow-name] --project [project-name] --integration [unique-registration-name] --opt prefix=custom-prefix

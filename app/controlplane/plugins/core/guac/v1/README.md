@@ -45,7 +45,7 @@ $ chainloop integration registered add guac --name [my-registration] --opt bucke
 
 ### Attachment
 
-Then, in order to use the integration, you need to attach it to a workflow by providing the IDs of the workflow and integration you just registered.
+Then, in order to use the integration, you need to attach it to a workflow by providing the names of the workflow, its project and the integration you just registered.
 
 ```sh
 $ chainloop integration attached add --workflow [workflow-name] --project [project-name] --integration [my-registration]
