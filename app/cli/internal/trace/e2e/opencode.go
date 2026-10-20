@@ -94,7 +94,7 @@ func (o *OpenCode) Version(ctx context.Context) (string, error) {
 // as synthetic messages, which the run output does not show. Run exports the
 // session after the run and reads them from the export.
 func (o *OpenCode) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
-	args := []string{"run", "--standalone", "--format", "json", "--auto", "--model", req.Model}
+	args := []string{"run", "--standalone", "--format", "json", "--auto", flagModel, req.Model}
 
 	// A pasted image goes in as an attached file, from outside the
 	// repository, so that the agent cannot commit it.
@@ -274,7 +274,7 @@ export default {
   async setup() {},
 }
 `,
-		UserMarker: "e2e-user-hook",
+		UserMarker: userHookMarker,
 	}
 }
 
