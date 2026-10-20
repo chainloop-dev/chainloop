@@ -644,8 +644,10 @@ func recordTranscriptPath(store *state.Store, rec *state.SessionRecord, transcri
 	if rec == nil || transcriptPath == "" || rec.TranscriptPath == transcriptPath {
 		return false
 	}
+	// Only a file that is gone is replaced. Another stat error does not show
+	// that the transcript moved.
 	if rec.TranscriptPath != "" {
-		if _, err := os.Stat(rec.TranscriptPath); err == nil {
+		if _, err := os.Stat(rec.TranscriptPath); !errors.Is(err, os.ErrNotExist) {
 			return false
 		}
 	}
