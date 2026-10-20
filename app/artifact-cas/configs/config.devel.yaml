@@ -21,7 +21,6 @@ server:
     # Some unary RPCs are slow, so we need to increase the timeout
     # For example, Azure Blob Storage describe takes more than 1 second to respond sometimes
     timeout: 5s
-    # checkov:skip=CKV_SECRET_6: commented-out local dev TLS example paths, no real credentials
     # tls_config:
     #   certificate: "../../devel/devkeys/selfsigned/cas.crt"
     #   private_key: "../../devel/devkeys/selfsigned/cas.key"
@@ -30,11 +29,10 @@ server:
 
 credentials_service:
   # we will check that we can read there
-  secret_prefix: chainloop-devel
+  secret_prefix: chainloop-devel # checkov:skip=CKV_SECRET_6: development-only credential-path prefix, not a credential
   # Remember to run vault via docker compose up
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
-    # checkov:skip=CKV_SECRET_6: development vault dev-mode token, not a real credential
     token: ${VAULT_TOKEN:notasecret}
 
 observability:

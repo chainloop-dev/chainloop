@@ -12,14 +12,12 @@ server:
     # request; native gRPC reaches the native transport through an in-process
     # reverse proxy (spec D-020).
     # Optional TLS for both transports on port 8001. Independent of grpc.tls_config.
-    # checkov:skip=CKV_SECRET_6: commented-out local dev TLS example paths, no real credentials
     # tls_config:
     #   certificate: "./configs/tls/shared.crt"
     #   private_key: "./configs/tls/shared.key"
   grpc:
     addr: 0.0.0.0:9001
     timeout: 1s
-    # checkov:skip=CKV_SECRET_6: local dev TLS example paths, no real credentials
     tls_config:
       certificate: "./configs/tls/server.crt"
       private_key: "./configs/tls/server.key"
@@ -28,17 +26,16 @@ server:
 
 credentials_service:
   # We use the prefix to check that we can read from it on initialization
-  secret_prefix: chainloop-devel
+  secret_prefix: chainloop-devel # checkov:skip=CKV_SECRET_6: development-only credential-path prefix, not a credential
   # Remember to run vault via docker compose up
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
-    # checkov:skip=CKV_SECRET_6: development vault dev-mode token, not a real credential
     token: ${VAULT_TOKEN:notasecret}
 
   # aws_secret_manager:
   #   creds:
   #     access_key: not-a-key
-  #     secret_key: not-a-secret
+  #     secret_key: not-a-secret # checkov:skip=CKV_SECRET_6: commented-out example value, not a credential
   #   region: us-east-1
 
   # gcp_secret_manager:
