@@ -143,8 +143,14 @@ func checkGenericSessionStored(s *Session) error {
 // checkNoSessionStartHook makes sure that the session-start hook did not
 // fire, so that the scenario tests a missed session start.
 func checkNoSessionStartHook(s *Session) error {
-	if _, err := hookMessage(s, "SessionStart"); err == nil {
+	_, err := hookMessage(s, "SessionStart")
+	switch {
+	case err == nil:
 		return errors.New("the session-start hook fired, so the scenario does not test a missed start")
+	case errors.Is(err, errNotCovered):
+		// A harness that reports no hook messages cannot show that the hook
+		// did not fire.
+		return err
 	}
 	return nil
 }

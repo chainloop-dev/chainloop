@@ -74,7 +74,7 @@ func (c *Claude) Version(ctx context.Context) (string, error) {
 func (c *Claude) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 	args := []string{
 		"-p", req.Prompt,
-		"--model", req.Model,
+		flagModel, req.Model,
 		"--output-format", "stream-json",
 		"--verbose",
 		"--include-hook-events",
@@ -181,7 +181,7 @@ func (c *Claude) HookConfig() HookConfig {
   }
 }
 `,
-		UserMarker: "e2e-user-hook",
+		UserMarker: userHookMarker,
 	}
 }
 

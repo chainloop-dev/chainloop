@@ -20,6 +20,13 @@ import "context"
 // HarnessClaudeCode is the column name of Claude Code in the feature table.
 const HarnessClaudeCode = "Claude Code"
 
+const (
+	// flagModel is the model flag that all the harnesses share.
+	flagModel = "--model"
+	// userHookMarker is in the hook of the user that a scenario seeds.
+	userHookMarker = "e2e-user-hook"
+)
+
 // RunRequest is one headless session of a harness.
 type RunRequest struct {
 	// Dir is the repository the session runs in.

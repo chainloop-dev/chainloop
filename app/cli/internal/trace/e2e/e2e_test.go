@@ -130,6 +130,7 @@ func TestTraceMatrix(t *testing.T) {
 var harnesses = map[string]Harness{
 	HarnessClaudeCode: &Claude{},
 	"OpenCode 2":      &OpenCode{Major: "2"},
+	"Pi":              &Pi{},
 }
 
 // configuredHarnesses returns the adapters of the harnesses that the suite
