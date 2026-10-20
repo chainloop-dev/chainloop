@@ -17,7 +17,7 @@
             "type": "command"
           }
         ],
-        "matcher": "Edit|Write|MultiEdit|Bash"
+        "matcher": "Edit|Write|MultiEdit|Bash|Skill"
       }
     ],
     "PostToolUseFailure": [

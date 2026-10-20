@@ -6,6 +6,20 @@
         "timeout": 30
       }
     ],
+    "postToolUse": [
+      {
+        "command": "chainloop trace hook cursor post-tool-use",
+        "matcher": "Shell",
+        "timeout": 30
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "chainloop trace hook cursor pre-tool-use",
+        "matcher": "Shell",
+        "timeout": 30
+      }
+    ],
     "sessionEnd": [
       {
         "command": "chainloop trace hook cursor session-end",
