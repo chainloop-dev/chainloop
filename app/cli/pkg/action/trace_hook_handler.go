@@ -1088,7 +1088,26 @@ func sessionCodeChanges(gitClient tracegit.Client, repoRoot, sessionID string, c
 		}
 	}
 
-	attribution.Enrich(sessionID, ledgers, sessionCommitLines(sessionID, commits, cache), tip, codeChanges)
+	lines, complete := sessionCommitLines(sessionID, commits, cache)
+	// A commit of the session that cannot be read has no lines in the split.
+	// The line counts then keep the sum of the diff of each commit, so that
+	// the lines of that commit still count.
+	var diffCounts [][2]int
+	diffAdded, diffRemoved := codeChanges.LinesAdded, codeChanges.LinesRemoved
+	if !complete {
+		for _, f := range codeChanges.Files {
+			diffCounts = append(diffCounts, [2]int{f.LinesAdded, f.LinesRemoved})
+		}
+	}
+
+	attribution.Enrich(sessionID, ledgers, lines, tip, codeChanges)
+
+	if !complete {
+		for i := range codeChanges.Files {
+			codeChanges.Files[i].LinesAdded, codeChanges.Files[i].LinesRemoved = diffCounts[i][0], diffCounts[i][1]
+		}
+		codeChanges.LinesAdded, codeChanges.LinesRemoved = diffAdded, diffRemoved
+	}
 
 	return codeChanges
 }
@@ -1100,13 +1119,17 @@ func sessionCodeChanges(gitClient tracegit.Client, repoRoot, sessionID string, c
 //
 // A commit of the session holds only the removed lines that no earlier commit
 // of the session wrote, so that the removed lines are the net removals of the
-// session (issue 3674).
-func sessionCommitLines(sessionID string, commits []*state.CommitRecord, cache *lineCache) []attribution.CommitLines {
-	// changedBy counts, for each path, the commits of the session that
-	// changed it. Commits can have the same timestamp, so their order is not
+// session (issue 3674). complete is false when a commit of the session cannot
+// be read.
+func sessionCommitLines(sessionID string, commits []*state.CommitRecord, cache *lineCache) (out []attribution.CommitLines, complete bool) {
+	// changedBy counts, for each file, the commits of the session that
+	// changed it. A file is keyed by its path at HEAD, so that a rename
+	// between two commits keeps one key, and by its old path when a commit
+	// renamed it. Commits can have the same timestamp, so their order is not
 	// used.
 	own := make(map[string]bool, len(commits))
 	changedBy := make(map[string]int)
+	complete = true
 	for _, c := range commits {
 		if !slices.Contains(c.SessionIDs, sessionID) {
 			continue
@@ -1114,17 +1137,22 @@ func sessionCommitLines(sessionID string, commits []*state.CommitRecord, cache *
 		own[c.SHA] = true
 		lines, ok := cache.commit(c.SHA)
 		if !ok {
+			complete = false
 			continue
 		}
+		keys := make(map[string]bool)
 		for _, fl := range lines {
-			changedBy[fl.Path]++
+			keys[cache.pathAtHead(c.SHA, fl.Path)] = true
 			if fl.OldPath != "" {
-				changedBy[fl.OldPath]++
+				keys[fl.OldPath] = true
 			}
+		}
+		for k := range keys {
+			changedBy[k]++
 		}
 	}
 
-	out := make([]attribution.CommitLines, 0, len(commits))
+	out = make([]attribution.CommitLines, 0, len(commits))
 	for _, c := range commits {
 		lines, ok := cache.commit(c.SHA)
 		if !ok {
@@ -1144,7 +1172,7 @@ func sessionCommitLines(sessionID string, commits []*state.CommitRecord, cache *
 		out = append(out, cl)
 	}
 
-	return out
+	return out, complete
 }
 
 // lineCache reads the lines of commits and the blame of files at HEAD, the
@@ -1179,19 +1207,26 @@ func (c *lineCache) headPath(shas []string, path string) string {
 			continue
 		}
 
-		renames, ok := c.renames[sha]
-		if !ok {
-			var err error
-			if renames, err = c.client.Renames(c.repoRoot, sha, "HEAD"); err != nil {
-				c.log.Debug().Err(err).Str("sha", sha).Msg("could not read the renames since a commit")
-			}
-			c.renames[sha] = renames
-		}
-		if to, ok := renames[path]; ok {
-			return to
-		}
+		return c.pathAtHead(sha, path)
+	}
 
-		return path
+	return path
+}
+
+// pathAtHead returns the path at HEAD of a file that commit sha holds at path.
+// A later commit can have renamed the file. It returns path when the renames
+// cannot be read.
+func (c *lineCache) pathAtHead(sha, path string) string {
+	renames, ok := c.renames[sha]
+	if !ok {
+		var err error
+		if renames, err = c.client.Renames(c.repoRoot, sha, "HEAD"); err != nil {
+			c.log.Debug().Err(err).Str("sha", sha).Msg("could not read the renames since a commit")
+		}
+		c.renames[sha] = renames
+	}
+	if to, ok := renames[path]; ok {
+		return to
 	}
 
 	return path
@@ -1238,7 +1273,8 @@ func (c *lineCache) blame(rev, path string) ([]tracegit.BlameLine, bool) {
 // withoutOwnRemovals returns the lines of commit sha without the removed lines
 // that a commit in own last wrote. The parent's blame names the commit that
 // last wrote each removed line. Only a file that another commit in own
-// changed (changedBy) can hold such lines, so only that file is blamed. A
+// changed (changedBy, see sessionCommitLines) can hold such lines, so only
+// that file is blamed. A
 // file whose parent cannot be blamed keeps all its removed lines. lines is
 // not changed.
 func (c *lineCache) withoutOwnRemovals(sha string, lines []tracegit.FileLines, own map[string]bool, changedBy map[string]int) []tracegit.FileLines {
@@ -1249,8 +1285,8 @@ func (c *lineCache) withoutOwnRemovals(sha string, lines []tracegit.FileLines, o
 		if fl.OldPath != "" {
 			parentPath = fl.OldPath
 		}
-		// This commit counts once for parentPath.
-		if len(fl.Removed) == 0 || changedBy[parentPath] < 2 {
+		// This commit counts once for each key of the file.
+		if len(fl.Removed) == 0 || (changedBy[c.pathAtHead(sha, fl.Path)] < 2 && (fl.OldPath == "" || changedBy[fl.OldPath] < 2)) {
 			continue
 		}
 		parent, ok := c.blame(sha+"^", parentPath)

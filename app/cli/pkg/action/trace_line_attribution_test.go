@@ -286,6 +286,59 @@ func TestLineAttribution_NetCountsOfSessionCommits(t *testing.T) {
 	assert.Equal(t, 1, cc.FilesModified)
 }
 
+// Issue 3674: a commit outside the session renames a file between two
+// commits of the session. The lines that the first commit wrote are still the
+// session's own when the second commit replaces them under the new path.
+func TestLineAttribution_NetRemovalsAcrossRename(t *testing.T) {
+	r := newLineRepo(t)
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "old.go", content(lines))
+	r.commit("feat: a", "old.go")
+
+	runGit(t, r.dir, "mv", "old.go", "new.go")
+	r.commit("chore: rename")
+
+	lines[1] = "ai edit"
+	r.agentWrite(lineSession, "new.go", content(lines))
+	assert.Contains(t, r.commit("feat: a again", "new.go"), "Chainloop-Trace-Sessions: "+lineSession)
+
+	for _, f := range r.sessionChanges(lineSession).Files {
+		if f.Path == "new.go" {
+			assert.Equal(t, 0, f.LinesRemoved, "the replaced line was the session's own")
+			return
+		}
+	}
+	require.Fail(t, "new.go is not in the code changes")
+}
+
+// A commit of the session that cannot be read has no lines in the split. The
+// line counts then keep the sum of the diff of each commit, as before net
+// counts, so that the lines of that commit are not lost.
+func TestSessionCodeChanges_UnreadableCommitKeepsDiffCounts(t *testing.T) {
+	r := newLineRepo(t)
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+	first := headSHA(t, r.dir)
+
+	r.agentWrite(lineSession, "a.go", content(append(lines, "ai six")))
+	r.commit("feat: a again", "a.go")
+
+	records, err := r.store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	commits := sessionCommitGroups(records, nil, false)[lineSession]
+	require.Len(t, commits, 2)
+
+	client := failingLinesClient{Client: tracegit.NewGitClient(), sha: first}
+	cc := sessionCodeChanges(client, r.dir, lineSession, commits, loadLedgers(r.store, zerolog.Nop()), newLineCache(client, r.dir, zerolog.Nop()), func(string) bool { return false }, zerolog.Nop())
+	require.NotNil(t, cc)
+	require.Len(t, cc.Files, 1)
+	assert.Equal(t, 6, cc.Files[0].LinesAdded, "the lines of the unreadable commit still count")
+	assert.Equal(t, 6, cc.LinesAdded)
+}
+
 // Cases 2 and 5 of the spec: a human commit in no session replaces AI lines
 // after the session's push. The next push sends the session again (R-004),
 // and the commit joins it with the human lines of its replacing hunks only
