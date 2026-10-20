@@ -312,6 +312,74 @@ func TestEnsureSessionTracked_BackfillsTranscriptPath(t *testing.T) {
 	assert.Equal(t, root, rec.Cwd, "a later hook does not change the recorded cwd")
 }
 
+// Claude Code can move the transcript of a running session, for example to
+// another project folder when the session is resumed from another
+// directory. A hook that reports a new path replaces a recorded path whose
+// file is gone. While the recorded file exists, a different path, such as
+// the transcript of a subagent, does not replace it.
+func TestEnsureSessionTracked_ReplacesMovedTranscriptPath(t *testing.T) {
+	testCases := []struct {
+		name         string
+		oldExists    bool
+		reportedPath func(home, sid string) string
+		wantNew      bool
+	}{
+		{
+			name:      "recorded file is gone",
+			oldExists: false,
+			reportedPath: func(home, sid string) string {
+				return filepath.Join(claudeProjectDir(home, "/resumed"), sid+".jsonl")
+			},
+			wantNew: true,
+		},
+		{
+			name:      "recorded file exists",
+			oldExists: true,
+			reportedPath: func(home, sid string) string {
+				return filepath.Join(claudeProjectDir(home, "/started"), sid, "subagents", "agent-abc123.jsonl")
+			},
+			wantNew: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			const sid = "7412e0c2-1a2b-4c3d-8e9f-0a1b2c3d4e5f"
+			home := t.TempDir()
+			setTestHome(t, home)
+
+			root := chdirToResolvedGitRepo(t)
+			store := state.NewGitStore(filepath.Join(root, ".git"))
+			p := claude.New()
+
+			oldPath := filepath.Join(claudeProjectDir(home, "/started"), sid+".jsonl")
+			require.NoError(t, os.MkdirAll(filepath.Dir(oldPath), 0o750))
+			require.NoError(t, os.WriteFile(oldPath, []byte("{}\n"), 0o600))
+			withStdin(t, fmt.Sprintf(`{"session_id":%q,"transcript_path":%q,"cwd":%q,"hook_event_name":"SessionStart"}`, sid, oldPath, root))
+			require.NoError(t, HandleAgentSessionStart(p, nil, zerolog.Nop()))
+			if !tc.oldExists {
+				require.NoError(t, os.Remove(oldPath))
+			}
+
+			newPath := tc.reportedPath(home, sid)
+			require.NoError(t, os.MkdirAll(filepath.Dir(newPath), 0o750))
+			require.NoError(t, os.WriteFile(newPath, []byte("{}\n"), 0o600))
+			withStdin(t, fmt.Sprintf(`{"session_id":%q,"transcript_path":%q,"cwd":%q,"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"true"}}`,
+				sid, newPath, root))
+			require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop()))
+
+			rec, err := store.LoadSessionRecord(sid)
+			require.NoError(t, err)
+			require.NotNil(t, rec)
+			want := oldPath
+			if tc.wantNew {
+				want = newPath
+			}
+			assert.Equal(t, want, rec.TranscriptPath)
+		})
+	}
+}
+
 // Session end can be the only hook after the record was created, e.g. a
 // session that ran no tools. Pre-push reads the transcript path from the
 // record, so session end fills it in too.
