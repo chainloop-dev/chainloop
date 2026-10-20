@@ -279,6 +279,36 @@ func TestCASProxyPreservesAuthority(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestCASProxyErrorTerminatesHTTP2Stream pins the ErrorHandler contract: on an
+// upstream failure the proxy writes only the status header, and net/http
+// finalizes the HTTP/2 response with END_STREAM when the handler returns, so
+// the client gets a clean 502 instead of a stream left open.
+func TestCASProxyErrorTerminatesHTTP2Stream(t *testing.T) {
+	proxy := grpcProxy("127.0.0.1:1", log.NewStdLogger(io.Discard)) // nothing listening
+	srv := httptest.NewUnstartedServer(proxy)
+	srv.EnableHTTP2 = true
+	srv.StartTLS()
+	defer srv.Close()
+
+	tr := &http.Transport{Protocols: new(http.Protocols), TLSClientConfig: &tls.Config{InsecureSkipVerify: true}} //nolint:gosec // local test certificate
+	tr.Protocols.SetHTTP2(true)
+	defer tr.CloseIdleConnections()
+	client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
+
+	req, err := http.NewRequest(http.MethodPost, srv.URL+"/cas.v1.StatusService/Statusz", bytes.NewReader([]byte{0, 0, 0, 0, 0}))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/grpc")
+	req.Header.Set("Te", "trailers")
+	resp, err := client.Do(req)
+	require.NoError(t, err)
+	// Reading the body to completion must terminate, not wait for more frames.
+	_, err = io.Copy(io.Discard, resp.Body)
+	require.NoError(t, resp.Body.Close())
+	require.NoError(t, err)
+	require.Equal(t, http.StatusBadGateway, resp.StatusCode)
+	require.Equal(t, 2, resp.ProtoMajor)
+}
+
 // pacedUploads gates a ByteStream service so each direction can pause its
 // consumer at a fixed transferred byte count. The hook stays inert until arm
 // is closed (so a setup upload through the same service is not paused), and

@@ -72,6 +72,9 @@ type APIServer struct {
 // surfaced so the whole endpoint stops, rather than serving HTTP while
 // proxied gRPC answers 502.
 func (s *APIServer) Start(ctx context.Context) error {
+	// Buffered to the worker count: both sends complete into the buffer even
+	// when Start returns after the first error, so the second transport's
+	// report never blocks and the goroutine always finishes.
 	errCh := make(chan error, 2)
 	s.workers.Go(func() { errCh <- s.httpSrv.Start(ctx) })
 	s.workers.Go(func() { errCh <- s.grpcSrv.Start(ctx) })
@@ -181,6 +184,9 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 	// with the control plane.
 	proxy := grpcProxy(grpcServers.PrivateAddr, logger)
 	srv.Handler = h.HandlerFunc(func(w h.ResponseWriter, r *h.Request) {
+		// Native gRPC requires HTTP/2: an HTTP/1.1 request with an
+		// application/grpc content type cannot reach the private gRPC server,
+		// so only HTTP/2 requests take the proxy branch.
 		if r.ProtoMajor == 2 && isNativeGRPCContentType(r.Header.Get("Content-Type")) {
 			proxy.ServeHTTP(w, r)
 			return
@@ -212,14 +218,24 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 // knowledge): the private server is gRPC-only and loopback-only. The
 // Rewrite restores the incoming authority after SetURL clears it, so the
 // native server receives the original :authority for interceptor parity.
+//
+// The upstream pool targets a single loopback host and HTTP/2 multiplexes
+// many streams onto one connection, so a small connection cap is plenty; the
+// cap exists to bound idle loopback FDs held between requests, not to shape
+// throughput. Idle connections are reaped after the 90-second idle timeout so
+// a drained transfer does not pin the pooled connection for the process
+// lifetime; Stop drains HTTP first, so idle upstream sockets only persist
+// briefly past the last request. ExpectContinueTimeout is a no-op for gRPC
+// (clients never send Expect: 100-continue) and does not hold a pool slot
+// beyond the dial.
 func grpcProxy(target string, logger log.Logger) *httputil.ReverseProxy {
 	// Fixed for the process lifetime: built once rather than per request.
 	targetURL := &url.URL{Scheme: "http", Host: target}
 	transport := &h.Transport{
 		Protocols:             new(h.Protocols),
 		DialContext:           (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
-		MaxIdleConns:          100,
-		MaxIdleConnsPerHost:   100,
+		MaxIdleConns:          10,
+		MaxIdleConnsPerHost:   10,
 		IdleConnTimeout:       90 * time.Second,
 		ExpectContinueTimeout: time.Second,
 		// Byte-exact pass-through: gRPC carries its own per-message content
@@ -241,6 +257,10 @@ func grpcProxy(target string, logger log.Logger) *httputil.ReverseProxy {
 			pr.Out.Host = pr.In.Host
 		},
 		Transport: transport,
+		// On an upstream failure the handler must only write the status; when
+		// it returns, net/http finalizes the HTTP/2 response with END_STREAM,
+		// so the client gets a clean 502 instead of a stream left open. The
+		// regression test TestCASProxyErrorTerminatesHTTP2Stream covers this.
 		ErrorHandler: func(w h.ResponseWriter, _ *h.Request, err error) {
 			log.NewHelper(logger).Errorf("shared endpoint gRPC proxy error: %v", err)
 			w.WriteHeader(h.StatusBadGateway)
