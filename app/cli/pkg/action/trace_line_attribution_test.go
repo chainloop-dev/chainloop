@@ -224,8 +224,8 @@ func TestLineAttribution_HumanChangeBetweenAgentEdits(t *testing.T) {
 }
 
 // Case 3 of the spec: a later commit of the same session replaces AI lines by
-// hand. Each line counts once (R-003), and the removed AI lines are human
-// removals (R-005).
+// hand. Each line counts once (R-003). The replaced line is the session's own,
+// so its removal is not a net removal of the session.
 func TestLineAttribution_Case3SameSessionLaterCommit(t *testing.T) {
 	r := newLineRepo(t)
 
@@ -238,7 +238,52 @@ func TestLineAttribution_Case3SameSessionLaterCommit(t *testing.T) {
 	r.agentWrite(lineSession, "b.go", "package b\n")
 	assert.Contains(t, r.commit("feat: b", "a.go", "b.go"), "Chainloop-Trace-Sessions: "+lineSession)
 
-	assert.Equal(t, lineSplit{aiAdded: 4, humanAdded: 1, humanRemoved: 1}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
+	assert.Equal(t, lineSplit{aiAdded: 4, humanAdded: 1}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
+}
+
+// Issue 3674: two commits of a session change the same file. The line counts
+// and the status of the file are the net change of the session, not the sum
+// of the diff of each commit. A removed line that the session did not write
+// still counts.
+func TestLineAttribution_NetCountsOfSessionCommits(t *testing.T) {
+	r := newLineRepo(t)
+
+	r.humanWrite("base.go", content(numbered("base", 3)))
+	r.commit("chore: base", "base.go")
+
+	lines := numbered("ai", 10)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+
+	// The second commit replaces two lines of the first one and removes a
+	// line that was there before the session.
+	lines[2], lines[7] = "ai edit one", "ai edit two"
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.agentWrite(lineSession, "base.go", content(numbered("base", 2)))
+	assert.Contains(t, r.commit("feat: a again", "a.go", "base.go"), "Chainloop-Trace-Sessions: "+lineSession)
+
+	cc := r.sessionChanges(lineSession)
+	byPath := make(map[string]aicodingsession.FileChange, len(cc.Files))
+	for _, f := range cc.Files {
+		byPath[f.Path] = f
+	}
+
+	a := byPath["a.go"]
+	assert.Equal(t, tracegit.StatusCreated, a.Status, "the session created the file")
+	assert.Equal(t, 10, a.LinesAdded, "the net lines of the file")
+	assert.Equal(t, 0, a.LinesRemoved, "the replaced lines were the session's own")
+	assert.Equal(t, a.LinesAdded, a.AILinesAdded+a.HumanLinesAdded)
+
+	base := byPath["base.go"]
+	assert.Equal(t, tracegit.StatusModified, base.Status)
+	assert.Equal(t, 0, base.LinesAdded)
+	assert.Equal(t, 1, base.LinesRemoved, "a line from before the session counts as removed")
+	assert.Equal(t, base.LinesRemoved, base.AILinesRemoved+base.HumanLinesRemoved)
+
+	assert.Equal(t, 10, cc.LinesAdded)
+	assert.Equal(t, 1, cc.LinesRemoved)
+	assert.Equal(t, 1, cc.FilesCreated)
+	assert.Equal(t, 1, cc.FilesModified)
 }
 
 // Cases 2 and 5 of the spec: a human commit in no session replaces AI lines

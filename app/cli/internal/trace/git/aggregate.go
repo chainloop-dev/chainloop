@@ -23,7 +23,8 @@ import (
 
 // fileAgg is the running per-path total used while accumulating diffs from a
 // set of commits. Backends share it so the aggregation rule (sum lines,
-// last-wins status) lives in one place.
+// last-wins status, except that a created file stays created) lives in one
+// place.
 type fileAgg struct {
 	linesAdded   int
 	linesRemoved int
@@ -43,7 +44,9 @@ func addCommitStats(out *aicodingsession.CodeChanges, byPath map[string]*fileAgg
 		}
 		agg.linesAdded += f.LinesAdded
 		agg.linesRemoved += f.LinesRemoved
-		if f.Status != "" {
+		// A file that an earlier commit created stays created, unless a
+		// later commit deletes it.
+		if f.Status != "" && (agg.status != StatusCreated || f.Status == StatusDeleted) {
 			agg.status = f.Status
 		}
 	}

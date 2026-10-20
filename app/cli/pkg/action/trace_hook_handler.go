@@ -1083,7 +1083,7 @@ func sessionCodeChanges(gitClient tracegit.Client, repoRoot, sessionID string, c
 		if l := ledgers[sessionID]; l != nil && l.Legacy[f.Path] {
 			continue
 		}
-		if lines, ok := cache.blame(cache.headPath(shas, f.Path)); ok {
+		if lines, ok := cache.blame("HEAD", cache.headPath(shas, f.Path)); ok {
 			tip[f.Path] = lines
 		}
 	}
@@ -1097,7 +1097,33 @@ func sessionCodeChanges(gitClient tracegit.Client, repoRoot, sessionID string, c
 // oldest first, with the sessions that the commit's record names. A commit
 // that joined the session carries the lines that its replacing hunks added. A
 // commit that cannot be read is left out.
+//
+// A commit of the session holds only the removed lines that no earlier commit
+// of the session wrote, so that the removed lines are the net removals of the
+// session (issue 3674).
 func sessionCommitLines(sessionID string, commits []*state.CommitRecord, cache *lineCache) []attribution.CommitLines {
+	// changedBy counts, for each path, the commits of the session that
+	// changed it. Commits can have the same timestamp, so their order is not
+	// used.
+	own := make(map[string]bool, len(commits))
+	changedBy := make(map[string]int)
+	for _, c := range commits {
+		if !slices.Contains(c.SessionIDs, sessionID) {
+			continue
+		}
+		own[c.SHA] = true
+		lines, ok := cache.commit(c.SHA)
+		if !ok {
+			continue
+		}
+		for _, fl := range lines {
+			changedBy[fl.Path]++
+			if fl.OldPath != "" {
+				changedBy[fl.OldPath]++
+			}
+		}
+	}
+
 	out := make([]attribution.CommitLines, 0, len(commits))
 	for _, c := range commits {
 		lines, ok := cache.commit(c.SHA)
@@ -1106,7 +1132,9 @@ func sessionCommitLines(sessionID string, commits []*state.CommitRecord, cache *
 		}
 
 		cl := attribution.CommitLines{SHA: c.SHA, SessionIDs: c.SessionIDs, Files: lines}
-		if !slices.Contains(c.SessionIDs, sessionID) {
+		if own[c.SHA] {
+			cl.Files = cache.withoutOwnRemovals(c.SHA, lines, own, changedBy)
+		} else {
 			// A joined commit with no added line still has to read as joined.
 			cl.Joined = c.Joined[sessionID]
 			if cl.Joined == nil {
@@ -1126,7 +1154,7 @@ type lineCache struct {
 	repoRoot string
 	log      zerolog.Logger
 	commits  map[string][]tracegit.FileLines
-	blames   map[string][]tracegit.BlameLine
+	blames   map[[2]string][]tracegit.BlameLine
 	renames  map[string]map[string]string
 }
 
@@ -1136,7 +1164,7 @@ func newLineCache(client tracegit.Client, repoRoot string, log zerolog.Logger) *
 		repoRoot: repoRoot,
 		log:      log,
 		commits:  make(map[string][]tracegit.FileLines),
-		blames:   make(map[string][]tracegit.BlameLine),
+		blames:   make(map[[2]string][]tracegit.BlameLine),
 		renames:  make(map[string]map[string]string),
 	}
 }
@@ -1187,23 +1215,62 @@ func (c *lineCache) commit(sha string) ([]tracegit.FileLines, bool) {
 	return lines, true
 }
 
-// blame returns the lines of a file at HEAD with the commit that last wrote
-// each, nil for a file that HEAD does not hold, and false when the blame
-// fails.
-func (c *lineCache) blame(path string) ([]tracegit.BlameLine, bool) {
-	if lines, ok := c.blames[path]; ok {
+// blame returns the lines of a file at a revision with the commit that last
+// wrote each, nil for a file that the revision does not hold, and false when
+// the blame fails.
+func (c *lineCache) blame(rev, path string) ([]tracegit.BlameLine, bool) {
+	key := [2]string{rev, path}
+	if lines, ok := c.blames[key]; ok {
 		return lines, true
 	}
 
-	lines, err := c.client.Blame(c.repoRoot, "HEAD", path)
+	lines, err := c.client.Blame(c.repoRoot, rev, path)
 	if err != nil {
-		c.log.Debug().Err(err).Str("file", path).Msg("could not blame a file at HEAD; its net numbers fall back to the sum of its commits")
+		c.log.Debug().Err(err).Str("rev", rev).Str("file", path).Msg("could not blame a file; its net numbers fall back to the sum of its commits")
 
 		return nil, false
 	}
-	c.blames[path] = lines
+	c.blames[key] = lines
 
 	return lines, true
+}
+
+// withoutOwnRemovals returns the lines of commit sha without the removed lines
+// that a commit in own last wrote. The parent's blame names the commit that
+// last wrote each removed line. Only a file that another commit in own
+// changed (changedBy) can hold such lines, so only that file is blamed. A
+// file whose parent cannot be blamed keeps all its removed lines. lines is
+// not changed.
+func (c *lineCache) withoutOwnRemovals(sha string, lines []tracegit.FileLines, own map[string]bool, changedBy map[string]int) []tracegit.FileLines {
+	out := slices.Clone(lines)
+	for i, fl := range out {
+		// The parent holds the file under its old path.
+		parentPath := fl.Path
+		if fl.OldPath != "" {
+			parentPath = fl.OldPath
+		}
+		// This commit counts once for parentPath.
+		if len(fl.Removed) == 0 || changedBy[parentPath] < 2 {
+			continue
+		}
+		parent, ok := c.blame(sha+"^", parentPath)
+		if !ok {
+			continue
+		}
+
+		var removed []string
+		for _, h := range fl.Hunks {
+			for j, text := range h.Removed {
+				if idx := h.OldStart - 1 + j; idx >= 0 && idx < len(parent) && own[parent[idx].SHA] {
+					continue
+				}
+				removed = append(removed, text)
+			}
+		}
+		out[i].Removed = removed
+	}
+
+	return out
 }
 
 // attachSessionEvidence adds the materials of each session to the attestation:
