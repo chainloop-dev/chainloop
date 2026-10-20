@@ -1,4 +1,4 @@
-FROM golang:1.27.2@sha256:2d658507a011f1eadc0114d7a421b312b2e77d9042a24036a26e267cc9231677 AS builder
+FROM golang:1.27.3@sha256:957861185dbf29d93668ace41e011d091c6e779953d47f0316ef2cc58e28fe2b AS builder
 RUN mkdir -p /.config/chainloop /rootfs/tmp && chmod 1777 /rootfs/tmp
 
 FROM scratch
