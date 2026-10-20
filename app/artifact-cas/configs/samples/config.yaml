@@ -4,7 +4,6 @@ auth:
 
 server:
   # Retain the native transport while evaluating the shared HTTP endpoint.
-  # checkov:skip=CKV_SECRET_6: sample config with local placeholder values, no real credentials
   legacy_grpc_listener: true
   http:
     addr: 0.0.0.0:8001
@@ -13,12 +12,14 @@ server:
     # request; native gRPC reaches the native transport through an in-process
     # reverse proxy (spec D-020).
     # Optional TLS for both transports on port 8001. Independent of grpc.tls_config.
+    # checkov:skip=CKV_SECRET_6: commented-out local dev TLS example paths, no real credentials
     # tls_config:
     #   certificate: "./configs/tls/shared.crt"
     #   private_key: "./configs/tls/shared.key"
   grpc:
     addr: 0.0.0.0:9001
     timeout: 1s
+    # checkov:skip=CKV_SECRET_6: local dev TLS example paths, no real credentials
     tls_config:
       certificate: "./configs/tls/server.crt"
       private_key: "./configs/tls/server.key"
@@ -31,6 +32,7 @@ credentials_service:
   # Remember to run vault via docker compose up
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
+    # checkov:skip=CKV_SECRET_6: development vault dev-mode token, not a real credential
     token: ${VAULT_TOKEN:notasecret}
 
   # aws_secret_manager:

@@ -4,7 +4,6 @@
 # [root]/devel/compose.yml
 server:
   # Keep 9001 available to compare native gRPC with the shared 8001 endpoint.
-  # checkov:skip=CKV_SECRET_6: development/sample config with local placeholder values, no real credentials
   legacy_grpc_listener: true
   http:
     # Shared endpoint: HTTP/1.1, HTTP/2, and native gRPC. Each request is
@@ -22,6 +21,7 @@ server:
     # Some unary RPCs are slow, so we need to increase the timeout
     # For example, Azure Blob Storage describe takes more than 1 second to respond sometimes
     timeout: 5s
+    # checkov:skip=CKV_SECRET_6: commented-out local dev TLS example paths, no real credentials
     # tls_config:
     #   certificate: "../../devel/devkeys/selfsigned/cas.crt"
     #   private_key: "../../devel/devkeys/selfsigned/cas.key"
@@ -34,6 +34,7 @@ credentials_service:
   # Remember to run vault via docker compose up
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
+    # checkov:skip=CKV_SECRET_6: development vault dev-mode token, not a real credential
     token: ${VAULT_TOKEN:notasecret}
 
 observability:
