@@ -57,8 +57,11 @@ type CommitLines struct {
 // contribution of the session (R-003): the lines that its commits added and
 // that no later commit replaced, each one counted once. A file that tip holds
 // with no lines is gone, and adds nothing. A file that tip does not hold falls
-// back to the sum of the added lines of each commit. Removed lines are always
-// the sum over the session's own commits.
+// back to the sum of the added lines of each commit. Removed lines are the sum
+// over the session's own commits; each commit holds only the removed lines
+// that no earlier commit of the session wrote. The line counts of a file with
+// a split are the sum of the split, so the AI and human numbers add up to them
+// (issue 3674).
 //
 // The line ranges of a file in tip are the positions of the session's net
 // added lines in the pushed commit, each range AI or human (spec issue-3639,
@@ -101,6 +104,7 @@ func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commi
 		}
 	}
 
+	changes.LinesAdded, changes.LinesRemoved = 0, 0
 	changes.AILinesAdded, changes.AILinesRemoved = 0, 0
 	changes.HumanLinesAdded, changes.HumanLinesRemoved = 0, 0
 	for i := range changes.Files {
@@ -127,6 +131,10 @@ func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commi
 		case ok:
 			f.AILinesAdded, f.AILinesRemoved = s.aiAdded, s.aiRemoved
 			f.HumanLinesAdded, f.HumanLinesRemoved = s.humanAdded, s.humanRemoved
+			// The line counts of the file are the net numbers of the
+			// split, not the sum of the diff of each commit.
+			f.LinesAdded = s.aiAdded + s.humanAdded
+			f.LinesRemoved = s.aiRemoved + s.humanRemoved
 		case f.Attribution == trace.AttributionHuman:
 			// No line content for the file (a binary file, or a commit that
 			// could not be read): the diff totals are human, as before.
@@ -135,6 +143,8 @@ func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commi
 			legacySplit(f, self.Files[f.Path])
 		}
 
+		changes.LinesAdded += f.LinesAdded
+		changes.LinesRemoved += f.LinesRemoved
 		changes.AILinesAdded += f.AILinesAdded
 		changes.AILinesRemoved += f.AILinesRemoved
 		changes.HumanLinesAdded += f.HumanLinesAdded

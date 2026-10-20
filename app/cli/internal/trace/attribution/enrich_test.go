@@ -331,15 +331,17 @@ func TestEnrich_Net(t *testing.T) {
 	}{
 		{
 			// Case 3 of the spec: a later commit of the session replaces an
-			// AI line by hand. Each line counts once (R-003).
+			// AI line by hand. Each line counts once (R-003). The replaced
+			// line is the session's own, so c2 does not hold it as removed
+			// (sessionCommitLines leaves it out).
 			name:    "a replaced line of the session counts once",
 			ledgers: map[string]*state.AILineAttribution{testSession: ledger(testSession, testFile, five, nil)},
 			commits: []CommitLines{
 				ownCommit(c1, five, nil),
-				ownCommit(c2, []string{"C"}, []string{"c"}),
+				ownCommit(c2, []string{"C"}, nil),
 			},
 			tip:    map[string][]tracegit.BlameLine{testFile: tipOf(c1+":a", c1+":b", c2+":C", c1+":d", c1+":e")},
-			want:   split{aiAdded: 4, humanAdded: 1, humanRemoved: 1},
+			want:   split{aiAdded: 4, humanAdded: 1},
 			ranges: []aicodingsession.LineRange{ai(1, 2), human(3, 3), ai(4, 5)},
 		},
 		{
@@ -449,6 +451,13 @@ func TestEnrich_Net(t *testing.T) {
 			assert.Equal(t, tc.want, split{f.AILinesAdded, f.AILinesRemoved, f.HumanLinesAdded, f.HumanLinesRemoved})
 			assert.Equal(t, tc.want, split{changes.AILinesAdded, changes.AILinesRemoved, changes.HumanLinesAdded, changes.HumanLinesRemoved})
 			assert.Equal(t, tc.ranges, f.LineRanges)
+
+			// The line counts of the file and of the session are the sum of
+			// the split (issue 3674).
+			assert.Equal(t, tc.want.aiAdded+tc.want.humanAdded, f.LinesAdded, "lines added of the file")
+			assert.Equal(t, tc.want.aiRemoved+tc.want.humanRemoved, f.LinesRemoved, "lines removed of the file")
+			assert.Equal(t, f.LinesAdded, changes.LinesAdded, "lines added of the session")
+			assert.Equal(t, f.LinesRemoved, changes.LinesRemoved, "lines removed of the session")
 
 			// R-003: the ranges hold as many lines as the net added lines.
 			covered := map[string]int{}

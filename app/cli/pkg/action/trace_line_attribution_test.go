@@ -224,8 +224,8 @@ func TestLineAttribution_HumanChangeBetweenAgentEdits(t *testing.T) {
 }
 
 // Case 3 of the spec: a later commit of the same session replaces AI lines by
-// hand. Each line counts once (R-003), and the removed AI lines are human
-// removals (R-005).
+// hand. Each line counts once (R-003). The replaced line is the session's own,
+// so its removal is not a net removal of the session.
 func TestLineAttribution_Case3SameSessionLaterCommit(t *testing.T) {
 	r := newLineRepo(t)
 
@@ -238,7 +238,105 @@ func TestLineAttribution_Case3SameSessionLaterCommit(t *testing.T) {
 	r.agentWrite(lineSession, "b.go", "package b\n")
 	assert.Contains(t, r.commit("feat: b", "a.go", "b.go"), "Chainloop-Trace-Sessions: "+lineSession)
 
-	assert.Equal(t, lineSplit{aiAdded: 4, humanAdded: 1, humanRemoved: 1}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
+	assert.Equal(t, lineSplit{aiAdded: 4, humanAdded: 1}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
+}
+
+// Issue 3674: two commits of a session change the same file. The line counts
+// and the status of the file are the net change of the session, not the sum
+// of the diff of each commit. A removed line that the session did not write
+// still counts.
+func TestLineAttribution_NetCountsOfSessionCommits(t *testing.T) {
+	r := newLineRepo(t)
+
+	r.humanWrite("base.go", content(numbered("base", 3)))
+	r.commit("chore: base", "base.go")
+
+	lines := numbered("ai", 10)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+
+	// The second commit replaces two lines of the first one and removes a
+	// line that was there before the session.
+	lines[2], lines[7] = "ai edit one", "ai edit two"
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.agentWrite(lineSession, "base.go", content(numbered("base", 2)))
+	assert.Contains(t, r.commit("feat: a again", "a.go", "base.go"), "Chainloop-Trace-Sessions: "+lineSession)
+
+	cc := r.sessionChanges(lineSession)
+	byPath := make(map[string]aicodingsession.FileChange, len(cc.Files))
+	for _, f := range cc.Files {
+		byPath[f.Path] = f
+	}
+
+	a := byPath["a.go"]
+	assert.Equal(t, tracegit.StatusCreated, a.Status, "the session created the file")
+	assert.Equal(t, 10, a.LinesAdded, "the net lines of the file")
+	assert.Equal(t, 0, a.LinesRemoved, "the replaced lines were the session's own")
+	assert.Equal(t, a.LinesAdded, a.AILinesAdded+a.HumanLinesAdded)
+
+	base := byPath["base.go"]
+	assert.Equal(t, tracegit.StatusModified, base.Status)
+	assert.Equal(t, 0, base.LinesAdded)
+	assert.Equal(t, 1, base.LinesRemoved, "a line from before the session counts as removed")
+	assert.Equal(t, base.LinesRemoved, base.AILinesRemoved+base.HumanLinesRemoved)
+
+	assert.Equal(t, 10, cc.LinesAdded)
+	assert.Equal(t, 1, cc.LinesRemoved)
+	assert.Equal(t, 1, cc.FilesCreated)
+	assert.Equal(t, 1, cc.FilesModified)
+}
+
+// Issue 3674: a commit outside the session renames a file between two
+// commits of the session. The lines that the first commit wrote are still the
+// session's own when the second commit replaces them under the new path.
+func TestLineAttribution_NetRemovalsAcrossRename(t *testing.T) {
+	r := newLineRepo(t)
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "old.go", content(lines))
+	r.commit("feat: a", "old.go")
+
+	runGit(t, r.dir, "mv", "old.go", "new.go")
+	r.commit("chore: rename")
+
+	lines[1] = "ai edit"
+	r.agentWrite(lineSession, "new.go", content(lines))
+	assert.Contains(t, r.commit("feat: a again", "new.go"), "Chainloop-Trace-Sessions: "+lineSession)
+
+	for _, f := range r.sessionChanges(lineSession).Files {
+		if f.Path == "new.go" {
+			assert.Equal(t, 0, f.LinesRemoved, "the replaced line was the session's own")
+			return
+		}
+	}
+	require.Fail(t, "new.go is not in the code changes")
+}
+
+// A commit of the session that cannot be read has no lines in the split. The
+// line counts then keep the sum of the diff of each commit, as before net
+// counts, so that the lines of that commit are not lost.
+func TestSessionCodeChanges_UnreadableCommitKeepsDiffCounts(t *testing.T) {
+	r := newLineRepo(t)
+
+	lines := numbered("ai", 5)
+	r.agentWrite(lineSession, "a.go", content(lines))
+	r.commit("feat: a", "a.go")
+	first := headSHA(t, r.dir)
+
+	r.agentWrite(lineSession, "a.go", content(append(lines, "ai six")))
+	r.commit("feat: a again", "a.go")
+
+	records, err := r.store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	commits := sessionCommitGroups(records, nil, false)[lineSession]
+	require.Len(t, commits, 2)
+
+	client := failingLinesClient{Client: tracegit.NewGitClient(), sha: first}
+	cc := sessionCodeChanges(client, r.dir, lineSession, commits, loadLedgers(r.store, zerolog.Nop()), newLineCache(client, r.dir, zerolog.Nop()), func(string) bool { return false }, zerolog.Nop())
+	require.NotNil(t, cc)
+	require.Len(t, cc.Files, 1)
+	assert.Equal(t, 6, cc.Files[0].LinesAdded, "the lines of the unreadable commit still count")
+	assert.Equal(t, 6, cc.LinesAdded)
 }
 
 // Cases 2 and 5 of the spec: a human commit in no session replaces AI lines

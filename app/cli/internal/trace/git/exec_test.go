@@ -151,6 +151,9 @@ func TestExecClient_CodeChangesForCommits(t *testing.T) {
 		assert.Equal(t, "a.txt", changes.Files[0].Path)
 		assert.Equal(t, 3, changes.Files[0].LinesAdded, "1 line from A + 2 lines from C")
 		assert.Equal(t, 3, changes.LinesAdded)
+		assert.Equal(t, StatusCreated, changes.Files[0].Status, "commit-A created the file")
+		assert.Equal(t, 1, changes.FilesCreated)
+		assert.Equal(t, 0, changes.FilesModified)
 	})
 
 	t.Run("empty input returns empty result", func(t *testing.T) {
