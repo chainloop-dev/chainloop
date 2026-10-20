@@ -56,12 +56,11 @@ import (
 // ordinary HTTP requests may share one upstream connection in any order, as
 // they do on the control plane (spec D-020).
 type APIServer struct {
-	lis      net.Listener
-	httpSrv  *http.Server
-	grpcSrv  *grpc.Server
-	grpcAddr string
-	scheme   string
-	workers  sync.WaitGroup
+	lis     net.Listener
+	httpSrv *http.Server
+	grpcSrv *grpc.Server
+	scheme  string
+	workers sync.WaitGroup
 }
 
 // Start serves the shared endpoint until ctx is cancelled or a transport
@@ -182,11 +181,10 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 	log.NewHelper(logger).Infof("[shared] CAS endpoint (%s) listening on: %s", scheme, lis.Addr().String())
 
 	return &APIServer{
-		lis:      lis,
-		httpSrv:  srv,
-		grpcSrv:  grpcServers.Private,
-		grpcAddr: grpcServers.PrivateAddr,
-		scheme:   scheme,
+		lis:     lis,
+		httpSrv: srv,
+		grpcSrv: grpcServers.Private,
+		scheme:  scheme,
 	}, nil
 }
 
@@ -195,12 +193,15 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 // and response bodies, forwards hop-by-hop-excluded headers (including gRPC
 // metadata such as the authorization token), and copies response trailers,
 // so the existing gRPC frames pass through without decoding or rebuilding.
-// FlushInterval zero flushes each write immediately, which gRPC streaming
+// gRPC responses carry no Content-Length, so ReverseProxy flushes each write
+// immediately through its streaming special case, which gRPC streaming
 // requires. The transport speaks only unencrypted HTTP/2 (h2c prior
 // knowledge): the private server is gRPC-only and loopback-only. The
 // Rewrite restores the incoming authority after SetURL clears it, so the
 // native server receives the original :authority for interceptor parity.
 func grpcProxy(target string, logger log.Logger) *httputil.ReverseProxy {
+	// Fixed for the process lifetime: built once rather than per request.
+	targetURL := &url.URL{Scheme: "http", Host: target}
 	transport := &h.Transport{
 		Protocols:             new(h.Protocols),
 		DialContext:           (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
@@ -217,15 +218,16 @@ func grpcProxy(target string, logger log.Logger) *httputil.ReverseProxy {
 	transport.Protocols.SetHTTP1(false)
 	return &httputil.ReverseProxy{
 		Rewrite: func(pr *httputil.ProxyRequest) {
-			pr.SetURL(&url.URL{Scheme: "http", Host: target})
+			// SetURL only reads the target, so one shared URL is safe across
+			// concurrent requests.
+			pr.SetURL(targetURL)
 			// SetURL clears Out.Host for security (RFC 7230 host injection),
 			// but gRPC carries the routing target in :authority. Restore the
 			// incoming authority so the native server's interceptors observe
 			// the same value they would on a direct connection.
 			pr.Out.Host = pr.In.Host
 		},
-		Transport:     transport,
-		FlushInterval: 0,
+		Transport: transport,
 		ErrorHandler: func(w h.ResponseWriter, _ *h.Request, err error) {
 			log.NewHelper(logger).Errorf("shared endpoint gRPC proxy error: %v", err)
 			w.WriteHeader(h.StatusBadGateway)
