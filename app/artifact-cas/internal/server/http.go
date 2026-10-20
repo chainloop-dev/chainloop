@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	api "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
@@ -56,16 +57,20 @@ import (
 // ordinary HTTP requests may share one upstream connection in any order, as
 // they do on the control plane (spec D-020).
 type APIServer struct {
-	lis     net.Listener
-	httpSrv *http.Server
-	grpcSrv *grpc.Server
-	scheme  string
-	workers sync.WaitGroup
+	lis      net.Listener
+	httpSrv  *http.Server
+	grpcSrv  *grpc.Server
+	scheme   string
+	workers  sync.WaitGroup
+	stopping atomic.Bool
 }
 
 // Start serves the shared endpoint until ctx is cancelled or a transport
 // fails. The HTTP server serves every connection; the private native gRPC
-// server serves the connections the proxy opens to it.
+// server serves the connections the proxy opens to it. A genuine failure of
+// either transport — including the private gRPC listener failing — is
+// surfaced so the whole endpoint stops, rather than serving HTTP while
+// proxied gRPC answers 502.
 func (s *APIServer) Start(ctx context.Context) error {
 	errCh := make(chan error, 2)
 	s.workers.Go(func() { errCh <- s.httpSrv.Start(ctx) })
@@ -74,7 +79,11 @@ func (s *APIServer) Start(ctx context.Context) error {
 	case <-ctx.Done():
 		return nil
 	case err := <-errCh:
-		if isOrdinaryStopError(err) {
+		// The ordinary-stop sentinel (ErrClosed / ErrServerStopped) is benign
+		// only when it comes from our own Stop. The same error from a
+		// spontaneously failed transport must propagate, or the app would keep
+		// serving HTTP after the private gRPC server is gone.
+		if s.stopping.Load() && isOrdinaryStopError(err) {
 			return nil
 		}
 		return err
@@ -85,6 +94,7 @@ func (s *APIServer) Start(ctx context.Context) error {
 // stream, because those live on HTTP connections — then stops the private
 // native gRPC server so its in-flight RPCs finish.
 func (s *APIServer) Stop(ctx context.Context) error {
+	s.stopping.Store(true)
 	httpErr := s.httpSrv.Stop(ctx)
 	grpcErr := s.grpcSrv.Stop(ctx)
 	s.workers.Wait()

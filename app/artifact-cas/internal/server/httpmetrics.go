@@ -16,9 +16,8 @@
 package server
 
 import (
-	"errors"
-
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,10 +28,12 @@ type HTTPMetricsServer struct {
 	*http.Server
 }
 
-// NewHTTPMetricsServer exposes the metrics endpoint
-func NewHTTPMetricsServer(c *conf.Server) (*HTTPMetricsServer, error) {
+// NewHTTPMetricsServer exposes the metrics endpoint. server.http_metrics never
+// applied TLS: a configured tls_config is ignored with a warning rather than
+// rejected, so existing deployments that set it keep working.
+func NewHTTPMetricsServer(c *conf.Server, logger log.Logger) (*HTTPMetricsServer, error) {
 	if c.GetHttpMetrics().GetTlsConfig() != nil {
-		return nil, errors.New("server.http_metrics.tls_config is unsupported; configure shared endpoint TLS under server.http.tls_config")
+		log.NewHelper(logger).Warn("server.http_metrics.tls_config is ignored: metrics stay plaintext; configure shared endpoint TLS under server.http.tls_config")
 	}
 	var opts = []http.ServerOption{
 		http.Middleware(

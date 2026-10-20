@@ -822,6 +822,32 @@ func TestCASSharedShutdownDrainsUpload(t *testing.T) {
 	}
 }
 
+// TestCASSharedGRPCFailureStopsEndpoint: if the private gRPC transport fails,
+// the shared endpoint must not keep serving HTTP while proxied gRPC answers
+// 502. Start must surface the failure so the app stops.
+func TestCASSharedGRPCFailureStopsEndpoint(t *testing.T) {
+	opts := casTestOpts(t)
+	opts.ServerConfig.LegacyGrpcListener = new(false)
+	servers, err := NewGRPCServers(opts)
+	require.NoError(t, err)
+	api, err := NewHTTPServer(opts, servers)
+	require.NoError(t, err)
+	// Simulate the private gRPC transport failing: close its listener before
+	// the servers start. grpc-go's Serve on the closed listener returns an
+	// error that Start must not swallow.
+	require.NoError(t, servers.Close())
+	startErr := make(chan error, 1)
+	go func() { startErr <- api.Start(context.Background()) }()
+	select {
+	case err := <-startErr:
+		require.Error(t, err, "a failed private gRPC transport must fail the shared endpoint")
+	case <-time.After(10 * time.Second):
+		require.FailNow(t, "Start kept serving after the private gRPC transport failed")
+	}
+	// Best-effort teardown of the HTTP server that started on the shared port.
+	_ = api.Stop(context.Background())
+}
+
 func TestCASSharedInitializationDoesNotBindOnInvalidKey(t *testing.T) {
 	opts := casTestOpts(t)
 	opts.ServerConfig.LegacyGrpcListener = new(false)

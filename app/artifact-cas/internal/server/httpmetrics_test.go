@@ -15,13 +15,16 @@
 package server
 
 import (
+	"io"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf"
+	"github.com/go-kratos/kratos/v2/log"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCASMetricsTLSConfiguration(t *testing.T) {
+	logger := log.NewStdLogger(io.Discard)
 	for _, tc := range []struct {
 		name string
 		tls  *conf.Server_TLS
@@ -31,12 +34,10 @@ func TestCASMetricsTLSConfiguration(t *testing.T) {
 		{name: "TLS config", tls: &conf.Server_TLS{Certificate: "cert.pem", PrivateKey: "key.pem"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := NewHTTPMetricsServer(&conf.Server{HttpMetrics: &conf.Server_HTTP{Addr: casAnyAddr, TlsConfig: tc.tls}})
-			if tc.tls != nil {
-				require.ErrorContains(t, err, "server.http_metrics.tls_config is unsupported")
-			} else {
-				require.NoError(t, err)
-			}
+			// A configured but unsupported tls_config is ignored with a warning,
+			// so existing deployments that set it keep working.
+			_, err := NewHTTPMetricsServer(&conf.Server{HttpMetrics: &conf.Server_HTTP{Addr: casAnyAddr, TlsConfig: tc.tls}}, logger)
+			require.NoError(t, err)
 		})
 	}
 }

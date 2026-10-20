@@ -77,7 +77,7 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 		cleanup()
 		return nil, nil, err
 	}
-	httpMetricsServer, err := server.NewHTTPMetricsServer(confServer)
+	httpMetricsServer, err := server.NewHTTPMetricsServer(confServer, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
