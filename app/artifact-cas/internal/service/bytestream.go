@@ -216,7 +216,7 @@ func (s *ByteStreamService) dispatchSkippedUpload(info *casJWT.Claims, resource 
 // returned unwrapped for the caller to classify.
 func (s *ByteStreamService) spillVerifyUpload(ctx context.Context, stream bytestream.ByteStream_WriteServer, storageBackend backend.Uploader, req *writeRequest, maxBytes int64) (int64, error) {
 	f, size, err := s.stageAndVerify(stagingUpload, req.resource.Digest, func(w io.Writer) error {
-		return spillStream(ctx, stream, w, req.GetData(), maxBytes, s.log, req.resource.Digest)
+		return spillStream(ctx, stream, w, req.GetData(), maxBytes, s.log, req.resource.Digest, s.paceHook)
 	})
 	if err != nil {
 		return 0, err
@@ -246,8 +246,10 @@ func (e *backendUploadError) Unwrap() error { return e.err }
 
 // spillStream forwards the artifact from the client stream into w (the staging
 // file tee'd into a SHA256 hasher), enforcing the max upload size as it goes.
-// firstData is the payload already read from the first request.
-func spillStream(ctx context.Context, stream bytestream.ByteStream_WriteServer, w io.Writer, firstData []byte, maxSize int64, log *log.Helper, digest string) error {
+// firstData is the payload already read from the first request. paceHook, when
+// non-nil, observes each chunk's cumulative size; production wiring leaves it
+// nil (see commonService.paceHook).
+func spillStream(ctx context.Context, stream bytestream.ByteStream_WriteServer, w io.Writer, firstData []byte, maxSize int64, log *log.Helper, digest string, paceHook func(transferred int64)) error {
 	// running total, needed to enforce the cap before each write
 	var size int64
 	write := func(data []byte) error {
@@ -255,6 +257,9 @@ func spillStream(ctx context.Context, stream bytestream.ByteStream_WriteServer, 
 			return nil
 		}
 		size += int64(len(data))
+		if paceHook != nil {
+			paceHook(size)
+		}
 		if err := checkUploadSize(size, maxSize); err != nil {
 			return err
 		}
@@ -344,7 +349,7 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 	}
 	defer s.closeStagingFile(f)
 
-	if err := copyStaged(sendWriter{stream}, f); err != nil {
+	if err := copyStaged(&pacedWriter{w: sendWriter{stream}, hook: s.paceHook}, f); err != nil {
 		return s.downloadError(ctx, err, req.ResourceName)
 	}
 
@@ -433,4 +438,21 @@ type sendWriter struct {
 
 func (sw sendWriter) Write(data []byte) (int, error) {
 	return len(data), sw.stream.Send(&bytestream.ReadResponse{Data: data})
+}
+
+// pacedWriter reports each write's cumulative bytes to a pacing hook. When the
+// hook is nil it forwards untouched, which is the production case.
+type pacedWriter struct {
+	w      io.Writer
+	hook   func(transferred int64)
+	cumSum int64
+}
+
+func (p *pacedWriter) Write(data []byte) (int, error) {
+	n, err := p.w.Write(data)
+	p.cumSum += int64(n)
+	if err == nil && p.hook != nil {
+		p.hook(p.cumSum)
+	}
+	return n, err
 }

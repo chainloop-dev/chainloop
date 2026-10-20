@@ -76,6 +76,8 @@ message Server {
     google.protobuf.Duration timeout = 3;
     // CORS configuration for the HTTP download endpoint
     CORS cors = 4;
+    // TLS for every protocol on the shared HTTP endpoint.
+    TLS tls_config = 5;
   }
   message TLS {
     // path to certificate and private key
@@ -88,12 +90,14 @@ message Server {
     google.protobuf.Duration timeout = 3;
     TLS tls_config = 4;
   }
-  // Regular HTTP endpoint
+  // Shared HTTP and native gRPC endpoint
   HTTP http = 1;
   // GRPC API endpoint
   GRPC grpc = 2;
   // hHTTP server where the prometheus metrics will get exposed
   HTTP http_metrics = 3;
+  // The native gRPC listener remains enabled when this field is unset.
+  optional bool legacy_grpc_listener = 4;
 }
 
 message Auth {

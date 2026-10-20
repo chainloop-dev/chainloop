@@ -131,14 +131,16 @@ func (x *Bootstrap) GetStagingDir() string {
 
 type Server struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Regular HTTP endpoint
+	// Shared HTTP and native gRPC endpoint
 	Http *Server_HTTP `protobuf:"bytes,1,opt,name=http,proto3" json:"http,omitempty"`
 	// GRPC API endpoint
 	Grpc *Server_GRPC `protobuf:"bytes,2,opt,name=grpc,proto3" json:"grpc,omitempty"`
 	// hHTTP server where the prometheus metrics will get exposed
-	HttpMetrics   *Server_HTTP `protobuf:"bytes,3,opt,name=http_metrics,json=httpMetrics,proto3" json:"http_metrics,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	HttpMetrics *Server_HTTP `protobuf:"bytes,3,opt,name=http_metrics,json=httpMetrics,proto3" json:"http_metrics,omitempty"`
+	// The native gRPC listener remains enabled when this field is unset.
+	LegacyGrpcListener *bool `protobuf:"varint,4,opt,name=legacy_grpc_listener,json=legacyGrpcListener,proto3,oneof" json:"legacy_grpc_listener,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Server) Reset() {
@@ -190,6 +192,13 @@ func (x *Server) GetHttpMetrics() *Server_HTTP {
 		return x.HttpMetrics
 	}
 	return nil
+}
+
+func (x *Server) GetLegacyGrpcListener() bool {
+	if x != nil && x.LegacyGrpcListener != nil {
+		return *x.LegacyGrpcListener
+	}
+	return false
 }
 
 type Auth struct {
@@ -553,7 +562,9 @@ type Server_HTTP struct {
 	Addr    string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
 	Timeout *durationpb.Duration   `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// CORS configuration for the HTTP download endpoint
-	Cors          *Server_CORS `protobuf:"bytes,4,opt,name=cors,proto3" json:"cors,omitempty"`
+	Cors *Server_CORS `protobuf:"bytes,4,opt,name=cors,proto3" json:"cors,omitempty"`
+	// TLS for every protocol on the shared HTTP endpoint.
+	TlsConfig     *Server_TLS `protobuf:"bytes,5,opt,name=tls_config,json=tlsConfig,proto3" json:"tls_config,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -612,6 +623,13 @@ func (x *Server_HTTP) GetTimeout() *durationpb.Duration {
 func (x *Server_HTTP) GetCors() *Server_CORS {
 	if x != nil {
 		return x.Cors
+	}
+	return nil
+}
+
+func (x *Server_HTTP) GetTlsConfig() *Server_TLS {
+	if x != nil {
+		return x.TlsConfig
 	}
 	return nil
 }
@@ -768,18 +786,21 @@ const file_conf_proto_rawDesc = "" +
 	"\bendpoint\x18\x02 \x01(\tR\bendpoint\x12\x1a\n" +
 	"\binsecure\x18\x03 \x01(\bR\binsecure\x12*\n" +
 	"\x0esampling_ratio\x18\x04 \x01(\x01H\x00R\rsamplingRatio\x88\x01\x01B\x11\n" +
-	"\x0f_sampling_ratio\"\x9a\x04\n" +
+	"\x0f_sampling_ratio\"\x96\x05\n" +
 	"\x06Server\x12 \n" +
 	"\x04http\x18\x01 \x01(\v2\f.Server.HTTPR\x04http\x12 \n" +
 	"\x04grpc\x18\x02 \x01(\v2\f.Server.GRPCR\x04grpc\x12/\n" +
-	"\fhttp_metrics\x18\x03 \x01(\v2\f.Server.HTTPR\vhttpMetrics\x1a+\n" +
+	"\fhttp_metrics\x18\x03 \x01(\v2\f.Server.HTTPR\vhttpMetrics\x125\n" +
+	"\x14legacy_grpc_listener\x18\x04 \x01(\bH\x00R\x12legacyGrpcListener\x88\x01\x01\x1a+\n" +
 	"\x04CORS\x12#\n" +
-	"\rallow_origins\x18\x01 \x03(\tR\fallowOrigins\x1a\x8b\x01\n" +
+	"\rallow_origins\x18\x01 \x03(\tR\fallowOrigins\x1a\xb7\x01\n" +
 	"\x04HTTP\x12\x18\n" +
 	"\anetwork\x18\x01 \x01(\tR\anetwork\x12\x12\n" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\x123\n" +
 	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12 \n" +
-	"\x04cors\x18\x04 \x01(\v2\f.Server.CORSR\x04cors\x1aH\n" +
+	"\x04cors\x18\x04 \x01(\v2\f.Server.CORSR\x04cors\x12*\n" +
+	"\n" +
+	"tls_config\x18\x05 \x01(\v2\v.Server.TLSR\ttlsConfig\x1aH\n" +
 	"\x03TLS\x12 \n" +
 	"\vcertificate\x18\x01 \x01(\tR\vcertificate\x12\x1f\n" +
 	"\vprivate_key\x18\x02 \x01(\tR\n" +
@@ -789,7 +810,8 @@ const file_conf_proto_rawDesc = "" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\x123\n" +
 	"\atimeout\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\atimeout\x12*\n" +
 	"\n" +
-	"tls_config\x18\x04 \x01(\v2\v.Server.TLSR\ttlsConfig\"t\n" +
+	"tls_config\x18\x04 \x01(\v2\v.Server.TLSR\ttlsConfigB\x17\n" +
+	"\x15_legacy_grpc_listener\"t\n" +
 	"\x04Auth\x12D\n" +
 	"\x1drobot_account_public_key_path\x18\x01 \x01(\tB\x02\x18\x01R\x19robotAccountPublicKeyPath\x12&\n" +
 	"\x0fpublic_key_path\x18\x02 \x01(\tR\rpublicKeyPathBHZFgithub.com/chainloop-dev/chainloop/app/artifact-cas/internal/conf;confb\x06proto3"
@@ -835,13 +857,14 @@ var file_conf_proto_depIdxs = []int32{
 	6,  // 9: Bootstrap.Observability.tracing:type_name -> Bootstrap.Observability.Tracing
 	12, // 10: Server.HTTP.timeout:type_name -> google.protobuf.Duration
 	7,  // 11: Server.HTTP.cors:type_name -> Server.CORS
-	12, // 12: Server.GRPC.timeout:type_name -> google.protobuf.Duration
-	9,  // 13: Server.GRPC.tls_config:type_name -> Server.TLS
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	9,  // 12: Server.HTTP.tls_config:type_name -> Server.TLS
+	12, // 13: Server.GRPC.timeout:type_name -> google.protobuf.Duration
+	9,  // 14: Server.GRPC.tls_config:type_name -> Server.TLS
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_conf_proto_init() }
@@ -849,6 +872,7 @@ func file_conf_proto_init() {
 	if File_conf_proto != nil {
 		return
 	}
+	file_conf_proto_msgTypes[1].OneofWrappers = []any{}
 	file_conf_proto_msgTypes[3].OneofWrappers = []any{
 		(*Bootstrap_NatsServer_Token)(nil),
 	}

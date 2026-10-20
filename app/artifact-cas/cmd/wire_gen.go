@@ -48,26 +48,36 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 	v := serviceOpts(logger, auditDispatcher, bootstrap, cache)
 	byteStreamService := service.NewByteStreamService(providers, v...)
 	resourceService := service.NewResourceService(providers, v...)
+	downloadService := service.NewDownloadService(providers, v...)
 	validator, err := newProtoValidator()
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	grpcServer, err := server.NewGRPCServer(confServer, auth, byteStreamService, resourceService, providers, validator, logger)
+	opts := &server.Opts{
+		ServerConfig: confServer,
+		AuthConfig:   auth,
+		ByteService:  byteStreamService,
+		ResourceSvc:  resourceService,
+		DownloadSvc:  downloadService,
+		Providers:    providers,
+		Validator:    validator,
+		Logger:       logger,
+	}
+	grpcServers, err := server.NewGRPCServers(opts)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	downloadService := service.NewDownloadService(providers, v...)
-	httpServer, err := server.NewHTTPServer(confServer, auth, downloadService, providers, logger)
+	apiServer, err := server.NewHTTPServer(opts, grpcServers)
 	if err != nil {
 		cleanup2()
 		cleanup()
 		return nil, nil, err
 	}
-	httpMetricsServer, err := server.NewHTTPMetricsServer(confServer)
+	httpMetricsServer, err := server.NewHTTPMetricsServer(confServer, logger)
 	if err != nil {
 		cleanup2()
 		cleanup()
@@ -79,7 +89,7 @@ func wireApp(bootstrap *conf.Bootstrap, confServer *conf.Server, auth *conf.Auth
 		cleanup()
 		return nil, nil, err
 	}
-	mainApp := newApp(logger, grpcServer, httpServer, httpMetricsServer, providers, tracerProvider)
+	mainApp := newApp(logger, grpcServers, apiServer, httpMetricsServer, providers, tracerProvider)
 	return mainApp, func() {
 		cleanup3()
 		cleanup2()

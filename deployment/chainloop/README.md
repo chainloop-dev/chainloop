@@ -245,7 +245,25 @@ The control plane ingress serves HTTP, gRPC-Web, and native gRPC on the same hos
 Its HTTP server routes each request, so these protocols can share an upstream HTTP/2 connection.
 The existing gRPC ingress stays available. Existing clients can keep their current endpoints.
 To test the shared endpoint, point a gRPC client to the control plane HTTP hostname on port 443.
-The Artifact CAS keeps its existing endpoints and native gRPC transport.
+The CAS shared endpoint mirrors the control plane (spec D-020): one standard HTTP listener dispatches each request, and native gRPC reaches the native transport through an in-process reverse proxy. `cas.ingress` is one catch-all route on the same hostname — one path `/` with an HTTP/2 (gRPC) upstream — so ByteStream uploads and downloads, browser downloads, and status probes share one Service port and one certificate, including mixed requests on one upstream connection.
+
+Set gRPC transport annotations under `cas.ingress.annotations`, such as `backend-protocol: GRPCS` for TLS to the pod. The upload body-size annotations keep their existing defaults.
+
+Enable the shared endpoint with a `cas.ingress` block — for example:
+
+```yaml
+cas:
+  ingress:
+    enabled: true
+    hostname: cas.example.com
+    tls: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+```
+
+With `tls: true`, configure a certificate source — the cert-manager issuer annotation above, or a pre-created Secret named `cas.example.com-tls` — so the rendered Ingress references a Secret that exists.
+
+`cas.ingress.enabled` defaults to `false`, so a setup that only copies the documented `cas.ingressAPI` block leaves the shared hostname disabled. Retain `cas.ingressAPI` only while the legacy gRPC endpoint is also required. `cas.serviceAPI`, and the control plane's connection to the legacy CAS endpoint keep their existing settings. CAS adds no gRPC-Web or Connect support. Deployed-controller qualification and the full streaming-performance evidence still need work. See the [experiment instructions](../../app/artifact-cas/README.md#shared-endpoint).
 
 The chart configures HTTP/2 upstream traffic for these controllers:
 
@@ -843,7 +861,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.service.loadBalancerIP`              | cas service Load Balancer IP                                                                                                     | `""`                     |
 | `cas.service.loadBalancerSourceRanges`    | cas service Load Balancer sources                                                                                                | `[]`                     |
 | `cas.service.externalTrafficPolicy`       | cas service external traffic policy                                                                                              | `Cluster`                |
-| `cas.service.annotations`                 | Additional custom annotations for cas service                                                                                    | `{}`                     |
+| `cas.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c for HTTP/2 upstream traffic. | See values.yaml          |
 | `cas.service.extraPorts`                  | Extra ports to expose in cas service (normally used with the `sidecars` value)                                                   | `[]`                     |
 | `cas.service.sessionAffinity`             | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
 | `cas.service.sessionAffinityConfig`       | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
@@ -865,7 +883,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.ingress.hostname`                    | Default host for the ingress record                                                                                              | `cas.dev.local`          |
 | `cas.ingress.ingressClassName`            | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
 | `cas.ingress.path`                        | Default path for the ingress record                                                                                              | `/`                      |
-| `cas.ingress.annotations`                 | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
+| `cas.ingress.annotations`                 | Annotations for the shared CAS ingress: HTTP/2 (gRPC) upstream plus the upload body limits. | See values.yaml          |
 | `cas.ingress.tls`                         | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
 | `cas.ingress.selfSigned`                  | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
 | `cas.ingress.extraHosts`                  | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |

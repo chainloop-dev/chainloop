@@ -37,8 +37,7 @@ import (
 	"github.com/go-kratos/kratos/v2/config/env"
 	"github.com/go-kratos/kratos/v2/config/file"
 	"github.com/go-kratos/kratos/v2/log"
-	"github.com/go-kratos/kratos/v2/transport/grpc"
-	"github.com/go-kratos/kratos/v2/transport/http"
+	"github.com/go-kratos/kratos/v2/transport"
 	"go.opentelemetry.io/otel/trace"
 
 	_ "go.uber.org/automaxprocs"
@@ -66,7 +65,11 @@ type app struct {
 	backend.Providers
 }
 
-func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTPMetricsServer, providers backend.Providers, _ trace.TracerProvider) *app {
+func newApp(logger log.Logger, gs *server.GRPCServers, hs *server.APIServer, ms *server.HTTPMetricsServer, providers backend.Providers, _ trace.TracerProvider) *app {
+	servers := []transport.Server{hs, ms}
+	if gs.Legacy != nil {
+		servers = append(servers, gs.Legacy)
+	}
 	return &app{
 		kratos.New(
 			kratos.ID(id),
@@ -74,11 +77,7 @@ func newApp(logger log.Logger, gs *grpc.Server, hs *http.Server, ms *server.HTTP
 			kratos.Version(Version),
 			kratos.Metadata(map[string]string{}),
 			kratos.Logger(logger),
-			kratos.Server(
-				gs,
-				hs,
-				ms,
-			),
+			kratos.Server(servers...),
 		),
 		providers,
 	}

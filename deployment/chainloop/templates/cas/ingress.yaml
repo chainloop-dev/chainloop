@@ -12,13 +12,8 @@ metadata:
   namespace: {{ include "common.names.namespace" . | quote }}
   labels: {{- include "chainloop.cas.labels" . | nindent 4 }}
   {{- if or .Values.cas.ingress.annotations .Values.commonAnnotations }}
-  annotations:
-    {{- if .Values.cas.ingress.annotations }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.cas.ingress.annotations "context" $) | nindent 4 }}
-    {{- end }}
-    {{- if .Values.commonAnnotations }}
-    {{- include "common.tplvalues.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
-    {{- end }}
+  {{- $annotations := include "common.tplvalues.merge" (dict "values" (list .Values.cas.ingress.annotations .Values.commonAnnotations) "context" .) }}
+  annotations: {{- include "common.tplvalues.render" (dict "value" $annotations "context" $) | nindent 4 }}
   {{- end }}
 spec:
   {{- if and .Values.cas.ingress.ingressClassName (eq "true" (include "common.ingress.supportsIngressClassname" .)) }}
@@ -51,9 +46,9 @@ spec:
     {{- if .Values.cas.ingress.extraRules }}
     {{- include "common.tplvalues.render" (dict "value" .Values.cas.ingress.extraRules "context" $) | nindent 4 }}
     {{- end }}
-  {{- if or (and .Values.cas.ingress.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.cas.ingress.annotations )) .Values.cas.ingress.selfSigned)) .Values.cas.ingress.extraTls }}
+  {{- if or .Values.cas.ingress.tls .Values.cas.ingress.extraTls }}
   tls:
-    {{- if and .Values.cas.ingress.tls (or (include "common.ingress.certManagerRequest" ( dict "annotations" .Values.cas.ingress.annotations )) .Values.cas.ingress.selfSigned) }}
+    {{- if .Values.cas.ingress.tls }}
     - hosts:
         - {{ .Values.cas.ingress.hostname | quote }}
       secretName: {{ printf "%s-tls" .Values.cas.ingress.hostname }}

@@ -3,9 +3,18 @@ auth:
   public_key_path: "./configs/devkeys/cas.public.pem"
 
 server:
+  # Retain the native transport while evaluating the shared HTTP endpoint.
+  legacy_grpc_listener: true
   http:
     addr: 0.0.0.0:8001
-    timeout: 1s
+    timeout: 300s
+    # Shared endpoint: HTTP/1.1, HTTP/2, and native gRPC, dispatched per
+    # request; native gRPC reaches the native transport through an in-process
+    # reverse proxy (spec D-020).
+    # Optional TLS for both transports on port 8001. Independent of grpc.tls_config.
+    # tls_config:
+    #   certificate: "./configs/tls/shared.crt"
+    #   private_key: "./configs/tls/shared.key"
   grpc:
     addr: 0.0.0.0:9001
     timeout: 1s
@@ -17,7 +26,7 @@ server:
 
 credentials_service:
   # We use the prefix to check that we can read from it on initialization
-  secret_prefix: chainloop-devel
+  secret_prefix: chainloop-devel # checkov:skip=CKV_SECRET_6: development-only credential-path prefix, not a credential
   # Remember to run vault via docker compose up
   vault:
     address: ${VAULT_ADDRESS:http://0.0.0.0:8200}
@@ -26,7 +35,7 @@ credentials_service:
   # aws_secret_manager:
   #   creds:
   #     access_key: not-a-key
-  #     secret_key: not-a-secret
+  #     secret_key: not-a-secret # checkov:skip=CKV_SECRET_6: commented-out example value, not a credential
   #   region: us-east-1
 
   # gcp_secret_manager:

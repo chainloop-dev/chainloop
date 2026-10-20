@@ -20,6 +20,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/tls"
 	"fmt"
+	"net"
 	"os"
 	"regexp"
 
@@ -51,8 +52,107 @@ import (
 	grpcLib "google.golang.org/grpc"
 )
 
-// NewGRPCServer new a gRPC server.
-func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.ByteStreamService, rSvc *service.ResourceService, providers backend.Providers, validator protovalidate.Validator, logger log.Logger) (*grpc.Server, error) {
+// Opts provides the shared service implementations and transport settings.
+type Opts struct {
+	ServerConfig *conf.Server
+	AuthConfig   *conf.Auth
+	ByteService  *service.ByteStreamService
+	ResourceSvc  *service.ResourceService
+	DownloadSvc  *service.DownloadService
+	Providers    backend.Providers
+	Validator    protovalidate.Validator
+	Logger       log.Logger
+}
+
+// GRPCServers keeps the shared endpoint's private native gRPC server separate
+// from the optional legacy listener. Both run the same services and
+// interceptors. Private binds an ephemeral loopback listener that the shared
+// endpoint's reverse proxy dials; it is independent of the legacy listener's
+// address, TLS configuration, and flag, and exists whether or not the legacy
+// listener is enabled.
+type GRPCServers struct {
+	Private     *grpc.Server
+	PrivateAddr string
+	// PrivateLis holds the private listener so a caller that never starts
+	// the server can still close the socket: before Start registers the
+	// listener with grpc-go, Private.Stop does not close it.
+	PrivateLis net.Listener
+	Legacy     *grpc.Server
+}
+
+// Close releases the private socket without serving. Callers that hand the
+// servers to the application lifecycle must not call it; construction-failure
+// paths use it to avoid leaking the bound address.
+func (s *GRPCServers) Close() error {
+	if s.PrivateLis == nil {
+		return nil
+	}
+	err := s.PrivateLis.Close()
+	s.PrivateLis = nil
+	return err
+}
+
+func legacyGRPCListenerEnabled(c *conf.Server) bool {
+	return c.LegacyGrpcListener == nil || *c.LegacyGrpcListener
+}
+
+// NewGRPCServers builds the private native server for the shared endpoint and
+// the optional legacy listener, with the same services and interceptors.
+func NewGRPCServers(opts *Opts) (*GRPCServers, error) {
+	// Bind the private listener here so the shared endpoint's proxy knows its
+	// address at construction. Loopback-only, ephemeral: never public, never
+	// configurable, and independent of server.grpc.addr (which may carry TLS).
+	privateLis, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return nil, fmt.Errorf("binding the shared endpoint's private gRPC listener: %w", err)
+	}
+	private, err := newGRPCServer(opts, grpc.Listener(privateLis))
+	if err != nil {
+		_ = privateLis.Close()
+		return nil, err
+	}
+	servers := &GRPCServers{Private: private, PrivateAddr: privateLis.Addr().String(), PrivateLis: privateLis}
+	if legacyGRPCListenerEnabled(opts.ServerConfig) {
+		servers.Legacy, err = NewGRPCServer(opts)
+		if err != nil {
+			private.Server.Stop()
+			_ = servers.Close()
+			return nil, err
+		}
+	}
+	return servers, nil
+}
+
+// NewGRPCServer retains the existing native listener and its independent TLS.
+func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
+	c := opts.ServerConfig.GetGrpc()
+	var serverOpts []grpc.ServerOption
+	if c.GetNetwork() != "" {
+		serverOpts = append(serverOpts, grpc.Network(c.GetNetwork()))
+	}
+	if c.GetAddr() != "" {
+		serverOpts = append(serverOpts, grpc.Address(c.GetAddr()))
+	}
+	if tlsConf := c.GetTlsConfig(); tlsConf != nil {
+		cert, key := tlsConf.GetCertificate(), tlsConf.GetPrivateKey()
+		// Keep the legacy behavior for partial TLS configuration.
+		if cert != "" && key != "" {
+			pair, err := tls.LoadX509KeyPair(cert, key)
+			if err != nil {
+				return nil, fmt.Errorf("loading gRPC server TLS certificate: %w", err)
+			}
+			serverOpts = append(serverOpts, grpc.TLSConfig(&tls.Config{
+				Certificates: []tls.Certificate{pair}, MinVersion: tls.VersionTLS12,
+			}))
+		}
+	}
+	return newGRPCServer(opts, serverOpts...)
+}
+
+func newGRPCServer(settings *Opts, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+	c, authConf := settings.ServerConfig, settings.AuthConfig
+	byteService, rSvc := settings.ByteService, settings.ResourceSvc
+	providers, validator, logger := settings.Providers, settings.Validator, settings.Logger
 	// Parse the public key once on initialization instead of on every request
 	// TODO: implement jwks endpoint
 	publicKey, err := parsePublicKey(authConf, logger)
@@ -104,28 +204,9 @@ func NewGRPCServer(c *conf.Server, authConf *conf.Auth, byteService *service.Byt
 	// Since we track uploads / downloads we'll increase the buckets
 	grpc_prometheus.EnableHandlingTimeHistogram(grpc_prometheus.WithHistogramBuckets(prometheus.ExponentialBucketsRange(0.5, 60, 8)))
 
-	if c.Grpc.Network != "" {
-		opts = append(opts, grpc.Network(c.Grpc.Network))
-	}
-	if c.Grpc.Addr != "" {
-		opts = append(opts, grpc.Address(c.Grpc.Addr))
-	}
-	if c.Grpc.Timeout != nil {
-		opts = append(opts, grpc.Timeout(c.Grpc.Timeout.AsDuration()))
-	}
-	if tlsConf := c.Grpc.GetTlsConfig(); tlsConf != nil {
-		cert := tlsConf.GetCertificate()
-		privKey := tlsConf.GetPrivateKey()
-		if cert != "" && privKey != "" {
-			cert, err := tls.LoadX509KeyPair(cert, privKey)
-			if err != nil {
-				return nil, fmt.Errorf("loading gRPC server TLS certificate: %w", err)
-			}
-			opts = append(opts, grpc.TLSConfig(&tls.Config{
-				Certificates: []tls.Certificate{cert},
-				MinVersion:   tls.VersionTLS12, // gosec complains about insecure minimum version we use default value
-			}))
-		}
+	opts = append(opts, extraOpts...)
+	if c.GetGrpc().GetTimeout() != nil {
+		opts = append(opts, grpc.Timeout(c.GetGrpc().GetTimeout().AsDuration()))
 	}
 
 	srv := grpc.NewServer(opts...)
