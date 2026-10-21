@@ -99,9 +99,7 @@ var features = map[string]Feature{
 	"Shell changes attribution": {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI("shell.txt")}}},
 	"Partial commits":           {Checks: []Check{{scenarioPartial, checkBothCommitsCredited}}},
 	"Line ranges":               {Checks: []Check{{scenarioEditAndCommit, checkLineRanges("greeting.txt", 3)}}},
-	"Generated line counts": {
-		NotCovered: "neither the user nor the evidence can see the generated line counts yet",
-	},
+	"Generated line counts":     {Checks: []Check{{scenarioEditAndCommit, checkGeneratedLineCounts}}},
 
 	// User experience
 	"Welcome message":         {Checks: []Check{{scenarioEditAndCommit, checkWelcomeMessage}}},
@@ -194,6 +192,23 @@ func checkFileAttributedToAI(path string) func(s *Session) error {
 		}
 		return fmt.Errorf("the code changes do not list %s", path)
 	}
+}
+
+// checkGeneratedLineCounts verifies that the evidence reports the lines of
+// all the agent edits. Each net AI line came from an agent edit, so the
+// generated lines are at least the net AI lines.
+func checkGeneratedLineCounts(s *Session) error {
+	cc := evidence(s).CodeChanges
+	if cc == nil {
+		return errors.New("the evidence has no code changes")
+	}
+	if cc.AIGeneratedLinesAdded == 0 {
+		return errors.New("the evidence has no generated lines added")
+	}
+	if cc.AIGeneratedLinesAdded < cc.AILinesAdded {
+		return fmt.Errorf("%d generated lines added, fewer than the %d net AI lines added", cc.AIGeneratedLinesAdded, cc.AILinesAdded)
+	}
+	return nil
 }
 
 // hookMessage returns the first hook message of an event, or errNotCovered

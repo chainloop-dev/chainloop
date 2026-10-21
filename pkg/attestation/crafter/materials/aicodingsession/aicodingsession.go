@@ -255,7 +255,7 @@ type CodeChanges struct {
 	FilesModified int `json:"files_modified,omitempty"`
 	FilesCreated  int `json:"files_created,omitempty"`
 	FilesDeleted  int `json:"files_deleted,omitempty"`
-	// Net lines of the session's commits: the AI lines plus the human lines.
+	// Net lines of the session's commits (AI plus human); raw diff totals if a commit is unreadable.
 	LinesAdded   int `json:"lines_added,omitempty"`
 	LinesRemoved int `json:"lines_removed,omitempty"`
 	// Net committed lines attributed to the AI.

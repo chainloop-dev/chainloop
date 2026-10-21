@@ -170,11 +170,11 @@
         },
         "lines_added": {
           "type": "integer",
-          "description": "Net lines added by the session's commits: AI plus human lines"
+          "description": "Net lines added by the session's commits (AI plus human); raw diff totals if a commit is unreadable"
         },
         "lines_removed": {
           "type": "integer",
-          "description": "Net lines removed by the session's commits: AI plus human lines"
+          "description": "Net lines removed by the session's commits (AI plus human); raw diff totals if a commit is unreadable"
         },
         "ai_lines_added": {
           "type": "integer",
