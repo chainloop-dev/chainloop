@@ -167,7 +167,7 @@ controlplane:
   ## TLS configuration
   ##
   tls:
-    ## @param controlplane.tls.existingSecret Existing secret name containing TLS certificate to be used by the controlplane grpc server. NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
+    ## @param controlplane.tls.existingSecret Secret with tls.crt and tls.key for both listeners. Direct clients must use TLS. Public Ingress TLS termination remains separate. The legacy tlsConfig.secret.name value is also supported.
     existingSecret: ""
 
   ## @param controlplane.pluginsDir Directory where to look for plugins
@@ -345,11 +345,11 @@ controlplane:
     ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
     ##
     externalTrafficPolicy: Cluster
-    ## @extra controlplane.service.annotations Annotations for the shared HTTP and gRPC service. Traefik uses h2c for HTTP/2 upstream traffic.
+    ## @extra controlplane.service.annotations Annotations for the shared HTTP and gRPC service. Traefik uses h2c or HTTPS to match shared listener TLS.
     ##
     annotations:
       ## @skip controlplane.service.annotations.traefik.ingress.kubernetes.io/service.serversscheme
-      traefik.ingress.kubernetes.io/service.serversscheme: h2c
+      traefik.ingress.kubernetes.io/service.serversscheme: '{{ ternary "https" "h2c" (not (empty (include "controlplane.tls-secret-name" .))) }}'
     ## @param controlplane.service.extraPorts Extra ports to expose in controlplane service (normally used with the `sidecars` value)
     ##
     extraPorts: []
@@ -462,7 +462,7 @@ controlplane:
     ##
     annotations:
       ## @skip controlplane.ingress.annotations.nginx.ingress.kubernetes.io/backend-protocol
-      nginx.ingress.kubernetes.io/backend-protocol: GRPC
+      nginx.ingress.kubernetes.io/backend-protocol: '{{ ternary "GRPCS" "GRPC" (not (empty (include "controlplane.tls-secret-name" .))) }}'
       ## @skip controlplane.ingress.annotations.nginx.org/grpc-services
       nginx.org/grpc-services: '{{ include "chainloop.controlplane.fullname" . }}'
       ## @skip controlplane.ingress.annotations.nginx.org/http2
@@ -1077,7 +1077,7 @@ cas:
   ## TLS configuration
   ##
   tls:
-    ## @param cas.tls.existingSecret Existing secret name containing TLS certificate to be used by the cas grpc server. NOTE: When it's set it will disable secret creation. The secret must contains 2 keys: tls.crt and tls.key respectively containing the certificate and private key.
+    ## @param cas.tls.existingSecret Secret with tls.crt and tls.key for both listeners. Direct clients must use TLS. Public Ingress TLS termination remains separate. The legacy tlsConfig.secret.name value is also supported.
     existingSecret: ""
 
   ## @skip cas.serviceAccount
@@ -1129,11 +1129,11 @@ cas:
     ## ref http://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
     ##
     externalTrafficPolicy: Cluster
-    ## @extra cas.service.annotations Annotations for the shared HTTP and gRPC service. Traefik uses h2c for HTTP/2 upstream traffic.
+    ## @extra cas.service.annotations Annotations for the shared HTTP and gRPC service. Traefik uses h2c or HTTPS to match shared listener TLS.
     ##
     annotations:
       ## @skip cas.service.annotations.traefik.ingress.kubernetes.io/service.serversscheme
-      traefik.ingress.kubernetes.io/service.serversscheme: h2c
+      traefik.ingress.kubernetes.io/service.serversscheme: '{{ ternary "https" "h2c" (not (empty (include "cas.tls-secret-name" .))) }}'
     ## @param cas.service.extraPorts Extra ports to expose in cas service (normally used with the `sidecars` value)
     ##
     extraPorts: []
@@ -1252,7 +1252,7 @@ cas:
     annotations:
       ## @skip cas.ingress.annotations.nginx.ingress.kubernetes.io/backend-protocol
       ## Tell nginx Ingress Controller to expect gRPC traffic
-      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+      nginx.ingress.kubernetes.io/backend-protocol: '{{ ternary "GRPCS" "GRPC" (not (empty (include "cas.tls-secret-name" .))) }}'
       ## @skip cas.ingress.annotations.nginx.org/grpc-services
       nginx.org/grpc-services: '{{ include "chainloop.cas.fullname" . }}'
       ## @skip cas.ingress.annotations.nginx.org/http2

@@ -39,6 +39,7 @@ spec:
       port: {{ $port }}
       targetPort: http
       protocol: TCP
+      appProtocol: {{ if include "cas.tls-secret-name" . }}kubernetes.io/h2{{ else }}kubernetes.io/h2c{{ end }}
       {{- if and (or (eq .Values.cas.service.type "NodePort") (eq .Values.cas.service.type "LoadBalancer")) (not (empty .Values.cas.service.nodePorts.http)) }}
       nodePort: {{ .Values.cas.service.nodePorts.http }}
       {{- else if eq .Values.cas.service.type "ClusterIP" }}

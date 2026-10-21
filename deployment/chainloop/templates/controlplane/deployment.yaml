@@ -106,6 +106,9 @@ spec:
             httpGet:
               path: /statusz
               port: http
+              {{- if include "controlplane.tls-secret-name" . }}
+              scheme: HTTPS
+              {{- end }}
             failureThreshold: 10
             periodSeconds: 5
             initialDelaySeconds: 10
@@ -113,6 +116,9 @@ spec:
             httpGet:
               path: /statusz
               port: http
+              {{- if include "controlplane.tls-secret-name" . }}
+              scheme: HTTPS
+              {{- end }}
             failureThreshold: 10
             periodSeconds: 5
             initialDelaySeconds: 10
@@ -120,6 +126,9 @@ spec:
             httpGet:
               path: /statusz?readiness=1
               port: http
+              {{- if include "controlplane.tls-secret-name" . }}
+              scheme: HTTPS
+              {{- end }}
             periodSeconds: 5
           {{- if .Values.controlplane.lifecycleHooks }}
           lifecycle: {{- include "common.tplvalues.render" (dict "value" .Values.controlplane.lifecycleHooks "context" $) | nindent 12 }}
