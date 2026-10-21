@@ -150,6 +150,10 @@ func Enrich(sessionID string, ledgers map[string]*state.AILineAttribution, commi
 		changes.HumanLinesAdded += f.HumanLinesAdded
 		changes.HumanLinesRemoved += f.HumanLinesRemoved
 	}
+
+	// All the lines that the agent edits of the session wrote, also the ones
+	// that never reached a commit (spec issue-3639, R-011, D-011).
+	changes.AIGeneratedLinesAdded, changes.AIGeneratedLinesRemoved = self.GeneratedAdded, self.GeneratedRemoved
 }
 
 // fileSplit is the AI/human split of the changed lines of one file.

@@ -170,27 +170,35 @@
         },
         "lines_added": {
           "type": "integer",
-          "description": "Total lines added"
+          "description": "Net lines added by the session's commits (AI plus human); raw diff totals if a commit is unreadable"
         },
         "lines_removed": {
           "type": "integer",
-          "description": "Total lines removed"
+          "description": "Net lines removed by the session's commits (AI plus human); raw diff totals if a commit is unreadable"
         },
         "ai_lines_added": {
           "type": "integer",
-          "description": "Lines added attributed to AI"
+          "description": "Net committed lines added, attributed to AI"
         },
         "ai_lines_removed": {
           "type": "integer",
-          "description": "Lines removed attributed to AI"
+          "description": "Net committed lines removed, attributed to AI"
         },
         "human_lines_added": {
           "type": "integer",
-          "description": "Lines added attributed to human"
+          "description": "Net committed lines added, attributed to human"
         },
         "human_lines_removed": {
           "type": "integer",
-          "description": "Lines removed attributed to human"
+          "description": "Net committed lines removed, attributed to human"
+        },
+        "ai_generated_lines_added": {
+          "type": "integer",
+          "description": "All lines added by the agent edits of the session, committed or not; not net"
+        },
+        "ai_generated_lines_removed": {
+          "type": "integer",
+          "description": "All lines removed by the agent edits of the session, committed or not; not net"
         },
         "files": {
           "type": "array",
