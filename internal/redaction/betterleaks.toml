@@ -45,6 +45,13 @@ regexes = [
 ]
 
 [[allowlists]]
+description = "Exact password-field CSS selectors used by login helpers"
+targetRules = ["generic-password"]
+# Match only these complete selectors, including JSON-escaped quotes in tool
+# results. Never allow the whole line: it can carry other password assignments.
+regexes = ['''^(?:\[id=\\*"1-password\\*"\]|input\[name=\\*"password\\*"\])$''']
+
+[[allowlists]]
 description = "Placeholders in documentation, such as Bearer YOUR_API_TOKEN"
 targetRules = ["curl-auth-header"]
 regexes = ['''^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$''']

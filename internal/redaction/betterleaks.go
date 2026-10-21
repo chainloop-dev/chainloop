@@ -79,7 +79,7 @@ var rulesConfig string
 // betterleaks.toml, the betterleaks version, or the handling of findings in
 // this file changes what gets redacted, so that policies can tell placeholders
 // from different rulesets apart. Version 1 is the plain default ruleset.
-const RulesetVersion = 3
+const RulesetVersion = 4
 
 var (
 	defaultScanner = sync.OnceValues(newBetterleaksScanner)

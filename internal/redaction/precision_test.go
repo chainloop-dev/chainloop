@@ -17,6 +17,7 @@ package redaction
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -164,6 +165,50 @@ func TestRulesConfigKeepsNonSecrets(t *testing.T) {
 	}
 }
 
+// Codex tool results carry JSON-encoded command output inside a text leaf.
+// Check both that shape and plain output, with a real password beside the
+// selector so the exemption cannot hide other findings in the same leaf.
+func TestRedactPasswordFieldSelectors(t *testing.T) {
+	scanner, err := DefaultScanner()
+	require.NoError(t, err)
+	unfiltered := defaultRulesScanner(t)
+
+	for _, selector := range []string{`[id="1-password"]`, `input[name="password"]`} {
+		for _, encoded := range []bool{false, true} {
+			name := selector
+			if encoded {
+				name += "/json tool output"
+			}
+			t.Run(name, func(t *testing.T) {
+				text := "const AUTH0 = {\n  email: 'input[name=\"login\"]',\n  password: '" + selector + "',\n};\n"
+				wrap := func(text string) string {
+					if !encoded {
+						return text
+					}
+					b, err := json.Marshal(map[string]string{"output": text})
+					require.NoError(t, err)
+					return string(b)
+				}
+
+				_, report, err := New(unfiltered).RedactText(context.Background(), wrap(text))
+				require.NoError(t, err)
+				require.Contains(t, report.RuleIDs(), genericPasswordRuleID, "the original ruleset must detect the selector")
+
+				got, report, err := New(scanner).RedactText(context.Background(), wrap(text))
+				require.NoError(t, err)
+				assert.Equal(t, wrap(text), got)
+				assert.False(t, report.Changed())
+
+				text += "user: " + sampleEmail + "\npassword: " + samplePassword + ";\n"
+				got, report, err = New(scanner).RedactText(context.Background(), wrap(text))
+				require.NoError(t, err)
+				assert.Equal(t, wrap(strings.ReplaceAll(text, samplePassword, DefaultPlaceholder(genericPasswordRuleID))), got)
+				assert.Equal(t, map[string]int{genericPasswordRuleID: 1}, report.ByRule)
+			})
+		}
+	}
+}
+
 // TestRulesConfigStillRedactsSecrets is the counterpart of
 // TestRulesConfigKeepsNonSecrets: a real secret of each shape is still
 // replaced.
@@ -203,6 +248,18 @@ func TestRulesConfigStillRedactsSecrets(t *testing.T) {
 			text:     "curl -H 'Authorization: Bearer " + sampleAPIKey + "' https://api.example.com\n",
 			secret:   sampleAPIKey,
 			wantRule: "curl-auth-header",
+		},
+		{
+			name:     "password with a selector suffix",
+			text:     "user: " + sampleEmail + "\npassword: '" + samplePassword + `[id="1-password"]'` + "\n",
+			secret:   samplePassword,
+			wantRule: genericPasswordRuleID,
+		},
+		{
+			name:     "password with a selector prefix",
+			text:     "user: " + sampleEmail + "\npassword: '" + `input[name="password"]` + samplePassword + "'\n",
+			secret:   samplePassword,
+			wantRule: genericPasswordRuleID,
 		},
 		{
 			name:     "password with a logical operator in it",
