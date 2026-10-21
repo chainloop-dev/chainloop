@@ -1,5 +1,10 @@
 FROM golang:1.27.3@sha256:957861185dbf29d93668ace41e011d091c6e779953d47f0316ef2cc58e28fe2b AS builder
-RUN mkdir -p /.config/chainloop /rootfs/tmp && chmod 1777 /rootfs/tmp
+# Refresh the Debian CA bundle in the builder so the trust store copied into the
+# scratch image reflects the latest distrust list, rather than the (frozen) bundle
+# shipped in the pinned builder digest.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /.config/chainloop /rootfs/tmp && chmod 1777 /rootfs/tmp
 
 FROM scratch
 
