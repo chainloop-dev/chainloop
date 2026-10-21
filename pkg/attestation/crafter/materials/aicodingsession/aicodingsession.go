@@ -252,19 +252,19 @@ type FileChange struct {
 
 // CodeChanges summarizes code modifications made during the session.
 type CodeChanges struct {
-	FilesModified     int `json:"files_modified,omitempty"`
-	FilesCreated      int `json:"files_created,omitempty"`
-	FilesDeleted      int `json:"files_deleted,omitempty"`
-	LinesAdded        int `json:"lines_added,omitempty"`
-	LinesRemoved      int `json:"lines_removed,omitempty"`
-	AILinesAdded      int `json:"ai_lines_added,omitempty"`
-	AILinesRemoved    int `json:"ai_lines_removed,omitempty"`
+	FilesModified int `json:"files_modified,omitempty"`
+	FilesCreated  int `json:"files_created,omitempty"`
+	FilesDeleted  int `json:"files_deleted,omitempty"`
+	// Net lines of the session's commits: the AI lines plus the human lines.
+	LinesAdded   int `json:"lines_added,omitempty"`
+	LinesRemoved int `json:"lines_removed,omitempty"`
+	// Net committed lines attributed to the AI.
+	AILinesAdded   int `json:"ai_lines_added,omitempty"`
+	AILinesRemoved int `json:"ai_lines_removed,omitempty"`
+	// Net committed lines attributed to a human.
 	HumanLinesAdded   int `json:"human_lines_added,omitempty"`
 	HumanLinesRemoved int `json:"human_lines_removed,omitempty"`
-	// AIGeneratedLinesAdded and AIGeneratedLinesRemoved are the lines that all
-	// the agent edits of the session added and removed, also the ones that
-	// never reached a commit. Compare them with AILinesAdded and
-	// AILinesRemoved to see how much of the generated code the session kept.
+	// All lines of the session's agent edits, committed or not; not net.
 	AIGeneratedLinesAdded   int          `json:"ai_generated_lines_added,omitempty"`
 	AIGeneratedLinesRemoved int          `json:"ai_generated_lines_removed,omitempty"`
 	Files                   []FileChange `json:"files,omitempty"`
