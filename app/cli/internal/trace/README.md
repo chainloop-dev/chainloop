@@ -85,16 +85,17 @@ Why not Yes:
 
 What the user sees in the agent.
 
+The Codex welcome message and session link after push were verified manually in the interactive CLI 0.163.0. Codex runs its session-start hook after the first user message, so the welcome message appears then. The local-mode E2E suite does not verify these interactive messages.
+
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
 |---------|---------------|-------------|--------|--------------|------------|---|---|
-| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No | No | Unknown |
-| Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop. | Yes | No | No | No | No | Unknown |
+| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No | No | Yes |
+| Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop. | Yes | No | No | No | No | Yes |
 | Credentials warning | At session start, in control-plane mode, the user is told when the control plane does not accept the CLI credentials (for example, an expired token), so the push will not upload the session. The hook uses the same check as `chainloop trace init`. An unreachable control plane, or a check that takes more than 2 seconds, shows no warning. | Yes | Partial | Partial | Partial | No | Unknown |
 
 Why not Yes:
 
-- **Welcome message, Codex:** Codex does not report hook messages in its headless output, so the suite cannot verify the banner.
-- **Session link after push and credentials warning, Codex:** these checks need a control plane. The suite uses local storage only.
+- **Credentials warning, Codex:** this check needs a control plane. The suite uses local storage only, and the warning has not been verified manually.
 - **Welcome message, Cursor and OpenCode:** the provider gives the session-start context to the model only. It has no channel that shows a message to the user at session start, so the welcome message is dropped.
 - **Credentials warning, Cursor and OpenCode:** the provider has no channel to the user at session start. The model is told to tell the user, so the warning depends on the model.
 - **Session link after push, Cursor:** the `postToolUse` hook runs after a shell command, but its response has no field that Cursor shows to the user. The link stays pending until it expires.
