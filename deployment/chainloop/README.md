@@ -286,15 +286,11 @@ cas:
     existingSecret: cas-tls
 ```
 
-For each component, the chart reuses that Secret and its existing mount for both `server.http.tls_config` and `server.grpc.tls_config`.
-The legacy `tlsConfig.secret.name` setting also enables both listeners; `tls.existingSecret` takes precedence when both are set.
-Startup, readiness, and liveness probes switch to HTTPS. These settings also apply when no Ingress is enabled.
-The chart selects `GRPCS` for ingress-nginx, adds `nginx.org/ssl-services` for F5 NGINX, and selects the `https` service scheme for Traefik.
-Explicit annotation overrides take precedence. Configure the controller's certificate trust as required.
-Other controllers need their own upstream protocol settings.
+With pod TLS enabled, direct HTTP clients must use HTTPS and direct gRPC clients must use TLS, whether or not an Ingress is enabled.
+The legacy `tlsConfig.secret.name` setting is also supported; `tls.existingSecret` takes precedence when both are set.
 
-The shared Service ports derive `appProtocol` from the same TLS setting: `kubernetes.io/h2` with TLS and `kubernetes.io/h2c` without TLS.
-When routing through a Gateway, Gateway-to-pod TLS also requires infrastructure-managed `BackendTLSPolicy` resources with certificate hostname validation and CA trust. The Service protocol alone does not configure that trust or upstream TLS.
+The chart configures ingress-nginx, F5 NGINX, and Traefik to connect to the pods over TLS. Explicit annotation overrides take precedence.
+Configure your ingress controller to trust the pod certificates. For other controllers or a Gateway, also configure TLS connections to the pods and certificate validation in your infrastructure.
 
 Public TLS termination remains controlled by `ingress.tls` and `ingressAPI.tls`, independently of pod TLS.
 When upgrading a deployment that already sets a pod TLS Secret for gRPC, the shared HTTP listener also switches to TLS. Direct clients of that listener must use TLS; HTTP requests must use HTTPS.
