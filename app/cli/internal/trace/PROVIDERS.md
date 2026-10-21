@@ -159,9 +159,9 @@ The handlers find these interfaces with a type assertion. A provider without one
 
 | Interface | Feature | Implemented by | What to do |
 |-----------|---------|----------------|------------|
-| `trace.SkillTracker` | Skills tracking | Claude, OpenCode | `NewSkillLoads`: return the skill folders that the session loaded since the last call (from the hook input or the transcript). `SessionSkills`: return the skill uses from the copied session data, in the order of the first use. `SkillRoots`: return the plugin, organization, user, and project skill folders of the agent. |
-| `trace.SpecCopyReplacer` | Spec source pointers | Claude | Replace each exact copy of a spec source in the raw session with `pointer.New(digest)`. Report the result per finder. |
-| `trace.PastedImageFinder` | Pasted image pointers | Claude | Return each distinct pasted image of the raw session, with its digest, media type, and number. |
+| `trace.SkillTracker` | Skills tracking | Claude, OpenCode, Codex | `NewSkillLoads`: return the skill folders that the session loaded since the last call (from the hook input or the transcript). `SessionSkills`: return the skill uses from the copied session data, in the order of the first use. `SkillRoots`: return the plugin, organization, user, and project skill folders of the agent. |
+| `trace.SpecCopyReplacer` | Spec source pointers | Claude, Codex | Replace each exact copy of a spec source in the raw session with `pointer.New(digest)`. Report the result per finder. |
+| `trace.PastedImageFinder` | Pasted image pointers | Claude, Codex | Return each distinct pasted image of the raw session, with its digest, media type, and number. |
 
 Add a compile-time check for each one, for example `var _ trace.SkillTracker = (*Provider)(nil)`.
 
