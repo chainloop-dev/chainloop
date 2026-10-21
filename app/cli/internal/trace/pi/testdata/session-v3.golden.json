@@ -1,0 +1,259 @@
+{
+  "chainloop.material.evidence.id": "CHAINLOOP_AI_CODING_SESSION",
+  "schema": "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
+  "data": {
+    "schema_version": "v1",
+    "agent": {
+      "name": "pi",
+      "version": "0.80.10"
+    },
+    "session": {
+      "id": "pi-session-1",
+      "started_at": "2026-01-02T03:04:00Z",
+      "ended_at": "2026-01-02T03:04:18Z",
+      "duration_seconds": 18
+    },
+    "model": {
+      "primary": "gemini-2.5-pro",
+      "provider": "google",
+      "models_used": [
+        "claude-sonnet-4",
+        "gemini-2.5-pro",
+        "gpt-5"
+      ]
+    },
+    "usage": {
+      "input_tokens": 300,
+      "output_tokens": 60,
+      "total_tokens": 395,
+      "cache_read_input_tokens": 30,
+      "cache_creation_input_tokens": 7,
+      "estimated_cost_usd": 0.3
+    },
+    "tools_used": {
+      "summary": [
+        {
+          "tool_name": "bash",
+          "invocation_count": 1
+        },
+        {
+          "tool_name": "edit",
+          "invocation_count": 2
+        },
+        {
+          "tool_name": "write",
+          "invocation_count": 1
+        }
+      ],
+      "total_invocations": 4
+    },
+    "conversation": {
+      "total_messages": 7,
+      "user_messages": 3,
+      "assistant_messages": 4
+    },
+    "raw_session": {
+      "main": [
+        {
+          "type": "message",
+          "id": "u0000001",
+          "parentId": null,
+          "timestamp": "2026-01-02T03:04:01Z",
+          "message": {
+            "role": "user",
+            "content": "start"
+          }
+        },
+        {
+          "type": "message",
+          "id": "a0000001",
+          "parentId": "u0000001",
+          "timestamp": "2026-01-02T03:04:02Z",
+          "message": {
+            "role": "assistant",
+            "provider": "anthropic",
+            "model": "claude-sonnet-4",
+            "content": [
+              {
+                "type": "text",
+                "text": "working"
+              },
+              {
+                "type": "toolCall",
+                "id": "call-1",
+                "name": "edit",
+                "arguments": {
+                  "path": "a.go"
+                }
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 20,
+              "cacheRead": 10,
+              "cacheWrite": 5,
+              "totalTokens": 135,
+              "cost": {
+                "total": 0.1
+              }
+            },
+            "stopReason": "toolUse"
+          }
+        },
+        {
+          "type": "branch_summary",
+          "id": "b0000001",
+          "parentId": "a0000001",
+          "timestamp": "2026-01-02T03:04:07Z",
+          "fromId": "x0000001",
+          "summary": "left the abandoned branch"
+        },
+        {
+          "type": "message",
+          "id": "u0000003",
+          "parentId": "m0000001",
+          "timestamp": "2026-01-02T03:04:09Z",
+          "message": {
+            "role": "user",
+            "content": "continue"
+          }
+        },
+        {
+          "type": "message",
+          "id": "a0000003",
+          "parentId": "u0000003",
+          "timestamp": "2026-01-02T03:04:10Z",
+          "message": {
+            "role": "assistant",
+            "provider": "openai",
+            "model": "gpt-5",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call-2",
+                "name": "bash",
+                "arguments": {
+                  "command": "go test ./..."
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "call-3",
+                "name": "edit",
+                "arguments": {
+                  "path": "b.go"
+                }
+              }
+            ],
+            "usage": {
+              "input": 200,
+              "output": 40,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 260,
+              "cost": {
+                "total": 0.2
+              }
+            },
+            "stopReason": "toolUse"
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c0000001",
+          "parentId": "a0000003",
+          "timestamp": "2026-01-02T03:04:11Z",
+          "summary": "summary",
+          "firstKeptEntryId": "u0000003",
+          "tokensBefore": 1000
+        },
+        {
+          "type": "custom_message",
+          "id": "cm000002",
+          "parentId": "m0000002",
+          "timestamp": "2026-01-02T03:04:14Z",
+          "customType": "chainloop-instruction",
+          "content": "hidden context",
+          "display": false
+        },
+        {
+          "type": "message",
+          "id": "u0000004",
+          "parentId": "cm000002",
+          "timestamp": "2026-01-02T03:04:15Z",
+          "message": {
+            "role": "user",
+            "content": "finish"
+          }
+        },
+        {
+          "type": "message",
+          "id": "a0000004",
+          "parentId": "u0000004",
+          "timestamp": "2026-01-02T03:04:16Z",
+          "message": {
+            "role": "assistant",
+            "provider": "openai",
+            "model": "gpt-5",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call-4",
+                "name": "write",
+                "arguments": {
+                  "path": "c.go"
+                }
+              }
+            ],
+            "usage": {
+              "input": -1,
+              "output": 1.5,
+              "cacheRead": "bad",
+              "cacheWrite": 2,
+              "totalTokens": 999999999999999999999999999,
+              "cost": {
+                "total": "bad"
+              }
+            },
+            "stopReason": "error",
+            "errorMessage": "failed"
+          }
+        },
+        {
+          "type": "future_entry",
+          "id": "q0000001",
+          "parentId": "a0000004",
+          "timestamp": "2026-01-02T03:04:17Z",
+          "unknown": {
+            "kept": true
+          }
+        },
+        {
+          "type": "message",
+          "id": "a0000005",
+          "parentId": "q0000001",
+          "timestamp": "2026-01-02T03:04:18Z",
+          "message": {
+            "role": "assistant",
+            "provider": "google",
+            "model": "gemini-2.5-pro",
+            "content": [
+              {
+                "type": "text",
+                "text": "aborted response"
+              }
+            ],
+            "stopReason": "aborted"
+          }
+        }
+      ]
+    },
+    "warnings": [
+      "Pi entry on line 17 has invalid usage.input; ignored",
+      "Pi entry on line 17 has invalid usage.output; ignored",
+      "Pi entry on line 17 has invalid usage.cacheRead; ignored",
+      "Pi entry on line 17 has invalid usage.totalTokens; ignored",
+      "Pi entry on line 17 has invalid usage.cost.total; ignored"
+    ]
+  }
+}
