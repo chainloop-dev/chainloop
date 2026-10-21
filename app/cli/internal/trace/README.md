@@ -1,6 +1,6 @@
 # Chainloop Trace: agent support
 
-Chainloop Trace records the sessions of AI coding agents as `CHAINLOOP_AI_CODING_SESSION` evidence. Each agent is a provider in this package: `claude/`, `cursor/` and `opencode/`. The interfaces are in `provider.go`, and the registry is in `providers/`. One provider covers OpenCode 1.x and OpenCode 2: it detects the version at runtime.
+Chainloop Trace records the sessions of AI coding agents as `CHAINLOOP_AI_CODING_SESSION` evidence. Each agent is a provider in this package: `claude/`, `cursor/` and `opencode/`. The interfaces are in `provider.go`, and the registry is in `providers/`. To add a provider, follow [PROVIDERS.md](PROVIDERS.md). One provider covers OpenCode 1.x and OpenCode 2: it detects the version at runtime.
 
 This page lists the features of Trace, by area, and tells which agents support each one. **Keep it current.** When you add or change a provider, or add or change a feature of Trace, update this page in the same pull request.
 
