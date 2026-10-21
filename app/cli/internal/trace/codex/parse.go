@@ -109,7 +109,11 @@ func (p *Provider) ParseSession(ctx context.Context, opts *trace.ParseOpts) (*ai
 			d.Warnings = append(d.Warnings, fmt.Sprintf("invalid Codex rollout record on line %d", line))
 			continue
 		}
-		d.RawSession["main"] = append(d.RawSession["main"], append(json.RawMessage(nil), raw...))
+		entry, err := transcriptEntry(e, payload, append(json.RawMessage(nil), raw...), parser.model, line)
+		if err != nil {
+			return nil, err
+		}
+		d.RawSession["main"] = append(d.RawSession["main"], entry)
 		if err := parser.consume(e, payload, line); err != nil {
 			return nil, err
 		}

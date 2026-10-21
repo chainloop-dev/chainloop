@@ -49,7 +49,9 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 	}
 	rec, err := store.LoadSessionRecord(loc.SessionID)
 	if err != nil {
-		return fmt.Errorf("copy Codex session: load session record: %w", err)
+		// The record is an optional storage hint. A damaged hint must not
+		// prevent copying a transcript validated against configured storage.
+		rec = nil
 	}
 	home := codexHome()
 	if rec != nil && rec.CodexStorageRoot != "" {
@@ -154,8 +156,18 @@ func saveStorageRoot(store *state.Store, rec *state.SessionRecord, home string) 
 	if err != nil {
 		return err
 	}
-	rec.CodexStorageRoot = root
-	return store.SaveSessionRecord(rec)
+	// Reload after discovery and validation so an overlapping hook's checkout
+	// registrations and active state are not replaced by the earlier snapshot.
+	current, err := store.LoadSessionRecord(rec.SessionID)
+	if err != nil || current == nil {
+		// This optional hint must not recreate a deleted or damaged record.
+		return nil
+	}
+	if current.CodexStorageRoot != "" {
+		return nil
+	}
+	current.CodexStorageRoot = root
+	return store.SaveSessionRecord(current)
 }
 
 // Resolve symlinks as well as lexical traversal before opening a hook path.

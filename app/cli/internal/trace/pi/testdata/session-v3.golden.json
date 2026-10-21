@@ -55,38 +55,47 @@
     "raw_session": {
       "main": [
         {
-          "type": "message",
           "id": "u0000001",
-          "parentId": null,
-          "timestamp": "2026-01-02T03:04:01Z",
           "message": {
-            "role": "user",
-            "content": "start"
-          }
+            "content": "start",
+            "role": "user"
+          },
+          "parentId": null,
+          "source_event": {
+            "type": "message",
+            "id": "u0000001",
+            "parentId": null,
+            "timestamp": "2026-01-02T03:04:01Z",
+            "message": {
+              "role": "user",
+              "content": "start"
+            }
+          },
+          "timestamp": "2026-01-02T03:04:01Z",
+          "type": "user",
+          "uuid": "u0000001"
         },
         {
-          "type": "message",
           "id": "a0000001",
-          "parentId": "u0000001",
-          "timestamp": "2026-01-02T03:04:02Z",
           "message": {
-            "role": "assistant",
-            "provider": "anthropic",
-            "model": "claude-sonnet-4",
             "content": [
               {
-                "type": "text",
-                "text": "working"
+                "text": "working",
+                "type": "text"
               },
               {
-                "type": "toolCall",
                 "id": "call-1",
-                "name": "edit",
-                "arguments": {
+                "input": {
                   "path": "a.go"
-                }
+                },
+                "name": "edit",
+                "type": "tool_use"
               }
             ],
+            "model": "claude-sonnet-4",
+            "provider": "anthropic",
+            "role": "assistant",
+            "stopReason": "toolUse",
             "usage": {
               "input": 100,
               "output": 20,
@@ -96,9 +105,48 @@
               "cost": {
                 "total": 0.1
               }
-            },
-            "stopReason": "toolUse"
-          }
+            }
+          },
+          "parentId": "u0000001",
+          "source_event": {
+            "type": "message",
+            "id": "a0000001",
+            "parentId": "u0000001",
+            "timestamp": "2026-01-02T03:04:02Z",
+            "message": {
+              "role": "assistant",
+              "provider": "anthropic",
+              "model": "claude-sonnet-4",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "working"
+                },
+                {
+                  "type": "toolCall",
+                  "id": "call-1",
+                  "name": "edit",
+                  "arguments": {
+                    "path": "a.go"
+                  }
+                }
+              ],
+              "usage": {
+                "input": 100,
+                "output": 20,
+                "cacheRead": 10,
+                "cacheWrite": 5,
+                "totalTokens": 135,
+                "cost": {
+                  "total": 0.1
+                }
+              },
+              "stopReason": "toolUse"
+            }
+          },
+          "timestamp": "2026-01-02T03:04:02Z",
+          "type": "assistant",
+          "uuid": "a0000001"
         },
         {
           "type": "branch_summary",
@@ -109,42 +157,51 @@
           "summary": "left the abandoned branch"
         },
         {
-          "type": "message",
           "id": "u0000003",
-          "parentId": "m0000001",
-          "timestamp": "2026-01-02T03:04:09Z",
           "message": {
-            "role": "user",
-            "content": "continue"
-          }
+            "content": "continue",
+            "role": "user"
+          },
+          "parentId": "m0000001",
+          "source_event": {
+            "type": "message",
+            "id": "u0000003",
+            "parentId": "m0000001",
+            "timestamp": "2026-01-02T03:04:09Z",
+            "message": {
+              "role": "user",
+              "content": "continue"
+            }
+          },
+          "timestamp": "2026-01-02T03:04:09Z",
+          "type": "user",
+          "uuid": "u0000003"
         },
         {
-          "type": "message",
           "id": "a0000003",
-          "parentId": "u0000003",
-          "timestamp": "2026-01-02T03:04:10Z",
           "message": {
-            "role": "assistant",
-            "provider": "openai",
-            "model": "gpt-5",
             "content": [
               {
-                "type": "toolCall",
                 "id": "call-2",
-                "name": "bash",
-                "arguments": {
+                "input": {
                   "command": "go test ./..."
-                }
+                },
+                "name": "bash",
+                "type": "tool_use"
               },
               {
-                "type": "toolCall",
                 "id": "call-3",
-                "name": "edit",
-                "arguments": {
+                "input": {
                   "path": "b.go"
-                }
+                },
+                "name": "edit",
+                "type": "tool_use"
               }
             ],
+            "model": "gpt-5",
+            "provider": "openai",
+            "role": "assistant",
+            "stopReason": "toolUse",
             "usage": {
               "input": 200,
               "output": 40,
@@ -154,9 +211,52 @@
               "cost": {
                 "total": 0.2
               }
-            },
-            "stopReason": "toolUse"
-          }
+            }
+          },
+          "parentId": "u0000003",
+          "source_event": {
+            "type": "message",
+            "id": "a0000003",
+            "parentId": "u0000003",
+            "timestamp": "2026-01-02T03:04:10Z",
+            "message": {
+              "role": "assistant",
+              "provider": "openai",
+              "model": "gpt-5",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call-2",
+                  "name": "bash",
+                  "arguments": {
+                    "command": "go test ./..."
+                  }
+                },
+                {
+                  "type": "toolCall",
+                  "id": "call-3",
+                  "name": "edit",
+                  "arguments": {
+                    "path": "b.go"
+                  }
+                }
+              ],
+              "usage": {
+                "input": 200,
+                "output": 40,
+                "cacheRead": 20,
+                "cacheWrite": 0,
+                "totalTokens": 260,
+                "cost": {
+                  "total": 0.2
+                }
+              },
+              "stopReason": "toolUse"
+            }
+          },
+          "timestamp": "2026-01-02T03:04:10Z",
+          "type": "assistant",
+          "uuid": "a0000003"
         },
         {
           "type": "compaction",
@@ -177,34 +277,44 @@
           "display": false
         },
         {
-          "type": "message",
           "id": "u0000004",
-          "parentId": "cm000002",
-          "timestamp": "2026-01-02T03:04:15Z",
           "message": {
-            "role": "user",
-            "content": "finish"
-          }
+            "content": "finish",
+            "role": "user"
+          },
+          "parentId": "cm000002",
+          "source_event": {
+            "type": "message",
+            "id": "u0000004",
+            "parentId": "cm000002",
+            "timestamp": "2026-01-02T03:04:15Z",
+            "message": {
+              "role": "user",
+              "content": "finish"
+            }
+          },
+          "timestamp": "2026-01-02T03:04:15Z",
+          "type": "user",
+          "uuid": "u0000004"
         },
         {
-          "type": "message",
           "id": "a0000004",
-          "parentId": "u0000004",
-          "timestamp": "2026-01-02T03:04:16Z",
           "message": {
-            "role": "assistant",
-            "provider": "openai",
-            "model": "gpt-5",
             "content": [
               {
-                "type": "toolCall",
                 "id": "call-4",
-                "name": "write",
-                "arguments": {
+                "input": {
                   "path": "c.go"
-                }
+                },
+                "name": "write",
+                "type": "tool_use"
               }
             ],
+            "errorMessage": "failed",
+            "model": "gpt-5",
+            "provider": "openai",
+            "role": "assistant",
+            "stopReason": "error",
             "usage": {
               "input": -1,
               "output": 1.5,
@@ -214,10 +324,45 @@
               "cost": {
                 "total": "bad"
               }
-            },
-            "stopReason": "error",
-            "errorMessage": "failed"
-          }
+            }
+          },
+          "parentId": "u0000004",
+          "source_event": {
+            "type": "message",
+            "id": "a0000004",
+            "parentId": "u0000004",
+            "timestamp": "2026-01-02T03:04:16Z",
+            "message": {
+              "role": "assistant",
+              "provider": "openai",
+              "model": "gpt-5",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call-4",
+                  "name": "write",
+                  "arguments": {
+                    "path": "c.go"
+                  }
+                }
+              ],
+              "usage": {
+                "input": -1,
+                "output": 1.5,
+                "cacheRead": "bad",
+                "cacheWrite": 2,
+                "totalTokens": 999999999999999999999999999,
+                "cost": {
+                  "total": "bad"
+                }
+              },
+              "stopReason": "error",
+              "errorMessage": "failed"
+            }
+          },
+          "timestamp": "2026-01-02T03:04:16Z",
+          "type": "assistant",
+          "uuid": "a0000004"
         },
         {
           "type": "future_entry",
@@ -229,22 +374,41 @@
           }
         },
         {
-          "type": "message",
           "id": "a0000005",
-          "parentId": "q0000001",
-          "timestamp": "2026-01-02T03:04:18Z",
           "message": {
-            "role": "assistant",
-            "provider": "google",
-            "model": "gemini-2.5-pro",
             "content": [
               {
-                "type": "text",
-                "text": "aborted response"
+                "text": "aborted response",
+                "type": "text"
               }
             ],
+            "model": "gemini-2.5-pro",
+            "provider": "google",
+            "role": "assistant",
             "stopReason": "aborted"
-          }
+          },
+          "parentId": "q0000001",
+          "source_event": {
+            "type": "message",
+            "id": "a0000005",
+            "parentId": "q0000001",
+            "timestamp": "2026-01-02T03:04:18Z",
+            "message": {
+              "role": "assistant",
+              "provider": "google",
+              "model": "gemini-2.5-pro",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "aborted response"
+                }
+              ],
+              "stopReason": "aborted"
+            }
+          },
+          "timestamp": "2026-01-02T03:04:18Z",
+          "type": "assistant",
+          "uuid": "a0000005"
         }
       ]
     },

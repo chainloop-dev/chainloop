@@ -5,6 +5,7 @@
         "hooks": [
           {
             "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex post-tool-use'",
+            "commandWindows": "cmd.exe /d /s /c \"where chainloop >nul 2>nul & if errorlevel 1 (exit /b 0) else (chainloop trace hook codex post-tool-use)\"",
             "type": "command"
           }
         ],
@@ -16,6 +17,7 @@
         "hooks": [
           {
             "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex pre-tool-use'",
+            "commandWindows": "cmd.exe /d /s /c \"where chainloop >nul 2>nul & if errorlevel 1 (exit /b 0) else (chainloop trace hook codex pre-tool-use)\"",
             "type": "command"
           }
         ],
@@ -27,6 +29,7 @@
         "hooks": [
           {
             "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex session-end'",
+            "commandWindows": "cmd.exe /d /s /c \"where chainloop >nul 2>nul & if errorlevel 1 (exit /b 0) else (chainloop trace hook codex session-end)\"",
             "type": "command"
           }
         ]
@@ -37,6 +40,7 @@
         "hooks": [
           {
             "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex session-start'",
+            "commandWindows": "cmd.exe /d /s /c \"where chainloop >nul 2>nul & if errorlevel 1 (exit /b 0) else (chainloop trace hook codex session-start)\"",
             "type": "command"
           }
         ]
@@ -47,6 +51,7 @@
         "hooks": [
           {
             "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex user-prompt-submit'",
+            "commandWindows": "cmd.exe /d /s /c \"where chainloop >nul 2>nul & if errorlevel 1 (exit /b 0) else (chainloop trace hook codex user-prompt-submit)\"",
             "type": "command"
           }
         ]

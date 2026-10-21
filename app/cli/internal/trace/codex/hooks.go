@@ -33,6 +33,7 @@ const (
 	settingsFile = ".codex/hooks.json"
 	// Skip tracing when the CLI is missing, before any Go handler can run.
 	hookCommandPrefix = "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec "
+	windowsHookPrefix = `cmd.exe /d /s /c "where chainloop >nul 2>nul & if errorlevel 1 (exit /b 0) else (`
 
 	// Codex hook event names.
 	eventSessionStart     = "SessionStart"
@@ -111,7 +112,7 @@ func (p *Provider) installHookEvents(repoRoot string, events []hookEvent) error 
 		changed = removeHookEntry(hooks, eventSessionEnd)
 	}
 	for _, h := range events {
-		if addHookEntry(hooks, h.event, hookCommandPrefix+h.command+"'", h.matcher) {
+		if addHookEntry(hooks, h.event, h.command, h.matcher) {
 			changed = true
 		}
 	}
@@ -252,7 +253,7 @@ func addHookEntry(hooks map[string]any, event, command, matcher string) bool {
 		existingMatcher, _ := group["matcher"].(string)
 		if len(handlers) == 1 && existingMatcher == matcher {
 			handler, _ := handlers[0].(map[string]any)
-			if handler["command"] == command {
+			if handler["command"] == hookCommandPrefix+command+"'" && handler["commandWindows"] == windowsHookPrefix+command+`)"` {
 				return false
 			}
 		}
@@ -267,8 +268,9 @@ func buildHookEntry(command, matcher string) map[string]any {
 	entry := map[string]any{
 		"hooks": []any{
 			map[string]any{
-				"type":    "command",
-				"command": command,
+				"type":           "command",
+				"command":        hookCommandPrefix + command + "'",
+				"commandWindows": windowsHookPrefix + command + `)"`,
 			},
 		},
 	}

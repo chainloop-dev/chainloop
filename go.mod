@@ -76,6 +76,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/openvex/go-vex v0.2.9
 	github.com/owenrumney/go-sarif/v3 v3.3.1
+	github.com/pelletier/go-toml/v2 v2.4.3
 	github.com/posthog/posthog-go v1.34.0
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/common v0.72.1
@@ -376,7 +377,6 @@ require (
 	github.com/package-url/packageurl-go v0.1.7 // indirect
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.28 // indirect
 	github.com/pjbgf/sha1cd v0.7.0 // indirect

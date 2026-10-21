@@ -50,7 +50,7 @@ Installation MUST preserve user hooks and produce identical content on repeated 
 
 ### R-003: Session evidence
 
-Trace MUST capture session identity, timing, agent version, conversations, tool calls, and model information from persisted Codex transcripts. Missing or unreadable data MUST produce a warning or parsing error. Repeated cumulative usage records MUST count tokens once. Cost MUST use embedded API prices and identify an unknown-model fallback.
+Trace MUST capture session identity, timing, agent version, conversations, tool calls, and model information from persisted Codex transcripts. Conversation and tool records MUST use the shared transcript wire format in `app/cli/internal/trace/PROVIDERS.md`. The original converted event MUST remain in `source_event`. Missing or unreadable data MUST produce a warning or parsing error. Repeated cumulative usage records MUST count tokens once. Cost MUST use embedded API prices and identify an unknown-model fallback.
 
 ### R-004: Code attribution
 
@@ -72,7 +72,7 @@ Native hook behavior follows Codex CLI 0.163.0. Codex requires users to trust pr
 
 The developer selects Codex during Trace initialization, reviews the installed hooks in Codex, and starts a session. Codex sends session and tool events to Trace. Trace records each patch path separately and uses working-tree snapshots for shell changes.
 
-Trace copies the Codex rollout into private storage at session boundaries and before evidence assembly. The parser retains native JSONL records and derives summaries from metadata, response items, turn context, and cumulative token counters. Git hooks use the existing evidence pipeline.
+Trace copies the Codex rollout into private storage at session boundaries and before evidence assembly. The parser normalizes conversation and tool records and preserves their original events in `source_event`. Native metadata records remain unchanged. It derives summaries from metadata, response items, turn context, and cumulative token counters. Git hooks use the existing evidence pipeline.
 
 ```mermaid
 flowchart LR

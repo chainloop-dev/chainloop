@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -26,7 +27,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const windowsOS = "windows"
+
 func TestInstalledHooksWithoutCLI(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("covered by TestWindowsHookExecution")
+	}
 	shell, err := exec.LookPath("sh")
 	require.NoError(t, err)
 	bin := t.TempDir()
@@ -51,6 +57,9 @@ func TestInstalledHooksWithoutCLI(t *testing.T) {
 }
 
 func TestInstalledHookPreservesIOAndExitStatus(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("covered by TestWindowsHookExecution")
+	}
 	shell, err := exec.LookPath("sh")
 	require.NoError(t, err)
 	bin := t.TempDir()
@@ -92,7 +101,8 @@ func TestInstallUpgradesUnguardedHooks(t *testing.T) {
 	require.NoError(t, p.InstallHooks(root))
 	first, err := os.ReadFile(p.SettingsFile(root))
 	require.NoError(t, err)
-	assert.Equal(t, 1, strings.Count(string(first), "chainloop trace hook codex post-tool-use"))
+	assert.Equal(t, 1, strings.Count(string(first), "exec chainloop trace hook codex post-tool-use"))
+	assert.NotContains(t, string(first), `"command": "chainloop trace hook codex post-tool-use"`)
 	assert.Contains(t, string(first), "command -v chainloop")
 	assert.Contains(t, string(first), "echo user-hook")
 	require.NoError(t, p.InstallHooks(root))
@@ -114,4 +124,46 @@ func installedHookCommand(t *testing.T, settings map[string]any, event string) s
 	handlers := groups[0].(map[string]any)["hooks"].([]any)
 	require.Len(t, handlers, 1)
 	return handlers[0].(map[string]any)["command"].(string)
+}
+
+func TestInstalledHooksWindowsOverride(t *testing.T) {
+	root := t.TempDir()
+	p := New()
+	require.NoError(t, p.InstallHooks(root))
+	settings, err := readJSONFile(p.SettingsFile(root))
+	require.NoError(t, err)
+	hooks := settings["hooks"].(map[string]any)
+	for _, event := range hookEvents {
+		groups := hooks[event.event].([]any)
+		handlers := groups[0].(map[string]any)["hooks"].([]any)
+		command := handlers[0].(map[string]any)["commandWindows"].(string)
+		assert.Contains(t, command, "where chainloop")
+		assert.Contains(t, command, event.command)
+		assert.NotContains(t, command, "sh -c")
+	}
+}
+
+func TestWindowsHookExecution(t *testing.T) {
+	if runtime.GOOS != windowsOS {
+		t.Skip("requires the native Windows command interpreter")
+	}
+	shell, err := exec.LookPath("cmd.exe")
+	require.NoError(t, err)
+	bin := t.TempDir()
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+filepath.Join(os.Getenv("SystemRoot"), "System32"))
+	command := windowsHookPrefix + "chainloop trace hook codex post-tool-use" + `)"`
+	missing := exec.CommandContext(t.Context(), shell, "/d", "/s", "/c", command)
+	out, err := missing.CombinedOutput()
+	require.NoError(t, err, string(out))
+	assert.Empty(t, out)
+	stub := "@echo off\r\nset /p payload=\r\necho %*\r\necho %payload%\r\nexit /b 37\r\n"
+	require.NoError(t, os.WriteFile(filepath.Join(bin, "chainloop.cmd"), []byte(stub), 0600))
+	available := exec.CommandContext(t.Context(), shell, "/d", "/s", "/c", command)
+	available.Stdin = strings.NewReader("{\"session_id\":\"test\"}\n")
+	out, err = available.Output()
+	var exitErr *exec.ExitError
+	require.ErrorAs(t, err, &exitErr)
+	assert.Equal(t, 37, exitErr.ExitCode())
+	assert.Contains(t, string(out), "trace hook codex post-tool-use")
+	assert.Contains(t, string(out), `{"session_id":"test"}`)
 }

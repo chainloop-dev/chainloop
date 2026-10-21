@@ -135,7 +135,7 @@ func (c *Codex) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 	}
 	args = append(args, codexModelArgs(req.Model)...)
 	if strings.HasPrefix(req.Model, codexOpenRouterPrefix+"openai/") {
-		export := exec.CommandContext(ctx, c.bin(), "debug", "models", "--bundled") //nolint:gosec // the harness binary under test
+		export := exec.CommandContext(ctx, c.bin(), "debug", "models", "--bundled") //nolint:gosec // the harness binary under test // nosemgrep
 		export.Env = append(slices.Clone(req.Env), "CODEX_HOME="+codexHome)
 		raw, err := export.Output()
 		if err != nil {

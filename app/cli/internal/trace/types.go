@@ -24,21 +24,23 @@ const (
 	AttributionAI = "ai"
 	// AttributionHuman marks file changes produced by a human.
 	AttributionHuman = "human"
+
+	RoleUser      = "user"
+	RoleAssistant = "assistant"
 )
 
-// RawSessionEntry is the normalized wire format most providers use for a
-// single message in raw_session["main"]. A provider whose persisted format
-// carries a native timeline may retain those objects instead, so valid unknown
-// entries are not discarded. Consumers can select a renderer by Agent.Name.
-// This shape mirrors Claude's JSONL transcript format, which the frontend was
-// originally built against.
+// RawSessionEntry is the shared wire format for messages in raw_session.
+// Providers must normalize conversation and tool records into this shape.
+// Native metadata events may remain alongside messages; they cannot replace
+// normalized messages. SourceEvent preserves the original event when converting.
 type RawSessionEntry struct {
-	Type      string            `json:"type,omitempty"`
-	Role      string            `json:"role,omitempty"`
-	UUID      string            `json:"uuid,omitempty"`
-	Timestamp string            `json:"timestamp,omitempty"`
-	IsMeta    bool              `json:"isMeta,omitempty"`
-	Message   RawSessionMessage `json:"message"`
+	Type        string            `json:"type,omitempty"`
+	Role        string            `json:"role,omitempty"`
+	UUID        string            `json:"uuid,omitempty"`
+	Timestamp   string            `json:"timestamp,omitempty"`
+	IsMeta      bool              `json:"isMeta,omitempty"`
+	Message     RawSessionMessage `json:"message"`
+	SourceEvent json.RawMessage   `json:"source_event,omitempty"`
 }
 
 // RawSessionMessage is the message body inside a RawSessionEntry.
@@ -60,6 +62,14 @@ type RawSessionToolUseBlock struct {
 	ID    string          `json:"id,omitempty"`
 	Name  string          `json:"name,omitempty"`
 	Input json.RawMessage `json:"input,omitempty"`
+}
+
+// RawSessionToolResultBlock carries the result of a tool_use with the same ID.
+// It belongs to a user-shaped entry, not to a new user prompt.
+type RawSessionToolResultBlock struct {
+	Type      string          `json:"type"`
+	ToolUseID string          `json:"tool_use_id"`
+	Content   json.RawMessage `json:"content"`
 }
 
 // MustRawSessionEntry marshals a RawSessionEntry to json.RawMessage.
