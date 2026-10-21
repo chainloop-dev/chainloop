@@ -177,7 +177,10 @@ func (s *DownloadService) writeDownloadError(ctx context.Context, w http.Respons
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if isClientDisconnect(err) {
+	// HTTP/2 writes can return an unexported transport error such as
+	// "client disconnected" instead of context.Canceled. The request context
+	// still records the cancellation, so use it rather than matching messages.
+	if errors.Is(ctx.Err(), context.Canceled) || isClientDisconnect(err) {
 		s.log.Infow("msg", "download canceled", "digest", digest)
 		return
 	}

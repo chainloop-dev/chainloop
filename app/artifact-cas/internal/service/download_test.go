@@ -16,6 +16,8 @@
 package service
 
 import (
+	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -27,6 +29,7 @@ import (
 	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/mocks"
+	"github.com/getsentry/sentry-go"
 	"github.com/go-kratos/kratos/v2/log"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/gorilla/mux"
@@ -34,6 +37,78 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+func TestWriteDownloadErrorCancellation(t *testing.T) {
+	tests := []struct {
+		name      string
+		err       error
+		canceled  bool
+		wantError bool
+	}{
+		{
+			name:     "HTTP2 connection disconnect with canceled request",
+			err:      errors.New("client disconnected"),
+			canceled: true,
+		},
+		{
+			name:     "HTTP2 stream close with canceled request",
+			err:      errors.New("http2: stream closed"),
+			canceled: true,
+		},
+		{
+			name: "context cancellation error",
+			err:  context.Canceled,
+		},
+		{
+			name:      "disconnect message alone does not suppress errors",
+			err:       errors.New("client disconnected"),
+			wantError: true,
+		},
+		{
+			name:      "backend error on active request",
+			err:       errors.New("backend unavailable"),
+			wantError: true,
+		},
+		{
+			name:      "deadline exceeded is still reported",
+			err:       context.DeadlineExceeded,
+			wantError: true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var reported int
+			client, err := sentry.NewClient(sentry.ClientOptions{
+				BeforeSend: func(_ *sentry.Event, _ *sentry.EventHint) *sentry.Event {
+					reported++
+					return nil
+				},
+			})
+			require.NoError(t, err)
+			ctx := sentry.SetHubOnContext(context.Background(), sentry.NewHub(client, sentry.NewScope()))
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			if tc.canceled {
+				cancel()
+			}
+
+			svc := NewDownloadService(nil)
+			w := httptest.NewRecorder()
+			svc.writeDownloadError(ctx, w, tc.err, downloadDigestHex)
+
+			if tc.wantError {
+				assert.Equal(t, 1, reported)
+				assert.Equal(t, http.StatusInternalServerError, w.Code)
+				assert.Contains(t, w.Body.String(), "server error")
+			} else {
+				assert.Zero(t, reported, "canceled downloads must not reach Sentry")
+				assert.False(t, w.Flushed)
+				assert.Empty(t, w.Header(), "do not attempt an error response after disconnect")
+				assert.Empty(t, w.Body.String())
+			}
+		})
+	}
+}
 
 const (
 	downloadBackendType = "backend-type"

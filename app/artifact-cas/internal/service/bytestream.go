@@ -437,7 +437,14 @@ type sendWriter struct {
 }
 
 func (sw sendWriter) Write(data []byte) (int, error) {
-	return len(data), sw.stream.Send(&bytestream.ReadResponse{Data: data})
+	err := sw.stream.Send(&bytestream.ReadResponse{Data: data})
+	// Unavailable from Send means the connection to the download client is
+	// gone. The transport can close before it cancels the stream context.
+	// Classify it here so backend Unavailable errors remain server failures.
+	if status.Code(err) == codes.Unavailable {
+		return 0, errors.Join(context.Canceled, err)
+	}
+	return len(data), err
 }
 
 // pacedWriter reports each write's cumulative bytes to a pacing hook. When the
