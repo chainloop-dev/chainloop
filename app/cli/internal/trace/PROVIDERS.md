@@ -14,7 +14,7 @@ This section tells which part of a provider runs at each step.
 
 ```
 trace init --<agent>      InstallHooks          writes the agent hook configuration
-                                                 and the git hooks
+                          (no provider code)       init installs the git hooks
 agent: session start      ReadHookInput         -> HandleAgentSessionStart
                           CopySessionData          (session record, first copy)
                           AnnounceSessionStart     (banner, spec instruction)
@@ -63,13 +63,15 @@ The methods fall into six groups.
 |--------|------------|----------|
 | `InstallHooks(repoRoot)` | Write the Chainloop hooks into the project-local configuration of the agent. Keep the hooks of the user. A second call changes nothing. | Claude: merges entries into `.claude/settings.json`. Cursor: merges entries into `.cursor/hooks.json` and sets `version: 1`. OpenCode: writes a TypeScript plugin, `.opencode/plugins/chainloop-trace.ts`, from a template. |
 | `InstallHooksForTraceRun(repoRoot)` | The same hooks, but without the session-end hook. `trace run` ends the session itself. | All three filter out the session-end event. OpenCode removes the `session.deleted` block from the template. |
-| `SettingsFile(repoRoot)` | Return the absolute path of the file that `InstallHooks` writes. `trace init` and `trace run` make a backup of this file and restore it on failure or at exit. | |
+| `SettingsFile(repoRoot)` | Return the absolute path of the file that `InstallHooks` writes. `trace init` makes a backup of this file and restores it only when the install fails. After a successful init, the hooks stay. `trace run` makes a backup and always restores it when the agent command exits. | |
 | `UninstallHooks(repoRoot)` | Remove only the Chainloop hooks. Keep the hooks of the user. | Claude and Cursor find the entries by a marker text (`chainloop trace hook <agent>`). OpenCode removes the plugin file, because Chainloop owns all of it. |
 | `HooksInstalled(repoRoot)` | Tell if the repository has the Chainloop hooks of this agent. Hooks of the user do not count. The init wizard uses it to preselect the harnesses. | |
 
 Each installed hook runs `chainloop trace hook <agent> <event>`. Use the same marker text in the hook command, so that `UninstallHooks` and `HooksInstalled` can find it.
 
 If the agent has no hook configuration file but has a plugin or extension system (OpenCode, Pi), write a small plugin. The plugin calls the `chainloop trace hook` subcommands, sends the JSON payload on stdin, and reads the JSON response on stdout. Generate the tool lists of the plugin from the Go slices, so that the plugin and `IsFileWritingTool`/`IsCommandTool` cannot drift (see `toolsArrayLiteral` in `opencode/hooks.go`).
+
+A repository keeps the plugin that an older CLI wrote. When you change what the plugin sends (for example, a new field in the payload), the user must run `chainloop trace init` again to get the new plugin. Write this in the README "Why not Yes" line of each feature that needs the new plugin. For an example, see the OpenCode notes on skills tracking and on shell commands in another checkout.
 
 #### 3. Hook input
 
@@ -121,7 +123,7 @@ Fill the evidence (`pkg/attestation/crafter/materials/aicodingsession`) as follo
 | `Agent.Name`, `Agent.Version` | The provider name and the agent version. | From the transcript. | `opts.AgentVersion` (from the session-start hook). | From the export (1.x only). |
 | `Session.ID`, `Slug`, `StartedAt`, `EndedAt`, `DurationSeconds` | RFC3339 times. | First and last transcript times. | File modification time only. | Epoch milliseconds of the export. |
 | `Model.Primary`, `Provider`, `ModelsUsed` | The model with the most messages, the vendor, and a sorted list of all models. | From the assistant messages. Provider `anthropic`. | `opts.Model`. No list. | From the assistant messages. Provider from `providerID`. |
-| `Usage` | Input, output, total, cache read, and cache write tokens, and `EstimatedCostUSD` rounded to 4 decimals. | Summed per model, with the subagents. The cost comes from the embedded `pricing.json`. | Zero, with a warning. | The session totals of the export, or the sum of the messages. The cost is the value that OpenCode reports. |
+| `Usage` | Input, output, total, cache read, and cache write tokens, and `EstimatedCostUSD` rounded to 4 decimals. | Summed per model, with the subagents. The cost comes from the embedded `pricing.json`. | Not set (`Usage` is `nil`), with a warning. | The session totals of the export, or the sum of the messages. The cost is the value that OpenCode reports. |
 | `ToolsUsed` | A count per tool, sorted by count, then by name. | | | |
 | `Conversation` | User and assistant message counts. | | | |
 | `Subagents` | One entry per subagent, with its tokens. | Yes. | No. | No. |
@@ -178,7 +180,7 @@ A provider is not active until the CLI knows about it. Change these files:
    - `post-tool-use` (or an agent event name, such as Cursor `after-file-edit`): `action.HandleAgentPostToolUse`
    - `session-end`: `action.HandleAgentSessionEnd`
 
-   Set the annotation `skipActionOptsInit: "true"` on each subcommand, so that a hook does not connect to the control plane.
+   Set the annotation `skipActionOptsInit: "true"` on each subcommand, so that the root command does not open a control-plane connection before the hook runs. The session-start handler still connects later, when it needs to: for the credentials check and the dashboard link of the banner.
 6. Run `make generate` to update `app/cli/documentation/cli-reference.md`.
 
 ## Tests
@@ -197,7 +199,13 @@ Use table-driven tests. Write the tests first.
 
 ### End-to-end tests (required)
 
-Each provider must have an end-to-end harness. The suite in `e2e/` runs the agent in headless mode with real models and checks each cell of the README tables (spec issue-3635).
+Each provider must have an end-to-end harness. The suite in `e2e/` runs the agent in headless mode with real models. It checks the README cells marked **Yes**, **Partial**, or **Unknown** that have a registered check in `e2e/checks.go` (spec issue-3635). It does not check the other cells:
+
+- A cell marked **No** or **Not applicable** is `skipped`.
+- A feature that needs a control plane is `not covered`, because the suite uses local storage mode only.
+- A row with no registered check is `no check`.
+
+A cell that the suite did not check stays at **Unknown**, or you add a check for it.
 
 1. Add `e2e/myagent.go` with a type that implements `e2e.Harness` (`e2e/harness.go`): `Column`, `TraceFlag`, `Version`, `Run`, `HookConfig`, `DisableSessionStart`, and `SkillPath`. Use `e2e/claude.go`, `e2e/opencode.go`, and `e2e/pi.go` as examples. Run the agent with its configuration and session folders next to the workspace, so the run does not touch the configuration of the user.
 2. Add the harness to the `harnesses` map in `e2e/e2e_test.go`. The key is the column name in the README.
@@ -216,7 +224,7 @@ Cursor has no end-to-end harness yet, so its **Unknown** cells are not verified.
 Update `README.md` in the same pull request:
 
 1. Add a column for the agent to each feature table. Start each cell at **Unknown**.
-2. Run the end-to-end suite. Set each cell to **Yes**, **Partial**, **No**, or **Not applicable** from the results.
+2. Run the end-to-end suite. Set each checked cell to **Yes**, **Partial**, **No**, or **Not applicable** from the results. Keep the cells that the suite does not check at **Unknown**.
 3. For each cell that is not **Yes**, add a line to the "Why not Yes" list of the table.
 4. Add a row to "How each agent is hooked in", with the configuration file and the hooks.
 5. Update the list of providers at the top of the page. If the agent had a "not supported yet" paragraph (Pi, Codex), remove it.
