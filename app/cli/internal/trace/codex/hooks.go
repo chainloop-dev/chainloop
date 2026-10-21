@@ -57,17 +57,18 @@ var commandTools = []string{"Bash"}
 var hookToolMatcher = "^(" + strings.Join(append(append([]string{}, fileWritingTools...), commandTools...), "|") + ")$"
 
 type hookEvent struct {
-	event   string
-	command string
-	matcher string // optional: tool name matcher
+	event         string
+	command       string
+	matcher       string // optional: tool name matcher
+	statusMessage string
 }
 
 var hookEvents = []hookEvent{
-	{eventSessionStart, "chainloop trace hook codex session-start", ""},
-	{eventUserPromptSubmit, "chainloop trace hook codex user-prompt-submit", ""},
-	{eventPreToolUse, "chainloop trace hook codex pre-tool-use", hookToolMatcher},
-	{eventPostToolUse, "chainloop trace hook codex post-tool-use", hookToolMatcher},
-	{eventSessionEnd, "chainloop trace hook codex session-end", ""},
+	{eventSessionStart, "chainloop trace hook codex session-start", "", "Chainloop Trace: start session"},
+	{eventUserPromptSubmit, "chainloop trace hook codex user-prompt-submit", "", "Chainloop Trace: capture prompt context"},
+	{eventPreToolUse, "chainloop trace hook codex pre-tool-use", hookToolMatcher, "Chainloop Trace: snapshot files before changes"},
+	{eventPostToolUse, "chainloop trace hook codex post-tool-use", hookToolMatcher, "Chainloop Trace: record tool changes"},
+	{eventSessionEnd, "chainloop trace hook codex session-end", "", "Chainloop Trace: finish session"},
 }
 
 // SettingsFile returns the absolute path to .codex/hooks.json for the given repo.
@@ -112,7 +113,7 @@ func (p *Provider) installHookEvents(repoRoot string, events []hookEvent) error 
 		changed = removeHookEntry(hooks, eventSessionEnd)
 	}
 	for _, h := range events {
-		if addHookEntry(hooks, h.event, h.command, h.matcher) {
+		if addHookEntry(hooks, h.event, h.command, h.matcher, h.statusMessage) {
 			changed = true
 		}
 	}
@@ -242,7 +243,7 @@ func patchPaths(patch, cwd string) []string {
 	return paths
 }
 
-func addHookEntry(hooks map[string]any, event, command, matcher string) bool {
+func addHookEntry(hooks map[string]any, event, command, matcher, statusMessage string) bool {
 	entries, _ := hooks[event].([]any)
 	for _, entry := range entries {
 		group, ok := entry.(map[string]any)
@@ -253,22 +254,23 @@ func addHookEntry(hooks map[string]any, event, command, matcher string) bool {
 		existingMatcher, _ := group["matcher"].(string)
 		if len(handlers) == 1 && existingMatcher == matcher {
 			handler, _ := handlers[0].(map[string]any)
-			if handler["command"] == hookCommandPrefix+command+"'" && handler["commandWindows"] == windowsHookPrefix+command+`)"` {
+			if handler["command"] == hookCommandPrefix+command+"'" && handler["commandWindows"] == windowsHookPrefix+command+`)"` && handler["statusMessage"] == statusMessage {
 				return false
 			}
 		}
 	}
 	removeHookEntry(hooks, event)
 	entries, _ = hooks[event].([]any)
-	hooks[event] = append(entries, buildHookEntry(command, matcher))
+	hooks[event] = append(entries, buildHookEntry(command, matcher, statusMessage))
 	return true
 }
 
-func buildHookEntry(command, matcher string) map[string]any {
+func buildHookEntry(command, matcher, statusMessage string) map[string]any {
 	entry := map[string]any{
 		"hooks": []any{
 			map[string]any{
 				"type":           "command",
+				"statusMessage":  statusMessage,
 				"command":        hookCommandPrefix + command + "'",
 				"commandWindows": windowsHookPrefix + command + `)"`,
 			},

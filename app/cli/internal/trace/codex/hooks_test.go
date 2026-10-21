@@ -105,6 +105,25 @@ func TestInstallUpgradesUnguardedHooks(t *testing.T) {
 	assert.NotContains(t, string(first), `"command": "chainloop trace hook codex post-tool-use"`)
 	assert.Contains(t, string(first), "command -v chainloop")
 	assert.Contains(t, string(first), "echo user-hook")
+	// Existing guarded hooks also gain labels on init, without duplicating them.
+	settings, err := readJSONFile(path)
+	require.NoError(t, err)
+	for _, groups := range settings["hooks"].(map[string]any) {
+		for _, group := range groups.([]any) {
+			for _, handler := range group.(map[string]any)["hooks"].([]any) {
+				if isChainloopHandler(handler) {
+					delete(handler.(map[string]any), "statusMessage")
+				}
+			}
+		}
+	}
+	require.NoError(t, writeJSONFile(path, settings))
+	require.NoError(t, p.InstallHooks(root))
+	upgraded, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, first, upgraded)
+	assert.Contains(t, string(upgraded), "Chainloop Trace: snapshot files before changes")
+
 	require.NoError(t, p.InstallHooks(root))
 	second, err := os.ReadFile(p.SettingsFile(root))
 	require.NoError(t, err)
