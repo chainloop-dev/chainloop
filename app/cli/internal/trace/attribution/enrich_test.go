@@ -189,6 +189,61 @@ func TestEnrich_Legacy(t *testing.T) {
 	})
 }
 
+func TestEnrich_GeneratedLines(t *testing.T) {
+	withGenerated := func(attr *state.AILineAttribution, added, removed int) *state.AILineAttribution {
+		attr.GeneratedAdded, attr.GeneratedRemoved = added, removed
+
+		return attr
+	}
+
+	testCases := []struct {
+		name                   string
+		ledgers                map[string]*state.AILineAttribution
+		wantAdded, wantRemoved int
+	}{
+		{
+			// The agent wrote 10 lines and removed 3. Only 2 lines reached
+			// the commit; the session still reports all of them (spec
+			// issue-3639, D-011).
+			name: "reports all the lines of the agent edits, also the ones that no commit holds",
+			ledgers: map[string]*state.AILineAttribution{
+				testSession: withGenerated(ledger(testSession, testFile, []string{"a", "b"}, nil), 10, 3),
+			},
+			wantAdded:   10,
+			wantRemoved: 3,
+		},
+		{
+			name: "does not add the lines of another session",
+			ledgers: map[string]*state.AILineAttribution{
+				testSession:  withGenerated(ledger(testSession, testFile, []string{"a", "b"}, nil), 2, 0),
+				otherSession: withGenerated(ledger(otherSession, testFile, []string{"c"}, nil), 7, 1),
+			},
+			wantAdded: 2,
+		},
+		{
+			name:    "a session with no ledger reports no lines",
+			ledgers: nil,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			changes := &aicodingsession.CodeChanges{
+				LinesAdded: 2,
+				Files:      []aicodingsession.FileChange{{Path: testFile, LinesAdded: 2}},
+			}
+			commits := []CommitLines{{SessionIDs: []string{testSession}, Files: []tracegit.FileLines{
+				{Path: testFile, Added: []string{"a", "b"}},
+			}}}
+
+			Enrich(testSession, tc.ledgers, commits, nil, changes)
+
+			assert.Equal(t, tc.wantAdded, changes.AIGeneratedLinesAdded)
+			assert.Equal(t, tc.wantRemoved, changes.AIGeneratedLinesRemoved)
+		})
+	}
+}
+
 func TestEnrich_Lines(t *testing.T) {
 	type split struct{ aiAdded, aiRemoved, humanAdded, humanRemoved int }
 

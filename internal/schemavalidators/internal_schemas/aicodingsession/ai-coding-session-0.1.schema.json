@@ -192,6 +192,14 @@
           "type": "integer",
           "description": "Lines removed attributed to human"
         },
+        "ai_generated_lines_added": {
+          "type": "integer",
+          "description": "Lines added by all the agent edits of the session, including lines that never reached a commit"
+        },
+        "ai_generated_lines_removed": {
+          "type": "integer",
+          "description": "Lines removed by all the agent edits of the session, including lines that never reached a commit"
+        },
         "files": {
           "type": "array",
           "description": "Per-file change details",
