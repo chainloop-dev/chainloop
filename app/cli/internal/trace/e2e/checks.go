@@ -17,6 +17,7 @@ package e2e
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -26,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -146,16 +148,93 @@ func evidence(s *Session) *aicodingsession.Data {
 }
 
 func checkTranscript(s *Session) error {
-	main := evidence(s).RawSession["main"]
+	d := evidence(s)
+	main := d.RawSession["main"]
 	if len(main) == 0 {
 		return errors.New("the evidence has no main transcript")
 	}
+	// Other providers retain their existing native transcript checks. Codex
+	// converts its rollout to the message shape used by the session viewer.
+	if d.Agent.Name != codex.Name {
+		for _, msg := range main {
+			if bytes.Contains(msg, []byte("greeting.txt")) {
+				return nil
+			}
+		}
+		return errors.New("the transcript does not show the work of the session")
+	}
+
+	var user, assistant, showsWork bool
+	calls, results := map[string]bool{}, map[string]bool{}
 	for _, msg := range main {
-		if bytes.Contains(msg, []byte("greeting.txt")) {
-			return nil
+		var entry trace.RawSessionEntry
+		if err := json.Unmarshal(msg, &entry); err != nil {
+			return err
+		}
+		role := entry.Type
+		if role == "" {
+			role = entry.Role
+		}
+		if role != trace.RoleUser && role != trace.RoleAssistant {
+			continue
+		}
+		readable := transcriptHasText(entry.Message.Content)
+		var blocks []struct {
+			Type, Text, ID, Name string
+			ToolUseID            string          `json:"tool_use_id"`
+			Content              json.RawMessage `json:"content"`
+			Input                json.RawMessage `json:"input"`
+		}
+		if json.Unmarshal(entry.Message.Content, &blocks) == nil {
+			for _, block := range blocks {
+				switch block.Type {
+				case "tool_use":
+					var input map[string]json.RawMessage
+					if block.ID == "" || block.Name == "" || json.Unmarshal(block.Input, &input) != nil || input == nil {
+						return errors.New("the Codex transcript has a malformed tool call")
+					}
+					calls[block.ID] = true
+					readable = true
+				case "tool_result":
+					results[block.ToolUseID] = transcriptHasText(block.Content)
+				}
+			}
+		}
+		user = user || role == trace.RoleUser && readable
+		assistant = assistant || role == trace.RoleAssistant && readable
+		showsWork = showsWork || bytes.Contains(entry.Message.Content, []byte("greeting.txt"))
+	}
+	if !user || !assistant {
+		return errors.New("the transcript has no renderable user and assistant messages")
+	}
+	if !showsWork {
+		return errors.New("the normalized transcript does not show the work of the session")
+	}
+	if d.ToolsUsed != nil && d.ToolsUsed.TotalInvocations > 0 {
+		for id := range calls {
+			if results[id] {
+				return nil
+			}
+		}
+		return errors.New("the Codex transcript has no matching tool call and result")
+	}
+	return nil
+}
+
+func transcriptHasText(content json.RawMessage) bool {
+	var text string
+	if json.Unmarshal(content, &text) == nil {
+		return strings.TrimSpace(text) != ""
+	}
+	var blocks []trace.RawSessionTextBlock
+	if json.Unmarshal(content, &blocks) == nil {
+		for _, block := range blocks {
+			if block.Type == "text" && strings.TrimSpace(block.Text) != "" {
+				return true
+			}
 		}
 	}
-	return errors.New("the transcript does not show the work of the session")
+	return false
 }
 
 func checkTokenUsage(s *Session) error {

@@ -22,6 +22,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -326,14 +327,14 @@ func TestWriteTraceNextSteps(t *testing.T) {
 		},
 		{
 			name:      "every harness",
-			providers: []string{providerClaudeCode, "cursor", "opencode"},
+			providers: []string{providerClaudeCode, "cursor", opencode.Name, "codex"},
 			// Named in full: ".opencode" alone would pass on any file under that
 			// directory, so it would not catch the plugin being renamed.
 			wantFiles: []string{
 				chainloopYMLName, claudeSettings, ".cursor/hooks.json",
-				".opencode/plugins/chainloop-trace.ts",
+				".opencode/plugins/chainloop-trace.ts", ".codex/hooks.json",
 			},
-			wantHarnesses: "claude-code, cursor or opencode",
+			wantHarnesses: "claude-code, cursor, opencode or codex",
 		},
 	}
 

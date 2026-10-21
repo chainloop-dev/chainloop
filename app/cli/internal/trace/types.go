@@ -24,6 +24,9 @@ const (
 	AttributionAI = "ai"
 	// AttributionHuman marks file changes produced by a human.
 	AttributionHuman = "human"
+
+	RoleUser      = "user"
+	RoleAssistant = "assistant"
 )
 
 // RawSessionEntry is the normalized wire format most providers use for a
@@ -33,12 +36,13 @@ const (
 // This shape mirrors Claude's JSONL transcript format, which the frontend was
 // originally built against.
 type RawSessionEntry struct {
-	Type      string            `json:"type,omitempty"`
-	Role      string            `json:"role,omitempty"`
-	UUID      string            `json:"uuid,omitempty"`
-	Timestamp string            `json:"timestamp,omitempty"`
-	IsMeta    bool              `json:"isMeta,omitempty"`
-	Message   RawSessionMessage `json:"message"`
+	Type        string            `json:"type,omitempty"`
+	Role        string            `json:"role,omitempty"`
+	UUID        string            `json:"uuid,omitempty"`
+	Timestamp   string            `json:"timestamp,omitempty"`
+	IsMeta      bool              `json:"isMeta,omitempty"`
+	Message     RawSessionMessage `json:"message"`
+	SourceEvent json.RawMessage   `json:"source_event,omitempty"`
 }
 
 // RawSessionMessage is the message body inside a RawSessionEntry.
@@ -60,6 +64,14 @@ type RawSessionToolUseBlock struct {
 	ID    string          `json:"id,omitempty"`
 	Name  string          `json:"name,omitempty"`
 	Input json.RawMessage `json:"input,omitempty"`
+}
+
+// RawSessionToolResultBlock carries the result of a tool_use with the same ID.
+// It belongs to a user-shaped entry, not to a new user prompt.
+type RawSessionToolResultBlock struct {
+	Type      string          `json:"type"`
+	ToolUseID string          `json:"tool_use_id"`
+	Content   json.RawMessage `json:"content"`
 }
 
 // MustRawSessionEntry marshals a RawSessionEntry to json.RawMessage.

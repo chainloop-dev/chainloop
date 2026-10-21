@@ -307,6 +307,9 @@ type HookInput struct {
 	ToolName string `json:"tool_name,omitempty"`
 	// FilePath is the absolute path of the file being edited, set by provider's ReadHookInput.
 	FilePath string `json:"-"`
+	// FilePaths holds all paths of a file tool that edits several files.
+	// Handlers process each path with its own snapshot and checkout.
+	FilePaths []string `json:"-"`
 	// Command is the command line of a shell command tool, set by provider's
 	// ReadHookInput. Empty when the provider does not report it.
 	Command string `json:"-"`

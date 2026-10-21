@@ -380,6 +380,15 @@ func HandleAgentPreToolUse(provider trace.Provider, log zerolog.Logger) error {
 		return nil
 	}
 
+	for _, fileInput := range fileHookInputs(input) {
+		if err := handleAgentPreToolUse(provider, fileInput, log); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func handleAgentPreToolUse(provider trace.Provider, input *trace.HookInput, log zerolog.Logger) error {
 	log.Debug().Str("session_id", input.SessionID).Msg("pre-tool-use hook invoked")
 
 	store, repoRoot, err := locateForHook(provider, input)
@@ -747,6 +756,15 @@ func HandleAgentPostToolUse(provider trace.Provider, log zerolog.Logger) error {
 		return nil
 	}
 
+	for _, fileInput := range fileHookInputs(input) {
+		if err := handleAgentPostToolUse(provider, fileInput, log); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func handleAgentPostToolUse(provider trace.Provider, input *trace.HookInput, log zerolog.Logger) error {
 	sessionID := input.SessionID
 
 	isCommand := provider.IsCommandTool(input.ToolName)
@@ -999,4 +1017,19 @@ func autoInstallGitHooks(store *state.Store, repoRoot string, log zerolog.Logger
 	if err := store.MarkTraceInitialized(); err != nil {
 		log.Debug().Err(err).Msg("mark trace initialized failed")
 	}
+}
+
+// fileHookInputs expands a multi-file edit into the existing per-file path.
+func fileHookInputs(input *trace.HookInput) []*trace.HookInput {
+	if len(input.FilePaths) == 0 {
+		return []*trace.HookInput{input}
+	}
+	inputs := make([]*trace.HookInput, 0, len(input.FilePaths))
+	for _, path := range input.FilePaths {
+		one := *input
+		one.FilePath = path
+		one.FilePaths = nil
+		inputs = append(inputs, &one)
+	}
+	return inputs
 }

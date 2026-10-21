@@ -3314,7 +3314,7 @@ named freely; the name is normalized to the lowercase, dash-separated form
 Chainloop stores. It then asks which harnesses to trace, with the ones the
 repository is already set up for ticked, or Claude Code on a first run; use
 space to tick more. Passing --org, --project or a harness flag
-(--claude, --cursor, --opencode) skips the matching question.
+(--claude, --cursor, --opencode, --codex) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
 required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
@@ -3345,6 +3345,7 @@ Options
 
 ```
 --claude              install Claude Code hooks (default when no harness flag is set)
+--codex               install Codex hooks
 --contract string     workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor              install Cursor hooks
 -h, --help                help for init
@@ -3413,6 +3414,7 @@ Options
 
 ```
 --claude            install Claude Code hooks (default when no provider flag is set)
+--codex             install Codex hooks
 --contract string   workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
 --cursor            install Cursor hooks
 -h, --help              help for run

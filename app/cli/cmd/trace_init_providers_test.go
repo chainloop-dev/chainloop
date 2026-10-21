@@ -194,6 +194,11 @@ func TestConfiguredTraceProvidersSkipsUnreadableSettings(t *testing.T) {
 }
 
 func TestTraceProviderFlags(t *testing.T) {
+	t.Run("codex flag", func(t *testing.T) {
+		f := traceProviderFlags{codex: true}
+		assert.True(t, f.any())
+		assert.Equal(t, []string{"codex"}, f.namesOrDefault())
+	})
 	t.Run("no flag set", func(t *testing.T) {
 		assert.False(t, traceProviderFlags{}.any())
 		assert.Empty(t, traceProviderFlags{}.names())

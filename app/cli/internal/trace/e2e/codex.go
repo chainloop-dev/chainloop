@@ -16,21 +16,24 @@
 package e2e
 
 import (
+	"bufio"
 	"bytes"
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
+
+	"github.com/pelletier/go-toml/v2"
 )
 
 const (
-	// codexHooksPath is the project file where Codex reads its hooks. Trace
-	// has no Codex provider yet, so no Chainloop hook is in it.
+	// codexHooksPath is the project file where Codex reads its hooks.
 	codexHooksPath = ".codex/hooks.json"
 	// codexOpenRouterPrefix selects the OpenRouter provider for a model of
 	// the suite config.
@@ -105,11 +108,22 @@ func codexModelArgs(model string) []string {
 // --ignore-user-config is not set, because it also turns off the project
 // hooks.
 //
-// Trace has no Codex provider yet, so no hook message is reported.
+// Hook messages are not extracted from the headless event stream yet.
 func (c *Codex) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 	base := filepath.Dir(req.Dir)
 	codexHome := filepath.Join(base, "codex-home")
 	if err := os.MkdirAll(codexHome, 0o700); err != nil {
+		return nil, err
+	}
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	config, err := codexIsolatedConfig(userHome)
+	if err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(filepath.Join(codexHome, "config.toml"), config, 0600); err != nil {
 		return nil, err
 	}
 
@@ -120,6 +134,27 @@ func (c *Codex) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 		"-C", req.Dir,
 	}
 	args = append(args, codexModelArgs(req.Model)...)
+	if strings.HasPrefix(req.Model, codexOpenRouterPrefix+"openai/") {
+		export := exec.CommandContext(ctx, c.bin(), "debug", "models", "--bundled") //nolint:gosec // the harness binary under test // nosemgrep
+		export.Env = append(slices.Clone(req.Env), "CODEX_HOME="+codexHome)
+		raw, err := export.Output()
+		if err != nil {
+			return nil, fmt.Errorf("codex bundled model catalog: %w", err)
+		}
+		catalog, err := codexModelCatalog(raw, req.Model)
+		if err != nil {
+			return nil, err
+		}
+		if catalog != nil {
+			path := filepath.Join(codexHome, "models.json")
+			if err := os.WriteFile(path, catalog, 0600); err != nil {
+				return nil, err
+			}
+			// OpenRouter prefixes model names with openai/. Keep the native Codex
+			// model metadata so that file tools and instructions match that model.
+			args = append(args, "-c", "model_catalog_json="+strconv.Quote(path))
+		}
+	}
 
 	// A pasted image goes in as an attached file, from outside the
 	// repository, so that the agent cannot commit it.
@@ -138,7 +173,7 @@ func (c *Codex) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 		}
 	}
 	// The prompt follows "--", so that the list of images ends before it.
-	args = append(args, "--", req.Prompt)
+	args = append(args, "--", "-")
 
 	name := c.bin()
 	if len(req.Wrapper) > 0 {
@@ -148,13 +183,14 @@ func (c *Codex) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 
 	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // the harness binary under test, with the prompt of a scenario // nosemgrep
 	cmd.Dir = req.Dir
+	cmd.Stdin = strings.NewReader(req.Prompt)
 	cmd.Env = append(slices.Clone(req.Env), "CODEX_HOME="+codexHome)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
 	raw, err := cmd.Output()
 	if err != nil {
-		return &RunOutput{Raw: raw}, fmt.Errorf("codex exec: %w: %s", err, strings.TrimSpace(stderr.String()))
+		return &RunOutput{Raw: raw}, fmt.Errorf("codex exec: %w: %s", err, strings.TrimSpace(stderr.String()+"\n"+codexStreamErrors(raw)))
 	}
 
 	return &RunOutput{Raw: raw}, nil
@@ -178,18 +214,121 @@ func (c *Codex) HookConfig() HookConfig {
 	}
 }
 
-// errCodexSessionStart is the error of DisableSessionStart until Trace has a
-// Codex provider.
-var errCodexSessionStart = errors.New("codex: the suite cannot remove the session-start hook of Trace, because Trace has no Codex provider yet")
-
-// DisableSessionStart implements Harness. Trace installs no Codex hooks yet,
-// so there is no hook to remove.
-func (c *Codex) DisableSessionStart(string) error {
-	return errCodexSessionStart
+// DisableSessionStart removes only the session-start hook for recovery tests.
+func (c *Codex) DisableSessionStart(repo string) error {
+	path := filepath.Join(repo, codexHooksPath)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var settings map[string]json.RawMessage
+	if err := json.Unmarshal(data, &settings); err != nil {
+		return err
+	}
+	var hooks map[string]json.RawMessage
+	if err := json.Unmarshal(settings["hooks"], &hooks); err != nil {
+		return err
+	}
+	if _, ok := hooks["SessionStart"]; !ok {
+		return fmt.Errorf("%s has no SessionStart hook", codexHooksPath)
+	}
+	delete(hooks, "SessionStart")
+	settings["hooks"], err = json.Marshal(hooks)
+	if err != nil {
+		return err
+	}
+	data, err = json.MarshalIndent(settings, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0600)
 }
 
 // SkillPath implements Harness. Codex finds project skills in
 // .agents/skills.
 func (c *Codex) SkillPath(name string) string {
 	return ".agents/skills/" + name + "/SKILL.md"
+}
+
+// codexStreamErrors extracts diagnostics that codex exec writes to JSON stdout.
+func codexStreamErrors(raw []byte) string {
+	var messages []string
+	scanner := bufio.NewScanner(bytes.NewReader(raw))
+	scanner.Buffer(make([]byte, 4096), 16*1024*1024)
+	for scanner.Scan() {
+		var event struct {
+			Type    string `json:"type"`
+			Message string `json:"message"`
+			Error   struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if json.Unmarshal(scanner.Bytes(), &event) != nil {
+			continue
+		}
+		if event.Type == "error" && event.Message != "" {
+			messages = append(messages, event.Message)
+		}
+		if event.Type == "turn.failed" && event.Error.Message != "" {
+			messages = append(messages, event.Error.Message)
+		}
+	}
+	return strings.Join(messages, "\n")
+}
+
+// codexIsolatedConfig disables personal skills that Codex discovers outside
+// CODEX_HOME. Project skills remain available for the skill scenario.
+func codexIsolatedConfig(userHome string) ([]byte, error) {
+	type skillConfig struct {
+		Path    string `toml:"path"`
+		Enabled bool   `toml:"enabled"`
+	}
+	config := struct {
+		Skills struct {
+			Config  []skillConfig `toml:"config"`
+			Bundled struct {
+				Enabled bool `toml:"enabled"`
+			} `toml:"bundled"`
+		} `toml:"skills"`
+	}{}
+	for _, dir := range []string{filepath.Join(userHome, ".agents", "skills"), filepath.Join(userHome, ".codex", "skills"), filepath.Join(userHome, ".codex", "skills", ".system")} {
+		paths, err := filepath.Glob(filepath.Join(dir, "*", "SKILL.md"))
+		if err != nil {
+			return nil, err
+		}
+		for _, path := range paths {
+			config.Skills.Config = append(config.Skills.Config, skillConfig{Path: path, Enabled: false})
+		}
+	}
+	return toml.Marshal(config)
+}
+
+// codexModelCatalog aliases bundled OpenAI metadata to OpenRouter's model ID.
+// Without it, Codex treats the prefixed name as unknown and uses generic tools.
+func codexModelCatalog(raw []byte, model string) ([]byte, error) {
+	var catalog struct {
+		Models []map[string]json.RawMessage `json:"models"`
+	}
+	if err := json.Unmarshal(raw, &catalog); err != nil {
+		return nil, fmt.Errorf("decode Codex model catalog: %w", err)
+	}
+	target := strings.TrimPrefix(model, codexOpenRouterPrefix)
+	canonical := strings.TrimPrefix(target, "openai/")
+	for _, entry := range catalog.Models {
+		var slug string
+		if err := json.Unmarshal(entry["slug"], &slug); err != nil {
+			return nil, err
+		}
+		if slug != canonical {
+			continue
+		}
+		alias := make(map[string]json.RawMessage, len(entry))
+		for k, v := range entry {
+			alias[k] = v
+		}
+		alias["slug"], _ = json.Marshal(target)
+		catalog.Models = append(catalog.Models, alias)
+		return json.Marshal(catalog)
+	}
+	return nil, nil
 }

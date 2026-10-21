@@ -20,6 +20,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
@@ -40,6 +41,7 @@ func newTraceHookCmd() *cobra.Command {
 		newTraceHookClaudeCmd(),
 		newTraceHookCursorCmd(),
 		newTraceHookOpenCodeCmd(),
+		newTraceHookCodexCmd(),
 	)
 
 	return cmd
@@ -450,4 +452,22 @@ func newTraceHookOpenCodePostToolUseCmd() *cobra.Command {
 			return action.HandleAgentPostToolUse(opencode.New(), logger)
 		},
 	}
+}
+
+func newTraceHookCodexCmd() *cobra.Command {
+	cmd := &cobra.Command{Use: "codex", Short: "Handle Codex hook invocations"}
+	handlers := []struct {
+		name, description string
+		run               func(*cobra.Command, []string) error
+	}{
+		{"session-start", "Capture the Codex session", func(cmd *cobra.Command, _ []string) error { return runAgentSessionStart(cmd, codex.New()) }},
+		{"user-prompt-submit", "Remind Codex to capture specs", func(_ *cobra.Command, _ []string) error { return action.HandleAgentPromptSubmit(codex.New(), logger) }},
+		{"pre-tool-use", "Snapshot files before a Codex tool", func(_ *cobra.Command, _ []string) error { return action.HandleAgentPreToolUse(codex.New(), logger) }},
+		{"post-tool-use", "Record changes after a Codex tool", func(_ *cobra.Command, _ []string) error { return action.HandleAgentPostToolUse(codex.New(), logger) }},
+		{"session-end", "Copy the completed Codex session", func(_ *cobra.Command, _ []string) error { return action.HandleAgentSessionEnd(codex.New(), logger) }},
+	}
+	for _, h := range handlers {
+		cmd.AddCommand(&cobra.Command{Use: h.name, Short: h.description, Args: cobra.NoArgs, Annotations: map[string]string{skipActionOptsInit: trueString}, RunE: func(cmd *cobra.Command, args []string) error { InitHookLogger(); return h.run(cmd, args) }})
+	}
+	return cmd
 }

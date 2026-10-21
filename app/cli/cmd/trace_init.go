@@ -27,6 +27,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
@@ -47,6 +48,7 @@ func newTraceInitCmd() *cobra.Command {
 		claudeFlag    bool
 		cursorFlag    bool
 		opencodeFlag  bool
+		codexFlag     bool
 	)
 
 	cmd := &cobra.Command{
@@ -72,7 +74,7 @@ named freely; the name is normalized to the lowercase, dash-separated form
 Chainloop stores. It then asks which harnesses to trace, with the ones the
 repository is already set up for ticked, or Claude Code on a first run; use
 space to tick more. Passing --org, --project or a harness flag
-(--claude, --cursor, --opencode) skips the matching question.
+(--claude, --cursor, --opencode, --codex) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
 required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
@@ -155,7 +157,7 @@ cannot use them with --local. You can use --require-trace with --local.`,
 			// so every question is answered up front and an abort leaves the
 			// repository untouched.
 			selected, err := resolveTraceProviders(newNamingPrompter(os.LookupEnv),
-				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag},
+				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag, codex: codexFlag},
 				traceInitCanPrompt(), func() []string { return configuredTraceProviders(repoRoot) })
 			if err != nil {
 				return stopIfAborted(err)
@@ -293,6 +295,7 @@ cannot use them with --local. You can use --require-trace with --local.`,
 	cmd.Flags().Bool("require-trace", false, "block pushes when a required trace is missing")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no harness flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
+	cmd.Flags().BoolVar(&codexFlag, "codex", false, "install Codex hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
 	return cmd
@@ -380,6 +383,11 @@ What's next
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
+	for _, p := range installed {
+		if p.Name() == codex.Name {
+			fmt.Fprintln(w, "For Codex, review and trust the installed hooks in Codex before starting work.")
+		}
+	}
 }
 
 // writeTraceInitLocalSummary reports what a local init set up. It names no
@@ -437,6 +445,11 @@ What's next
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
+	for _, p := range installed {
+		if p.Name() == codex.Name {
+			fmt.Fprintln(w, "For Codex, review and trust the installed hooks in Codex before starting work.")
+		}
+	}
 }
 
 // providerNames names the harnesses, in the order they were installed.

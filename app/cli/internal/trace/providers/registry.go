@@ -22,6 +22,7 @@ package providers
 import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 )
@@ -37,6 +38,7 @@ var all = []trace.Provider{
 	claude.New(),
 	cursor.New(),
 	opencode.New(),
+	codex.New(),
 }
 
 // byName is a lookup-optimized view of all, built once at init.

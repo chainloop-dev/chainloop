@@ -16,8 +16,12 @@
 package e2e
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/pelletier/go-toml/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -71,4 +75,53 @@ func TestCodexModelArgs(t *testing.T) {
 			assert.Equal(t, tc.want, codexModelArgs(tc.model))
 		})
 	}
+}
+
+func TestCodexStreamErrors(t *testing.T) {
+	raw := []byte("{\"type\":\"thread.started\"}\n{\"type\":\"error\",\"message\":\"missing key\"}\n{\"type\":\"turn.failed\",\"error\":{\"message\":\"turn failed\"}}\n")
+	assert.Equal(t, "missing key\nturn failed", codexStreamErrors(raw))
+}
+
+func TestCodexIsolatedConfig(t *testing.T) {
+	home := t.TempDir()
+	for _, dir := range []string{".agents/skills/personal", ".codex/skills/legacy", ".codex/skills/.system/builtin"} {
+		path := filepath.Join(home, dir, "SKILL.md")
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+		require.NoError(t, os.WriteFile(path, []byte("personal instructions"), 0600))
+	}
+	raw, err := codexIsolatedConfig(home)
+	require.NoError(t, err)
+	var config struct {
+		Skills struct {
+			Config []struct {
+				Path    string
+				Enabled bool
+			}
+			Bundled struct{ Enabled bool }
+		}
+	}
+	require.NoError(t, toml.Unmarshal(raw, &config))
+	require.Len(t, config.Skills.Config, 3)
+	for _, skill := range config.Skills.Config {
+		assert.False(t, skill.Enabled)
+		assert.Contains(t, skill.Path, home)
+	}
+	assert.False(t, config.Skills.Bundled.Enabled)
+}
+
+func TestCodexModelCatalog(t *testing.T) {
+	raw := []byte(`{"models":[{"slug":"gpt-6-luna","apply_patch_tool_type":"freeform","base_instructions":"native instructions"}]}`)
+	catalog, err := codexModelCatalog(raw, "openrouter/openai/gpt-6-luna")
+	require.NoError(t, err)
+	var got struct {
+		Models []map[string]any `json:"models"`
+	}
+	require.NoError(t, json.Unmarshal(catalog, &got))
+	require.Len(t, got.Models, 2)
+	assert.Equal(t, "openai/gpt-6-luna", got.Models[1]["slug"])
+	assert.Equal(t, "freeform", got.Models[1]["apply_patch_tool_type"])
+	assert.Equal(t, "native instructions", got.Models[1]["base_instructions"])
+	unknown, err := codexModelCatalog(raw, "openrouter/openai/unknown")
+	require.NoError(t, err)
+	assert.Nil(t, unknown)
 }
