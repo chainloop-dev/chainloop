@@ -18,7 +18,7 @@ Codex token usage comes from cumulative rollout counters. Cost is an estimate fr
 
 In a linked Git worktree, Codex 0.163 reads project hooks from the primary checkout. Install the Codex hooks in that checkout too, then review and trust them in Codex.
 
-Codex evidence converts native messages, tool calls, and tool results to the [shared transcript wire contract](PROVIDERS.md#transcript-wire-contract). Each converted entry retains its original event in `source_event`. The transcript E2E check validates the schema, renderable messages, and a completed tool exchange. A nonempty native transcript alone does not pass.
+Codex evidence converts native messages, tool calls, and tool results to the message shape used by the existing session viewer. Text uses `message.content`, calls use `tool_use` blocks, and results use `tool_result` blocks with matching IDs. Each converted entry retains its original event in `source_event`; native metadata stays unchanged. Codex regression and E2E checks require renderable messages and a completed tool exchange, including readable tool output. A nonempty native transcript alone does not pass. These checks apply to Codex; `raw_session` remains open in the shared evidence schema.
 
 ## Setup
 

@@ -18,9 +18,7 @@
     "agent": {
       "type": "object",
       "description": "AI agent provider information",
-      "required": [
-        "name"
-      ],
+      "required": ["name"],
       "properties": {
         "name": {
           "type": "string",
@@ -37,11 +35,7 @@
     "session": {
       "type": "object",
       "description": "Session timing and identity",
-      "required": [
-        "id",
-        "started_at",
-        "duration_seconds"
-      ],
+      "required": ["id", "started_at", "duration_seconds"],
       "properties": {
         "id": {
           "type": "string",
@@ -211,10 +205,7 @@
           "description": "Per-file change details",
           "items": {
             "type": "object",
-            "required": [
-              "path",
-              "status"
-            ],
+            "required": ["path", "status"],
             "properties": {
               "path": {
                 "type": "string",
@@ -241,10 +232,7 @@
                 "description": "Contiguous line ranges",
                 "items": {
                   "type": "object",
-                  "required": [
-                    "start",
-                    "end"
-                  ],
+                  "required": ["start", "end"],
                   "properties": {
                     "start": {
                       "type": "integer",
@@ -343,15 +331,9 @@
     },
     "raw_session": {
       "type": "object",
-      "description": "Transcript streams keyed by thread name. Conversation and tool events use the shared message format. Unknown native metadata may be retained alongside them; source_event preserves an original converted event.",
-      "required": [
-        "main"
-      ],
+      "description": "Raw session conversation data keyed by thread name",
       "additionalProperties": {
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/transcriptEntry"
-        }
+        "type": "array"
       }
     },
     "warnings": {
@@ -362,401 +344,5 @@
       }
     }
   },
-  "additionalProperties": false,
-  "definitions": {
-    "transcriptMessage": {
-      "type": "object",
-      "required": [
-        "message"
-      ],
-      "anyOf": [
-        {
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "type": {
-              "enum": [
-                "user",
-                "assistant"
-              ]
-            }
-          }
-        },
-        {
-          "required": [
-            "role"
-          ],
-          "properties": {
-            "role": {
-              "enum": [
-                "user",
-                "assistant"
-              ]
-            }
-          }
-        }
-      ],
-      "properties": {
-        "message": {
-          "type": "object",
-          "required": [
-            "content"
-          ],
-          "properties": {
-            "role": {
-              "type": "string"
-            },
-            "content": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/transcriptBlock"
-                  }
-                }
-              ]
-            }
-          }
-        }
-      }
-    },
-    "transcriptEntry": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string"
-        },
-        "role": {
-          "type": "string"
-        },
-        "uuid": {
-          "type": "string"
-        },
-        "timestamp": {
-          "type": "string"
-        },
-        "source_event": {
-          "type": "object"
-        }
-      },
-      "allOf": [
-        {
-          "if": {
-            "anyOf": [
-              {
-                "required": [
-                  "type"
-                ],
-                "properties": {
-                  "type": {
-                    "enum": [
-                      "user",
-                      "assistant"
-                    ]
-                  }
-                }
-              },
-              {
-                "required": [
-                  "role"
-                ],
-                "properties": {
-                  "role": {
-                    "enum": [
-                      "user",
-                      "assistant"
-                    ]
-                  }
-                }
-              }
-            ]
-          },
-          "then": {
-            "anyOf": [
-              {
-                "$ref": "#/definitions/transcriptMessage"
-              },
-              {
-                "$ref": "#/definitions/transcriptError"
-              }
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "type",
-              "payload"
-            ],
-            "properties": {
-              "type": {
-                "const": "response_item"
-              },
-              "payload": {
-                "anyOf": [
-                  {
-                    "required": [
-                      "type",
-                      "role"
-                    ],
-                    "properties": {
-                      "type": {
-                        "const": "message"
-                      },
-                      "role": {
-                        "enum": [
-                          "user",
-                          "assistant"
-                        ]
-                      }
-                    }
-                  },
-                  {
-                    "required": [
-                      "type"
-                    ],
-                    "properties": {
-                      "type": {
-                        "enum": [
-                          "function_call",
-                          "custom_tool_call",
-                          "function_call_output",
-                          "custom_tool_call_output"
-                        ]
-                      }
-                    }
-                  }
-                ]
-              }
-            }
-          },
-          "then": {
-            "$ref": "#/definitions/transcriptMessage"
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "message"
-            ],
-            "properties": {
-              "message": {
-                "type": "object",
-                "required": [
-                  "role"
-                ],
-                "properties": {
-                  "role": {
-                    "enum": [
-                      "user",
-                      "assistant"
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          "then": {
-            "anyOf": [
-              {
-                "$ref": "#/definitions/transcriptMessage"
-              },
-              {
-                "$ref": "#/definitions/transcriptError"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    "transcriptBlock": {
-      "type": "object",
-      "required": [
-        "type"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "minLength": 1,
-          "not": {
-            "enum": [
-              "input_text",
-              "output_text"
-            ]
-          }
-        }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "type": {
-                "const": "text"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "text"
-            ],
-            "properties": {
-              "text": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "type": {
-                "const": "tool_use"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "id",
-              "name"
-            ],
-            "properties": {
-              "id": {
-                "type": "string",
-                "minLength": 1
-              },
-              "name": {
-                "type": "string",
-                "minLength": 1
-              },
-              "input": {
-                "type": "object"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "type": {
-                "const": "tool_result"
-              }
-            }
-          },
-          "then": {
-            "required": [
-              "tool_use_id",
-              "content"
-            ],
-            "properties": {
-              "tool_use_id": {
-                "type": "string",
-                "minLength": 1
-              },
-              "content": {
-                "anyOf": [
-                  {
-                    "type": "string"
-                  },
-                  {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/definitions/transcriptBlock"
-                    }
-                  },
-                  {
-                    "type": "object"
-                  }
-                ]
-              }
-            }
-          }
-        }
-      ]
-    },
-    "transcriptError": {
-      "type": "object",
-      "required": [
-        "isApiErrorMessage",
-        "error"
-      ],
-      "properties": {
-        "isApiErrorMessage": {
-          "const": true
-        },
-        "error": {
-          "type": "string",
-          "minLength": 1
-        }
-      },
-      "anyOf": [
-        {
-          "required": [
-            "type"
-          ],
-          "properties": {
-            "type": {
-              "const": "assistant"
-            }
-          }
-        },
-        {
-          "required": [
-            "role"
-          ],
-          "properties": {
-            "role": {
-              "const": "assistant"
-            }
-          }
-        }
-      ]
-    }
-  },
-  "allOf": [
-    {
-      "if": {
-        "required": [
-          "raw_session",
-          "conversation"
-        ],
-        "properties": {
-          "conversation": {
-            "required": [
-              "total_messages"
-            ],
-            "properties": {
-              "total_messages": {
-                "type": "integer",
-                "minimum": 1
-              }
-            }
-          }
-        }
-      },
-      "then": {
-        "properties": {
-          "raw_session": {
-            "properties": {
-              "main": {
-                "contains": {
-                  "anyOf": [
-                    {
-                      "$ref": "#/definitions/transcriptMessage"
-                    },
-                    {
-                      "$ref": "#/definitions/transcriptError"
-                    }
-                  ]
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  ]
+  "additionalProperties": false
 }

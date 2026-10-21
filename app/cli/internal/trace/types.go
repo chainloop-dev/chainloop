@@ -29,10 +29,12 @@ const (
 	RoleAssistant = "assistant"
 )
 
-// RawSessionEntry is the shared wire format for messages in raw_session.
-// Providers must normalize conversation and tool records into this shape.
-// Native metadata events may remain alongside messages; they cannot replace
-// normalized messages. SourceEvent preserves the original event when converting.
+// RawSessionEntry is the normalized wire format most providers use for a
+// single message in raw_session["main"]. A provider whose persisted format
+// carries a native timeline may retain those objects instead, so valid unknown
+// entries are not discarded. Consumers can select a renderer by Agent.Name.
+// This shape mirrors Claude's JSONL transcript format, which the frontend was
+// originally built against.
 type RawSessionEntry struct {
 	Type        string            `json:"type,omitempty"`
 	Role        string            `json:"role,omitempty"`

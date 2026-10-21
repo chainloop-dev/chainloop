@@ -27,9 +27,9 @@ import (
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
-	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
 
@@ -153,17 +153,17 @@ func checkTranscript(s *Session) error {
 	if len(main) == 0 {
 		return errors.New("the evidence has no main transcript")
 	}
-	encoded, err := json.Marshal(d)
-	if err != nil {
-		return err
+	// Other providers retain their existing native transcript checks. Codex
+	// converts its rollout to the message shape used by the session viewer.
+	if d.Agent.Name != codex.Name {
+		for _, msg := range main {
+			if bytes.Contains(msg, []byte("greeting.txt")) {
+				return nil
+			}
+		}
+		return errors.New("the transcript does not show the work of the session")
 	}
-	var document any
-	if err := json.Unmarshal(encoded, &document); err != nil {
-		return err
-	}
-	if err := schemavalidators.ValidateAICodingSession(document, ""); err != nil {
-		return fmt.Errorf("transcript does not satisfy the evidence contract: %w", err)
-	}
+
 	var user, assistant, showsWork bool
 	calls, results := map[string]bool{}, map[string]bool{}
 	for _, msg := range main {
@@ -183,11 +183,16 @@ func checkTranscript(s *Session) error {
 			Type, Text, ID, Name string
 			ToolUseID            string          `json:"tool_use_id"`
 			Content              json.RawMessage `json:"content"`
+			Input                json.RawMessage `json:"input"`
 		}
 		if json.Unmarshal(entry.Message.Content, &blocks) == nil {
 			for _, block := range blocks {
 				switch block.Type {
 				case "tool_use":
+					var input map[string]json.RawMessage
+					if block.ID == "" || block.Name == "" || json.Unmarshal(block.Input, &input) != nil || input == nil {
+						return errors.New("the Codex transcript has a malformed tool call")
+					}
 					calls[block.ID] = true
 					readable = true
 				case "tool_result":
@@ -205,7 +210,7 @@ func checkTranscript(s *Session) error {
 	if !showsWork {
 		return errors.New("the normalized transcript does not show the work of the session")
 	}
-	if d.Agent.Name == "codex" && d.ToolsUsed != nil && d.ToolsUsed.TotalInvocations > 0 {
+	if d.ToolsUsed != nil && d.ToolsUsed.TotalInvocations > 0 {
 		for id := range calls {
 			if results[id] {
 				return nil

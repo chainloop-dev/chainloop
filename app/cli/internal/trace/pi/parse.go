@@ -27,7 +27,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
 
@@ -280,7 +279,7 @@ func buildEvidence(parsed *parsedSession, agentVersion string) *aicodingsession.
 
 	for _, entry := range parsed.Selected {
 		if !isTreeMarker(entry) {
-			raw = append(raw, transcriptRaw(entry))
+			raw = append(raw, craftableRaw(entry.Raw))
 		}
 		if entry.Type != "message" {
 			continue
@@ -358,52 +357,6 @@ func buildEvidence(parsed *parsedSession, agentVersion string) *aicodingsession.
 
 func isTreeMarker(entry *sessionEntry) bool {
 	return entry.Type == "custom" && entry.CustomType == treeMarkerCustomType
-}
-
-// transcriptRaw keeps native metadata and exposes messages in the shared format.
-func transcriptRaw(entry *sessionEntry) json.RawMessage {
-	raw := craftableRaw(entry.Raw)
-	if entry.Type != "message" {
-		return raw
-	}
-	var fields map[string]json.RawMessage
-	var message map[string]json.RawMessage
-	if json.Unmarshal(raw, &fields) != nil || json.Unmarshal(fields["message"], &message) != nil || message == nil {
-		return raw
-	}
-	role, _ := rawString(message["role"])
-	if role != trace.RoleUser && role != trace.RoleAssistant && role != "toolResult" {
-		return raw
-	}
-	content := message["content"]
-	if len(content) == 0 || bytes.Equal(content, []byte("null")) {
-		content = json.RawMessage(`[]`)
-	}
-	if role == "toolResult" {
-		callID, _ := rawString(message["toolCallId"])
-		content, _ = json.Marshal([]trace.RawSessionToolResultBlock{{Type: "tool_result", ToolUseID: callID, Content: content}})
-		role = trace.RoleUser
-	} else {
-		var blocks []map[string]json.RawMessage
-		if json.Unmarshal(content, &blocks) == nil {
-			for _, block := range blocks {
-				if kind, _ := rawString(block["type"]); kind == "toolCall" {
-					block["type"] = json.RawMessage(`"tool_use"`)
-					block["input"] = block["arguments"]
-					delete(block, "arguments")
-				}
-			}
-			content, _ = json.Marshal(blocks)
-		}
-	}
-	message["content"] = content
-	message["role"], _ = json.Marshal(role)
-	fields["type"] = message["role"]
-	fields["uuid"] = fields["id"]
-	fields["source_event"] = raw
-	fields["message"], _ = json.Marshal(message)
-	normalized, _ := json.Marshal(fields)
-	return normalized
 }
 
 // craftableRaw preserves a native Pi entry unless encoding/json cannot decode

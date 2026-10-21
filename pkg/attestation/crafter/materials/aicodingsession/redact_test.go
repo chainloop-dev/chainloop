@@ -278,7 +278,7 @@ func TestRedactSkipsMedia(t *testing.T) {
 		},
 		{
 			name:  "text field named data is still scanned",
-			entry: `{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Text with extra metadata","data":"` + media + `"}]}}`,
+			entry: `{"type":"user","message":{"role":"user","content":[{"type":"text","data":"` + media + `"}]}}`,
 		},
 	}
 

@@ -41,6 +41,10 @@ func TestTranscriptRequiresRenderableMessages(t *testing.T) {
 		{name: "no assistant", entries: []string{prompt}, wantErr: true},
 		{name: "missing tool result", entries: []string{prompt, call}, tools: 1, wantErr: true},
 		{name: "empty tool result", entries: []string{prompt, call, `{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"call-1","content":""}]}}`}, tools: 1, wantErr: true},
+		{name: "missing tool name", entries: []string{prompt, `{"type":"assistant","message":{"content":[{"type":"tool_use","id":"call-1","input":{}}]}}`, result}, tools: 1, wantErr: true},
+		{name: "missing tool ID", entries: []string{prompt, `{"type":"assistant","message":{"content":[{"type":"tool_use","name":"apply_patch","input":{}}]}}`, result}, tools: 1, wantErr: true},
+		{name: "invalid tool input", entries: []string{prompt, `{"type":"assistant","message":{"content":[{"type":"tool_use","id":"call-1","name":"apply_patch","input":"native arguments"}]}}`, result}, tools: 1, wantErr: true},
+		{name: "native tool output", entries: []string{prompt, call, `{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"call-1","content":[{"type":"output_text","text":"Success"}]}]}}`}, tools: 1, wantErr: true},
 		{name: "unrelated tool result", entries: []string{prompt, call, `{"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"other","content":"Success"}]}}`}, tools: 1, wantErr: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -64,4 +68,16 @@ func TestTranscriptRequiresRenderableMessages(t *testing.T) {
 			}
 		})
 	}
+}
+
+// The Codex renderer checks must not impose a format on other providers.
+func TestTranscriptPreservesOtherProviderFormats(t *testing.T) {
+	d := aicodingsession.Data{
+		Agent: aicodingsession.Agent{Name: "pi"},
+		RawSession: map[string][]json.RawMessage{"main": {
+			json.RawMessage(`{"type":"message","message":{"role":"user","content":"Create greeting.txt"}}`),
+		}},
+	}
+	s := &Session{Stored: &StoredSession{Evidence: *aicodingsession.NewEvidence(d)}}
+	require.NoError(t, checkTranscript(s))
 }

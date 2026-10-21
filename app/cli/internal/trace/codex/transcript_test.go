@@ -23,7 +23,6 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
-	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -81,21 +80,6 @@ func TestTranscriptContract(t *testing.T) {
 	assert.Equal(t, "exec_command", calls["call-2"].Name)
 	assert.JSONEq(t, `{"cmd":"cat hello.txt"}`, string(calls["call-2"].Input))
 	assert.Equal(t, map[string]string{"call-1": "Success", "call-2": "hello"}, results)
-
-	encoded, err := json.Marshal(evidence.Data)
-	require.NoError(t, err)
-	var data map[string]any
-	require.NoError(t, json.Unmarshal(encoded, &data))
-	require.NoError(t, schemavalidators.ValidateAICodingSession(data, ""))
-	// The original native-only evidence passed the old schema but is not renderable.
-	native := make([]any, 0, len(lines))
-	for _, line := range lines {
-		var event any
-		require.NoError(t, json.Unmarshal([]byte(line), &event))
-		native = append(native, event)
-	}
-	data["raw_session"] = map[string]any{"main": native}
-	require.Error(t, schemavalidators.ValidateAICodingSession(data, ""))
 }
 
 func TestTranscriptReasoningAndUnknownEvents(t *testing.T) {

@@ -127,24 +127,10 @@ Fill the evidence (`pkg/attestation/crafter/materials/aicodingsession`) as follo
 | `ToolsUsed` | A count per tool, sorted by count, then by name. | | | |
 | `Conversation` | User and assistant message counts. | | | |
 | `Subagents` | One entry per subagent, with its tokens. | Yes. | No. | No. |
-| `RawSession` | A map of streams. `main` is required: use an empty slice, not `nil`. Other keys are subagent streams. Conversation and tool records MUST use the shared transcript format below, even when the agent stores native JSONL. | Transcript lines. | Transcript lines. | Rebuilt by `buildRawSessionEntries`. |
+| `RawSession` | A map of streams. `main` is required: use an empty slice, not `nil`. Other keys are subagent streams. Each line must be one JSON object. If the agent has no line format, convert each message to the Claude line shape (`{type, uuid, timestamp, message: {role, content}}`) so the UI can show it. | Transcript lines. | Transcript lines. | Rebuilt by `buildRawSessionEntries`. |
 | `Warnings` | Each data item that the parser could not read or that the agent does not give. | | Always "no token usage". | |
 
 The caller sets `Session.Mode`, `GitContext`, `CodeChanges`, `Spec`, and the skills. Do not set them in the provider. Claude sets `GitContext.Branch` and `WorkDir` from the transcript, but the push replaces all of `GitContext` when it can read the repository.
-
-#### Transcript wire contract
-
-`trace.RawSessionEntry` defines the message envelope. The AI coding-session JSON schema validates it. Consumers MUST NOT need an agent-specific parser to read conversation text or tool exchanges.
-
-- A message MUST identify its role with `type: "user"` or `type: "assistant"`. Consumers also accept the Cursor `role` field when `type` is absent.
-- `message.content` MUST be a string or an array of content blocks. A text block MUST have `type: "text"` and a string `text` field.
-- A tool call MUST be an assistant content block with `type: "tool_use"`, a nonempty `id`, and a nonempty `name`. Its optional `input` MUST be an object.
-- A tool result MUST be a user content block with `type: "tool_result"`, `tool_use_id`, and `content`. Its `tool_use_id` MUST match the call's `id`. This carrier is not a new user prompt. A call still running at capture time may have no result yet.
-- Providers SHOULD include stable `uuid` values and RFC3339 `timestamp` values. They MUST preserve message order.
-- A converted entry MAY retain its original native record in `source_event`. Unknown native metadata MAY remain as separate JSON objects. Neither can replace normalized conversation or tool records.
-- A session with conversation messages and a stored transcript MUST contain a normalized message in `main`. Empty or metadata-only transcripts are valid only when no conversation was captured.
-
-The E2E transcript check MUST validate the schema and find renderable user and assistant content. It MUST find scenario work in normalized content, not just in native metadata. Codex also checks for a completed tool exchange with matching IDs. The final in-progress push call need not have a result yet.
 
 Cost:
 
