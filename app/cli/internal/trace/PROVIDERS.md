@@ -165,6 +165,19 @@ The handlers find these interfaces with a type assertion. A provider without one
 
 Add a compile-time check for each one, for example `var _ trace.SkillTracker = (*Provider)(nil)`.
 
+## Local storage mode
+
+A provider needs no code for local mode (`trace init --local`, `trace run --local`). The shared handlers select the mode:
+
+- `HandleAgentSessionStart` reads `config.IsLocalStorage(repoRoot)`, or `store.IsTraceRunLocal()` for a `trace run` session. In local mode, it does no credentials check. The banner names the folder on disk, not the dashboard. `AnnounceSessionStart` sends it as usual.
+- The `pre-push` hook calls `HandlePrePushHookLocal`. It uses the same `CopySessionData` and `ParseSession` as an attestation, and it writes the evidence to the `local-sessions` folder of the trace directory.
+
+Local mode sets these conditions on a provider:
+
+- `CopySessionData` and `ParseSession` must not use the control plane or the network. Local mode needs no login and no network. A local agent command is permitted (OpenCode runs `opencode export`).
+- `trace run --local` can run outside a git repository. Use only the `*state.Store` that the handler gives (for example `store.RawSessionDir()`). Do not find the trace directory or `.git` yourself.
+- The end-to-end suite runs in local mode only. A feature that needs a control plane is `not covered` for each provider.
+
 ## CLI wiring
 
 A provider is not active until the CLI knows about it. Change these files:
@@ -251,6 +264,8 @@ Copy this list into the pull request and tick each item.
 - [ ] Shell tool sends pre and post hooks with the same `ToolUseID`.
 - [ ] `CopySessionData`: safe to repeat, checks paths from the payload, does not fail the hook when the agent or the transcript is missing.
 - [ ] `ParseSession`: reads only the copy in `opts.SessionDir`.
+- [ ] `CopySessionData` and `ParseSession`: no control plane and no network, so that local mode works.
+- [ ] Trace state only through the `*state.Store`, so that `trace run --local` works outside a git repository.
 - [ ] Evidence: agent name and version, session ID and times, primary model, models used, model provider.
 - [ ] Evidence: token usage (input, output, total, cache read, cache write).
 - [ ] Evidence: cost from the agent, or from an embedded price table, or zero with a warning.
