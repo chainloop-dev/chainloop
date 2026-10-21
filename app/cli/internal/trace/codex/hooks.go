@@ -31,6 +31,8 @@ import (
 const (
 	hookMarker   = "chainloop trace hook codex"
 	settingsFile = ".codex/hooks.json"
+	// Skip tracing when the CLI is missing, before any Go handler can run.
+	hookCommandPrefix = "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec "
 
 	// Codex hook event names.
 	eventSessionStart     = "SessionStart"
@@ -109,7 +111,7 @@ func (p *Provider) installHookEvents(repoRoot string, events []hookEvent) error 
 		changed = removeHookEntry(hooks, eventSessionEnd)
 	}
 	for _, h := range events {
-		if addHookEntry(hooks, h.event, h.command, h.matcher) {
+		if addHookEntry(hooks, h.event, hookCommandPrefix+h.command+"'", h.matcher) {
 			changed = true
 		}
 	}
@@ -319,6 +321,9 @@ func isChainloopHandler(handler any) bool {
 		return false
 	}
 	command, _ := h["command"].(string)
+	if strings.HasPrefix(command, hookCommandPrefix) && strings.HasSuffix(command, "'") {
+		command = strings.TrimSuffix(strings.TrimPrefix(command, hookCommandPrefix), "'")
+	}
 	return strings.HasPrefix(command, hookMarker+" ")
 }
 

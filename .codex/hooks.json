@@ -4,7 +4,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook codex post-tool-use",
+            "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex post-tool-use'",
             "type": "command"
           }
         ],
@@ -15,7 +15,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook codex pre-tool-use",
+            "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex pre-tool-use'",
             "type": "command"
           }
         ],
@@ -26,7 +26,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook codex session-end",
+            "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex session-end'",
             "type": "command"
           }
         ]
@@ -36,7 +36,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook codex session-start",
+            "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex session-start'",
             "type": "command"
           }
         ]
@@ -46,7 +46,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook codex user-prompt-submit",
+            "command": "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec chainloop trace hook codex user-prompt-submit'",
             "type": "command"
           }
         ]
