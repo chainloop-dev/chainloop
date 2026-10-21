@@ -287,7 +287,7 @@ func (r *Runner) runScenario(ctx context.Context, h Harness, model string, sc Sc
 
 // errNoStoredSession is the failure of a check when the push stored no
 // session, for example because the agent did not commit or push.
-var errNoStoredSession = errors.New("the session stored nothing: the agent did not commit and push")
+var errNoStoredSession = errors.New("the push stored no session evidence; inspect harness-output.jsonl and the workspace git history")
 
 // evaluate runs the checks of a planned cell on its sessions and sets its
 // status and pass rate.

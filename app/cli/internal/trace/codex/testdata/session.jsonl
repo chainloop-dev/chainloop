@@ -1,0 +1,12 @@
+{"timestamp":"2026-10-21T10:00:00Z","type":"session_meta","payload":{"id":"sess-1","timestamp":"2026-10-21T10:00:00Z","cwd":"/workspace","cli_version":"0.163.0","source":"cli","model_provider":"openai"}}
+{"timestamp":"2026-10-21T10:00:01Z","type":"turn_context","payload":{"model":"gpt-5-mini","cwd":"/workspace"}}
+{"timestamp":"2026-10-21T10:00:02Z","type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"Create hello.txt"}]}}
+{"timestamp":"2026-10-21T10:00:02Z","type":"event_msg","payload":{"type":"user_message","message":"Create hello.txt"}}
+{"timestamp":"2026-10-21T10:00:03Z","type":"response_item","payload":{"type":"custom_tool_call","name":"apply_patch","call_id":"call-1","input":"*** Begin Patch\n*** Add File: hello.txt\n+hello\n*** End Patch"}}
+{"timestamp":"2026-10-21T10:00:04Z","type":"response_item","payload":{"type":"custom_tool_call_output","call_id":"call-1","output":"Success"}}
+{"timestamp":"2026-10-21T10:00:05Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1000,"cached_input_tokens":500,"cache_write_input_tokens":50,"output_tokens":200,"reasoning_output_tokens":100,"total_tokens":1200}}}}
+{"timestamp":"2026-10-21T10:00:06Z","type":"response_item","payload":{"type":"function_call","name":"exec_command","call_id":"call-2","arguments":"{\"cmd\":\"cat hello.txt\"}"}}
+{"timestamp":"2026-10-21T10:00:07Z","type":"response_item","payload":{"type":"function_call_output","call_id":"call-2","output":"hello"}}
+{"timestamp":"2026-10-21T10:00:58Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Created hello.txt"}]}}
+{"timestamp":"2026-10-21T10:00:59Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":2000,"cached_input_tokens":1000,"cache_write_input_tokens":100,"output_tokens":400,"reasoning_output_tokens":200,"total_tokens":2400}}}}
+{"timestamp":"2026-10-21T10:01:00Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":2000,"cached_input_tokens":1000,"cache_write_input_tokens":100,"output_tokens":400,"total_tokens":2400}}}}

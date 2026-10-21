@@ -32,7 +32,7 @@ harnesses:
   Codex:
     version: "0.163.0"
     models:
-      - openrouter/openai/gpt-5-mini
+      - openrouter/openai/gpt-6-luna
 
 # Runs and pass threshold of a cell whose feature depends on the model
 # following an instruction (R-006, D-004). A cell of any other feature runs

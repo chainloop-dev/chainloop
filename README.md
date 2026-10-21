@@ -155,7 +155,9 @@ chainloop trace init        # installs the git and agent hooks, writes .chainloo
 
 `trace init` writes `.chainloop.yml` and git hooks (`pre-push`, `post-commit`, `commit-msg`, `post-rewrite`) in the current repo, and `trace uninstall` removes them. Session data stays on your machine until `git push`, and the CLI redacts secrets before upload. The [AI Sessions Quickstart](https://docs.chainloop.dev/ai-sessions?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=try-it-in-60-seconds) lists what it sends.
 
-Now code with Claude Code, OpenCode, or Cursor, commit, and `git push`. The push hook attests the session and prints where to see it:
+For Codex, run `chainloop trace init --codex`. Review and trust the installed hooks in Codex before starting work. See the [agent support matrix](./app/cli/internal/trace/README.md) for verified features and limits.
+
+Now code with Claude Code, OpenCode, Codex, or Cursor, commit, and `git push`. The push hook attests the session and prints where to see it:
 
 ```text
 Coding Session Available at https://app.chainloop.dev/u/<org>/sessions/<id>
@@ -184,7 +186,7 @@ A workflow contract is the API between the people who set the rules and the peop
 
 | Component | What it does |
 |---|---|
-| [AI session collector](./app/cli/cmd/trace.go) (`chainloop trace`) | Records Claude Code, OpenCode, and Cursor sessions, redacts secrets, attributes AI and human lines, and attests the session on `git push`. `requireTrace` in `.chainloop.yml` blocks a push that has no record. |
+| [AI session collector](./app/cli/cmd/trace.go) (`chainloop trace`) | Records Claude Code, OpenCode, Codex, and Cursor sessions, redacts secrets, attributes AI and human lines, and attests the session on `git push`. `requireTrace` in `.chainloop.yml` blocks a push that has no record. |
 | [CLI](./app/cli) (`chainloop`) | One integration point for every major CI runner and 45 evidence types. It crafts, signs, and pushes attestations, and runs policies. |
 | [Trusted store](./app/artifact-cas) | Content-addressable storage for evidence, backed by an OCI registry, S3, Azure Blob Storage, or inline. Your storage, your keys. Called the Artifact CAS in the code. |
 | [Signing](./pkg/attestation/signer) | in-toto attestations, keyless by default, or your own cosign / KMS keys, or SignServer. Timestamped. |
@@ -231,7 +233,7 @@ During an attestation you can attach these evidence types. The CLI uploads files
 
 ## Use cases
 
-**Put guardrails on coding agents.** Record every Claude Code, OpenCode, or Cursor session as a signed record, and run your policies on every session. Catch an unapproved model, a secret in the transcript, or more AI lines than the rule allows. Chainloop signs violations into the record, and they fail the pipeline that builds the PR. `requireTrace: true` rejects a push with no recorded session. → [AI Sessions Quickstart](https://docs.chainloop.dev/ai-sessions?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=use-cases) · [Policies](https://docs.chainloop.dev/concepts/policies?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=use-cases) · [AI coding governance](https://chainloop.dev/solutions/ai-coding-governance/?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=use-cases)
+**Put guardrails on coding agents.** Record every Claude Code, OpenCode, Codex, or Cursor session as a signed record, and run your policies on every session. Catch an unapproved model, a secret in the transcript, or more AI lines than the rule allows. Chainloop signs violations into the record, and they fail the pipeline that builds the PR. `requireTrace: true` rejects a push with no recorded session. → [AI Sessions Quickstart](https://docs.chainloop.dev/ai-sessions?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=use-cases) · [Policies](https://docs.chainloop.dev/concepts/policies?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=use-cases) · [AI coding governance](https://chainloop.dev/solutions/ai-coding-governance/?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=use-cases)
 
 **Trace a release back to the prompt.** Follow any release back through the build and the commit to the AI session that started it. `chainloop referrer discover --digest <sha256>` returns every attestation that references an artifact, SBOM, or commit, and what those reference in turn. One record, from prompt to production. → [AI Sessions Quickstart](https://docs.chainloop.dev/ai-sessions?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=use-cases)
 
@@ -259,7 +261,8 @@ Git tells you what changed. It no longer tells you how. `chainloop trace` record
 | Claude Code | Supported, with token usage and cost |
 | OpenCode | Supported, with token usage and cost |
 | Cursor | Experimental, no token usage or cost yet |
-| Codex, GitHub Copilot, Gemini, Windsurf, Amp | Coming. [Contributions welcome](#community-and-contributing) |
+| Codex | Supported, with token usage and estimated cost |
+| GitHub Copilot, Gemini, Windsurf, Amp | Coming. [Contributions welcome](#community-and-contributing) |
 
 Wanted: new collector providers for the agents above, and new evidence types. The provider interface is in [app/cli/internal/trace](./app/cli/internal/trace).
 
@@ -351,7 +354,7 @@ You can also download the CLI from the [releases page](https://github.com/chainl
 ## For AI coding agents
 
 > [!NOTE]
-> **If you are an AI coding agent setting up Chainloop in this repository:** Install the CLI with `curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --oss`. Ask the user to run `chainloop auth login`, which opens a browser. Then run `chainloop trace init --project <name>` from the repository root. Add `--claude`, `--cursor`, or `--opencode` for the agents in use. The command writes `.chainloop.yml` and git hooks. Commit `.chainloop.yml`. The docs index for agents is https://docs.chainloop.dev/llms.txt. Any docs page is available as Markdown when you add `.md` to its URL. [Documentation](https://docs.chainloop.dev/ai-sessions?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=for-ai-coding-agents)
+> **If you are an AI coding agent setting up Chainloop in this repository:** Install the CLI with `curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s -- --oss`. Ask the user to run `chainloop auth login`, which opens a browser. Then run `chainloop trace init --project <name>` from the repository root. Add `--claude`, `--cursor`, `--opencode`, or `--codex` for the agents in use. The command writes `.chainloop.yml` and git hooks. Commit `.chainloop.yml`. The docs index for agents is https://docs.chainloop.dev/llms.txt. Any docs page is available as Markdown when you add `.md` to its URL. [Documentation](https://docs.chainloop.dev/ai-sessions?utm_source=github&utm_medium=readme&utm_campaign=chainloop-oss&utm_content=for-ai-coding-agents)
 
 Or paste this into Claude Code, Codex, or Cursor:
 

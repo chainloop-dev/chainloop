@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "chainloop trace hook codex post-tool-use",
+            "type": "command"
+          }
+        ],
+        "matcher": "^(apply_patch|Bash)$"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "chainloop trace hook codex pre-tool-use",
+            "type": "command"
+          }
+        ],
+        "matcher": "^(apply_patch|Bash)$"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "command": "chainloop trace hook codex session-end",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "chainloop trace hook codex session-start",
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "chainloop trace hook codex user-prompt-submit",
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  }
+}
