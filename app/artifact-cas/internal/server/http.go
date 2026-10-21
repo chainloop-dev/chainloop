@@ -242,6 +242,18 @@ func grpcProxy(target string, logger log.Logger) *httputil.ReverseProxy {
 		// coding, and the transport must neither add transport-level gzip
 		// headers nor transparently decode the proxied body.
 		DisableCompression: true,
+		// Bound the per-stream read-ahead the proxy pulls from the private
+		// upstream server. net/http's HTTP/2 client defaults to a 4 MiB
+		// per-stream receive window, so a slow or stalled public reader makes
+		// the proxy pin up to that much already-received data per stream
+		// (PFM-7978 / M1, M2). 256 KiB is far above the loopback
+		// bandwidth-delay product, so it costs no throughput on this hop while
+		// cutting the memory pinned per stalled stream ~16x. The per-connection
+		// window is deliberately left at its default: shrinking it would make
+		// flow-control exhaustion easier, not harder.
+		HTTP2: &h.HTTP2Config{
+			MaxReceiveBufferPerStream: 256 << 10,
+		},
 	}
 	transport.Protocols.SetUnencryptedHTTP2(true)
 	transport.Protocols.SetHTTP1(false)

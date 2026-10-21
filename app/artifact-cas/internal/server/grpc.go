@@ -96,6 +96,18 @@ func legacyGRPCListenerEnabled(c *conf.Server) bool {
 	return c.LegacyGrpcListener == nil || *c.LegacyGrpcListener
 }
 
+// maxConcurrentStreamsPrivate caps the concurrent HTTP/2 streams the shared
+// endpoint's reverse proxy runs on a single upstream connection to the private
+// gRPC server. grpc-go sets no limit by default, which lets net/http's HTTP/2
+// client funnel every proxied stream onto one upstream connection whose ~1 GiB
+// flow-control window then becomes a shared, exhaustible resource: a
+// stalled-reader flood exhausts it and wedges gRPC for every tenant (PFM-7978 /
+// M1). Capping it makes the client spread streams across several connections,
+// each with its own window, so no single shared window can be exhausted. It
+// applies only to the private server behind the proxy; direct clients of the
+// legacy listener are unaffected.
+const maxConcurrentStreamsPrivate = 100
+
 // NewGRPCServers builds the private native server for the shared endpoint and
 // the optional legacy listener, with the same services and interceptors.
 func NewGRPCServers(opts *Opts) (*GRPCServers, error) {
@@ -106,7 +118,12 @@ func NewGRPCServers(opts *Opts) (*GRPCServers, error) {
 	if err != nil {
 		return nil, fmt.Errorf("binding the shared endpoint's private gRPC listener: %w", err)
 	}
-	private, err := newGRPCServer(opts, grpc.Listener(privateLis))
+	// Cap concurrent streams per upstream connection so the proxy cannot funnel
+	// every tenant onto one connection and exhaust its shared flow-control
+	// window (PFM-7978 / M1).
+	private, err := newGRPCServer(opts,
+		[]grpcLib.ServerOption{grpcLib.MaxConcurrentStreams(maxConcurrentStreamsPrivate)},
+		grpc.Listener(privateLis))
 	if err != nil {
 		_ = privateLis.Close()
 		return nil, err
@@ -146,10 +163,10 @@ func NewGRPCServer(opts *Opts) (*grpc.Server, error) {
 			}))
 		}
 	}
-	return newGRPCServer(opts, serverOpts...)
+	return newGRPCServer(opts, nil, serverOpts...)
 }
 
-func newGRPCServer(settings *Opts, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
+func newGRPCServer(settings *Opts, grpcServerOpts []grpcLib.ServerOption, extraOpts ...grpc.ServerOption) (*grpc.Server, error) {
 	c, authConf := settings.ServerConfig, settings.AuthConfig
 	byteService, rSvc := settings.ByteService, settings.ResourceSvc
 	providers, validator, logger := settings.Providers, settings.Validator, settings.Logger
@@ -162,6 +179,14 @@ func newGRPCServer(settings *Opts, extraOpts ...grpc.ServerOption) (*grpc.Server
 
 	// Share a single keyfunc closure over the parsed key across all interceptors
 	keyFunc := loadPublicKey(publicKey)
+
+	// Fold any caller-supplied grpc-go options (e.g. the private server's
+	// concurrent-stream cap) into the single grpc.Options call below. kratos's
+	// grpc.Options assigns rather than appends, so a second grpc.Options call
+	// would silently drop the stats handler registered here.
+	rawGRPCOpts := append([]grpcLib.ServerOption{
+		grpcLib.StatsHandler(otelgrpc.NewServerHandler()),
+	}, grpcServerOpts...)
 
 	var opts = []grpc.ServerOption{
 		// Kratos middleware are in practice unary interceptors
@@ -197,7 +222,7 @@ func newGRPCServer(settings *Opts, extraOpts ...grpc.ServerOption) (*grpc.Server
 			grpc_prometheus.UnaryServerInterceptor,
 			protovalidateMiddleware.UnaryServerInterceptor(validator),
 		),
-		grpc.Options(grpcLib.StatsHandler(otelgrpc.NewServerHandler())),
+		grpc.Options(rawGRPCOpts...),
 	}
 
 	// Opt-in histogram metrics for the interceptor
