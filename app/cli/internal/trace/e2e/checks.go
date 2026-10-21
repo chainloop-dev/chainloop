@@ -169,10 +169,19 @@ func checkTokenUsage(s *Session) error {
 	return nil
 }
 
+// modelAuto is the model of a session where the harness picks the model, for
+// example the Auto mode of Cursor.
+const modelAuto = "auto"
+
 func checkModel(s *Session) error {
 	m := evidence(s).Model
 	if m == nil || m.Primary == "" {
 		return errors.New("the evidence has no primary model")
+	}
+	// In auto mode the harness picks the model, and no output names it, so
+	// there is no model name to compare.
+	if strings.EqualFold(s.Model, modelAuto) {
+		return fmt.Errorf("%w: the session runs in auto mode, so its model has no name to compare with %q", errNotCovered, m.Primary)
 	}
 	// A model can have a provider prefix, for example
 	// amazon-bedrock/eu.anthropic.claude-haiku-5-5, that the evidence leaves

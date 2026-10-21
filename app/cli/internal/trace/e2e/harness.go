@@ -23,6 +23,9 @@ const HarnessClaudeCode = "Claude Code"
 const (
 	// flagModel is the model flag that all the harnesses share.
 	flagModel = "--model"
+	// outputStreamJSON is the line-per-event output format of Claude Code and
+	// the Cursor CLI.
+	outputStreamJSON = "stream-json"
 	// userHookMarker is in the hook of the user that a scenario seeds.
 	userHookMarker = "e2e-user-hook"
 )

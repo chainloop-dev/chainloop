@@ -18,13 +18,13 @@ How Trace is added to a repository and to an agent.
 
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
 |---------|---------------|-------------|--------|--------------|------------|---|---|
-| Hook installation and deletion | `chainloop trace init` installs the hooks of the selected agent. A second init changes nothing. `chainloop trace uninstall` deletes only the Chainloop hooks and keeps the other hooks of the agent. | Yes | Unknown | Unknown | Yes | No | No |
-| Trace run wrapper | `chainloop trace run -- <agent command>` gives the agent temporary hooks for one session. When the command exits, the configuration of the agent is the same as before. | Yes | Unknown | Unknown | Yes | No | No |
+| Hook installation and deletion | `chainloop trace init` installs the hooks of the selected agent. A second init changes nothing. `chainloop trace uninstall` deletes only the Chainloop hooks and keeps the other hooks of the agent. | Yes | Yes | Unknown | Yes | No | No |
+| Trace run wrapper | `chainloop trace run -- <agent command>` gives the agent temporary hooks for one session. When the command exits, the configuration of the agent is the same as before. | Yes | Yes | Unknown | Yes | No | No |
 | More than one agent in one repository | Two agents initialized in the same repository record their sessions separately, and each commit names the sessions of the agent that made it. | Unknown | Unknown | Unknown | Unknown | No | No |
 
 Why not Yes:
 
-- **Hook installation and deletion, and Trace run wrapper, Cursor and OpenCode:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
+- **Hook installation and deletion, and Trace run wrapper, OpenCode 1.x:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
 - **More than one agent in one repository, all agents:** not verified yet. The end-to-end suite needs a second agent to test it (spec issue-3635).
 
 ## Session collection
@@ -43,7 +43,7 @@ Why not Yes:
 
 - **Transcript, OpenCode:** OpenCode has no transcript file. The provider runs `opencode export` (1.x) or `opencode session export` (2) and rebuilds the transcript from the export. It keeps the text and the inputs of the tool calls. It drops the tool outputs, the reasoning and the file parts. OpenCode 2 exports also have no agent version and no session slug.
 - **Token usage and cost, Cursor:** the Cursor transcript does not hold token usage. Usage and cost are zero, and the evidence has a warning that tells so. (For OpenCode, the cost is the value that OpenCode reports. For Claude Code, Chainloop computes it from its price table.)
-- **Model detection, Cursor:** the primary model comes from the session-start hook. The transcript does not tell the models, so the evidence does not list the other models.
+- **Model detection, Cursor:** the primary model comes from the session-start hook. The transcript does not tell the models, so the evidence does not list the other models. In auto mode, the hook names the model `default`, not the model that ran.
 - **Subagents, Cursor:** the provider does not read subagent conversations.
 - **Subagents, OpenCode:** a subagent runs in a child session with its own export. It is not part of the evidence of its parent session.
 - **Missed session start, Cursor and OpenCode 1.x:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
@@ -70,7 +70,6 @@ Why not Yes:
 - **Session updates, all agents:** the update works only in the clone where the work happened, while the CLI keeps the trace state of the session (30 days), and only when the commits of the session are on the branch that the push sends. The push reads only the commits that are not on the default branch of the remote (`origin/HEAD`, or else `origin/main` or `origin/master`). After the commits of a session are pushed to that branch, a later commit does not update the session.
 - **Renames and rewrites, all agents:** this works only in the clone where the work happened. Git finds a rename only when the file keeps at least half of its content. Two pushed commits can rename a file one after the other. A later change to the file under its middle name does not send the session again. A rename inside an amend or a squash of the session commit loses the AI lines: the new commit creates the file under its new name, so no line of it matches the trace state (issue 3686). The limits of session updates apply too. For Cursor, the limits of line attribution apply too.
 - **Shell changes attribution, all agents:** the hook before a shell command records only a hash of each file, not its content. The file at the `HEAD` commit from before the command stands in for the content before the command. Uncommitted lines that an earlier agent edit recorded are not recorded again, but uncommitted human lines of a file that the command changes count as AI.
-- **Shell changes attribution, Cursor:** the provider installs the `preToolUse` and `postToolUse` hooks for the `Shell` tool. These hooks are verified for the Cursor IDE only. It is not verified that the Cursor CLI sends them.
 
 ## User experience
 
@@ -98,7 +97,7 @@ What the session was asked to build, and which skills it used.
 | Spec capture instruction | At session start, the agent is told to capture the specs of the session (tickets, documents, plans, images) in the spec folder. A plan is captured only when it comes from an external source or from the plan mode of the agent: an agreement in the chat is not a plan. A pasted image is not captured, also when the agent has a file path for it. The agent tells the user in one line when it captures a file. | Yes | Yes | Yes | Yes | No | No |
 | Spec capture reminder | At each user prompt, the agent is reminded to capture new or changed specs. | Yes | No | Yes | Yes | No | No |
 | Local spec sources read at push | A capture whose source is a local file holds only a header and a placeholder. Each push reads the file and records its current content, so the evidence follows the edits of the file. Only a regular text file of up to 1 MiB is read. Otherwise the push keeps the body that the agent wrote, or drops the capture with a warning when there is no body (spec issue-3561). | Yes | Yes | Yes | Yes | No | No |
-| Spec source role, title, and description | Each captured spec source holds the role, the title, and the description that the agent wrote in its header (spec issue-3531). | Yes | Unknown | Unknown | Yes | No | No |
+| Spec source role, title, and description | Each captured spec source holds the role, the title, and the description that the agent wrote in its header (spec issue-3531). | Yes | Yes | Unknown | Yes | No | No |
 | Skills tracking | The evidence lists the skills that the session used, with a copy of each skill as it ran. | Yes | No | Partial | Partial | No | No |
 | Spec source pointers | Exact copies of spec sources in the transcript (full file reads and file writes) are replaced with a pointer to the spec material, so the evidence does not hold the same content two or three times (spec issue-3556). This includes the copies of pasted images and spec sources in the `api-request-blob` records of a Claude Code transcript (issue 3654). | Yes | No | No | No | No | No |
 | Pasted image pointers | Each distinct image that the user pasted into the session, including images in prompts sent while the agent was busy, is stored once as an image spec entry, from the data in the transcript, with the title "Pasted image N" and no role. A repeated paste of the same image adds no entry. The inline image in the transcript is replaced with a pointer to that material. An image whose data cannot be decoded, or that the push could not store, stays inline, and the push continues. When the agent captured the same image, its entry is kept and no second entry is added (spec issue-3569). | Yes | No | No | No | No | No |
@@ -106,7 +105,7 @@ What the session was asked to build, and which skills it used.
 Why not Yes:
 
 - **Spec capture reminder, Cursor:** Cursor has no hook at each user prompt. The agent gets the session-start instruction only.
-- **Spec source role, title, and description, Cursor and OpenCode 1.x:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
+- **Spec source role, title, and description, OpenCode 1.x:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
 - **Skills tracking, Cursor:** the provider does not track skills. The evidence has no skill entries, which means "not recorded", not "no skill used".
 - **Skills tracking, OpenCode:** only the skills that the model starts with the `skill` tool are counted. Skills that the user starts, and skills used in subagents, are not. A plugin installed by an earlier version does not send the skill folder for OpenCode 2: install the hooks again to update it.
 - **Spec source pointers, Cursor and OpenCode:** the provider has no finder for the copies in its transcript yet. For OpenCode, the rebuilt transcript holds no tool outputs, so only the write copies would apply.
@@ -124,7 +123,7 @@ How the evidence is protected before it leaves the machine.
 
 Why not Yes:
 
-- **Media skipped by redaction, Cursor:** the redaction skips base64 media blocks of the shape `{"type":"base64","data":...}`. The Cursor transcript is stored as it is, and it is not verified whether it holds media in that shape.
+- **Media skipped by redaction, Cursor:** the Cursor transcript holds no tool outputs, so a file that the agent reads leaves no media in it. A pasted image stays inline in the transcript, but it is not verified that it is in the base64 media shape that the redaction skips. The headless Cursor CLI cannot attach an image, so the end-to-end suite cannot check it.
 - **Media skipped by redaction, OpenCode:** the rebuilt transcript holds no media.
 
 ## Git integration
@@ -151,7 +150,7 @@ Run `chainloop trace init` one time for each repository. Git does not clone the 
 
 Why not Yes:
 
-- **Shell commands in another checkout, Cursor:** the shell hooks are verified for the Cursor IDE only. A relative path in the command resolves against the first workspace root, not against the folder where the shell runs.
+- **Shell commands in another checkout, Cursor:** a relative path in the command resolves against the first workspace root, not against the folder where the shell runs.
 ## How each agent is hooked in
 
 | Agent | Hook installation | Hooks |
@@ -164,7 +163,7 @@ All agents share the git hooks `commit-msg`, `post-commit` and `pre-push`.
 
 ## End-to-end tests
 
-The `e2e/` package checks the tables of this page against real agents (spec issue-3635). It runs each agent in headless mode with real models, in throwaway repositories with Trace in local storage mode. For now, it runs the Claude Code, OpenCode 2, Pi, and Codex columns. The Pi and Codex cells are **No**, so the suite skips them until Pi and Codex support is added. OpenCode runs on a private server (`opencode run --standalone`) with `PWD` set to the workspace, because OpenCode takes its project folder from `PWD`. Pi runs with `pi -p --mode json --approve`, with its configuration and session folders next to the workspace. Codex runs with `codex exec --json`, with its `CODEX_HOME` folder next to the workspace, no sandbox, and no hook trust prompt. The OpenCode 2, Pi, and Codex models in `e2e/config.yaml` are OpenRouter models, so the run needs `OPENROUTER_API_KEY`. A Codex model with no `openrouter/` prefix runs on the default Codex provider, which needs `CODEX_API_KEY`.
+The `e2e/` package checks the tables of this page against real agents (spec issue-3635). It runs each agent in headless mode with real models, in throwaway repositories with Trace in local storage mode. For now, it runs the Claude Code, Cursor, OpenCode 2, Pi, and Codex columns. The Pi and Codex cells are **No**, so the suite skips them until Pi and Codex support is added. OpenCode runs on a private server (`opencode run --standalone`) with `PWD` set to the workspace, because OpenCode takes its project folder from `PWD`. Pi runs with `pi -p --mode json --approve`, with its configuration and session folders next to the workspace. Codex runs with `codex exec --json`, with its `CODEX_HOME` folder next to the workspace, no sandbox, and no hook trust prompt. Cursor runs with `cursor-agent -p --output-format stream-json --force --trust`, with its `HOME` folder next to the workspace, so the Cursor configuration and hooks of the user do not load. Cursor runs its shell tool in a login shell, and on macOS `path_helper` puts the system folders first in `PATH`. So the harness writes shell startup files in that `HOME` that set `PATH` back. Otherwise a `chainloop` in `/usr/local/bin` runs the git hooks instead of the CLI under test. The Cursor CLI then has no stored login, so the run needs `CURSOR_API_KEY`. The headless Cursor CLI cannot attach a pasted image, and its output does not show the hook messages. The OpenCode 2, Pi, and Codex models in `e2e/config.yaml` are OpenRouter models, so the run needs `OPENROUTER_API_KEY`. A Codex model with no `openrouter/` prefix runs on the default Codex provider, which needs `CODEX_API_KEY`.
 
 Some scenarios add the git commands of a human after the session, for example a commit that replaces an AI line, an amend, or a rename, and then push again. They work on a feature branch, because the push reads only the commits that are not on the default branch of the remote.
 
