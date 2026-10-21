@@ -57,7 +57,7 @@ $ chainloop integration available list
 And the information of how to use it can be found in the describe command.
 
 ```console
-$ chainloop integration available describe --id dependencytrack
+$ chainloop integration available describe --name dependency-track
 ┌─────────────────┬─────────┬──────────────────────┬────────────────────────────────────────────────────────┐
 │ ID              │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                            │
 ├─────────────────┼─────────┼──────────────────────┼────────────────────────────────────────────────────────┤

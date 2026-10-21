@@ -47,7 +47,7 @@ Registration is when a specific instance of the integration is configured on a C
 In our case, we want to register an instance of the `oci-registry` integration. To do so, we need to first figure out what configuration parameters are required by the integration. We can do so by running:
 
 ```sh
-$ chainloop integration available describe --id oci-registry
+$ chainloop integration available describe --name oci-registry
 ┌──────────────┬─────────┬──────────────────────┬────────────────────────────────────────────────┐
 │ ID           │ VERSION │ MATERIAL REQUIREMENT │ DESCRIPTION                                    │
 ├──────────────┼─────────┼──────────────────────┼────────────────────────────────────────────────┤
@@ -74,9 +74,9 @@ $ chainloop integration available describe --id oci-registry
 In the console output we can see a registration section that indicates that 3 parameters are required, let's go ahead and register it using our Google Artifact Registry Credentials by running:
 
 ```sh
+# repository i.e us-east1-docker.pkg.dev/my-project/chainloop-cas-devel
 $ chainloop integration registered add oci-registry \
     --name [unique-registration-name] \
-    # i.e us-east1-docker.pkg.dev/my-project/chainloop-cas-devel
     --opt repository=[region]-docker.pkg.dev/[my-project]/[my-repository] \
     --opt username=_json_key \
     --opt "password=$(cat service-account.json)"
@@ -88,10 +88,10 @@ $ chainloop integration registered add oci-registry \
 
 Once the integration is registered, we can attach it to any workflow. In practice this means that attestations and material information generated in this workflow will be sent to the registered integration.
 
-The attachment process has at least two required parameters, the `workflowID` and the registered `integrationID`. Additionally each integration might have additional to customize its behavior per-workflow. In our case, on the table above, we can see that the `oci-registry` integration has an optional parameter called `prefix` that allows you to customize the name of the image that will be pushed to the registry. 
+The attachment process has three required parameters: the workflow name, the name of the project it belongs to, and the name of the registered integration. Additionally, each integration might have additional options to customize its behavior per-workflow. In our case, on the table above, we can see that the `oci-registry` integration has an optional parameter called `prefix` that allows you to customize the name of the image that will be pushed to the registry. 
 
 ```console 
-$ chainloop integration attached add --workflow $WID --integration $IID --opt prefix=custom-prefix
+$ chainloop integration attached add --workflow [workflow-name] --project [project-name] --integration [unique-registration-name] --opt prefix=custom-prefix
 ```
 
 Congratulations, you are done now! Every new attestation from this workflow will be uploaded to your OCI registry!

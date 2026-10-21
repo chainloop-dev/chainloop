@@ -15,7 +15,7 @@ chainloop integration registered add webhook --name [my-registration] --opt url=
 1. Attach the integration to your workflow.
 
 ```console
-chainloop integration attached add --workflow $WID --integration $IID
+chainloop integration attached add --workflow [workflow-name] --project [project-name] --integration [my-registration]
 ```
 
 > **Note:** You can specify the `send_attestation` and `send_sbom` options to control what is sent to the webhook. `--opt "send_attestation=false"` will disable sending attestations, and `--opt "send_sbom=true"` will enable sending SBOMs.
