@@ -23,11 +23,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/bytestream"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // These tests lock down the DOWNLOAD digest-verification behavior — the server
@@ -39,15 +41,79 @@ import (
 // data chunks the sendWriter sends. Only Send is exercised by sendWriter.
 type fakeReadServer struct {
 	bytestream.ByteStream_ReadServer
-	sent [][]byte
+	sent    [][]byte
+	sendErr error
 }
 
 func (f *fakeReadServer) Send(r *bytestream.ReadResponse) error {
+	if f.sendErr != nil {
+		return f.sendErr
+	}
 	// copy: the underlying buffer may be reused by the caller
 	cp := make([]byte, len(r.Data))
 	copy(cp, r.Data)
 	f.sent = append(f.sent, cp)
 	return nil
+}
+
+func TestByteStreamDownloadTransportClosing(t *testing.T) {
+	tests := []struct {
+		name           string
+		err            error
+		fromSend       bool
+		wantDisconnect bool
+	}{
+		{
+			name:           "client transport closes before request cancellation",
+			err:            status.Error(codes.Unavailable, "transport is closing"),
+			fromSend:       true,
+			wantDisconnect: true,
+		},
+		{
+			name:           "unavailable client transport",
+			err:            status.Error(codes.Unavailable, "connection error"),
+			fromSend:       true,
+			wantDisconnect: true,
+		},
+		{
+			name:     "internal send error is still reported",
+			err:      status.Error(codes.Internal, "send failed"),
+			fromSend: true,
+		},
+		{
+			name: "backend transport closing is still reported",
+			err:  status.Error(codes.Unavailable, "transport is closing"),
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var reported int
+			client, err := sentry.NewClient(sentry.ClientOptions{
+				BeforeSend: func(_ *sentry.Event, _ *sentry.EventHint) *sentry.Event {
+					reported++
+					return nil
+				},
+			})
+			require.NoError(t, err)
+			ctx := sentry.SetHubOnContext(context.Background(), sentry.NewHub(client, sentry.NewScope()))
+			downloadErr := tc.err
+			if tc.fromSend {
+				sw := sendWriter{stream: &fakeReadServer{sendErr: tc.err}}
+				_, downloadErr = sw.Write([]byte(downloadContent))
+				require.ErrorIs(t, downloadErr, tc.err)
+			}
+			require.NoError(t, ctx.Err(), "transport can close before the request context is canceled")
+			svc := NewByteStreamService(nil)
+			err = svc.downloadError(ctx, downloadErr, downloadDigestHex)
+			if tc.wantDisconnect {
+				require.NoError(t, err)
+				assert.Zero(t, reported, "client disconnects must not reach Sentry")
+			} else {
+				require.Error(t, err)
+				assert.Equal(t, 1, reported)
+			}
+		})
+	}
 }
 
 // TestSendWriter_ForwardsChunksInOrder verifies the download adapter turns
