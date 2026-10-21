@@ -155,7 +155,7 @@ func TestMarkdown(t *testing.T) {
 			{Feature: featTranscript, Harness: HarnessClaudeCode, HarnessVersion: testHarnessVersion, Model: testModel, Status: StatusPass, Passes: 1, Runs: 1},
 			{Feature: "Spec capture instruction", Harness: HarnessClaudeCode, HarnessVersion: testHarnessVersion, Model: testModel, Status: StatusFail, Passes: 1, Runs: 3},
 			{Feature: "Session link after push", Harness: HarnessClaudeCode, HarnessVersion: testHarnessVersion, Model: testModel, Status: StatusNotCovered},
-			{Feature: featTranscript, Harness: colCursor, Model: "auto", Status: StatusSkipped},
+			{Feature: featTranscript, Harness: colCursor, Model: modelAuto, Status: StatusSkipped},
 		},
 	}
 

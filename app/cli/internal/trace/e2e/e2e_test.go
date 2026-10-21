@@ -129,6 +129,7 @@ func TestTraceMatrix(t *testing.T) {
 // ones that config.yaml lists.
 var harnesses = map[string]Harness{
 	HarnessClaudeCode: &Claude{},
+	"Cursor":          &Cursor{},
 	"OpenCode 2":      &OpenCode{Major: "2"},
 	"Pi":              &Pi{},
 	"Codex":           &Codex{},

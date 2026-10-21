@@ -75,7 +75,7 @@ func (c *Claude) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 	args := []string{
 		"-p", req.Prompt,
 		flagModel, req.Model,
-		"--output-format", "stream-json",
+		"--output-format", outputStreamJSON,
 		"--verbose",
 		"--include-hook-events",
 		"--setting-sources", "project,local",
@@ -92,7 +92,7 @@ func (c *Claude) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 		}
 		stdin = msg
 		// The prompt is in the message, so -p takes no argument.
-		args = append([]string{"-p", "--input-format", "stream-json"}, args[2:]...)
+		args = append([]string{"-p", "--input-format", outputStreamJSON}, args[2:]...)
 	}
 
 	name := c.bin()

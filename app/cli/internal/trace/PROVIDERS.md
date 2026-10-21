@@ -220,7 +220,7 @@ Each provider must have an end-to-end harness. The suite in `e2e/` runs the agen
 
 A cell that the suite did not check stays at **Unknown**, or you add a check for it.
 
-1. Add `e2e/myagent.go` with a type that implements `e2e.Harness` (`e2e/harness.go`): `Column`, `TraceFlag`, `Version`, `Run`, `HookConfig`, `DisableSessionStart`, and `SkillPath`. Use `e2e/claude.go`, `e2e/opencode.go`, and `e2e/pi.go` as examples. Run the agent with its configuration and session folders next to the workspace, so the run does not touch the configuration of the user.
+1. Add `e2e/myagent.go` with a type that implements `e2e.Harness` (`e2e/harness.go`): `Column`, `TraceFlag`, `Version`, `Run`, `HookConfig`, `DisableSessionStart`, and `SkillPath`. Use `e2e/claude.go`, `e2e/cursor.go`, `e2e/opencode.go`, and `e2e/pi.go` as examples. Run the agent with its configuration and session folders next to the workspace, so the run does not touch the configuration of the user.
 2. Add the harness to the `harnesses` map in `e2e/e2e_test.go`. The key is the column name in the README.
 3. Add the harness to `e2e/config.yaml`, with the pinned version and the models. Write the API key that the models need in a comment.
 4. If the agent shows hook messages in its headless output, set `RunOutput.Hooks` and `HooksReported`. Otherwise the hook message checks are "not covered".
@@ -230,7 +230,7 @@ A cell that the suite did not check stays at **Unknown**, or you add a check for
    CHAINLOOP_E2E_HARNESS="My Agent" make -C app/cli test-trace-e2e
    ```
 
-Cursor has no end-to-end harness yet, so its **Unknown** cells are not verified. Do not add a provider with this gap.
+Do not add a provider with no end-to-end harness: its **Unknown** cells stay not verified.
 
 ### Compatibility matrix (required)
 
