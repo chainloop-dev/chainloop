@@ -395,3 +395,11 @@ type ParseOpts struct {
 // both the providers registry and the action package can reference it
 // without a package import.
 const DefaultProviderName = "claude-code"
+
+// GuardHookCommand wraps an agent hook command so that a repository with the
+// hooks installed keeps working when the chainloop CLI is not on PATH: the
+// hook exits 0 instead of failing with "command not found" (127). When the
+// CLI is present, exec hands it stdin, stdout and the exit status unchanged.
+func GuardHookCommand(command string) string {
+	return "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec " + command + "'"
+}

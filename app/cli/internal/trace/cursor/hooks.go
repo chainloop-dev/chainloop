@@ -289,7 +289,7 @@ func addHookEntry(hooks map[string]any, h cursorHookEvent) bool {
 		m, _ := entry.(map[string]any)
 		existingCmd, _ := m["command"].(string)
 		existingMatcher, _ := m["matcher"].(string)
-		if existingCmd == h.command && existingMatcher == h.matcher {
+		if existingCmd == trace.GuardHookCommand(h.command) && existingMatcher == h.matcher {
 			return false
 		}
 		entries[i] = buildHookEntry(h)
@@ -331,7 +331,7 @@ func removeHookEntry(hooks map[string]any, event string) bool {
 
 func buildHookEntry(h cursorHookEvent) map[string]any {
 	entry := map[string]any{
-		"command": h.command,
+		"command": trace.GuardHookCommand(h.command),
 		"timeout": defaultHookTimeoutSeconds,
 	}
 	if h.matcher != "" {

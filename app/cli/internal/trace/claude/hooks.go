@@ -241,10 +241,11 @@ func addHookEntry(hooks map[string]any, event, command, matcher string) bool {
 		if !entryContainsChainloopHook(entry) {
 			continue
 		}
-		// Chainloop entry exists — check if it needs updating (e.g., matcher changed)
+		// Chainloop entry exists — check if it needs updating (e.g., matcher
+		// changed, or an entry written before the missing-CLI guard)
 		m, _ := entry.(map[string]any)
 		existingMatcher, _ := m["matcher"].(string)
-		if existingMatcher == matcher {
+		if existingMatcher == matcher && chainloopHookCommand(m) == trace.GuardHookCommand(command) {
 			return false // already up to date
 		}
 		// Replace the entry with updated version
@@ -258,12 +259,24 @@ func addHookEntry(hooks map[string]any, event, command, matcher string) bool {
 	return true
 }
 
+// chainloopHookCommand returns the command of the Chainloop handler in a hook group.
+func chainloopHookCommand(entry map[string]any) string {
+	handlers, _ := entry["hooks"].([]any)
+	for _, h := range handlers {
+		handler, _ := h.(map[string]any)
+		if cmd, _ := handler["command"].(string); strings.Contains(cmd, hookMarker) {
+			return cmd
+		}
+	}
+	return ""
+}
+
 func buildHookEntry(command, matcher string) map[string]any {
 	entry := map[string]any{
 		"hooks": []any{
 			map[string]any{
 				"type":    "command",
-				"command": command,
+				"command": trace.GuardHookCommand(command),
 			},
 		},
 	}
