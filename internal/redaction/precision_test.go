@@ -209,6 +209,25 @@ func TestRedactPasswordFieldSelectors(t *testing.T) {
 	}
 }
 
+// Extra escaping must not turn a credential into an allowlisted selector.
+func TestRedactOverescapedPasswordFieldSelectors(t *testing.T) {
+	scanner, err := DefaultScanner()
+	require.NoError(t, err)
+
+	for _, selector := range []string{`[id="1-password"]`, `input[name="password"]`} {
+		for _, backslashes := range []int{2, 3} {
+			secret := strings.ReplaceAll(selector, `"`, strings.Repeat(`\`, backslashes)+`"`)
+			t.Run(secret, func(t *testing.T) {
+				text := "user: " + sampleEmail + "\npassword: '" + secret + "'\n"
+				got, report, err := New(scanner).RedactText(context.Background(), text)
+				require.NoError(t, err)
+				assert.Equal(t, strings.ReplaceAll(text, secret, DefaultPlaceholder(genericPasswordRuleID)), got)
+				assert.Equal(t, map[string]int{genericPasswordRuleID: 1}, report.ByRule)
+			})
+		}
+	}
+}
+
 // TestRulesConfigStillRedactsSecrets is the counterpart of
 // TestRulesConfigKeepsNonSecrets: a real secret of each shape is still
 // replaced.

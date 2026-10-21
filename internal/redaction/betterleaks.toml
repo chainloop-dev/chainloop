@@ -47,9 +47,15 @@ regexes = [
 [[allowlists]]
 description = "Exact password-field CSS selectors used by login helpers"
 targetRules = ["generic-password"]
-# Match only these complete selectors, including JSON-escaped quotes in tool
-# results. Never allow the whole line: it can carry other password assignments.
-regexes = ['''^(?:\[id=\\*"1-password\\*"\]|input\[name=\\*"password\\*"\])$''']
+# Match only these complete selectors. Redactor JSON-encodes text before
+# scanning, so plain quotes arrive with one backslash and JSON-encoded tool
+# results with three. Keep those forms explicit and paired; do not accept
+# arbitrary escaping or the whole line, which can carry other passwords.
+regexes = [
+    '''^(?:\[id="1-password"\]|input\[name="password"\])$''',
+    '''^(?:\[id=\\"1-password\\"\]|input\[name=\\"password\\"\])$''',
+    '''^(?:\[id=\\{3}"1-password\\{3}"\]|input\[name=\\{3}"password\\{3}"\])$''',
+]
 
 [[allowlists]]
 description = "Placeholders in documentation, such as Bearer YOUR_API_TOKEN"
