@@ -255,9 +255,19 @@ func (r *Runner) runScenario(ctx context.Context, h Harness, model string, sc Sc
 	}
 
 	s.Checkout = checkout
+	if sc.FollowUp != nil {
+		if err := sc.FollowUp(ctx, ws, checkout); err != nil {
+			return nil, fmt.Errorf("follow-up of the session: %w", err)
+		}
+	}
 	if s.HeadMessage, err = ws.run(ctx, checkout, "git", "log", "-1", "--format=%B"); err != nil {
 		return nil, err
 	}
+	head, err := ws.run(ctx, checkout, "git", "rev-parse", "HEAD")
+	if err != nil {
+		return nil, err
+	}
+	s.HeadSHA = strings.TrimSpace(head)
 
 	stored, err := StoredSessions(checkout)
 	if err != nil {

@@ -47,8 +47,11 @@ type Session struct {
 	Output   *RunOutput
 	// Stored is the session that the push stored in local storage mode.
 	Stored *StoredSession
-	// HeadMessage is the message of the commit that the agent made.
+	// HeadMessage is the message of the last commit of the checkout: the
+	// commit that the agent made, or the commit of the follow-up.
 	HeadMessage string
+	// HeadSHA is the last commit of the checkout.
+	HeadSHA string
 }
 
 // Check verifies one feature on the result of one scenario session.
@@ -95,11 +98,17 @@ var features = map[string]Feature{
 	"Subagents":            {Checks: []Check{{scenarioSubagent, checkSubagents}}},
 
 	// Code attribution
-	"Line attribution":          {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI("greeting.txt")}}},
+	"Line attribution":          {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI(greetingFile)}}},
 	"Shell changes attribution": {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI("shell.txt")}}},
 	"Partial commits":           {Checks: []Check{{scenarioPartial, checkBothCommitsCredited}}},
-	"Line ranges":               {Checks: []Check{{scenarioEditAndCommit, checkLineRanges("greeting.txt", 3)}}},
+	"Line ranges":               {Checks: []Check{{scenarioEditAndCommit, checkLineRanges(greetingFile, 3)}}},
 	"Generated line counts":     {Checks: []Check{{scenarioEditAndCommit, checkGeneratedLineCounts}}},
+	"Net contribution":          {Checks: []Check{{scenarioHumanUpdate, checkNetContribution}}},
+	"Session updates":           {Checks: []Check{{scenarioHumanUpdate, checkSessionUpdated}}},
+	"Renames and rewrites": {Checks: []Check{
+		{scenarioAmend, checkAmended},
+		{scenarioRename, checkRenamed},
+	}},
 
 	// User experience
 	"Welcome message":         {Checks: []Check{{scenarioEditAndCommit, checkWelcomeMessage}}},

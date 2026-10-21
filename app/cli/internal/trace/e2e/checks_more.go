@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
@@ -242,4 +243,102 @@ func checkLineRanges(path string, lines int) func(s *Session) error {
 		}
 		return fmt.Errorf("the code changes do not list %s", path)
 	}
+}
+
+// fileChange returns the change of a file in the evidence.
+func fileChange(s *Session, path string) (*aicodingsession.FileChange, error) {
+	cc := evidence(s).CodeChanges
+	if cc == nil {
+		return nil, errors.New("the evidence has no code changes")
+	}
+	for i := range cc.Files {
+		if cc.Files[i].Path == path {
+			return &cc.Files[i], nil
+		}
+	}
+	return nil, fmt.Errorf("the code changes do not list %s", path)
+}
+
+// headInSession checks that the last commit of the checkout is in the commit
+// list of the session. Each entry of the list is the SHA and the subject of a
+// commit.
+func headInSession(s *Session) error {
+	gc := evidence(s).GitContext
+	if gc != nil && slices.ContainsFunc(gc.Commits, func(c string) bool {
+		sha, _, _ := strings.Cut(c, " ")
+		return sha == s.HeadSHA
+	}) {
+		return nil
+	}
+	return fmt.Errorf("the commit list of the session does not hold the last commit %s", s.HeadSHA)
+}
+
+// checkNetContribution checks that the line that the human commit replaced
+// no longer counts as AI, that each line counts once, and that the file that
+// the session created stays created.
+func checkNetContribution(s *Session) error {
+	f, err := fileChange(s, greetingFile)
+	if err != nil {
+		return err
+	}
+	if f.AILinesAdded != 2 || f.HumanLinesAdded != 1 {
+		return fmt.Errorf("%s: %d AI lines and %d human lines added, want 2 and 1", greetingFile, f.AILinesAdded, f.HumanLinesAdded)
+	}
+	if f.LinesAdded != f.AILinesAdded+f.HumanLinesAdded {
+		return fmt.Errorf("%s: %d lines added, want the sum of the AI and human lines", greetingFile, f.LinesAdded)
+	}
+	if f.Status != tracegit.StatusCreated {
+		return fmt.Errorf("%s: status %q, want created", greetingFile, f.Status)
+	}
+	return nil
+}
+
+// checkSessionUpdated checks that the push after the human commit stored the
+// session again, with the human commit in its commit list and the replacing
+// line as a human line.
+func checkSessionUpdated(s *Session) error {
+	if err := headInSession(s); err != nil {
+		return err
+	}
+	f, err := fileChange(s, greetingFile)
+	if err != nil {
+		return err
+	}
+	if f.HumanLinesAdded != 1 {
+		return fmt.Errorf("%s: %d human lines added, want the 1 replacing line", greetingFile, f.HumanLinesAdded)
+	}
+	return nil
+}
+
+// checkAmended checks that the session follows its amended commit, with the
+// lines of the agent as AI lines and the line that the amend added as a human
+// line.
+func checkAmended(s *Session) error {
+	if err := headInSession(s); err != nil {
+		return err
+	}
+	f, err := fileChange(s, greetingFile)
+	if err != nil {
+		return err
+	}
+	if f.AILinesAdded != 3 || f.HumanLinesAdded != 1 {
+		return fmt.Errorf("%s: %d AI lines and %d human lines added, want 3 and 1", greetingFile, f.AILinesAdded, f.HumanLinesAdded)
+	}
+	return nil
+}
+
+// checkRenamed checks that the lines of the agent stay AI lines after a later
+// commit renamed their file. The evidence lists the file under its path in
+// the commit of the session or under its new path.
+func checkRenamed(s *Session) error {
+	f, err := fileChange(s, greetingFile)
+	if err != nil {
+		if f, err = fileChange(s, renamedFile); err != nil {
+			return err
+		}
+	}
+	if f.AILinesAdded != 3 || f.HumanLinesAdded != 0 {
+		return fmt.Errorf("%s: %d AI lines and %d human lines added, want 3 and 0", f.Path, f.AILinesAdded, f.HumanLinesAdded)
+	}
+	return nil
 }
