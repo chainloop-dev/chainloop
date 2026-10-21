@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 )
 
 type modelPricing struct {
@@ -52,7 +53,9 @@ func estimateCost(model string, u tokenUsage, warnings *[]string) float64 {
 	if !ok {
 		// Date-pinned model IDs use the same prices as their family alias.
 		if len(name) > 11 && name[len(name)-11] == '-' {
-			price, ok = prices.Models[name[:len(name)-11]]
+			if _, err := time.Parse(time.DateOnly, name[len(name)-10:]); err == nil {
+				price, ok = prices.Models[name[:len(name)-11]]
+			}
 		}
 	}
 	if !ok {

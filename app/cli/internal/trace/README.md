@@ -10,7 +10,7 @@ Claude Code has the most complete support.
 
 Trace does not support Pi yet (spec issue-3520): `chainloop trace init --pi` and `trace run --pi` do not exist, so no Pi session is recorded. Each Pi cell is **No** for this reason, and the "Why not Yes" lists do not repeat it. When Pi support is added, set the Pi cells to **Unknown** and run the end-to-end suite to find the values.
 
-Codex uses native hooks in `.codex/hooks.json` (Codex CLI 0.163.0). Run `chainloop trace init --codex` or `chainloop trace run --codex -- codex exec …`. Review and trust the installed hooks in Codex before starting a session. See the [official hooks documentation](https://learn.chatgpt.com/docs/hooks). Changing the hooks requires a new trust review.
+Codex uses native hooks in `.codex/hooks.json` (Codex CLI 0.163.0). Run `chainloop trace init --codex` or `chainloop trace run --local --codex -- codex exec …`. Review and trust the installed hooks in Codex before starting a session. See the [official hooks documentation](https://learn.chatgpt.com/docs/hooks). Changing the hooks requires a new trust review.
 
 Codex was tested with CLI 0.163.0 and `openrouter/openai/gpt-6-luna`: 19 feature checks passed with no failures. The tables keep unverified features at **Unknown**. Subagent transcripts, skills tracking, spec source pointers, and pasted image pointers are not implemented.
 

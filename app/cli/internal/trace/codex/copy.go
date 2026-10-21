@@ -47,7 +47,14 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 	if store == nil || !state.ValidSessionID(loc.SessionID) {
 		return errors.New("copy Codex session: invalid session")
 	}
+	rec, err := store.LoadSessionRecord(loc.SessionID)
+	if err != nil {
+		return fmt.Errorf("copy Codex session: load session record: %w", err)
+	}
 	home := codexHome()
+	if rec != nil && rec.CodexStorageRoot != "" {
+		home = rec.CodexStorageRoot
+	}
 	if home == "" {
 		return nil
 	}
@@ -108,6 +115,11 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 	if json.Unmarshal(scanner.Bytes(), &header) != nil || header.Type != "session_meta" || header.Payload.ID != loc.SessionID {
 		return errors.New("copy Codex session: rollout session ID mismatch")
 	}
+	// Persist only after validating both storage containment and session identity.
+	// Do not infer a trusted root from the hook's transcript path.
+	if err := saveStorageRoot(store, rec, home); err != nil {
+		return fmt.Errorf("copy Codex session: save storage root: %w", err)
+	}
 	if _, err := src.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
@@ -128,6 +140,22 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 		return err
 	}
 	return os.Rename(tmp.Name(), state.RawSessionPath(dir, loc.SessionID))
+}
+
+func saveStorageRoot(store *state.Store, rec *state.SessionRecord, home string) error {
+	if rec == nil || rec.CodexStorageRoot != "" {
+		return nil
+	}
+	root, err := filepath.EvalSymlinks(home)
+	if err != nil {
+		return err
+	}
+	root, err = filepath.Abs(root)
+	if err != nil {
+		return err
+	}
+	rec.CodexStorageRoot = root
+	return store.SaveSessionRecord(rec)
 }
 
 // Resolve symlinks as well as lexical traversal before opening a hook path.

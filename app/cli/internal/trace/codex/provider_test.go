@@ -25,6 +25,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
+	"github.com/chainloop-dev/chainloop/internal/schemavalidators"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -128,6 +129,11 @@ func TestParseSession(t *testing.T) {
 	assert.Equal(t, 1, d.Conversation.AssistantMessages)
 	assert.Len(t, d.RawSession["main"], 12)
 	assert.Empty(t, d.Warnings)
+	doc, err := json.Marshal(d)
+	require.NoError(t, err)
+	var data map[string]any
+	require.NoError(t, json.Unmarshal(doc, &data))
+	require.NoError(t, schemavalidators.ValidateAICodingSession(data, schemavalidators.AICodingSessionVersion0_1))
 }
 
 func TestCopySessionData(t *testing.T) {
@@ -217,6 +223,7 @@ func TestUsageAcrossModels(t *testing.T) {
 	extra := `{"timestamp":"2026-10-21T10:01:01Z","type":"turn_context","payload":{"model":"gpt-5"}}
 {"timestamp":"2026-10-21T10:01:02Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[]}}
 {"timestamp":"2026-10-21T10:01:03Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[]}}
+{"timestamp":"2026-10-21T10:01:04Z","type":"token_usage_record","payload":{"usage":{"input_tokens":2000,"output_tokens":404,"total_tokens":2404},"thread_token_usage":{"input_tokens":4000,"cached_input_tokens":2000,"cache_write_input_tokens":200,"output_tokens":804,"total_tokens":4804}}}
 {"timestamp":"2026-10-21T10:01:04Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":4000,"cached_input_tokens":2000,"cache_write_input_tokens":200,"output_tokens":804,"total_tokens":4804}}}}
 `
 	raw = append(raw, extra...)
@@ -231,17 +238,108 @@ func TestUsageAcrossModels(t *testing.T) {
 }
 
 func TestNativeRollout(t *testing.T) {
-	dir := t.TempDir()
 	raw, err := os.ReadFile("testdata/native-session.jsonl")
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(state.RawSessionPath(dir, testSessionID), raw, 0600)) //nolint:gosec // sanitized fixture and a fixed session ID
-	e, err := New().ParseSession(t.Context(), &trace.ParseOpts{SessionDir: dir, SessionID: testSessionID})
-	require.NoError(t, err)
-	assert.Equal(t, 19064, e.Data.Usage.InputTokens)
-	assert.Equal(t, 128, e.Data.Usage.OutputTokens)
-	assert.Equal(t, 19192, e.Data.Usage.TotalTokens)
-	assert.Equal(t, 19061, e.Data.Usage.CacheCreationInputTokens)
-	assert.NotEmpty(t, e.Data.Model.Primary)
-	assert.NotEmpty(t, e.Data.ToolsUsed.Summary)
-	assert.Empty(t, e.Data.Warnings)
+	lines := strings.SplitAfter(string(raw), "\n")
+	for _, tc := range []struct {
+		name, data string
+	}{
+		{"before mirrored event", strings.Join(lines[:6], "")},
+		{"with mirrored event", string(raw)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.WriteFile(state.RawSessionPath(dir, testSessionID), []byte(tc.data), 0600))
+			e, err := New().ParseSession(t.Context(), &trace.ParseOpts{SessionDir: dir, SessionID: testSessionID})
+			require.NoError(t, err)
+			require.NotNil(t, e.Data.Usage)
+			assert.Equal(t, 19064, e.Data.Usage.InputTokens)
+			assert.Equal(t, 128, e.Data.Usage.OutputTokens)
+			assert.Equal(t, 19192, e.Data.Usage.TotalTokens)
+			assert.Equal(t, 19061, e.Data.Usage.CacheCreationInputTokens)
+			assert.InDelta(t, 0.0489, e.Data.Usage.EstimatedCostUSD, 0.00001)
+			assert.NotEmpty(t, e.Data.Model.Primary)
+			assert.NotEmpty(t, e.Data.ToolsUsed.Summary)
+			assert.Empty(t, e.Data.Warnings)
+		})
+	}
+}
+
+func TestCopySessionDataPreservesStorageRoot(t *testing.T) {
+	for _, env := range []string{"unset", "different home"} {
+		t.Run(env, func(t *testing.T) {
+			home := t.TempDir()
+			t.Setenv("CODEX_HOME", home)
+			store := state.NewOutOfTreeStore(t.TempDir())
+			require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{SessionID: testSessionID, Provider: Name, Active: true}))
+			raw, err := os.ReadFile("testdata/session.jsonl")
+			require.NoError(t, err)
+			path := filepath.Join(home, "sessions", "rollout-time-"+testSessionID+".jsonl")
+			require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+			require.NoError(t, os.WriteFile(path, raw, 0600)) //nolint:gosec // temporary Codex storage fixture and a fixed session ID
+			loc := trace.SessionLocation{SessionID: testSessionID, TranscriptPath: path}
+			require.NoError(t, New().CopySessionData(store, loc))
+			rec, err := store.LoadSessionRecord(testSessionID)
+			require.NoError(t, err)
+			canonicalHome, err := filepath.EvalSymlinks(home)
+			require.NoError(t, err)
+			assert.Equal(t, canonicalHome, rec.CodexStorageRoot)
+			assert.True(t, rec.Active)
+
+			updated := append(append([]byte(nil), raw...), []byte("\n{\"new_record\":true}\n")...)
+			require.NoError(t, os.WriteFile(path, updated, 0600)) //nolint:gosec // temporary Codex storage fixture and a fixed session ID
+			if env == "unset" {
+				require.NoError(t, os.Unsetenv("CODEX_HOME"))
+			} else {
+				t.Setenv("CODEX_HOME", t.TempDir())
+			}
+			// A new provider instance represents a later Git hook process.
+			require.NoError(t, New().CopySessionData(store, loc))
+			got, err := os.ReadFile(state.RawSessionPath(store.RawSessionDir(), testSessionID))
+			require.NoError(t, err)
+			assert.Equal(t, updated, got)
+
+			archived := filepath.Join(home, "archived_sessions", filepath.Base(path))
+			require.NoError(t, os.MkdirAll(filepath.Dir(archived), 0700))
+			require.NoError(t, os.Rename(path, archived))
+			require.NoError(t, New().CopySessionData(store, loc))
+			got, err = os.ReadFile(state.RawSessionPath(store.RawSessionDir(), testSessionID))
+			require.NoError(t, err)
+			assert.Equal(t, updated, got)
+
+			outside := filepath.Join(t.TempDir(), "outside.jsonl")
+			require.NoError(t, os.WriteFile(outside, raw, 0600)) //nolint:gosec // deliberately outside storage to verify rejection
+			assert.Error(t, New().CopySessionData(store, trace.SessionLocation{SessionID: testSessionID, TranscriptPath: outside}))
+			link := filepath.Join(home, "sessions", "escaped.jsonl")
+			require.NoError(t, os.Symlink(outside, link))
+			assert.Error(t, New().CopySessionData(store, trace.SessionLocation{SessionID: testSessionID, TranscriptPath: link}))
+		})
+	}
+}
+
+func TestEstimateCostDateSuffix(t *testing.T) {
+	for _, tc := range []struct {
+		model   string
+		cost    float64
+		warning bool
+	}{
+		{"gpt-6-luna", 0.1, false},
+		{"gpt-6-luna-2026-10-21", 0.1, false},
+		{"openai/gpt-6-luna-2024-02-29", 0.1, false},
+		{"gpt-6-luna-foo-123456", 0.25, true},
+		{"gpt-6-luna-2026-02-29", 0.25, true},
+		{"gpt-6-luna-2026-13-21", 0.25, true},
+		{"gpt-6-luna-2026-1-21", 0.25, true},
+	} {
+		t.Run(tc.model, func(t *testing.T) {
+			var warnings []string
+			assert.InDelta(t, tc.cost, estimateCost(tc.model, tokenUsage{Input: 1_000_000}, &warnings), 0.00001)
+			if tc.warning {
+				require.Len(t, warnings, 1)
+				assert.Contains(t, warnings[0], "unknown Codex model")
+			} else {
+				assert.Empty(t, warnings)
+			}
+		})
+	}
 }

@@ -45,14 +45,15 @@ type rolloutEntry struct {
 }
 
 type rolloutPayload struct {
-	ID            string `json:"id"`
-	Type          string `json:"type"`
-	Version       string `json:"cli_version"`
-	ModelProvider string `json:"model_provider"`
-	Model         string `json:"model"`
-	Role          string `json:"role"`
-	Name          string `json:"name"`
-	CallID        string `json:"call_id"`
+	ID            string      `json:"id"`
+	Type          string      `json:"type"`
+	Version       string      `json:"cli_version"`
+	ModelProvider string      `json:"model_provider"`
+	Model         string      `json:"model"`
+	Role          string      `json:"role"`
+	Name          string      `json:"name"`
+	CallID        string      `json:"call_id"`
+	ThreadUsage   *tokenUsage `json:"thread_token_usage"`
 	Info          *struct {
 		Total *tokenUsage `json:"total_token_usage"`
 	} `json:"info"`
@@ -74,7 +75,7 @@ func (p *Provider) ParseSession(ctx context.Context, opts *trace.ParseOpts) (*ai
 	}
 	defer f.Close()
 	d := aicodingsession.Data{
-		SchemaVersion: "0.1",
+		SchemaVersion: "v1",
 		Agent:         aicodingsession.Agent{Name: Name, Version: opts.AgentVersion},
 		Session:       aicodingsession.Session{ID: opts.SessionID},
 		Model:         &aicodingsession.Model{Primary: opts.Model},
@@ -180,17 +181,19 @@ func (p *rolloutParser) consume(e rolloutEntry, payload rolloutPayload, line int
 			}
 		}
 	case "event_msg":
-		p.consumeUsage(payload, line)
+		if payload.Type == "token_count" && payload.Info != nil && payload.Info.Total != nil {
+			p.consumeUsage(*payload.Info.Total, line)
+		}
+	case "token_usage_record":
+		if payload.ThreadUsage != nil {
+			p.consumeUsage(*payload.ThreadUsage, line)
+		}
 	}
 
 	return nil
 }
 
-func (p *rolloutParser) consumeUsage(payload rolloutPayload, line int) {
-	if payload.Type != "token_count" || payload.Info == nil || payload.Info.Total == nil {
-		return
-	}
-	total := *payload.Info.Total
+func (p *rolloutParser) consumeUsage(total tokenUsage, line int) {
 	if total.Input < 0 || total.Output < 0 || total.Cached < 0 || total.CacheWrite < 0 || total.Total < 0 {
 		p.data.Warnings = append(p.data.Warnings, fmt.Sprintf("negative Codex token count on line %d", line))
 		return
