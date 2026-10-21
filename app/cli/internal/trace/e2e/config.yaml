@@ -12,6 +12,8 @@ harnesses:
   # The Cursor CLI (cursor-agent) runs with a HOME folder next to the
   # workspace, so it has no stored login: it needs CURSOR_API_KEY. The version
   # is a build tag, not a semantic version.
+  # A free Cursor plan runs only auto. In auto mode no output names the
+  # model, so the model detection check is not covered.
   Cursor:
     version: "2026.10.19-6bbf2c4"
     models:

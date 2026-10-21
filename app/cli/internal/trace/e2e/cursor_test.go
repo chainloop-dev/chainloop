@@ -18,6 +18,7 @@ package e2e
 import (
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -80,6 +81,37 @@ func TestCursorError(t *testing.T) {
 				return
 			}
 			assert.ErrorContains(t, err, tc.wantErr)
+		})
+	}
+}
+
+func TestWriteCursorShellProfiles(t *testing.T) {
+	cases := []struct {
+		name string
+		env  []string
+		want string
+	}{
+		{name: "plain path", env: []string{"PATH=/e2e/bin:/usr/bin"}, want: "/e2e/bin:/usr/bin"},
+		{name: "last PATH wins", env: []string{"PATH=/old", "PATH=/e2e/bin"}, want: "/e2e/bin"},
+		{name: "quote in path", env: []string{"PATH=/it's/bin:/usr/bin"}, want: "/it's/bin:/usr/bin"},
+		{name: "no PATH"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			home := filepath.Join(t.TempDir(), "cursor-home")
+			require.NoError(t, writeCursorShellProfiles(home, tc.env))
+			require.DirExists(t, home)
+
+			for _, name := range cursorShellProfiles {
+				path := filepath.Join(home, name)
+				if tc.want == "" {
+					assert.NoFileExists(t, path)
+					continue
+				}
+				out, err := exec.Command("/bin/sh", "-c", `. "$1"; printf %s "$PATH"`, "sh", path).Output()
+				require.NoError(t, err)
+				assert.Equal(t, tc.want, string(out), name)
+			}
 		})
 	}
 }

@@ -99,7 +99,7 @@ func (c *Cursor) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 	}
 
 	home := filepath.Join(filepath.Dir(req.Dir), "cursor-home")
-	if err := os.MkdirAll(home, 0o700); err != nil {
+	if err := writeCursorShellProfiles(home, req.Env); err != nil {
 		return nil, err
 	}
 
@@ -132,6 +132,43 @@ func (c *Cursor) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 	}
 
 	return &RunOutput{Raw: raw}, nil
+}
+
+// cursorShellProfiles are the startup files of the login shells that run the
+// shell tool of Cursor, relative to HOME.
+var cursorShellProfiles = []string{".zprofile", ".zshrc", ".bash_profile", ".bashrc", ".profile"}
+
+// writeCursorShellProfiles creates HOME and writes a startup file for each
+// shell that sets PATH back to the PATH of env.
+//
+// Cursor runs its shell tool in a login shell. On macOS, /etc/zprofile runs
+// path_helper, which puts the system folders first in PATH. A chainloop CLI
+// in /usr/local/bin then hides the CLI under test, and the git hooks of the
+// session run the wrong CLI. The startup files of HOME run after
+// /etc/zprofile, so they set PATH back.
+func writeCursorShellProfiles(home string, env []string) error {
+	if err := os.MkdirAll(home, 0o700); err != nil {
+		return err
+	}
+
+	var path string
+	for _, kv := range env {
+		if v, ok := strings.CutPrefix(kv, "PATH="); ok {
+			path = v
+		}
+	}
+	if path == "" {
+		return nil
+	}
+
+	// A single-quoted shell word, with each quote in the value escaped.
+	profile := "export PATH='" + strings.ReplaceAll(path, "'", `'\''`) + "'\n"
+	for _, name := range cursorShellProfiles {
+		if err := os.WriteFile(filepath.Join(home, name), []byte(profile), 0o600); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // cursorEvent is the part of a stream-json line of `cursor-agent -p` that the
