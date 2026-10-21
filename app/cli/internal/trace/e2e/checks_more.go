@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
@@ -179,6 +180,20 @@ func checkBothCommitsCredited(s *Session) error {
 // checkPastedImage checks that the pasted image is stored once as an image
 // spec entry, and that the transcript holds a pointer in place of the image.
 func checkPastedImage(s *Session) error {
+	if evidence(s).Agent.Name == codex.Name {
+		count := 0
+		for _, e := range evidence(s).Spec {
+			if e.Kind == aicodingsession.SpecKindImage {
+				count++
+				if !codexViewerPointer(evidence(s).RawSession["main"], e.Digest) {
+					return errors.New("the Codex viewer message has no image material pointer")
+				}
+			}
+		}
+		if count != 1 {
+			return fmt.Errorf("the repeated Codex paste produced %d image materials, want one", count)
+		}
+	}
 	for _, e := range evidence(s).Spec {
 		if e.Kind != aicodingsession.SpecKindImage || e.Title != "Pasted image 1" {
 			continue

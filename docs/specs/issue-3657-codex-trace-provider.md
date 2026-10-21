@@ -34,7 +34,9 @@ Developers who use Codex cannot attach native Trace evidence to their commits. C
 
 - Goal: Developers can record Codex sessions in local storage or the control plane.
 - Goal: Evidence includes conversations, models, tokens, estimated cost, tools, and code attribution.
-- Non-goal: Capture child-session transcripts, track skills, or replace spec and pasted-image copies with pointers. These features need separate transcript analysis.
+- ~~Non-goal: Capture child-session transcripts, track skills, or replace spec and pasted-image copies with pointers. These features need separate transcript analysis.~~ Superseded by D-004.
+- Goal: Evidence includes used skills, stored spec materials, and pointers that the session viewer can resolve.
+- Non-goal: Capture child-session transcripts. Milestone 2 analyzes the root session only.
 - Non-goal: Attribute arbitrary MCP tools or reconstruct sessions that produced no Trace hook.
 - Non-goal: Change the evidence schema, control-plane APIs, or default provider.
 
@@ -64,15 +66,37 @@ Trace MUST parse its private copy of the session transcript. Copying MUST check 
 
 Trace MUST send spec capture instructions at session start and reminders at each user prompt. Each hook response MUST contain at most one JSON document. Empty announcements MUST emit no output. Initialization MUST tell Codex users to review and trust the installed hooks.
 
+### R-007: Skills used during the session
+
+Trace MUST record the skills that a Codex session used, with their invocation counts and first-use times when available. Trace MUST capture each skill definition and its supporting files through the existing skill evidence pipeline. Trace MUST attempt capture during the session. A copy made only at push MUST carry a warning. An available skill listing alone MUST NOT count as a skill use.
+
+### R-008: Pointers to spec sources
+
+Trace MUST replace exact copies of stored spec sources in transcript reads and writes with pointers to the corresponding materials. Replacement MUST cover both the conversation shown by the viewer and retained native copies of the same content. Partial reads, changed content, failed operations, and unsupported formats MUST remain inline. A pointer MUST reference a successfully stored material.
+
+### R-009: Pasted images
+
+Trace MUST extract each distinct pasted image from the transcript and store it once as an image spec material. Trace MUST replace every inline occurrence of a successfully stored pasted image with a pointer to that material. If an existing spec material stores the same image, Trace MUST reuse it. Images from tool results MUST NOT count as pasted images. If decoding, extraction, or storage fails, Trace MUST preserve the inline data and continue evidence assembly.
+
+### R-010: Verification and compatibility
+
+Provider regressions and live Codex tests MUST check captured skill contents, spec pointers, and pasted-image materials and pointers. Verification MUST cover image deduplication, inline fallback, and use of the captured materials and pointers by the existing session viewer. The compatibility tables MUST reflect test results and document remaining limits. Both milestones MUST pass their required verification before the parent issue closes.
+
 ## Constraints
 
 Native hook behavior follows Codex CLI 0.163.0. Codex requires users to trust project configuration and hook definitions. Trace does not bypass that review during normal use. The test harness bypasses hook trust only in isolated test repositories.
+
+Milestone 2 MUST use the existing evidence schema and material storage pipeline. The provider MUST declare compile-time conformance to all three optional extensions for skills, spec pointers, and pasted images. Codex MUST support these extensions. Local evidence assembly MUST retain the offline behavior in R-005.
 
 ## Proposal
 
 The developer selects Codex during Trace initialization, reviews the installed hooks in Codex, and starts a session. Codex sends session and tool events to Trace. Trace records each patch path separately and uses working-tree snapshots for shell changes.
 
 Trace copies the Codex rollout into private storage at session boundaries and before evidence assembly. The parser retains native JSONL records and derives summaries from metadata, response items, turn context, and cumulative token counters. Git hooks use the existing evidence pipeline.
+
+For milestone 2, Trace detects actual skill loads and attempts to copy their contents during the session. Evidence assembly recovers skill usage from the private transcript copy. The shared pipeline stores skill definitions and supporting files with their usage metadata.
+
+Before storing the session evidence, Trace stores spec materials and distinct pasted images. It then replaces matching transcript copies with pointers to those materials. Replacement covers viewer messages and retained native events. Unsupported or unsuccessful matches remain inline. The viewer resolves pointers through the existing material digests.
 
 ```mermaid
 flowchart LR
@@ -109,9 +133,24 @@ The provider reads copied native rollouts and estimates cost from embedded price
 - Alternatives considered: Live transcript parsing depends on agent storage during assembly. Notification payloads omit conversation and usage details.
 - Source: drafting.
 
+### D-004: Include skills, spec pointers, and pasted images in milestone 2
+
+Supersedes the original non-goal that excluded skills and replacement of spec and pasted-image copies. Child-session transcripts remain outside scope.
+
+- Why: The parent issue requires these features for complete Codex support. Milestone 1 delivers the core provider first.
+- Alternatives considered: Permanent exclusion leaves required evidence incomplete. A separate spec would separate requirements that the parent issue already groups into two milestones.
+- Source: [Milestone 2 of issue #3657](https://github.com/chainloop-dev/chainloop/issues/3657).
+
 ## Open Questions
 
 None for the initial provider scope.
+
+Milestone 2 has no additional open questions.
+
+## Milestones
+
+1. **Core Codex provider.** Deliver provider selection, hooks, session evidence, attribution, local storage, control-plane uploads, and session messages. Check the behavior and document compatibility.
+2. **Codex skills, spec pointers, and pasted images.** Deliver R-007 through R-010 through the shared evidence pipeline. Check the materials and pointers with live Codex sessions and the existing viewer.
 
 ## Risks
 
@@ -120,3 +159,6 @@ None for the initial provider scope.
 | Codex changes its rollout format. | Preserve unknown records, warn about unreadable records, and test sanitized rollout fixtures. |
 | Users have not trusted the hooks. | Explain the trust step during initialization and in provider documentation. |
 | Estimated cost differs from billing. | Document standard API estimates and warn when the model price is unknown. |
+| A skill changes or disappears before push. | Attempt capture during the session and warn when only a push-time copy is available. |
+| Pointer replacement misses a retained native copy. | Check that viewer messages and native events contain no duplicate content in regression tests. |
+| A pasted image cannot be decoded or stored. | Preserve its inline data and continue evidence assembly. |

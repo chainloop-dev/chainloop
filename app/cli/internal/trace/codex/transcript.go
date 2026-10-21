@@ -17,11 +17,13 @@ package codex
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 )
 
 const (
@@ -38,16 +40,19 @@ func transcriptEntry(e rolloutEntry, payload rolloutPayload, raw json.RawMessage
 		return raw, nil
 	}
 	switch payload.Type {
-	case messageItem, functionCall, customToolCall, "function_call_output", "custom_tool_call_output", "reasoning":
+	case messageItem, functionCall, customToolCall, functionCallOutput, customToolCallOutput, "reasoning":
 	default:
 		return raw, nil
 	}
 	var item struct {
-		Content   json.RawMessage `json:"content"`
-		Arguments string          `json:"arguments"`
-		Input     string          `json:"input"`
-		Output    json.RawMessage `json:"output"`
-		Summary   []struct {
+		Content     json.RawMessage `json:"content"`
+		Arguments   string          `json:"arguments"`
+		Input       string          `json:"input"`
+		Output      json.RawMessage `json:"output"`
+		Replaced    json.RawMessage `json:"chainloop.replaced"`
+		Path        string          `json:"path"`
+		SpecSources json.RawMessage `json:"spec_sources"`
+		Summary     []struct {
 			Text string `json:"text"`
 		} `json:"summary"`
 	}
@@ -80,14 +85,28 @@ func transcriptEntry(e rolloutEntry, payload rolloutPayload, raw json.RawMessage
 		input := json.RawMessage(item.Arguments)
 		var object map[string]json.RawMessage
 		if payload.Type == customToolCall {
-			input, _ = json.Marshal(map[string]string{"input": item.Input})
+			if len(item.Replaced) > 0 {
+				values := jsonObject{pointer.Marker: item.Replaced}
+				if item.Path != "" {
+					values["path"] = encodeJSON(item.Path)
+				}
+				if item.Input != "" {
+					values["input"] = encodeJSON(item.Input)
+				}
+				if len(item.SpecSources) > 0 {
+					values["spec_sources"] = item.SpecSources
+				}
+				input = encodeJSON(values)
+			} else {
+				input, _ = json.Marshal(map[string]string{"input": item.Input})
+			}
 		} else if json.Unmarshal(input, &object) != nil || object == nil {
 			input, _ = json.Marshal(map[string]string{"arguments": item.Arguments})
 		}
 		blocks = append(blocks, trace.RawSessionToolUseBlock{
 			Type: "tool_use", ID: payload.CallID, Name: payload.Name, Input: input,
 		})
-	case "function_call_output", "custom_tool_call_output":
+	case functionCallOutput, customToolCallOutput:
 		entry.Type = trace.RoleUser
 		output := item.Output
 		if len(output) == 0 {
@@ -114,7 +133,7 @@ func transcriptEntry(e rolloutEntry, payload rolloutPayload, raw json.RawMessage
 			return raw, nil
 		}
 		entry.Type = trace.RoleAssistant
-		blocks = append(blocks, map[string]string{"type": "thinking", "thinking": strings.Join(summary, "\n")})
+		blocks = append(blocks, map[string]string{typeField: "thinking", "thinking": strings.Join(summary, "\n")})
 	default:
 		return raw, nil
 	}
@@ -133,14 +152,26 @@ func transcriptContent(content json.RawMessage) (json.RawMessage, error) {
 	if json.Unmarshal(content, &text) == nil {
 		return content, nil
 	}
-	var blocks []map[string]any
+	var blocks []jsonObject
 	if err := json.Unmarshal(content, &blocks); err != nil {
 		return nil, err
 	}
 	for _, block := range blocks {
-		switch block["type"] {
+		switch jsonString(block[typeField]) {
 		case "input_text", "output_text":
-			block["type"] = "text"
+			block[typeField] = encodeJSON(textField)
+		case blockInputImage:
+			if replaced := block[pointer.Marker]; len(replaced) > 0 {
+				block[typeField] = encodeJSON("image")
+				block["source"] = replaced
+				delete(block, pointer.Marker)
+			} else if data, media, ok := decodeImageURL(jsonString(block["image_url"])); ok {
+				block[typeField] = encodeJSON("image")
+				block["source"] = encodeJSON(map[string]string{typeField: "base64", "media_type": media, "data": base64.StdEncoding.EncodeToString(data)})
+			}
+			if jsonString(block[typeField]) == "image" {
+				delete(block, "image_url")
+			}
 		}
 	}
 	return json.Marshal(blocks)

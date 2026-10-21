@@ -240,7 +240,7 @@ Then run: git add farewell.txt && git commit -m "add farewell" && git push
 	scenarioPastedImage: {
 		Name:   scenarioPastedImage,
 		Seed:   map[string]string{readmePath: seedReadme},
-		Images: [][]byte{pastedPNG()},
+		Images: [][]byte{pastedPNG(), pastedPNG()},
 		Prompt: `This is an automated test. Do exactly these steps, in order, and nothing else:
 1. With your file-writing tool, create the file color.txt with one word: the main color of the pasted image.
 2. Run this shell command: git add color.txt && git commit -m "add color" && git push`,
