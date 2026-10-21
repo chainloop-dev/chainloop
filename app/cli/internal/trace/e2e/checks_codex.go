@@ -49,7 +49,7 @@ func jsonPointer(raw json.RawMessage, digest string) bool {
 		_ = json.Unmarshal(fields["type"], &kind)
 		_ = json.Unmarshal(fields["digest"], &value)
 		if kind == pointer.Marker && value == digest {
-			return true
+			return len(fields) == 2
 		}
 		for _, key := range []string{"content", "source", "input", pointer.Marker} {
 			if jsonPointer(fields[key], digest) {

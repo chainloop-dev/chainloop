@@ -46,6 +46,7 @@ const (
 	toolApplyPatch       = "apply_patch"
 	typeField            = "type"
 	outputField          = "output"
+	valueField           = "value"
 )
 
 var catPathPattern = regexp.MustCompile(`\bcat\s+(?:--\s+)?(?:"([^"\n]+)"|'([^'\n]+)'|([^\s"';&|()]+))`)
@@ -325,8 +326,12 @@ func (p *Provider) ReplaceSpecCopies(raw map[string][]json.RawMessage, sources p
 				case functionCallOutput, customToolCallOutput:
 					call := calls[payload.CallID]
 					if isReadTool(call.Name) {
-						if value, n := replaceOutput(fields[outputField], sources, copies); n > 0 {
+						replacer := outputReplacer{sources: sources, copies: copies}
+						if value, n := replacer.replace(fields[outputField]); n > 0 {
 							fields[outputField] = value
+							if len(replacer.metadata) > 0 {
+								fields["codex_output"] = encodeJSON(replacer.metadata)
+							}
 							res := report.Finder(pointer.FinderFileRead)
 							res.Replaced += n
 							changed = true
@@ -361,8 +366,7 @@ func replaceTimelineItem(fields jsonObject, sources pointer.Sources, copies sour
 			return false
 		}
 		if updated, n := replaceOutput(item["aggregated_output"], sources, copies); n > 0 {
-			delete(item, "aggregated_output")
-			item[pointer.Marker] = updated
+			storeTimelineCopy(item, "aggregated_output", updated)
 			report.Finder(pointer.FinderFileRead).Replaced += n
 			changed = true
 		}
@@ -377,8 +381,7 @@ func replaceTimelineItem(fields jsonObject, sources pointer.Sources, copies sour
 				continue
 			}
 			if updated, n := replaceOutput(change[contentField], sources, copies); n > 0 {
-				delete(change, contentField)
-				change[pointer.Marker] = updated
+				storeTimelineCopy(change, contentField, updated)
 				changes[path] = encodeJSON(change)
 				report.Finder(pointer.FinderFileWrite).Replaced += n
 				changed = true
@@ -392,6 +395,16 @@ func replaceTimelineItem(fields jsonObject, sources pointer.Sources, copies sour
 		fields["item"] = encodeJSON(item)
 	}
 	return changed
+}
+
+func storeTimelineCopy(fields jsonObject, original string, updated json.RawMessage) {
+	delete(fields, original)
+	var blocks []json.RawMessage
+	if json.Unmarshal(updated, &blocks) == nil && len(blocks) == 1 && jsonString(object(blocks[0])[typeField]) == pointer.Marker {
+		fields[pointer.Marker] = blocks[0]
+		return
+	}
+	fields[contentField] = updated
 }
 
 func isReadTool(name string) bool {
@@ -471,39 +484,54 @@ func failedOutput(raw json.RawMessage) bool {
 	return json.Unmarshal(raw, &result) == nil && (result.IsError || result.ExitCode != nil && *result.ExitCode != 0)
 }
 
+type outputReplacer struct {
+	sources  pointer.Sources
+	copies   sourceCopies
+	metadata []json.RawMessage
+}
+
 func replaceOutput(raw json.RawMessage, sources pointer.Sources, copies sourceCopies) (json.RawMessage, int) {
-	if failedOutput(raw) {
+	r := outputReplacer{sources: sources, copies: copies}
+	return r.replace(raw)
+}
+
+func (r *outputReplacer) replace(raw json.RawMessage) (json.RawMessage, int) {
+	// Structured failure status wins over source matching. A text prefix is
+	// only a heuristic: a source document can itself start with "Error:".
+	if object(raw) != nil && failedOutput(raw) {
 		return raw, 0
 	}
 	var text string
 	if json.Unmarshal(raw, &text) == nil {
 		stdout, ok := stdoutText(text)
 		if ok {
-			if material, found := sources[pointer.Digest([]byte(stdout))]; found {
+			if material, found := r.sources[pointer.Digest([]byte(stdout))]; found {
 				return encodeJSON([]json.RawMessage{pointer.New(material)}), 1
 			}
-			if updated, n := replaceTextCopies(stdout, copies); n > 0 {
+		}
+		if failedOutput(raw) {
+			return raw, 0
+		}
+		if ok {
+			if updated, n := replaceTextCopies(stdout, r.copies); n > 0 {
 				return updated, n
 			}
 		}
 		// Code mode exposes nested exec_command results as JSON text blocks.
 		if nested := object(json.RawMessage(text)); nested != nil {
-			if updated, n := replaceOutput(json.RawMessage(text), sources, copies); n > 0 {
-				// Keep envelope metadata with the pointer while exposing a
-				// supported block type to the viewer.
-				var pointers []jsonObject
-				collectPointers(updated, &pointers)
-				if len(pointers) > 0 {
-					pointers[0]["codex_output"] = updated
-					return encodeJSON(pointers), n
+			if updated, n := r.replace(json.RawMessage(text)); n > 0 {
+				// Metadata belongs to the native event, outside canonical pointers.
+				if blocks := outputContent(updated); len(blocks) > 0 {
+					r.metadata = append(r.metadata, updated)
+					return encodeJSON(blocks), n
 				}
 			}
 		}
 		return raw, 0
 	}
 	if fields := object(raw); fields != nil {
-		for _, key := range []string{outputField, "value"} {
-			if value, n := replaceOutput(fields[key], sources, copies); n > 0 {
+		for _, key := range []string{outputField, valueField} {
+			if value, n := r.replace(fields[key]); n > 0 {
 				fields[key] = value
 				return encodeJSON(fields), n
 			}
@@ -514,6 +542,12 @@ func replaceOutput(raw json.RawMessage, sources pointer.Sources, copies sourceCo
 	if json.Unmarshal(raw, &blocks) != nil {
 		return raw, 0
 	}
+	if len(blocks) > 0 {
+		frame := jsonString(blocks[0][textField])
+		if strings.HasPrefix(frame, "Script failed\n") && strings.Contains(frame, "\nWall time") {
+			return raw, 0
+		}
+	}
 	n := 0
 	var replaced []jsonObject
 	for _, block := range blocks {
@@ -521,7 +555,7 @@ func replaceOutput(raw json.RawMessage, sources pointer.Sources, copies sourceCo
 			replaced = append(replaced, block)
 			continue
 		}
-		if updated, count := replaceOutput(block[textField], sources, copies); count > 0 {
+		if updated, count := r.replace(block[textField]); count > 0 {
 			var values []jsonObject
 			if json.Unmarshal(updated, &values) == nil && len(values) > 0 {
 				replaced = append(replaced, values...)
@@ -537,23 +571,22 @@ func replaceOutput(raw json.RawMessage, sources pointer.Sources, copies sourceCo
 	return raw, 0
 }
 
-func collectPointers(raw json.RawMessage, out *[]jsonObject) {
+// outputContent finds the replaced result blocks inside a recognized envelope.
+// It preserves surrounding text in addition to material pointers.
+func outputContent(raw json.RawMessage) []json.RawMessage {
 	if fields := object(raw); fields != nil {
-		if jsonString(fields[typeField]) == pointer.Marker {
-			*out = append(*out, fields)
-			return
+		for _, key := range []string{outputField, valueField} {
+			if blocks := outputContent(fields[key]); len(blocks) > 0 {
+				return blocks
+			}
 		}
-		for _, key := range []string{outputField, "value"} {
-			collectPointers(fields[key], out)
-		}
-		return
+		return nil
 	}
 	var blocks []json.RawMessage
 	if json.Unmarshal(raw, &blocks) == nil {
-		for _, block := range blocks {
-			collectPointers(block, out)
-		}
+		return blocks
 	}
+	return nil
 }
 
 func replaceTextCopies(text string, copies sourceCopies) (json.RawMessage, int) {
@@ -709,7 +742,7 @@ func outputTexts(raw json.RawMessage) []string {
 	}
 	var text string
 	if json.Unmarshal(raw, &text) == nil {
-		if fields := object(json.RawMessage(text)); fields != nil && len(fields[outputField]) > 0 {
+		if fields := object(json.RawMessage(text)); fields != nil && (len(fields[outputField]) > 0 || len(fields[valueField]) > 0) {
 			return outputTexts(json.RawMessage(text))
 		}
 		stdout, ok := stdoutText(text)
@@ -719,7 +752,12 @@ func outputTexts(raw json.RawMessage) []string {
 		return nil
 	}
 	if fields := object(raw); fields != nil {
-		return outputTexts(fields[outputField])
+		for _, key := range []string{outputField, valueField} {
+			if value, ok := fields[key]; ok {
+				return outputTexts(value)
+			}
+		}
+		return nil
 	}
 	var blocks []jsonObject
 	if json.Unmarshal(raw, &blocks) != nil {

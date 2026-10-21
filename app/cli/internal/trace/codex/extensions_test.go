@@ -189,6 +189,9 @@ func TestCodexCodeModeCopies(t *testing.T) {
 			fileChange := extensionEvent(t, nativeEventMsg, map[string]any{typeField: "item_completed", "item": map[string]any{typeField: "FileChange", "changes": map[string]any{"ticket.md": map[string]string{typeField: "add", contentField: "# Capture metadata\n" + source + "\n"}}}})
 			raw := map[string][]json.RawMessage{mainTranscriptKey: {extensionEvent(t, nativeSessionMeta, map[string]string{"id": testSessionID, cwdField: dir}), normalizedExtension(t, call), normalizedExtension(t, result), timeline, fileChange}}
 			New().ReplaceSpecCopies(raw, pointer.Sources{pointer.Digest([]byte(source)): digest})
+			for _, line := range raw[mainTranscriptKey] {
+				assertCanonicalPointers(t, line)
+			}
 			for _, index := range []int{2, 3, 4} {
 				assert.NotContains(t, string(raw[mainTranscriptKey][index]), "Implement this task.")
 				assert.Contains(t, string(raw[mainTranscriptKey][index]), digest)
@@ -198,6 +201,80 @@ func TestCodexCodeModeCopies(t *testing.T) {
 			var blocks []trace.RawSessionToolResultBlock
 			require.NoError(t, json.Unmarshal(viewer.Message.Content, &blocks))
 			assert.Contains(t, string(blocks[0].Content), pointer.Marker)
+		})
+	}
+}
+
+func assertCanonicalPointers(t *testing.T, raw json.RawMessage) {
+	t.Helper()
+	if fields := object(raw); fields != nil {
+		if jsonString(fields[typeField]) == pointer.Marker {
+			assert.Len(t, fields, 2, "a pointer contains only its type and digest")
+		}
+		if replaced, ok := fields[pointer.Marker]; ok {
+			value := object(replaced)
+			require.NotNil(t, value, "a text-field marker holds one pointer, not content blocks")
+			assert.Equal(t, pointer.Marker, jsonString(value[typeField]))
+			assert.Len(t, value, 2)
+		}
+		for _, value := range fields {
+			assertCanonicalPointers(t, value)
+		}
+		return
+	}
+	var values []json.RawMessage
+	if json.Unmarshal(raw, &values) == nil {
+		for _, value := range values {
+			assertCanonicalPointers(t, value)
+		}
+	}
+}
+
+func TestCodexSkillResultEnvelopes(t *testing.T) {
+	const definition = "---\nname: bundled\n---\nDo the task.\n"
+	for _, tc := range []struct {
+		name  string
+		value any
+		want  []string
+	}{
+		{name: "successful promise", value: map[string]any{"status": "fulfilled", "value": map[string]any{"exit_code": 0, "output": definition}}, want: []string{definition}},
+		{name: "failed nested command", value: map[string]any{"status": "fulfilled", "value": map[string]any{"exit_code": 1, "output": definition}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := mustJSON(t, tc.value)
+			assert.Equal(t, tc.want, outputTexts(raw))
+			assert.Equal(t, tc.want, outputTexts(mustJSON(t, string(raw))))
+		})
+	}
+}
+
+func TestCodexSkillPathResolution(t *testing.T) {
+	assert.Equal(t, []string{"/skills/one/SKILL.md"}, skillReadPaths("cat relative/SKILL.md; cat /skills/one/SKILL.md", ""))
+}
+
+func TestCodexSourceLooksLikeFailure(t *testing.T) {
+	const source = "Error: the page is missing.\n"
+	sources := pointer.Sources{pointer.Digest([]byte(source)): "sha256:source"}
+	for _, tc := range []struct {
+		name   string
+		output any
+		want   bool
+	}{
+		{name: "plain text", output: source, want: true},
+		{name: "code mode text", output: []map[string]string{{typeField: "input_text", textField: "Script completed\nWall time 0.1 seconds\nOutput:\n"}, {typeField: "input_text", textField: source}}, want: true},
+		{name: "successful command", output: map[string]any{"exit_code": 0, "output": source}, want: true},
+		{name: "failed command", output: map[string]any{"exit_code": 1, "output": source}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := mustJSON(t, tc.output)
+			updated, n := replaceOutput(raw, sources, nil)
+			assert.Equal(t, tc.want, n > 0)
+			if tc.want {
+				assert.NotContains(t, string(updated), source)
+				assertCanonicalPointers(t, updated)
+			} else {
+				assert.Equal(t, raw, updated)
+			}
 		})
 	}
 }

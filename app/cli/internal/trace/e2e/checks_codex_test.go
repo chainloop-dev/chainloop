@@ -30,6 +30,7 @@ func TestCodexViewerMaterialPointer(t *testing.T) {
 		{name: "tool result", line: `{"message":{"content":[{"type":"tool_result","content":[{"type":"chainloop.replaced","digest":"sha256:spec"}]}]}}`, want: true},
 		{name: "image source", line: `{"message":{"content":[{"type":"image","source":{"type":"chainloop.replaced","digest":"sha256:spec"}}]}}`, want: true},
 		{name: "wrong material", line: `{"message":{"content":[{"type":"chainloop.replaced","digest":"sha256:other"}]}}`},
+		{name: "metadata inside pointer", line: `{"message":{"content":[{"type":"chainloop.replaced","digest":"sha256:spec","codex_output":{}}]}}`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, codexViewerPointer([]json.RawMessage{json.RawMessage(tc.line)}, "sha256:spec"))

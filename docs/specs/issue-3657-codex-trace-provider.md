@@ -76,7 +76,7 @@ Trace MUST replace exact copies of stored spec sources in transcript reads and w
 
 ### R-009: Pasted images
 
-Trace MUST extract each distinct pasted image from the transcript and store it once as an image spec material. Trace MUST replace repeated inline copies with pointers to that material. If an existing spec material stores the same image, Trace MUST reuse it. Images from tool results MUST NOT count as pasted images. If decoding, extraction, or storage fails, Trace MUST preserve the inline data and continue evidence assembly.
+Trace MUST extract each distinct pasted image from the transcript and store it once as an image spec material. Trace MUST replace every inline occurrence of a successfully stored pasted image with a pointer to that material. If an existing spec material stores the same image, Trace MUST reuse it. Images from tool results MUST NOT count as pasted images. If decoding, extraction, or storage fails, Trace MUST preserve the inline data and continue evidence assembly.
 
 ### R-010: Verification and compatibility
 

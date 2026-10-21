@@ -286,7 +286,9 @@ func skillReadPaths(input, cwd string) []string {
 		for _, match := range catPathPattern.FindAllStringSubmatch(command, -1) {
 			for _, path := range match[1:] {
 				if filepath.Base(path) == skill.DefinitionFile {
-					paths = append(paths, resolveSkillPath(path, cwd))
+					if resolved := resolveSkillPath(path, cwd); resolved != "" {
+						paths = append(paths, resolved)
+					}
 				}
 			}
 		}
