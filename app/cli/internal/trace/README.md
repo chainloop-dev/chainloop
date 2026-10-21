@@ -118,12 +118,12 @@ How the evidence is protected before it leaves the machine.
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
 |---------|---------------|-------------|--------|--------------|------------|---|---|
 | Secret redaction | Secrets in the session evidence and in the spec materials are replaced with a placeholder before upload. | Yes | Yes | Yes | Yes | No | No |
-| Media skipped by redaction | The secret redaction does not scan base64 media (images, PDFs) in the transcript, so it is faster and does not break the media. | Yes | Not applicable | Not applicable | Not applicable | No | No |
+| Media skipped by redaction | The secret redaction does not scan base64 media (images, PDFs) in the transcript, so it is faster and does not break the media. | Yes | Unknown | Not applicable | Not applicable | No | No |
 | Allow markers in redaction | A secret on a line that carries an inline `gitleaks:allow` or `betterleaks:allow` marker, such as a test fixture the agent read, is not redacted. The marker covers only its own line. | Yes | Yes | Yes | Yes | No | No |
 
 Why not Yes:
 
-- **Media skipped by redaction, Cursor:** the Cursor transcript holds no tool outputs, so it holds no media that the agent read.
+- **Media skipped by redaction, Cursor:** the Cursor transcript holds no tool outputs, so a file that the agent reads leaves no media in it. A pasted image stays inline in the transcript, but it is not verified that it is in the base64 media shape that the redaction skips. The headless Cursor CLI cannot attach an image, so the end-to-end suite cannot check it.
 - **Media skipped by redaction, OpenCode:** the rebuilt transcript holds no media.
 
 ## Git integration
