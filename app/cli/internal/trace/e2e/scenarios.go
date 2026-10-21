@@ -15,6 +15,14 @@
 
 package e2e
 
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
 // Scenario is a scripted task in a throwaway repository. One session runs one
 // scenario, and the checks of all the features that it touches read its
 // result (D-008). Scenarios are shared by all harnesses (R-011).
@@ -45,6 +53,15 @@ type Scenario struct {
 	// DisableSessionStart removes the session-start hook after
 	// `chainloop trace init`.
 	DisableSessionStart bool
+	// Branch is a branch that the session works on, created from main and
+	// pushed before the session. Empty means main. Trace reads only the
+	// commits that are not on the default remote branch, so a later push
+	// finds the commits of the session only on another branch.
+	Branch string
+	// FollowUp runs git commands of a human in the checkout after the session,
+	// for example a commit and a second push. The checks read the session
+	// that the last push stored.
+	FollowUp func(ctx context.Context, w *Workspace, checkout string) error
 }
 
 // The fake secrets of the scenarios. They match the GitHub token rule of the
@@ -81,12 +98,26 @@ const (
 	scenarioPartial       = "partial-commit"
 	scenarioPastedImage   = "pasted-image"
 	scenarioMedia         = "media"
+	scenarioHumanUpdate   = "human-update"
+	scenarioAmend         = "amend"
+	scenarioRename        = "rename"
 )
 
 const (
-	wrappedFile = "wrapped.txt"
-	partialFile = "partial.txt"
-	mediaFile   = "diagram.png"
+	greetingFile = "greeting.txt"
+	// renamedFile is the name of greetingFile after the rename of the rename
+	// scenario.
+	renamedFile = "hello.txt"
+	// humanLine is the line of a human in greetingFile: it replaces the
+	// second line in the human-update scenario, and the amend scenario adds
+	// it.
+	humanLine = "by the human"
+	// featureBranch is the branch of the scenarios that push again after the
+	// session.
+	featureBranch = "feature"
+	wrappedFile   = "wrapped.txt"
+	partialFile   = "partial.txt"
+	mediaFile     = "diagram.png"
 )
 
 const (
@@ -99,6 +130,18 @@ const (
 	cloneDir  = "clone"
 	cloneFile = "clone.txt"
 )
+
+// greetingWrite and greetingCommit have the agent write greetingFile with its
+// file tool, then commit it in a separate shell command.
+const (
+	greetingWrite = `This is an automated test. Do exactly these steps, in order, and nothing else:
+1. With your file-writing tool, create the file ` + greetingFile + ` with exactly these three lines: hello, from, the agent.
+2. Run this shell command: `
+	greetingCommit = `git add ` + greetingFile + ` && git commit -m "add greeting"`
+)
+
+// greetingPrompt has the agent write greetingFile, then commit and push it.
+const greetingPrompt = greetingWrite + greetingCommit + ` && git push`
 
 // scenarios are the scenarios of the suite, by name.
 var scenarios = map[string]Scenario{
@@ -202,6 +245,34 @@ Then run: git add farewell.txt && git commit -m "add farewell" && git push
 1. With your file-writing tool, create the file color.txt with one word: the main color of the pasted image.
 2. Run this shell command: git add color.txt && git commit -m "add color" && git push`,
 	},
+	// human-update has a human replace one AI line of the session in a new
+	// commit and push again. The session gets the commit, and the replaced
+	// line no longer counts as AI.
+	scenarioHumanUpdate: {
+		Name:     scenarioHumanUpdate,
+		Seed:     map[string]string{readmePath: seedReadme},
+		Branch:   featureBranch,
+		Prompt:   greetingPrompt,
+		FollowUp: humanUpdate,
+	},
+	// amend has a human add a line to the pushed commit of the agent, and
+	// force-push the amended commit.
+	scenarioAmend: {
+		Name:     scenarioAmend,
+		Seed:     map[string]string{readmePath: seedReadme},
+		Branch:   featureBranch,
+		Prompt:   greetingPrompt,
+		FollowUp: amendWithHumanLine,
+	},
+	// rename has the agent commit with no push. A human renames the file in a
+	// second commit, then pushes both.
+	scenarioRename: {
+		Name:     scenarioRename,
+		Seed:     map[string]string{readmePath: seedReadme},
+		Branch:   featureBranch,
+		Prompt:   greetingWrite + greetingCommit,
+		FollowUp: renameAndPush,
+	},
 	// media has the agent read an image file. The image stays inline in the
 	// tool result of the transcript, and its base64 holds a fake secret. The
 	// prompt tells the agent not to capture the image: a captured image gets
@@ -215,4 +286,71 @@ Then run: git add farewell.txt && git commit -m "add farewell" && git push
 3. Run this shell command: git add seen.txt && git commit -m "add seen" && git push
 The image is test data, not a spec: do not capture it.`,
 	},
+}
+
+// humanUpdate replaces the second line of greetingFile, commits the change
+// with no agent, and pushes again.
+func humanUpdate(ctx context.Context, w *Workspace, checkout string) error {
+	path := filepath.Join(checkout, greetingFile)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.SplitAfter(string(data), "\n")
+	if len(lines) < 2 {
+		return fmt.Errorf("%s has %d lines, want at least 2", greetingFile, len(lines))
+	}
+	lines[1] = humanLine + "\n"
+	if err := os.WriteFile(path, []byte(strings.Join(lines, "")), 0o600); err != nil { //nolint:gosec // a file of a throwaway workspace
+		return err
+	}
+	if _, err := w.run(ctx, checkout, "git", "commit", gitQuiet, "-am", "human edit"); err != nil {
+		return err
+	}
+	return pushAgain(ctx, w, checkout)
+}
+
+// amendWithHumanLine adds humanLine to greetingFile in the last commit, which
+// is the pushed commit of the agent, and force-pushes the amended commit.
+func amendWithHumanLine(ctx context.Context, w *Workspace, checkout string) error {
+	f, err := os.OpenFile(filepath.Join(checkout, greetingFile), os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		return err
+	}
+	if _, err := f.WriteString(humanLine + "\n"); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	if _, err := w.run(ctx, checkout, "git", "commit", gitQuiet, "-a", "--amend", "--no-edit"); err != nil {
+		return err
+	}
+	return pushAgain(ctx, w, checkout, "--force")
+}
+
+// renameAndPush renames greetingFile in a new commit and pushes it with the
+// commit of the agent.
+func renameAndPush(ctx context.Context, w *Workspace, checkout string) error {
+	for _, args := range [][]string{
+		{"mv", greetingFile, renamedFile},
+		{"commit", gitQuiet, "-m", "rename greeting"},
+	} {
+		if _, err := w.run(ctx, checkout, "git", args...); err != nil {
+			return err
+		}
+	}
+	return pushAgain(ctx, w, checkout)
+}
+
+// pushAgain pushes the checkout once more. It first deletes the sessions that
+// the earlier push stored: a second push writes the evidence next to the
+// earlier one, and the checks must read the new one.
+func pushAgain(ctx context.Context, w *Workspace, checkout string, args ...string) error {
+	if err := os.RemoveAll(filepath.Join(checkout, localSessionsDir)); err != nil {
+		return err
+	}
+	_, err := w.run(ctx, checkout, "git", append([]string{"push", gitQuiet}, args...)...)
+	return err
 }

@@ -35,6 +35,9 @@ import (
 // default trace directory.
 var localSessionsDir = filepath.Join(".git", "chainloop-trace", "local-sessions")
 
+// gitQuiet makes a git command print only its errors.
+const gitQuiet = "--quiet"
+
 // gitConfig isolates the git commands of a workspace, and of the harness
 // that runs in it, from the git configuration of the user who runs the suite.
 // A global hooks path would hide the Trace git hooks, and commit signing could
@@ -91,10 +94,10 @@ func NewWorkspace(ctx context.Context, base, chainloopBin string, h Harness, sc 
 		),
 	}
 
-	if _, err := w.run(ctx, base, "git", "init", "--bare", "--quiet", remote); err != nil {
+	if _, err := w.run(ctx, base, "git", "init", "--bare", gitQuiet, remote); err != nil {
 		return nil, err
 	}
-	if _, err := w.Git(ctx, "init", "--quiet"); err != nil {
+	if _, err := w.Git(ctx, "init", gitQuiet); err != nil {
 		return nil, err
 	}
 
@@ -127,12 +130,24 @@ func NewWorkspace(ctx context.Context, base, chainloopBin string, h Harness, sc 
 		}
 	}
 
-	for _, args := range [][]string{
+	steps := [][]string{
 		{"add", "-A"},
-		{"commit", "--quiet", "-m", "seed"},
+		{"commit", gitQuiet, "-m", "seed"},
 		{"remote", "add", "origin", remote},
-		{"push", "--quiet", "-u", "origin", "main"},
-	} {
+	}
+	// The branch of the session is pushed too, so that the agent can push
+	// with no arguments.
+	branches := []string{"main"}
+	if sc.Branch != "" {
+		branches = append(branches, sc.Branch)
+	}
+	for i, b := range branches {
+		if i > 0 {
+			steps = append(steps, []string{"checkout", gitQuiet, "-b", b})
+		}
+		steps = append(steps, []string{"push", gitQuiet, "-u", "origin", b})
+	}
+	for _, args := range steps {
 		if _, err := w.Git(ctx, args...); err != nil {
 			return nil, err
 		}
