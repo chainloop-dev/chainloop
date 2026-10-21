@@ -53,6 +53,10 @@ var catPathPattern = regexp.MustCompile(`\bcat\s+(?:--\s+)?(?:"([^"\n]+)"|'([^'\
 
 var codeStringPattern = regexp.MustCompile(`"(?:[^"\\]|\\.)*"`)
 
+var codePatchAssignmentPattern = regexp.MustCompile(`^\s*const\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*("(?:[^"\\]|\\.)*")\s*;\s*`)
+
+var codePatchCallPattern = regexp.MustCompile(`^\s*(text\s*\(\s*)?await\s+tools\.apply_patch\s*\(\s*("(?:[^"\\]|\\.)*"|[A-Za-z_$][A-Za-z0-9_$]*)\s*\)\s*(\))?\s*;?\s*$`)
+
 type sourceCopies map[string]string
 
 // commandSources loads only explicitly read files, with the same text-size
@@ -459,6 +463,9 @@ func stdoutText(text string) (string, bool) {
 }
 
 func failedOutput(raw json.RawMessage) bool {
+	if structuredOutputFailed(raw) {
+		return true
+	}
 	text := jsonString(raw)
 	if text != "" {
 		for _, prefix := range []string{"Error:", "error:", "Failed to ", "apply_patch verification failed:", "Script failed"} {
@@ -477,11 +484,36 @@ func failedOutput(raw json.RawMessage) bool {
 			}
 		}
 	}
-	var result struct {
-		ExitCode *int `json:"exit_code"`
-		IsError  bool `json:"is_error"`
+	return false
+}
+
+// structuredOutputFailed follows recognized code-mode envelopes without
+// treating document text in a successful result as an error message.
+func structuredOutputFailed(raw json.RawMessage) bool {
+	if text := jsonString(raw); text != "" {
+		return structuredOutputFailed(json.RawMessage(text))
 	}
-	return json.Unmarshal(raw, &result) == nil && (result.IsError || result.ExitCode != nil && *result.ExitCode != 0)
+	if fields := object(raw); fields != nil {
+		var result struct {
+			ExitCode  *int   `json:"exit_code"`
+			IsError   bool   `json:"is_error"`
+			ToolError bool   `json:"isError"`
+			Status    string `json:"status"`
+		}
+		if json.Unmarshal(raw, &result) == nil && (result.IsError || result.ToolError || result.Status == "rejected" || result.ExitCode != nil && *result.ExitCode != 0) {
+			return true
+		}
+		return structuredOutputFailed(fields[outputField]) || structuredOutputFailed(fields[valueField])
+	}
+	var blocks []struct{ Text string }
+	if json.Unmarshal(raw, &blocks) == nil {
+		for _, block := range blocks {
+			if structuredOutputFailed(json.RawMessage(block.Text)) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 type outputReplacer struct {
@@ -498,7 +530,7 @@ func replaceOutput(raw json.RawMessage, sources pointer.Sources, copies sourceCo
 func (r *outputReplacer) replace(raw json.RawMessage) (json.RawMessage, int) {
 	// Structured failure status wins over source matching. A text prefix is
 	// only a heuristic: a source document can itself start with "Error:".
-	if object(raw) != nil && failedOutput(raw) {
+	if structuredOutputFailed(raw) {
 		return raw, 0
 	}
 	var text string
@@ -697,41 +729,48 @@ func replaceWrite(fields jsonObject, name string, sources pointer.Sources, repor
 	return true
 }
 
-// replaceCodePatch recognizes literal patches in Codex code mode. It never
-// evaluates JavaScript or reconstructs a computed patch. Other script text
-// stays available alongside the material pointer in the viewer.
+// replaceCodePatch accepts one awaited patch call, optionally wrapped in text,
+// with a literal argument or an immediately preceding const literal. Other
+// scripts stay inline because their patch arguments may have been computed.
 func replaceCodePatch(fields jsonObject, sources pointer.Sources, report pointer.Report) bool {
 	code := jsonString(fields["input"])
-	if !strings.Contains(code, "tools.apply_patch") {
+	span := codePatchLiteralSpan(code)
+	if span == nil {
 		return false
 	}
-	var out strings.Builder
-	position := 0
-	var replacements []json.RawMessage
-	for _, span := range codeStringPattern.FindAllStringIndex(code, -1) {
-		literal := jsonString(json.RawMessage(code[span[0]:span[1]]))
-		if !strings.HasPrefix(literal, "*** Begin Patch\n") {
-			continue
-		}
-		patch := jsonObject{"input": encodeJSON(literal)}
-		if !replaceWrite(patch, toolApplyPatch, sources, report) {
-			continue
-		}
-		out.WriteString(code[position:span[0]])
-		out.Write(patch[pointer.Marker])
-		position = span[1]
-		replacements = append(replacements, patch[pointer.Marker])
-	}
-	if len(replacements) == 0 {
+	literal := jsonString(json.RawMessage(code[span[0]:span[1]]))
+	patch := jsonObject{"input": encodeJSON(literal)}
+	if !replaceWrite(patch, toolApplyPatch, sources, report) {
 		return false
 	}
-	out.WriteString(code[position:])
-	fields["input"] = encodeJSON(out.String())
-	fields[pointer.Marker] = replacements[0]
-	if len(replacements) > 1 {
-		fields["spec_sources"] = encodeJSON(replacements)
-	}
+	fields["input"] = encodeJSON(code[:span[0]] + string(patch[pointer.Marker]) + code[span[1]:])
+	fields[pointer.Marker] = patch[pointer.Marker]
+	fields["path"] = patch["path"]
 	return true
+}
+
+func codePatchLiteralSpan(code string) []int {
+	assignment := codePatchAssignmentPattern.FindStringSubmatchIndex(code)
+	offset := 0
+	if assignment != nil {
+		offset = assignment[1]
+	}
+	call := codePatchCallPattern.FindStringSubmatchIndex(code[offset:])
+	// The optional text wrapper must have its own closing parenthesis.
+	if call == nil || (call[2] >= 0) != (call[6] >= 0) {
+		return nil
+	}
+	argument := code[offset+call[4] : offset+call[5]]
+	if assignment != nil {
+		if argument != code[assignment[2]:assignment[3]] {
+			return nil
+		}
+		return assignment[4:6]
+	}
+	if !strings.HasPrefix(argument, `"`) {
+		return nil
+	}
+	return []int{offset + call[4], offset + call[5]}
 }
 
 // outputTexts reads successful text results, including code-mode envelopes,

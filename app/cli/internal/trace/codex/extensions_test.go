@@ -145,6 +145,68 @@ func TestCodexPastedImages(t *testing.T) {
 	assert.JSONEq(t, string(pointer.New("sha256:stored-image")), string(blocks[0].Source))
 }
 
+func TestCodexCodePatchBoundaries(t *testing.T) {
+	const source = "original\n"
+	patch := string(mustJSON(t, "*** Begin Patch\n*** Add File: task.md\n+original\n*** End Patch"))
+	for _, tc := range []struct {
+		name, code string
+		want       bool
+	}{
+		{name: "direct literal", code: "text(await tools.apply_patch(" + patch + "));", want: true},
+		{name: "constant literal", code: "const patch = " + patch + "; text(await tools.apply_patch(patch));", want: true},
+		{name: "bare awaited literal", code: "await tools.apply_patch(" + patch + ");", want: true},
+		{name: "changed constant", code: "const patch = " + patch + "; text(await tools.apply_patch(patch.replace('original', 'changed')));"},
+		{name: "changed literal", code: "text(await tools.apply_patch(" + patch + ".replace('original', 'changed')));"},
+		{name: "concatenated literal", code: "text(await tools.apply_patch(" + patch + " + suffix));"},
+		{name: "unused literal", code: "const patch = " + patch + "; text(await tools.apply_patch(other));"},
+		{name: "unrelated call", code: "text(" + patch + "); text(await tools.apply_patch(other));"},
+		{name: "commented call", code: "// text(await tools.apply_patch(" + patch + "));"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			call := extensionEvent(t, responseItem, map[string]string{typeField: customToolCall, "name": "exec", callIDField: testExtensionCallID, "input": tc.code})
+			result := extensionEvent(t, responseItem, map[string]string{typeField: customToolCallOutput, callIDField: testExtensionCallID, outputField: testSuccess})
+			raw := map[string][]json.RawMessage{mainTranscriptKey: {normalizedExtension(t, call), normalizedExtension(t, result)}}
+			before := string(mustJSON(t, raw))
+			report := New().ReplaceSpecCopies(raw, pointer.Sources{pointer.Digest([]byte(source)): "sha256:original"})
+			after := string(mustJSON(t, raw))
+			if !tc.want {
+				assert.Equal(t, before, after)
+				assert.Empty(t, report)
+				return
+			}
+			assert.Contains(t, after, pointer.Marker)
+			assert.NotContains(t, after, "*** Begin Patch")
+			assertCanonicalPointers(t, raw[mainTranscriptKey][0])
+		})
+	}
+}
+
+func TestCodexFailedWriteEnvelopes(t *testing.T) {
+	const source = "original\n"
+	patch := string(mustJSON(t, "*** Begin Patch\n*** Add File: task.md\n+original\n*** End Patch"))
+	for _, tc := range []struct {
+		name   string
+		output any
+	}{
+		{name: "JSON text", output: `{"exit_code":1,"output":"permission denied"}`},
+		{name: "text block", output: []map[string]string{{typeField: "input_text", textField: `{"exit_code":1,"output":"permission denied"}`}}},
+		{name: "promise", output: map[string]any{"status": "fulfilled", valueField: map[string]any{"exit_code": 1, outputField: "permission denied"}}},
+		{name: "JSON promise", output: `{"status":"fulfilled","value":{"exit_code":1,"output":"permission denied"}}`},
+		{name: "nested output", output: map[string]any{outputField: map[string]any{"is_error": true}}},
+		{name: "tool error", output: `{"isError":true,"content":[{"type":"text","text":"permission denied"}]}`},
+		{name: "rejected promise", output: map[string]any{"status": "rejected", "reason": "permission denied"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			call := extensionEvent(t, responseItem, map[string]string{typeField: customToolCall, "name": "exec", callIDField: testExtensionCallID, "input": "text(await tools.apply_patch(" + patch + "));"})
+			result := extensionEvent(t, responseItem, map[string]any{typeField: customToolCallOutput, callIDField: testExtensionCallID, outputField: tc.output})
+			raw := map[string][]json.RawMessage{mainTranscriptKey: {normalizedExtension(t, call), normalizedExtension(t, result)}}
+			before := string(mustJSON(t, raw))
+			New().ReplaceSpecCopies(raw, pointer.Sources{pointer.Digest([]byte(source)): "sha256:original"})
+			assert.Equal(t, before, string(mustJSON(t, raw)))
+		})
+	}
+}
+
 func TestCodexSessionSkills(t *testing.T) {
 	dir := t.TempDir()
 	skillDir := filepath.Join(dir, ".agents", "skills", "test-skill")
