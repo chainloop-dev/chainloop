@@ -160,6 +160,33 @@ violations contains resp.error.message if {
 	assert.NotContains(t, result.Violations[0].Violation, "is not allowed")
 }
 
+// TestRego_AllowedHostIsReachable proves that a host on the allow-list is
+// actually reached by http.send, using a loopback httptest server instead of a
+// live external host. PublicTargetsOnly is not set, so netguard does not block
+// the loopback target (see evalContext).
+func TestRego_AllowedHostIsReachable(t *testing.T) {
+	var hits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		hits++
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	serverURL, err := url.Parse(srv.URL)
+	require.NoError(t, err)
+
+	policy := &engine.Policy{
+		Name:   "allowed-host",
+		Source: fmt.Appendf(nil, httpSendPolicyTemplate, fmt.Sprintf(`{"method": "GET", "url": %q}`, srv.URL)),
+	}
+
+	// OPA matches the allowed host without its port.
+	r := NewEngine(engine.WithAllowedHostnames(serverURL.Hostname()))
+	_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
+	require.NoError(t, err)
+	assert.Equal(t, 1, hits)
+}
+
 func TestRego_HTTPSendPublicTargetsOnly(t *testing.T) {
 	// httptest listens on the loopback interface, so it stands in for any
 	// destination that is not publicly routable.
