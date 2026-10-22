@@ -230,6 +230,15 @@ func newGRPCServer(settings *Opts, grpcServerOpts []grpcLib.ServerOption, extraO
 	grpc_prometheus.EnableHandlingTimeHistogram(grpc_prometheus.WithHistogramBuckets(prometheus.ExponentialBucketsRange(0.5, 60, 8)))
 
 	opts = append(opts, extraOpts...)
+
+	// gRPC reflection advertises the already-public API schema and exists as a
+	// convenience for local debugging tooling such as grpcurl. No product
+	// client depends on it, so register it in development only; production
+	// disables it.
+	if Version != "dev" {
+		opts = append(opts, grpc.DisableReflection())
+	}
+
 	if c.GetGrpc().GetTimeout() != nil {
 		opts = append(opts, grpc.Timeout(c.GetGrpc().GetTimeout().AsDuration()))
 	}

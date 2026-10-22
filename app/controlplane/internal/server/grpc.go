@@ -191,6 +191,14 @@ func newGRPCServer(opts *Opts, extraOpts ...grpc.ServerOption) *grpc.Server {
 		),
 	}, extraOpts...)
 
+	// gRPC reflection advertises the already-public API schema and exists as a
+	// convenience for local debugging tooling such as grpcurl. No product
+	// client depends on it, so register it in development only; production
+	// disables it.
+	if Version != "dev" {
+		serverOpts = append(serverOpts, grpc.DisableReflection())
+	}
+
 	if v := opts.ServerConfig.Grpc.Timeout; v != nil {
 		serverOpts = append(serverOpts, grpc.Timeout(v.AsDuration()))
 	}
