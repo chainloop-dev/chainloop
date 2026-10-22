@@ -70,7 +70,7 @@ func HandleAgentSessionEnd(provider trace.Provider, log zerolog.Logger) error {
 	// stay after the session end, for a push that comes later.
 	captureSkillLoads(provider, store, input, log)
 
-	cleanupSessionShellState(store, sessionID, log)
+	setSessionActive(store, sessionID, false, log)
 
 	// The spec stays on disk for the whole session, so that every push of it
 	// records the spec as it is at that moment. The session end is where it
@@ -110,32 +110,6 @@ func setSessionActive(store *state.Store, sessionID string, active bool, log zer
 	rec.Active = active
 	if err := store.SaveSessionRecord(rec); err != nil {
 		log.Debug().Err(err).Bool("active", active).Msg("update session record failed")
-	}
-}
-
-func cleanupSessionShellState(store *state.Store, sessionID string, log zerolog.Logger) {
-	rec, err := store.LoadSessionRecord(sessionID)
-	if err != nil {
-		log.Debug().Err(err).Msg("load session record for shell cleanup failed")
-	}
-
-	setSessionActive(store, sessionID, false, log)
-	if err := store.DeleteShellSnapshots(sessionID); err != nil {
-		log.Debug().Err(err).Msg("delete shell snapshots failed")
-	}
-
-	if rec == nil {
-		return
-	}
-	for _, root := range rec.Checkouts {
-		checkoutStore, _, err := state.LocateFrom(root)
-		if err != nil {
-			continue
-		}
-		setSessionActive(checkoutStore, sessionID, false, log)
-		if err := checkoutStore.DeleteShellSnapshots(sessionID); err != nil {
-			log.Debug().Err(err).Str("root", root).Msg("delete checkout shell snapshots failed")
-		}
 	}
 }
 

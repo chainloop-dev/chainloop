@@ -20,7 +20,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -190,37 +189,6 @@ func (s *Store) LoadShellPreIndexSignature(key ShellCallKey) (WorktreeSignatures
 	}
 
 	return sig, nil
-}
-
-// DeleteShellSnapshots removes every in-progress shell snapshot for a session
-// while preserving file-edit snapshots in the same directory.
-func (s *Store) DeleteShellSnapshots(sessionID string) error {
-	dir := filepath.Join(s.traceDirPath(), traceDirSnapshots, sanitizeID(sessionID))
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return nil
-		}
-
-		return fmt.Errorf("read shell snapshots: %w", err)
-	}
-
-	var errs []error
-	for _, entry := range entries {
-		if entry.IsDir() || !isShellSnapshotName(entry.Name()) {
-			continue
-		}
-		if err := os.Remove(filepath.Join(dir, entry.Name())); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errors.Join(errs...)
-}
-
-func isShellSnapshotName(name string) bool {
-	return filepath.Ext(name) == commitRecordExt &&
-		(strings.HasPrefix(name, "shell-pre") || strings.HasPrefix(name, "shell-index"))
 }
 
 // DeleteShellPreSignature removes the pre-command signature, and the HEAD

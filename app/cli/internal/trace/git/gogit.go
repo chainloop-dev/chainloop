@@ -18,12 +18,12 @@ package git
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 	iofs "io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -266,6 +266,35 @@ func (c *GoGitClient) GeneratedMatcher(repoRoot string) func(path string) bool {
 	}
 }
 
+// StagedFiles returns repo-relative paths of files staged for the current commit.
+func (c *GoGitClient) StagedFiles(repoRoot string) ([]string, error) {
+	repo, err := openRepo(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("open repo: %w", err)
+	}
+
+	wt, err := repo.Worktree()
+	if err != nil {
+		return nil, fmt.Errorf("get worktree: %w", err)
+	}
+
+	status, err := wt.Status()
+	if err != nil {
+		return nil, fmt.Errorf("get status: %w", err)
+	}
+
+	var files []string
+	for path, s := range status {
+		if s.Staging != gogit.Unmodified && s.Staging != gogit.Untracked {
+			files = append(files, path)
+		}
+	}
+
+	sort.Strings(files)
+
+	return files, nil
+}
+
 // SnapshotWorktree returns a signature of the working tree (repo-relative path
 // → SHA-256 content hash), honoring .gitignore and skipping the .git directory.
 func (c *GoGitClient) SnapshotWorktree(repoRoot string) (map[string]string, error) {
@@ -310,7 +339,9 @@ func snapshotWorktree(repoRoot string) (map[string]string, error) {
 		// Ignore rules apply only to untracked files, matching git: a tracked
 		// file that also matches a .gitignore pattern (e.g. force-added
 		// generated code) is still part of the working tree and must be
-		// snapshotted so edits to it are attributed.
+		// snapshotted so edits to it are attributed. (Tracked files nested
+		// inside an ignored directory are the one gap — that directory is
+		// pruned above for walk performance.)
 		if matcher.Match(parts, false) && !tracked[slashRel] {
 			return nil
 		}
@@ -323,25 +354,6 @@ func snapshotWorktree(repoRoot string) (map[string]string, error) {
 
 		return nil
 	})
-	root, rootErr := os.OpenRoot(repoRoot)
-	if rootErr != nil {
-		return sig, errors.Join(err, fmt.Errorf("open worktree root: %w", rootErr))
-	}
-	defer func() { _ = root.Close() }()
-	for path := range tracked {
-		if _, ok := sig[path]; ok {
-			continue
-		}
-		f, ok := openRegularRootFile(root, path)
-		if !ok {
-			continue
-		}
-		hash, hashErr := hashFileReader(f)
-		_ = f.Close()
-		if hashErr == nil {
-			sig[path] = hash
-		}
-	}
 
 	return sig, err
 }
@@ -354,42 +366,18 @@ func trackedPaths(repoRoot string) map[string]bool {
 	if err != nil {
 		return nil
 	}
-	idx, err := loadEffectiveIndex(repo)
+
+	idx, err := repo.Storer.Index()
 	if err != nil {
 		return nil
 	}
 
 	tracked := make(map[string]bool, len(idx.Entries))
-	for _, entry := range idx.Entries {
-		if entry.IntentToAdd {
-			continue
-		}
-		tracked[entry.Name] = true
+	for _, e := range idx.Entries {
+		tracked[e.Name] = true
 	}
 
 	return tracked
-}
-
-func openRegularRootFile(root *os.Root, path string) (*os.File, bool) {
-	parts := strings.Split(filepath.ToSlash(path), "/")
-	current := ""
-	for i, part := range parts {
-		current = filepath.Join(current, filepath.FromSlash(part))
-		info, err := root.Lstat(current)
-		if err != nil || info.Mode()&os.ModeSymlink != 0 {
-			return nil, false
-		}
-		if i < len(parts)-1 {
-			if !info.IsDir() {
-				return nil, false
-			}
-		} else if !info.Mode().IsRegular() {
-			return nil, false
-		}
-	}
-
-	f, err := root.Open(filepath.FromSlash(path))
-	return f, err == nil
 }
 
 // hashFileContent returns the hex-encoded SHA-256 of the file's content.
@@ -400,12 +388,8 @@ func hashFileContent(path string) (string, error) {
 	}
 	defer func() { _ = f.Close() }()
 
-	return hashFileReader(f)
-}
-
-func hashFileReader(r io.Reader) (string, error) {
 	h := sha256.New()
-	if _, err := io.Copy(h, r); err != nil {
+	if _, err := io.Copy(h, f); err != nil {
 		return "", err
 	}
 

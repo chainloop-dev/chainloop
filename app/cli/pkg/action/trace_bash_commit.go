@@ -16,6 +16,7 @@
 package action
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -78,15 +79,6 @@ func checkpointActiveShellAttribution(store *state.Store, repoRoot string, stage
 	if err != nil {
 		return fmt.Errorf("snapshot staged index: %w", err)
 	}
-	afterWorktree, err := client.SnapshotWorktree(repoRoot)
-	if err != nil {
-		return fmt.Errorf("snapshot worktree: %w", err)
-	}
-	unstaged, err := client.UnstagedFiles(repoRoot)
-	if err != nil {
-		return fmt.Errorf("load unstaged paths: %w", err)
-	}
-
 	staged := make(map[string]struct{}, len(stagedFiles))
 	for _, path := range stagedFiles {
 		staged[path] = struct{}{}
@@ -124,15 +116,16 @@ func checkpointActiveShellAttribution(store *state.Store, repoRoot string, stage
 				}
 				afterContent = content
 				indexBefore[relPath] = hash
-				if _, hasUnstaged := unstaged[relPath]; !hasUnstaged {
-					if hash, exists := afterWorktree[relPath]; exists {
-						worktreeBefore[relPath] = hash
-					} else {
-						delete(worktreeBefore, relPath)
-					}
-				}
+				// SnapshotWorktree also hashes raw bytes with SHA-256.
+				// Checkpointing to the staged blob makes PostToolUse retain
+				// any different or missing worktree content, including when
+				// the call restored the exact bytes from before it started.
+				worktreeBefore[relPath] = fmt.Sprintf("%x", sha256.Sum256(afterContent))
 			} else {
 				delete(indexBefore, relPath)
+				// The staged content is absence. Checkpoint the worktree to the
+				// same state so PostToolUse records any recreated path, even
+				// when its bytes equal the file from before this call.
 				delete(worktreeBefore, relPath)
 			}
 
