@@ -569,6 +569,22 @@ func TestInstallUpgradeKeepsUserHandlersInTheSameGroup(t *testing.T) {
 	})
 }
 
+func TestUninstallKeepsUserHandlersInAChainloopGroup(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, settingsFile)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+	shared := `{"hooks":{"PostToolUse":[{"matcher":"` + postHookToolMatcher + `","hooks":[{"type":"command","command":"echo user-hook"},{"type":"command","command":"` +
+		strings.ReplaceAll(trace.GuardHookCommand("chainloop trace hook claude post-tool-use"), `"`, `\"`) + `"}]}]}}`
+	require.NoError(t, os.WriteFile(path, []byte(shared), 0600))
+
+	require.NoError(t, New().UninstallHooks(root))
+	postToolUse := readSettings(t, root)["hooks"].(map[string]any)[eventPostToolUse].([]any)
+	require.Len(t, postToolUse, 1)
+	group := postToolUse[0].(map[string]any)
+	assert.Equal(t, postHookToolMatcher, group["matcher"])
+	assert.Equal(t, []any{map[string]any{"type": "command", "command": "echo user-hook"}}, group["hooks"])
+}
+
 func TestInstallUpgradesUnguardedHooks(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, settingsFile)

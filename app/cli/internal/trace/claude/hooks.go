@@ -323,13 +323,29 @@ func removeHookEntry(hooks map[string]any, event string) bool {
 	}
 
 	var kept []any
+	changed := false
 	for _, entry := range entries {
 		if !entryContainsChainloopHook(entry) {
 			kept = append(kept, entry)
+			continue
+		}
+		changed = true
+		// Strip only the Chainloop handler: the group can also hold the user's own.
+		m, _ := entry.(map[string]any)
+		handlers, _ := m["hooks"].([]any)
+		var others []any
+		for _, h := range handlers {
+			if !handlerIsChainloop(h) {
+				others = append(others, h)
+			}
+		}
+		if len(others) > 0 {
+			m["hooks"] = others
+			kept = append(kept, m)
 		}
 	}
 
-	if len(kept) == len(entries) {
+	if !changed {
 		return false
 	}
 
