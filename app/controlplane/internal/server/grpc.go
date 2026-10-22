@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
+	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
@@ -51,6 +52,8 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	grpcLib "google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Opts struct {
@@ -189,6 +192,11 @@ func newGRPCServer(opts *Opts, extraOpts ...grpc.ServerOption) *grpc.Server {
 		grpc.UnaryInterceptor(
 			protovalidateMiddleware.UnaryServerInterceptor(opts.Validator),
 		),
+		// The control plane implements only unary RPCs. Reject any streaming
+		// method other than gRPC reflection so the server does not dispatch
+		// streaming methods it does not serve. Reflection is a local-development
+		// convenience (e.g. grpcurl) and is disabled in production below.
+		grpc.StreamInterceptor(rejectUnsupportedStreams),
 	}, extraOpts...)
 
 	// gRPC reflection advertises the already-public API schema and exists as a
@@ -239,6 +247,18 @@ func newGRPCServer(opts *Opts, extraOpts ...grpc.ServerOption) *grpc.Server {
 	grpc_prometheus.Register(srv.Server)
 
 	return srv
+}
+
+// rejectUnsupportedStreams blocks streaming RPCs that the control plane does not
+// implement. The server exposes only unary RPCs; gRPC reflection is the single
+// streaming service it serves (a local-development convenience, disabled in
+// production). Any other streaming method returns Unimplemented instead of being
+// dispatched to a handler.
+func rejectUnsupportedStreams(srv interface{}, ss grpcLib.ServerStream, info *grpcLib.StreamServerInfo, handler grpcLib.StreamHandler) error {
+	if strings.HasPrefix(info.FullMethod, "/grpc.reflection.") {
+		return handler(srv, ss)
+	}
+	return status.Error(codes.Unimplemented, "streaming methods are not supported")
 }
 
 func craftMiddleware(opts *Opts) []middleware.Middleware {
