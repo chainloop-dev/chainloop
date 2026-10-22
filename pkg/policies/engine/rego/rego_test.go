@@ -325,44 +325,19 @@ func TestRego_WithRestrictiveMode(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "eval_builtin_error: http.send: disallowed host: github.com")
 	})
+}
 
-	t.Run("allowed network requests from defaults", func(t *testing.T) {
-		regoContent, err := os.ReadFile("testfiles/restricted_mode_networking_allowed_host.rego")
-		require.NoError(t, err)
+// TestRego_AllowedHostnames asserts the host allow-list membership without any
+// network: that the defaults are present and that WithAllowedHostnames appends
+// to them rather than replacing them. Whether an allowed host is actually
+// reachable is covered hermetically by TestRego_AllowedHostIsReachable.
+func TestRego_AllowedHostnames(t *testing.T) {
+	base := NewEngine().Capabilities().AllowNet
+	assert.Contains(t, base, "www.chainloop.dev")
+	assert.Contains(t, base, "www.cisa.gov")
 
-		r := NewEngine()
-		policy := &engine.Policy{
-			Name:   "policy",
-			Source: regoContent,
-		}
-
-		_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
-		assert.NoError(t, err)
-	})
-
-	t.Run("allowed network requests from defaults plus custom domains", func(t *testing.T) {
-		defaultHosts, err := os.ReadFile("testfiles/restricted_mode_networking_allowed_host.rego")
-		require.NoError(t, err)
-		customHosts, err := os.ReadFile("testfiles/restrictive_mode_networking.rego")
-		require.NoError(t, err)
-
-		r := NewEngine(engine.WithAllowedHostnames("github.com"))
-		policy := &engine.Policy{
-			Name:   "policy",
-			Source: defaultHosts,
-		}
-
-		_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
-		assert.NoError(t, err)
-
-		policy = &engine.Policy{
-			Name:   "policy",
-			Source: customHosts,
-		}
-
-		_, err = r.Verify(context.TODO(), policy, []byte(`{}`), nil)
-		assert.NoError(t, err)
-	})
+	withCustom := NewEngine(engine.WithAllowedHostnames("github.com")).Capabilities().AllowNet
+	assert.Subset(t, withCustom, []string{"www.chainloop.dev", "www.cisa.gov", "github.com"})
 }
 
 func TestRego_WithPermissiveMode(t *testing.T) {

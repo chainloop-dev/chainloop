@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -74,7 +74,6 @@ func TestOCIImageCraft_Layout(t *testing.T) {
 	testCases := []struct {
 		name       string
 		layoutPath string
-		wantErr    string
 		wantDigest string
 		wantName   string
 		wantTag    string
@@ -97,11 +96,6 @@ func TestOCIImageCraft_Layout(t *testing.T) {
 			wantName:   "oci-layout:v1.51.0",
 			wantDigest: "sha256:a5303ef28a4bd9b6e06aa92c07831dd151ac64172695971226bdba4a11fc1b88",
 		},
-		{
-			name:       "non-existent path",
-			layoutPath: "/non/existent/path",
-			wantErr:    "UNAUTHORIZED",
-		},
 	}
 
 	for _, tc := range testCases {
@@ -115,11 +109,6 @@ func TestOCIImageCraft_Layout(t *testing.T) {
 			require.NoError(t, err)
 
 			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.layoutPath))
-			if tc.wantErr != "" {
-				assert.ErrorContains(t, err, tc.wantErr)
-				return
-			}
-
 			require.NoError(t, err)
 			assert.Equal(t, contractAPI.CraftingSchema_Material_CONTAINER_IMAGE.String(), got.MaterialType.String())
 
@@ -137,6 +126,33 @@ func TestOCIImageCraft_Layout(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestOCIImageCraft_UnresolvableRemoteReference covers the path where the input
+// is neither an OCI layout directory nor a pullable image, so Craft resolves it
+// as a remote reference. It runs against an in-memory registry on loopback
+// instead of Docker Hub, so the failure is deterministic and needs no external
+// network.
+func TestOCIImageCraft_UnresolvableRemoteReference(t *testing.T) {
+	server := httptest.NewServer(registry.New(registry.Logger(log.New(io.Discard, "", 0))))
+	defer server.Close()
+
+	u, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	schema := &contractAPI.CraftingSchema_Material{
+		Name: "test",
+		Type: contractAPI.CraftingSchema_Material_CONTAINER_IMAGE,
+	}
+	l := zerolog.Nop()
+	crafter, err := materials.NewOCIImageCrafter(schema, authn.DefaultKeychain, &l)
+	require.NoError(t, err)
+
+	// The repository was never pushed, so the registry answers with a not-found
+	// error instead of serving a manifest.
+	_, err = craftedMaterial(crafter.Craft(context.TODO(), fmt.Sprintf("%s/does-not-exist:latest", u.Host)))
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "NAME_UNKNOWN")
 }
 
 func TestOCIImageCraft_LayoutWithDigestSelector(t *testing.T) {
