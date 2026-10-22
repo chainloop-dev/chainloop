@@ -21,6 +21,7 @@ import (
 	"errors"
 	"io"
 	"sort"
+	"strconv"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/skill"
@@ -402,4 +403,12 @@ const DefaultProviderName = "claude-code"
 // CLI is present, exec hands it stdin, stdout and the exit status unchanged.
 func GuardHookCommand(command string) string {
 	return "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec " + command + "'"
+}
+
+// GuardHookCommandWithOutput is GuardHookCommand for a hook whose agent needs a
+// response even when the CLI is missing: the guard prints output before it
+// exits 0. output must not contain a single quote.
+func GuardHookCommandWithOutput(command, output string) string {
+	return "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then echo " + strconv.Quote(output) +
+		"; exit 0; fi; exec " + command + "'"
 }

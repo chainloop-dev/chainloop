@@ -273,13 +273,13 @@ func TestInstallHooksShellToolHooks(t *testing.T) {
 
 			hooks := readInstalledHooks(t, repoRoot)
 			for event, command := range map[string]string{
-				eventPreToolUse:  "chainloop trace hook cursor pre-tool-use",
-				eventPostToolUse: "chainloop trace hook cursor post-tool-use",
+				eventPreToolUse:  trace.GuardHookCommandWithOutput("chainloop trace hook cursor pre-tool-use", allowToolUseResponse),
+				eventPostToolUse: trace.GuardHookCommand("chainloop trace hook cursor post-tool-use"),
 			} {
 				entries, _ := hooks[event].([]any)
 				require.Len(t, entries, 1, "entries for %s", event)
 				entry, _ := entries[0].(map[string]any)
-				assert.Equal(t, trace.GuardHookCommand(command), entry["command"], "command for %s", event)
+				assert.Equal(t, command, entry["command"], "command for %s", event)
 				assert.Equal(t, shellToolName, entry["matcher"], "matcher for %s", event)
 			}
 
@@ -396,12 +396,21 @@ func TestInstalledHooksWithoutCLI(t *testing.T) {
 
 	for _, event := range cursorHookEvents {
 		t.Run(event.event+"/"+event.command, func(t *testing.T) {
-			cmd := exec.CommandContext(t.Context(), shell.sh, "-c", trace.GuardHookCommand(event.command)) //nolint:gosec // run the installed hook to check its shell behaviour
+			cmd := exec.CommandContext(t.Context(), shell.sh, "-c", event.guardedCommand()) //nolint:gosec // run the installed hook to check its shell behaviour
 			cmd.Env = append(os.Environ(), "PATH="+shell.bin)
 			cmd.Stdin = strings.NewReader(`{"session_id":"test"}`)
 			out, err := cmd.CombinedOutput()
 			require.NoError(t, err, string(out))
-			assert.Empty(t, out)
+			if event.event != eventPreToolUse {
+				assert.Empty(t, out)
+				return
+			}
+			// Cursor blocks the shell command unless preToolUse answers.
+			var resp struct {
+				Permission string `json:"permission"`
+			}
+			require.NoError(t, json.Unmarshal(out, &resp), string(out))
+			assert.Equal(t, "allow", resp.Permission)
 		})
 	}
 	assertInstalledCommandsGuarded(t, root)

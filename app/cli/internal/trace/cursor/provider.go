@@ -113,14 +113,17 @@ func (p *Provider) AnnouncePromptSubmit(_ string) error {
 	return nil
 }
 
+// allowToolUseResponse is the preToolUse hook response that lets the tool
+// call proceed. The missing-CLI guard of the installed hook prints it too.
+const allowToolUseResponse = `{"permission":"allow"}`
+
 // AllowToolUse writes the preToolUse hook response that lets the tool call
 // proceed. Cursor blocks the call when a preToolUse hook writes a response
 // that is not valid JSON or does not match the schema, so the pre hook writes
 // this response whatever the trace does.
 func (p *Provider) AllowToolUse() error {
-	return json.NewEncoder(os.Stdout).Encode(struct {
-		Permission string `json:"permission"`
-	}{Permission: "allow"})
+	_, err := fmt.Fprintln(os.Stdout, allowToolUseResponse)
+	return err
 }
 
 // AnnounceToUser is unsupported for Cursor: the postToolUse response that

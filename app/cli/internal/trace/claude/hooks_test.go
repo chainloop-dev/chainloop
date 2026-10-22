@@ -528,6 +528,47 @@ func assertInstalledCommandsGuarded(t *testing.T, root string) {
 	assert.Equal(t, len(hookEvents), strings.Count(string(data), "command -v chainloop"))
 }
 
+func TestInstallUpgradeKeepsUserHandlersInTheSameGroup(t *testing.T) {
+	const userHandler = `{"type":"command","command":"echo user-hook"}`
+	unguarded := `{"type":"command","command":"chainloop trace hook claude post-tool-use"}`
+
+	t.Run("same matcher", func(t *testing.T) {
+		root := t.TempDir()
+		path := filepath.Join(root, settingsFile)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+		legacy := `{"hooks":{"PostToolUse":[{"matcher":"` + postHookToolMatcher + `","hooks":[` + userHandler + `,` + unguarded + `]}]}}`
+		require.NoError(t, os.WriteFile(path, []byte(legacy), 0600))
+
+		require.NoError(t, New().InstallHooks(root))
+		postToolUse := readSettings(t, root)["hooks"].(map[string]any)[eventPostToolUse].([]any)
+		require.Len(t, postToolUse, 1)
+		group := postToolUse[0].(map[string]any)
+		assert.Equal(t, postHookToolMatcher, group["matcher"])
+		handlers := group["hooks"].([]any)
+		require.Len(t, handlers, 2)
+		assert.Equal(t, "echo user-hook", handlers[0].(map[string]any)["command"])
+		assert.Equal(t, trace.GuardHookCommand("chainloop trace hook claude post-tool-use"), handlers[1].(map[string]any)["command"])
+	})
+
+	t.Run("changed matcher", func(t *testing.T) {
+		root := t.TempDir()
+		path := filepath.Join(root, settingsFile)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+		legacy := `{"hooks":{"PostToolUse":[{"matcher":"Bash","hooks":[` + userHandler + `,` + unguarded + `]}]}}`
+		require.NoError(t, os.WriteFile(path, []byte(legacy), 0600))
+
+		require.NoError(t, New().InstallHooks(root))
+		postToolUse := readSettings(t, root)["hooks"].(map[string]any)[eventPostToolUse].([]any)
+		require.Len(t, postToolUse, 2)
+		user := postToolUse[0].(map[string]any)
+		assert.Equal(t, "Bash", user["matcher"], "the user's handler keeps its matcher")
+		assert.Equal(t, []any{map[string]any{"type": "command", "command": "echo user-hook"}}, user["hooks"])
+		chainloop := postToolUse[1].(map[string]any)
+		assert.Equal(t, postHookToolMatcher, chainloop["matcher"])
+		assert.Equal(t, trace.GuardHookCommand("chainloop trace hook claude post-tool-use"), chainloopHookCommand(chainloop))
+	})
+}
+
 func TestInstallUpgradesUnguardedHooks(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, settingsFile)
