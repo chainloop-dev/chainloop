@@ -40,7 +40,50 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
 	"github.com/golang-jwt/jwt/v5"
+	"golang.org/x/net/netutil"
 	grpcLib "google.golang.org/grpc"
+)
+
+// Connection-liveness limits for the shared public listener. The single-port
+// design serves HTTP/1.1 and native gRPC over HTTP/2 (including cleartext h2c)
+// on one net/http listener, which does not set any of net/http's optional
+// idle/liveness or connection limits by default. These give the shared listener
+// the same connection hygiene the dedicated gRPC transport already had
+// (PFM-7981). They are deliberately generous so they never trip on legitimate
+// traffic; a fronting proxy or ingress can impose stricter limits. They apply to
+// the public inbound server, not to the loopback reverse-proxy transport
+// (grpcProxy), which is bounded separately.
+const (
+	// publicIdleTimeout bounds how long an established connection may stay idle
+	// before it is closed. net/http applies it to idle HTTP/1.x keep-alives and,
+	// since Go 1.24, to HTTP/2 connections with no open streams. The HTTP/2 idle
+	// timer is armed at connection start and is not refreshed by SETTINGS/PING
+	// frames, so an idle HTTP/2 connection is closed even while keepalive pings
+	// are answered. ReadHeaderTimeout does not apply on the HTTP/2 path, where
+	// Go clears the connection deadline.
+	publicIdleTimeout = 120 * time.Second
+	// publicHTTP2PingInterval sends an HTTP/2 PING after this much inactivity
+	// and publicHTTP2PingTimeout closes the connection if the PING goes
+	// unanswered. This closes connections whose peer has gone away without a
+	// clean shutdown, which the idle timer alone does not observe.
+	publicHTTP2PingInterval = 15 * time.Second
+	publicHTTP2PingTimeout  = 15 * time.Second
+	// publicHTTP2MaxReadFrameSize bounds the largest HTTP/2 frame the server
+	// will read, capping the per-connection read buffer. 64 KiB sits above the
+	// 16 KiB floor the spec mandates and is ample for gRPC framing.
+	publicHTTP2MaxReadFrameSize = 64 << 10
+	// publicHTTP2MaxConcurrentStreams bounds concurrent streams per connection.
+	// 250 matches net/http's own default, so it does not constrain legitimate
+	// multiplexing; it is set explicitly to document the bound and guard against
+	// the default changing.
+	publicHTTP2MaxConcurrentStreams = 250
+	// maxPublicConns caps concurrent connections accepted on the shared
+	// endpoint. At roughly 2 goroutines + 1 FD + ~30 KiB of heap per connection,
+	// 4096 connections cost well under the smallest documented pod; a fronting
+	// proxy typically pools to far fewer. Connections beyond the cap wait in the
+	// accept backlog rather than being served, so a stricter per-client limit
+	// belongs at the edge.
+	maxPublicConns = 4096
 )
 
 // APIServer owns the shared CAS listener on server.http.addr. The standard
@@ -141,6 +184,9 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 		_ = grpcServers.Close()
 		return nil, fmt.Errorf("binding the shared CAS endpoint %q: %w", c.Http.GetAddr(), err)
 	}
+	// Cap concurrent connections on the shared endpoint (PFM-7981). Wrap
+	// the raw TCP listener so the limit counts accepts; TLS is layered on top.
+	lis = netutil.LimitListener(lis, maxPublicConns)
 	scheme := "http"
 	if tlsConfig != nil {
 		// One certificate covers both transports, with ALPN offering
@@ -173,9 +219,23 @@ func NewHTTPServer(settings *Opts, grpcServers *GRPCServers) (*APIServer, error)
 	srv.Protocols.SetHTTP1(true)
 	srv.Protocols.SetHTTP2(true)
 	srv.Protocols.SetUnencryptedHTTP2(true)
-	// Bound how long a client may take to deliver its request headers
-	// (slowloris protection). Response streaming is not affected.
+	// Bound how long a client may take to deliver its request headers over
+	// HTTP/1.x. On HTTP/2 this is inert — Go clears the connection deadline — so
+	// the idle and keepalive limits below apply to HTTP/2 instead. Response
+	// streaming is not affected.
 	srv.ReadHeaderTimeout = 60 * time.Second
+	// Apply the shared listener's connection-liveness limits (PFM-7981):
+	// net/http keeps an idle HTTP/2 connection open indefinitely without an idle
+	// timeout or keepalive ping. No absolute read/write deadline is set, so
+	// multi-GB uploads and downloads are unaffected — only idle connections are
+	// closed.
+	srv.IdleTimeout = publicIdleTimeout
+	srv.HTTP2 = &h.HTTP2Config{
+		MaxConcurrentStreams: publicHTTP2MaxConcurrentStreams,
+		MaxReadFrameSize:     publicHTTP2MaxReadFrameSize,
+		SendPingTimeout:      publicHTTP2PingInterval,
+		PingTimeout:          publicHTTP2PingTimeout,
+	}
 	// One proxy and one transport for the process: its connection pool is
 	// reused across requests. Dispatch each request: native gRPC goes through
 	// the standard reverse proxy to the private native server; everything else

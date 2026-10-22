@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 
@@ -34,6 +35,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 	"github.com/improbable-eng/grpc-web/go/grpcweb"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"golang.org/x/net/netutil"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -42,6 +44,46 @@ import (
 
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/go-kratos/kratos/v2/transport/http"
+)
+
+// Connection-liveness limits for the shared public listener. The single-port
+// design serves HTTP/1.1, gRPC-Web and native gRPC over HTTP/2 (including
+// cleartext h2c) on one net/http listener, which does not set any of net/http's
+// optional idle/liveness or connection limits by default. These give the shared
+// listener the same connection hygiene the dedicated gRPC transport already had
+// (PFM-7981). They are deliberately generous so they never trip on legitimate
+// traffic; a fronting proxy or ingress can impose stricter limits.
+const (
+	// publicIdleTimeout bounds how long an established connection may stay idle
+	// before it is closed. net/http applies it to idle HTTP/1.x keep-alives and,
+	// since Go 1.24, to HTTP/2 connections with no open streams. The HTTP/2 idle
+	// timer is armed at connection start and is not refreshed by SETTINGS/PING
+	// frames, so an idle HTTP/2 connection is closed even while keepalive pings
+	// are answered. ReadHeaderTimeout does not apply on the HTTP/2 path, where
+	// Go clears the connection deadline.
+	publicIdleTimeout = 120 * time.Second
+	// publicHTTP2PingInterval sends an HTTP/2 PING after this much inactivity
+	// and publicHTTP2PingTimeout closes the connection if the PING goes
+	// unanswered. This closes connections whose peer has gone away without a
+	// clean shutdown, which the idle timer alone does not observe.
+	publicHTTP2PingInterval = 15 * time.Second
+	publicHTTP2PingTimeout  = 15 * time.Second
+	// publicHTTP2MaxReadFrameSize bounds the largest HTTP/2 frame the server
+	// will read, capping the per-connection read buffer. 64 KiB sits above the
+	// 16 KiB floor the spec mandates and is ample for gRPC framing.
+	publicHTTP2MaxReadFrameSize = 64 << 10
+	// publicHTTP2MaxConcurrentStreams bounds concurrent streams per connection.
+	// 250 matches net/http's own default, so it does not constrain legitimate
+	// multiplexing; it is set explicitly to document the bound and guard against
+	// the default changing.
+	publicHTTP2MaxConcurrentStreams = 250
+	// maxPublicConns caps concurrent connections accepted on the shared
+	// endpoint. At roughly 2 goroutines + 1 FD + ~30 KiB of heap per connection,
+	// 4096 connections cost well under the smallest documented pod; a fronting
+	// proxy typically pools to far fewer. Connections beyond the cap wait in the
+	// accept backlog rather than being served, so a stricter per-client limit
+	// belongs at the edge.
+	maxPublicConns = 4096
 )
 
 // APIServer owns the public HTTP listener and its gRPC handler. The HTTP
@@ -120,8 +162,21 @@ func newHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	v1.RegisterStatusServiceHTTPServer(httpSrv, statusSvc)
 	v1.RegisterReferrerServiceHTTPServer(httpSrv, service.NewReferrerService(opts.ReferrerUseCase))
 
+	// Bind the shared listener here so it can be wrapped with a connection-count
+	// limiter before kratos serves it. Kratos applies TLS on top via ServeTLS
+	// when a TLS config is set, so the limit counts raw accepts. httpSrv keeps
+	// its address-based option and is never started — it only routes requests.
+	network := opts.ServerConfig.GetHttp().GetNetwork()
+	if network == "" {
+		network = "tcp"
+	}
+	lis, err := net.Listen(network, opts.ServerConfig.GetHttp().GetAddr())
+	if err != nil {
+		return nil, fmt.Errorf("binding the shared control-plane endpoint %q: %w", opts.ServerConfig.GetHttp().GetAddr(), err)
+	}
+
 	// Wrap http server to handle grpc-web calls and we will return this new server
-	wrappedServer := http.NewServer(serverOpts...)
+	wrappedServer := http.NewServer(append(serverOpts, http.Listener(netutil.LimitListener(lis, maxPublicConns)))...)
 	wrappedGrpc := grpcweb.WrapServer(grpcSrv.Server,
 		// Be permissive about cors
 		grpcweb.WithOriginFunc(func(_ string) bool { return true }),
@@ -140,11 +195,20 @@ func newHTTPServer(opts *Opts, grpcSrv *grpc.Server) (*http.Server, error) {
 	wrappedServer.Protocols.SetHTTP2(true)
 	wrappedServer.Protocols.SetUnencryptedHTTP2(true)
 	// Bound how long a client may take to deliver its request headers over
-	// HTTP/1.x, on either listener (slowloris protection). Response streaming
-	// is not affected. The bound does not protect HTTP/2 header completion:
-	// Go's HTTP/2 path clears the connection deadline, so that case is
-	// tracked separately.
+	// HTTP/1.x. On HTTP/2 this is inert — Go clears the connection deadline — so
+	// the idle and keepalive limits below apply to HTTP/2 instead. Response
+	// streaming is not affected.
 	wrappedServer.ReadHeaderTimeout = 60 * time.Second
+	// Apply the shared listener's connection-liveness limits (PFM-7981):
+	// net/http keeps an idle HTTP/2 connection open indefinitely without an idle
+	// timeout or keepalive ping, and sets no connection cap by default.
+	wrappedServer.IdleTimeout = publicIdleTimeout
+	wrappedServer.HTTP2 = &h.HTTP2Config{
+		MaxConcurrentStreams: publicHTTP2MaxConcurrentStreams,
+		MaxReadFrameSize:     publicHTTP2MaxReadFrameSize,
+		SendPingTimeout:      publicHTTP2PingInterval,
+		PingTimeout:          publicHTTP2PingTimeout,
+	}
 
 	wrappedServer.Handler = h.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		// Native gRPC uses grpc-go's HTTP adapter and its existing middleware.
