@@ -27,7 +27,6 @@ import (
 
 	"github.com/adrg/xdg"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
-	"github.com/chainloop-dev/chainloop/app/cli/pkg/plugins"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
@@ -86,20 +85,9 @@ const (
 // Environment variable prefix for vipers
 const envPrefix = "CHAINLOOP"
 
-// pluginLessCommands are the commands that never make use of plugins, keyed by the first
-// argument on the command line. Loading plugins starts a subprocess per installed plugin,
-// so it is skipped for the commands that cannot benefit from it.
-var pluginLessCommands = map[string]bool{
-	"completion":    true,
-	"help":          true,
-	telemetryCmdUse: true,
-}
-
-// processStart is when this process began, as close to it as a package variable gets. The
-// reported duration is measured from here rather than from the top of Execute because
-// NewRootCmd runs first and loads plugins, which starts a subprocess and an RPC handshake
-// per plugin. Timing from Execute would leave that out for exactly the users who have
-// plugins installed, making their numbers incomparable with everyone else's.
+// processStart is when this process began, as close to it as a package variable gets.
+// The reported duration is measured from here rather than from the top of Execute
+// so that setup work done in NewRootCmd is included.
 var processStart = time.Now()
 
 func Execute(rootCmd *cobra.Command) error {
@@ -344,17 +332,6 @@ Command reference: ` + cliReferenceURL,
 		newTraceCmd(), newTelemetryCmd(),
 	)
 
-	// Load plugins for root command and subcommands, except for the ones that cannot use
-	// them. `telemetry` is in that list because it is the detached child that delivers an
-	// analytics event: loading plugins there would spawn a subprocess and an RPC handshake
-	// per installed plugin, for a process whose whole job is one HTTP request.
-	if len(os.Args) == 1 || (len(os.Args) > 1 && !pluginLessCommands[os.Args[1]]) {
-		pluginManager = plugins.NewManager(&logger)
-		if err := loadAllPlugins(rootCmd); err != nil {
-			logger.Error().Err(err).Msg("Failed to load plugins, continuing with built-in commands only")
-		}
-	}
-
 	return rootCmd
 }
 
@@ -449,7 +426,6 @@ func newActionOpts(logger zerolog.Logger, conn *grpc.ClientConn, token string) *
 }
 
 func cleanup(conn *grpc.ClientConn) error {
-	cleanupPlugins()
 	if conn != nil {
 		if err := conn.Close(); err != nil {
 			return err

@@ -66,6 +66,6 @@ func newConfigCmd() *cobra.Command {
 		Short: "Configure this client",
 	}
 
-	cmd.AddCommand(newConfigSaveCmd(), newConfigViewCmd(), newConfigResetCmd(), newPluginCmd())
+	cmd.AddCommand(newConfigSaveCmd(), newConfigViewCmd(), newConfigResetCmd())
 	return cmd
 }
