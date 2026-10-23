@@ -62,14 +62,14 @@ func estimateCost(model string, u tokenUsage, warnings *[]string) float64 {
 		price = prices.Models[prices.Default]
 		*warnings = append(*warnings, fmt.Sprintf("unknown Codex model %q; cost estimated using %s pricing", model, prices.Default))
 	}
-	// Codex input_tokens already includes cached tokens. Cache writes are part
-	// of input, and reasoning tokens are already part of output_tokens.
-	uncached := max(0, u.Input-u.Cached)
-	written := 0
-	if price.CacheWrite > 0 {
-		written = min(u.CacheWrite, uncached)
+	// Usage is normalized: base input, cache reads and cache writes are
+	// disjoint. Reasoning is already included in output. Models without a
+	// separate cache-write rate charge writes at the ordinary input rate.
+	writePrice := price.CacheWrite
+	if writePrice == 0 {
+		writePrice = price.Input
 	}
-	return (float64(uncached-written)*price.Input + float64(written)*price.CacheWrite + float64(u.Cached)*price.Cached + float64(u.Output)*price.Output) / 1e6
+	return (float64(u.Input)*price.Input + float64(u.CacheWrite)*writePrice + float64(u.Cached)*price.Cached + float64(u.Output)*price.Output) / 1e6
 }
 
 func roundCost(cost float64) float64 { return math.Round(cost*1e4) / 1e4 }
