@@ -333,3 +333,37 @@ func TestParseMeta(t *testing.T) {
 		})
 	}
 }
+
+func TestHTMLBody(t *testing.T) {
+	const page = "<!doctype html>\n<html><head><style>p{}</style><script>x()</script></head><body><p>spec</p></body></html>\n"
+
+	testCases := []struct {
+		name     string
+		doc      string
+		wantBody string
+		wantHTML bool
+	}{
+		{name: "a page below a header", doc: "---\nkind: document\nuri: docs/design.html\n---\n" + page, wantBody: page, wantHTML: true},
+		{name: "a page with no header", doc: page, wantBody: page, wantHTML: true},
+		{name: "an upper case doctype after blank lines", doc: "---\nkind: text\n---\n\n  <!DOCTYPE HTML>\n<HTML></HTML>", wantBody: "\n  <!DOCTYPE HTML>\n<HTML></HTML>", wantHTML: true},
+		{name: "a root element with no doctype", doc: "<html lang=\"en\"><body>spec</body></html>", wantBody: "<html lang=\"en\"><body>spec</body></html>", wantHTML: true},
+		{name: "a byte order mark before the doctype", doc: "\ufeff" + page, wantBody: "\ufeff" + page, wantHTML: true},
+		// Markdown can open with an HTML fragment, a README banner for
+		// example. It stays markdown.
+		{name: "markdown that opens with a fragment", doc: "---\nkind: document\n---\n<p align=\"center\">logo</p>\n\n# Spec\n"},
+		{name: "markdown that holds a page further down", doc: "# Spec\n\n" + page},
+		{name: "plain text", doc: "Give up after three retries."},
+		{name: "a doctype of another type", doc: "<!doctype xml>\n<root/>"},
+		{name: "an element whose name starts with html", doc: "<htmlish>x</htmlish>"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			body, ok := HTMLBody([]byte(tc.doc))
+			assert.Equal(t, tc.wantHTML, ok)
+			if tc.wantHTML {
+				assert.Equal(t, tc.wantBody, string(body))
+			}
+		})
+	}
+}
