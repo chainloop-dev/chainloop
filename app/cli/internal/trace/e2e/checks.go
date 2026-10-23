@@ -94,10 +94,11 @@ var features = map[string]Feature{
 		{scenarioNoStart, checkNoSessionStartHook},
 		{scenarioNoStart, checkCommitTrailer},
 	}},
-	"Transcript":           {Checks: []Check{{scenarioEditAndCommit, checkTranscript}}},
-	"Token usage and cost": {Checks: []Check{{scenarioEditAndCommit, checkTokenUsage}}},
-	"Model detection":      {Checks: []Check{{scenarioEditAndCommit, checkModel}}},
-	"Subagents":            {Checks: []Check{{scenarioSubagent, checkSubagents}}},
+	"Transcript":             {Checks: []Check{{scenarioEditAndCommit, checkTranscript}}},
+	"Token usage and cost":   {Checks: []Check{{scenarioEditAndCommit, checkTokenUsage}}},
+	"Cache token accounting": {Checks: []Check{{scenarioEditAndCommit, checkCacheTokenAccounting}}},
+	"Model detection":        {Checks: []Check{{scenarioEditAndCommit, checkModel}}},
+	"Subagents":              {Checks: []Check{{scenarioSubagent, checkSubagents}}},
 
 	// Code attribution
 	"Line attribution":          {Checks: []Check{{scenarioEditAndCommit, checkFileAttributedToAI(greetingFile)}}},

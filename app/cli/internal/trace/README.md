@@ -16,7 +16,7 @@ Codex was tested with CLI 0.163.0 and `openrouter/openai/gpt-6-luna`: all 25 tes
 
 Milestone 2 live checks passed with the same CLI and model: skills in 3/3 sessions, spec pointers in 3/3 sessions, and pasted images in 1/1 session. The image scenario attaches the same image twice and requires one stored material. Transcript rendering and media redaction checks also passed. Provider and assembly regressions cover malformed images, storage failures, and reuse of an existing image material.
 
-Codex token usage comes from cumulative rollout counters. Cost is an estimate from the embedded standard API prices, with a warning for unknown models. Subscription billing and third-party provider prices can differ. Trace reads rollouts from `$CODEX_HOME/sessions` (default `~/.codex/sessions`) or `archived_sessions`. Their JSONL format is not a stable Codex interface.
+Codex token usage comes from unique response records, with cumulative rollout counters as a fallback for older transcripts. Codex evidence with `schema_version: v2` keeps cache reads and writes in separate fields; input and total tokens exclude cache, as they do for Claude Code. Legacy Codex `v1` counts include cache and must not be aggregated with `v2` counts without normalization. Cost includes all token categories and is an estimate from the embedded standard API prices, with a warning for unknown models. Subscription billing and third-party provider prices can differ. See [token accounting](codex/TOKEN_ACCOUNTING.md) for source selection, normalization, and the provider audit. Trace reads rollouts from `$CODEX_HOME/sessions` (default `~/.codex/sessions`) or `archived_sessions`. Their JSONL format is not a stable Codex interface.
 
 In a linked Git worktree, Codex 0.163 reads project hooks from the primary checkout. Install the Codex hooks in that checkout too, then review and trust them in Codex.
 
@@ -45,6 +45,7 @@ What the session evidence holds about the conversation.
 |---------|---------------|-------------|--------|--------------|------------|---|---|
 | Transcript | The evidence holds the conversation (`raw_session`): the messages and the tool calls of the agent. | Yes | Yes | Partial | Partial | No | Yes |
 | Token usage and cost | The evidence holds the tokens that the session used and their cost in USD. | Yes | No | Yes | Yes | No | Yes |
+| Cache token accounting | Cache reads and writes stay in separate evidence fields. Base input and total exclude cache. The suite compares stored token counts with the raw usage records. | Unknown | No | Unknown | Unknown | No | Unknown |
 | Model detection | The evidence names the primary model and the other models that the session used. | Yes | Partial | Yes | Yes | No | Yes |
 | Subagents | The evidence holds the conversations of the subagents, and their token usage, as part of the session. | Yes | No | No | No | No | No |
 | Missed session start | A session whose session-start hook did not fire is still recorded, from its first tool hook. | Yes | Unknown | Unknown | Yes | No | Unknown |
@@ -54,11 +55,16 @@ Why not Yes:
 - **Missed session start, Codex:** the scenario produces evidence, but its check also needs hook messages that Codex does not report in headless mode.
 - **Transcript, OpenCode:** OpenCode has no transcript file. The provider runs `opencode export` (1.x) or `opencode session export` (2) and rebuilds the transcript from the export. It keeps the text and the inputs of the tool calls. It drops the tool outputs, the reasoning and the file parts. OpenCode 2 exports also have no agent version and no session slug.
 - **Token usage and cost, Cursor:** the Cursor transcript does not hold token usage. Usage and cost are zero, and the evidence has a warning that tells so. (For OpenCode, the cost is the value that OpenCode reports. For Claude Code, Chainloop computes it from its price table.)
+- **Cache token accounting, Cursor:** the collected transcript does not expose usage or cache counts.
+- **Cache token accounting, Claude Code and Codex:** the new check has regression coverage, but has not run in the live agent matrix. Claude's source comparison also sums repeated assistant records; it does not establish that those records are unique.
+- **Cache token accounting, OpenCode:** separate cache fields are collected, but comparison against the export has not been implemented in the end-to-end check.
 - **Model detection, Cursor:** the primary model comes from the session-start hook. The transcript does not tell the models, so the evidence does not list the other models. In auto mode, the hook names the model `default`, not the model that ran.
 - **Subagents, Codex:** the initial provider records only the root session transcript. Child-session transcripts are not collected.
 - **Subagents, Cursor:** the provider does not read subagent conversations.
 - **Subagents, OpenCode:** a subagent runs in a child session with its own export. It is not part of the evidence of its parent session.
 - **Missed session start, Cursor and OpenCode 1.x:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
+
+The cache accounting check reuses the edit-and-commit session, so it adds no agent runs. It compares the stored evidence with source usage, including unique Codex responses and Claude subagents, and fails if input or total includes cache or if a cache category is lost. The Codex check also rejects inflated usage by comparing with deduplicated responses or accepted cumulative snapshots. The Claude check sums all assistant records, so matching duplicated records in both source and evidence will pass; Claude deduplication remains a gap. A session with no cache activity is reported as not covered. Regression fixtures cover the compaction overcount, duplicate response IDs, resumed sessions, cumulative fallbacks, reasoning, and cache pricing. The live agent matrix must be rerun to record the new check's result.
 
 ## Code attribution
 

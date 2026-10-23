@@ -112,14 +112,15 @@ func TestParseSession(t *testing.T) {
 	evidence, err := New().ParseSession(context.Background(), &trace.ParseOpts{SessionDir: dir, SessionID: testSessionID})
 	require.NoError(t, err)
 	d := evidence.Data
+	assert.Equal(t, "v2", d.SchemaVersion)
 	assert.Equal(t, Name, d.Agent.Name)
 	assert.Equal(t, "0.163.0", d.Agent.Version)
 	assert.Equal(t, 60, d.Session.DurationSeconds)
 	assert.Equal(t, testModel, d.Model.Primary)
 	assert.Equal(t, "openai", d.Model.Provider)
-	assert.Equal(t, 2000, d.Usage.InputTokens)
+	assert.Equal(t, 900, d.Usage.InputTokens)
 	assert.Equal(t, 400, d.Usage.OutputTokens)
-	assert.Equal(t, 2400, d.Usage.TotalTokens)
+	assert.Equal(t, 1300, d.Usage.TotalTokens)
 	assert.Equal(t, 1000, d.Usage.CacheReadInputTokens)
 	assert.Equal(t, 100, d.Usage.CacheCreationInputTokens)
 	assert.InDelta(t, 0.0011, d.Usage.EstimatedCostUSD, 0.00001)
@@ -134,6 +135,15 @@ func TestParseSession(t *testing.T) {
 	var data map[string]any
 	require.NoError(t, json.Unmarshal(doc, &data))
 	require.NoError(t, schemavalidators.ValidateAICodingSession(data, schemavalidators.AICodingSessionVersion0_1))
+	assert.Equal(t, "v2", data["schema_version"])
+	// Verify the actual serialized evidence keeps both cache categories while
+	// input and total follow the same convention as Claude.
+	usage, ok := data["usage"].(map[string]any)
+	require.True(t, ok)
+	assert.Equal(t, float64(900), usage["input_tokens"])
+	assert.Equal(t, float64(1300), usage["total_tokens"])
+	assert.Equal(t, float64(1000), usage["cache_read_input_tokens"])
+	assert.Equal(t, float64(100), usage["cache_creation_input_tokens"])
 }
 
 func TestCopySessionData(t *testing.T) {
@@ -220,7 +230,8 @@ func TestUsageAcrossModels(t *testing.T) {
 	raw, err := os.ReadFile("testdata/session.jsonl")
 	require.NoError(t, err)
 	// The second model owns only the increment after the first cumulative snapshot.
-	extra := `{"timestamp":"2026-10-21T10:01:01Z","type":"turn_context","payload":{"model":"gpt-5"}}
+	extra := `{"timestamp":"2026-10-21T10:01:00Z","type":"token_usage_record","payload":{"thread_token_usage":{"input_tokens":2000,"cached_input_tokens":1000,"cache_write_input_tokens":100,"output_tokens":400,"total_tokens":2400}}}
+{"timestamp":"2026-10-21T10:01:01Z","type":"turn_context","payload":{"model":"gpt-5"}}
 {"timestamp":"2026-10-21T10:01:02Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[]}}
 {"timestamp":"2026-10-21T10:01:03Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[]}}
 {"timestamp":"2026-10-21T10:01:04Z","type":"token_usage_record","payload":{"usage":{"input_tokens":2000,"output_tokens":404,"total_tokens":2404},"thread_token_usage":{"input_tokens":4000,"cached_input_tokens":2000,"cache_write_input_tokens":200,"output_tokens":804,"total_tokens":4804}}}
@@ -232,8 +243,8 @@ func TestUsageAcrossModels(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"gpt-5", testModel}, e.Data.Model.ModelsUsed)
 	assert.Equal(t, "gpt-5", e.Data.Model.Primary)
-	assert.Equal(t, 4000, e.Data.Usage.InputTokens)
-	assert.Equal(t, 4804, e.Data.Usage.TotalTokens)
+	assert.Equal(t, 1800, e.Data.Usage.InputTokens)
+	assert.Equal(t, 2604, e.Data.Usage.TotalTokens)
 	assert.InDelta(t, 0.0065, e.Data.Usage.EstimatedCostUSD, 0.00001)
 }
 
@@ -253,9 +264,9 @@ func TestNativeRollout(t *testing.T) {
 			e, err := New().ParseSession(t.Context(), &trace.ParseOpts{SessionDir: dir, SessionID: testSessionID})
 			require.NoError(t, err)
 			require.NotNil(t, e.Data.Usage)
-			assert.Equal(t, 19064, e.Data.Usage.InputTokens)
+			assert.Equal(t, 3, e.Data.Usage.InputTokens)
 			assert.Equal(t, 128, e.Data.Usage.OutputTokens)
-			assert.Equal(t, 19192, e.Data.Usage.TotalTokens)
+			assert.Equal(t, 131, e.Data.Usage.TotalTokens)
 			assert.Equal(t, 19061, e.Data.Usage.CacheCreationInputTokens)
 			assert.InDelta(t, 0.0489, e.Data.Usage.EstimatedCostUSD, 0.00001)
 			assert.NotEmpty(t, e.Data.Model.Primary)
