@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -48,6 +49,7 @@ func newTraceInitCmd() *cobra.Command {
 		claudeFlag    bool
 		cursorFlag    bool
 		opencodeFlag  bool
+		piFlag        bool
 		codexFlag     bool
 	)
 
@@ -74,7 +76,7 @@ named freely; the name is normalized to the lowercase, dash-separated form
 Chainloop stores. It then asks which harnesses to trace, with the ones the
 repository is already set up for ticked, or Claude Code on a first run; use
 space to tick more. Passing --org, --project or a harness flag
-(--claude, --cursor, --opencode, --codex) skips the matching question.
+(--claude, --cursor, --opencode, --pi, --codex) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
 required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
@@ -157,7 +159,7 @@ cannot use them with --local. You can use --require-trace with --local.`,
 			// so every question is answered up front and an abort leaves the
 			// repository untouched.
 			selected, err := resolveTraceProviders(newNamingPrompter(os.LookupEnv),
-				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag, codex: codexFlag},
+				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag, pi: piFlag, codex: codexFlag},
 				traceInitCanPrompt(), func() []string { return configuredTraceProviders(repoRoot) })
 			if err != nil {
 				return stopIfAborted(err)
@@ -295,6 +297,7 @@ cannot use them with --local. You can use --require-trace with --local.`,
 	cmd.Flags().Bool("require-trace", false, "block pushes when a required trace is missing")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no harness flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
+	cmd.Flags().BoolVar(&piFlag, "pi", false, "install Pi extension")
 	cmd.Flags().BoolVar(&codexFlag, "codex", false, "install Codex hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
@@ -383,9 +386,16 @@ What's next
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
+	writeTraceHarnessNotes(w, installed)
+}
+
+func writeTraceHarnessNotes(w io.Writer, installed []trace.Provider) {
 	for _, p := range installed {
-		if p.Name() == codex.Name {
+		switch p.Name() {
+		case codex.Name:
 			fmt.Fprintln(w, "For Codex, review and trust the installed hooks in Codex before starting work.")
+		case pi.Name:
+			fmt.Fprintln(w, "For Pi, review the project extension at .pi/extensions/chainloop-trace.ts before starting work. Interactive Pi asks to trust project files. Non-interactive runs need saved trust or --approve.")
 		}
 	}
 }
@@ -445,11 +455,7 @@ What's next
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
-	for _, p := range installed {
-		if p.Name() == codex.Name {
-			fmt.Fprintln(w, "For Codex, review and trust the installed hooks in Codex before starting work.")
-		}
-	}
+	writeTraceHarnessNotes(w, installed)
 }
 
 // providerNames names the harnesses, in the order they were installed.

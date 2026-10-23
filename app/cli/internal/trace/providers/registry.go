@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 )
 
 // DefaultProvider is the provider name used when none is specified
@@ -38,6 +39,7 @@ var all = []trace.Provider{
 	claude.New(),
 	cursor.New(),
 	opencode.New(),
+	pi.New(),
 	codex.New(),
 }
 

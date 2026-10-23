@@ -29,8 +29,7 @@ import (
 // Name is the provider identifier stored in session records and evidence.
 const Name = "pi"
 
-// Provider captures and parses Pi sessions. Hook integration is added before
-// the provider is registered with the shared registry.
+// Provider captures and parses Pi sessions.
 type Provider struct{}
 
 var _ trace.Provider = (*Provider)(nil)

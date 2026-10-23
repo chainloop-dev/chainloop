@@ -22,6 +22,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -61,6 +62,7 @@ func TestSessionStartChannels(t *testing.T) {
 			why:             "the opencode plugin posts the instruction and the reminder as context-only messages and has no banner",
 		},
 		{provider: codex.Name, wantBanner: true, wantInstruction: true, wantReminder: true, why: "Codex surfaces systemMessage and supports additionalContext at session start and user prompt"},
+		{provider: pi.Name, wantBanner: true, wantInstruction: true, wantReminder: true, why: "Pi shows banners in its UI and injects the session instruction and prompt reminder through the project extension"},
 	}
 
 	for _, tc := range testCases {
@@ -79,7 +81,7 @@ func TestSessionStartChannels(t *testing.T) {
 // without a decision recorded above, since the default zero value would
 // silently claim no support.
 func TestSessionStartChannelsCoverEveryProvider(t *testing.T) {
-	known := map[string]bool{claude.Name: true, cursor.Name: true, opencode.Name: true, codex.Name: true}
+	known := map[string]bool{claude.Name: true, cursor.Name: true, opencode.Name: true, codex.Name: true, pi.Name: true}
 
 	for _, p := range All() {
 		assert.True(t, known[p.Name()], "provider %q has no session-start channel expectation", p.Name())
