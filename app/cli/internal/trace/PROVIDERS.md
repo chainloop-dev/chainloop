@@ -1,6 +1,6 @@
 # Chainloop Trace: how to add a provider
 
-A provider connects one AI coding agent (a "harness") to Chainloop Trace. This page tells how to add a provider. It uses the Claude Code (`claude/`), Cursor (`cursor/`), and OpenCode (`opencode/`) providers as examples. The Pi provider (`pi/`) is a provider that is not complete: it parses sessions, but it is not in the registry yet.
+A provider connects one AI coding agent (a "harness") to Chainloop Trace. This page tells how to add a provider. It uses the Claude Code (`claude/`), Cursor (`cursor/`), OpenCode (`opencode/`), and Pi (`pi/`) providers as examples.
 
 Read these documents first:
 
