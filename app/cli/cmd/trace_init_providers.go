@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 )
 
@@ -30,12 +31,12 @@ const providersPromptTitle = "Harnesses to trace in this repository"
 
 // traceProviderFlags records the harness flags that the user set.
 type traceProviderFlags struct {
-	claude, cursor, opencode, codex bool
+	claude, cursor, opencode, pi, codex bool
 }
 
 // any reports whether the user named at least one provider.
 func (f traceProviderFlags) any() bool {
-	return f.claude || f.cursor || f.opencode || f.codex
+	return f.claude || f.cursor || f.opencode || f.pi || f.codex
 }
 
 // names returns the providers the flags select, in the registry's order rather
@@ -51,7 +52,9 @@ func (f traceProviderFlags) names() []string {
 	if f.opencode {
 		out = append(out, opencode.Name)
 	}
-
+	if f.pi {
+		out = append(out, pi.Name)
+	}
 	if f.codex {
 		out = append(out, codex.Name)
 	}

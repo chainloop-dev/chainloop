@@ -3148,7 +3148,7 @@ named freely; the name is normalized to the lowercase, dash-separated form
 Chainloop stores. It then asks which harnesses to trace, with the ones the
 repository is already set up for ticked, or Claude Code on a first run; use
 space to tick more. Passing --org, --project or a harness flag
-(--claude, --cursor, --opencode, --codex) skips the matching question.
+(--claude, --cursor, --opencode, --pi, --codex) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
 required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
@@ -3185,6 +3185,7 @@ Options
 -h, --help                help for init
 --local               set up local mode, with no control plane, login or workflow. The pre-push hook writes the session evidence to disk
 --opencode            install opencode hooks
+--pi                  install Pi extension
 --project string      chainloop project name
 --require-trace       block pushes when a required trace is missing
 --trace-path string   the directory where Chainloop Trace keeps its data, in every mode (default: .git/chainloop-trace). Local mode writes the sessions to its local-sessions folder
@@ -3254,6 +3255,7 @@ Options
 -h, --help              help for run
 --local             store the session on disk, with no control plane, login or workflow
 --opencode          install opencode hooks
+--pi                install Pi extension
 --project string    chainloop project name (required, except with --local). trace run does not read it from .chainloop.yml
 --version string    chainloop project version (optional; defaults to the latest version)
 --workflow string   chainloop workflow name for the trace attestations (required, except with --local). trace run does not read it from .chainloop.yml

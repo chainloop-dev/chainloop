@@ -57,7 +57,11 @@ func TestCodexMultiFilePatchAttribution(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, codex.Name, session.Provider)
 	for _, name := range []string{"one.txt", "two.txt", "gone.txt"} {
-		_, err := store.LoadFileSnapshot("codex-patch", filepath.Join(root, name))
+		_, err := store.LoadFileSnapshot(state.FileSnapshotKey{
+			SessionID: "codex-patch",
+			FilePath:  filepath.Join(root, name),
+			ToolUseID: "call-1",
+		})
 		assert.ErrorIs(t, err, os.ErrNotExist)
 	}
 }

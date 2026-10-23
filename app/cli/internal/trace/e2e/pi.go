@@ -16,9 +16,10 @@
 package e2e
 
 import (
+	"bufio"
 	"bytes"
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -31,6 +32,18 @@ import (
 // piExtensionPath is the extension file where `trace init` installs the Pi
 // hooks (spec issue-3520, D-002).
 const piExtensionPath = ".pi/extensions/chainloop-trace.ts"
+
+const (
+	piSessionStartHandler          = `pi.on("session_start", async (event, ctx) => {`
+	piSessionStartFallback         = `const response = starts.get(id) ?? await start(ctx, event.type)`
+	piDisabledSessionStartHandler  = `pi.on("e2e.session_start", async (event, ctx) => {`
+	piDisabledSessionStartFallback = `const response = starts.get(id)`
+	piInstructionMarker            = "chainloop-trace-instruction:"
+	piReminderType                 = "chainloop-trace-spec-reminder"
+	piReminderTextMarker           = "Capture only in these cases"
+	piSessionStartEvent            = "SessionStart"
+	piPromptSubmitEvent            = "UserPromptSubmit"
+)
 
 var piVersionRe = regexp.MustCompile(`\d+\.\d+\.\d+`)
 
@@ -53,7 +66,7 @@ func (p *Pi) Column() string { return "Pi" }
 // TraceFlag implements Harness.
 func (p *Pi) TraceFlag() string { return "--pi" }
 
-// Version implements Harness. `pi --version` prints "0.79.6".
+// Version implements Harness. `pi --version` prints "1.3.0".
 func (p *Pi) Version(ctx context.Context) (string, error) {
 	out, err := exec.CommandContext(ctx, p.bin(), "--version").Output() //nolint:gosec // the harness binary under test // nosemgrep
 	if err != nil {
@@ -79,10 +92,11 @@ func (p *Pi) Version(ctx context.Context) (string, error) {
 // them from the session file, the hook messages are not reported.
 func (p *Pi) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 	base := filepath.Dir(req.Dir)
+	sessionDir := filepath.Join(base, "pi-sessions")
 	args := []string{
 		"-p", "--mode", "json", "--approve",
 		flagModel, req.Model,
-		"--session-dir", filepath.Join(base, "pi-sessions"),
+		"--session-dir", sessionDir,
 	}
 
 	// A pasted image goes in as an attached file, from outside the
@@ -124,7 +138,12 @@ func (p *Pi) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 		return &RunOutput{Raw: raw}, fmt.Errorf("pi -p: %w: %s", err, strings.TrimSpace(stderr.String()))
 	}
 
-	return &RunOutput{Raw: raw}, nil
+	hooks, err := piHookMessages(sessionDir)
+	if err != nil {
+		return &RunOutput{Raw: raw}, err
+	}
+
+	return &RunOutput{Raw: raw, Hooks: hooks, HooksReported: true}, nil
 }
 
 // HookConfig implements Harness. The Chainloop extension is a file of its
@@ -141,17 +160,71 @@ export default function () {}
 	}
 }
 
-// errPiSessionStart is the error of DisableSessionStart until the suite
-// knows the shape of the Chainloop extension.
-var errPiSessionStart = errors.New("pi: the suite cannot remove the session-start hook of the Chainloop extension yet")
-
-// DisableSessionStart implements Harness. The Chainloop extension of Pi does
-// not exist yet, so there is no handler to change.
-func (p *Pi) DisableSessionStart(string) error {
-	return errPiSessionStart
+// DisableSessionStart implements Harness. It disables both paths that call the
+// session-start hook: the Pi lifecycle event and the before-agent fallback.
+func (p *Pi) DisableSessionStart(repo string) error {
+	path := filepath.Join(repo, piExtensionPath)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	handlerCount := bytes.Count(data, []byte(piSessionStartHandler))
+	fallbackCount := bytes.Count(data, []byte(piSessionStartFallback))
+	if handlerCount != 1 || fallbackCount != 1 {
+		return fmt.Errorf("%s has %d session-start handlers and %d fallbacks, want 1 each", piExtensionPath, handlerCount, fallbackCount)
+	}
+	data = bytes.Replace(data, []byte(piSessionStartHandler), []byte(piDisabledSessionStartHandler), 1)
+	data = bytes.Replace(data, []byte(piSessionStartFallback), []byte(piDisabledSessionStartFallback), 1)
+	return os.WriteFile(path, data, 0o600) //nolint:gosec // the extension file of a throwaway workspace
 }
 
 // SkillPath implements Harness. Pi finds project skills in .agents/skills.
 func (p *Pi) SkillPath(name string) string {
 	return ".agents/skills/" + name + "/SKILL.md"
+}
+
+func piHookMessages(sessionDir string) ([]HookMessage, error) {
+	paths, err := filepath.Glob(filepath.Join(sessionDir, "*.jsonl"))
+	if err != nil {
+		return nil, fmt.Errorf("find Pi session: %w", err)
+	}
+	if len(paths) != 1 {
+		return nil, fmt.Errorf("find Pi session: got %d JSONL files, want 1", len(paths))
+	}
+
+	f, err := os.Open(paths[0])
+	if err != nil {
+		return nil, fmt.Errorf("open Pi session: %w", err)
+	}
+	defer f.Close()
+
+	var out []HookMessage
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 4096), 16*1024*1024)
+	for scanner.Scan() {
+		var entry struct {
+			Type       string `json:"type"`
+			CustomType string `json:"customType"`
+			Content    string `json:"content"`
+		}
+		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
+			return nil, fmt.Errorf("decode Pi session entry: %w", err)
+		}
+		if entry.Type != "custom_message" || entry.Content == "" {
+			continue
+		}
+		switch {
+		case strings.HasPrefix(entry.CustomType, piInstructionMarker):
+			out = append(out, HookMessage{Event: piSessionStartEvent, ModelContext: entry.Content})
+			if strings.Contains(entry.Content, piReminderTextMarker) {
+				out = append(out, HookMessage{Event: piPromptSubmitEvent, ModelContext: entry.Content})
+			}
+		case entry.CustomType == piReminderType:
+			out = append(out, HookMessage{Event: piPromptSubmitEvent, ModelContext: entry.Content})
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("read Pi session: %w", err)
+	}
+	return out, nil
 }
