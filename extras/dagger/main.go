@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	chainloopVersion = "v1.127.3"
+	chainloopVersion = "v1.127.4"
 	platformVersion  = "v1.137.1"
 	// gitlabCADir holds the custom CA of the Gitlab server. The CLI image is scratch-based,
 	// so SSL_CERT_DIR points Go at it, on top of the default ca-certificates.crt bundle
