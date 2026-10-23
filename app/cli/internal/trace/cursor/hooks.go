@@ -62,6 +62,17 @@ type cursorHookEvent struct {
 	// matcher limits a tool hook to the tools whose name it matches. Empty
 	// for hooks that are not tool hooks.
 	matcher string
+	// missingCLIOutput is what the hook prints when the chainloop CLI is not
+	// installed. Empty for hooks whose output Cursor does not require.
+	missingCLIOutput string
+}
+
+// guardedCommand is the hook command as installed, wrapped in the missing-CLI guard.
+func (h cursorHookEvent) guardedCommand() string {
+	if h.missingCLIOutput != "" {
+		return trace.GuardHookCommandWithOutput(h.command, h.missingCLIOutput)
+	}
+	return trace.GuardHookCommand(h.command)
 }
 
 // cursorHookEvents is the full list of hooks installed by InstallHooks.
@@ -69,7 +80,9 @@ var cursorHookEvents = []cursorHookEvent{
 	{event: eventSessionStart, command: "chainloop trace hook cursor session-start"},
 	{event: eventSessionEnd, command: "chainloop trace hook cursor session-end"},
 	{event: eventAfterFileEdit, command: "chainloop trace hook cursor after-file-edit"},
-	{event: eventPreToolUse, command: "chainloop trace hook cursor pre-tool-use", matcher: shellToolName},
+	// Cursor blocks the shell command when preToolUse writes no valid response,
+	// so the guard answers for a missing CLI the way AllowToolUse does.
+	{event: eventPreToolUse, command: "chainloop trace hook cursor pre-tool-use", matcher: shellToolName, missingCLIOutput: allowToolUseResponse},
 	{event: eventPostToolUse, command: "chainloop trace hook cursor post-tool-use", matcher: shellToolName},
 }
 
@@ -289,7 +302,7 @@ func addHookEntry(hooks map[string]any, h cursorHookEvent) bool {
 		m, _ := entry.(map[string]any)
 		existingCmd, _ := m["command"].(string)
 		existingMatcher, _ := m["matcher"].(string)
-		if existingCmd == h.command && existingMatcher == h.matcher {
+		if existingCmd == h.guardedCommand() && existingMatcher == h.matcher {
 			return false
 		}
 		entries[i] = buildHookEntry(h)
@@ -331,7 +344,7 @@ func removeHookEntry(hooks map[string]any, event string) bool {
 
 func buildHookEntry(h cursorHookEvent) map[string]any {
 	entry := map[string]any{
-		"command": h.command,
+		"command": h.guardedCommand(),
 		"timeout": defaultHookTimeoutSeconds,
 	}
 	if h.matcher != "" {
