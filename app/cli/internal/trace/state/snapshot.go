@@ -19,6 +19,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -57,13 +58,22 @@ func (s *Store) SaveFileSnapshot(key FileSnapshotKey, content []byte) error {
 
 // LoadFileSnapshot loads a previously stored file snapshot.
 func (s *Store) LoadFileSnapshot(key FileSnapshotKey) ([]byte, error) {
+	content, err := os.ReadFile(s.snapshotPath(key))
+	if err == nil || key.ToolUseID == "" || !errors.Is(err, os.ErrNotExist) {
+		return content, err
+	}
+
+	key.ToolUseID = ""
 	return os.ReadFile(s.snapshotPath(key))
 }
 
 // DeleteFileSnapshot removes a file snapshot after it's been processed.
 func (s *Store) DeleteFileSnapshot(key FileSnapshotKey) {
-	path := s.snapshotPath(key)
-	_ = os.Remove(path)
+	_ = os.Remove(s.snapshotPath(key))
+	if key.ToolUseID != "" {
+		key.ToolUseID = ""
+		_ = os.Remove(s.snapshotPath(key))
+	}
 }
 
 // ShellCallKey identifies the shell command that a pre-command signature

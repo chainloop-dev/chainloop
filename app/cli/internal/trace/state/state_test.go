@@ -391,6 +391,20 @@ func TestFileSnapshots(t *testing.T) {
 		assert.Equal(t, "second", string(secondContent))
 	})
 
+	t.Run("keyed post hook loads and cleans legacy snapshot", func(t *testing.T) {
+		legacy := FileSnapshotKey{SessionID: "sess-1", FilePath: "/upgraded.go"}
+		keyed := FileSnapshotKey{SessionID: legacy.SessionID, FilePath: legacy.FilePath, ToolUseID: "call-after-upgrade"}
+		require.NoError(t, store.SaveFileSnapshot(legacy, []byte("before upgrade")))
+
+		content, err := store.LoadFileSnapshot(keyed)
+		require.NoError(t, err)
+		assert.Equal(t, "before upgrade", string(content))
+
+		store.DeleteFileSnapshot(keyed)
+		_, err = store.LoadFileSnapshot(legacy)
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
+
 	t.Run("delete snapshot", func(t *testing.T) {
 		key := FileSnapshotKey{SessionID: "sess-1", FilePath: "/delete/me.go"}
 		content := []byte("content")

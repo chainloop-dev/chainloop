@@ -212,6 +212,21 @@ func TestGeneratedExtensionContainsRequiredSafetyAndLifecycleBehavior(t *testing
 	assert.NotContains(t, source, "shell: true")
 }
 
+func TestGeneratedExtensionToolArraysFollowGoSlices(t *testing.T) {
+	originalFileWritingTools := fileWritingTools
+	originalCommandTools := commandTools
+	fileWritingTools = []string{"review-write"}
+	commandTools = []string{"review-command"}
+	t.Cleanup(func() {
+		fileWritingTools = originalFileWritingTools
+		commandTools = originalCommandTools
+	})
+
+	source := string(renderExtension(true))
+	assert.Contains(t, source, `const fileWritingTools = ["review-write"]`)
+	assert.Contains(t, source, `const commandTools = ["review-command"]`)
+}
+
 func TestGeneratedExtensionLifecycle(t *testing.T) {
 	if runtime.GOOS == windowsOS {
 		t.Skip("fake chainloop executable is a POSIX script")

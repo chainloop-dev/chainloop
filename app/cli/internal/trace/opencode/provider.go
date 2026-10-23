@@ -175,7 +175,7 @@ func (p *Provider) CleanupAfterEdit(store *state.Store, input *trace.HookInput) 
 }
 
 func fileSnapshotKey(input *trace.HookInput) state.FileSnapshotKey {
-	return state.FileSnapshotKey{SessionID: input.SessionID, FilePath: input.FilePath, ToolUseID: input.ToolUseID}
+	return state.FileSnapshotKey{SessionID: input.SessionID, FilePath: input.FilePath}
 }
 
 // AnnounceSessionStart writes the session-start response that the Chainloop

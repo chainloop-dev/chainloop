@@ -51,8 +51,8 @@ const killGraceMs = 5 * 1000
 const instructionMarker = "chainloop-trace-instruction:"
 const reminderMarker = "chainloop-trace-spec-reminder"
 const treeMarker = "chainloop-trace-tree-marker"
-const fileWritingTools = ["edit", "write"]
-const commandTools = ["bash"]
+const fileWritingTools = {{FileWritingToolsArray}}
+const commandTools = {{CommandToolsArray}}
 const sessionEndReasons = new Set(["quit", "new", "resume", "fork"])
 const unicodeSpaces = /[\u00A0\u2000-\u200A\u202F\u205F\u3000]/g
 
@@ -343,7 +343,14 @@ func renderExtension(includeSessionEnd bool) []byte {
 	if includeSessionEnd {
 		handler = sessionEndHandler
 	}
-	return []byte(strings.Replace(extensionTemplate, "{{SessionEndHandler}}", handler, 1))
+	source := strings.Replace(extensionTemplate, "{{FileWritingToolsArray}}", toolsArrayLiteral(fileWritingTools), 1)
+	source = strings.Replace(source, "{{CommandToolsArray}}", toolsArrayLiteral(commandTools), 1)
+	return []byte(strings.Replace(source, "{{SessionEndHandler}}", handler, 1))
+}
+
+func toolsArrayLiteral(tools []string) string {
+	data, _ := json.Marshal(tools)
+	return string(data)
 }
 
 // UninstallHooks removes only an extension carrying Chainloop's ownership marker.
