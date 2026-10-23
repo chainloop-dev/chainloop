@@ -425,6 +425,18 @@ func (_u *WorkflowRunUpdate) ClearPolicyHasGates() *WorkflowRunUpdate {
 	return _u
 }
 
+// SetSandboxIdentity sets the "sandbox_identity" field.
+func (_u *WorkflowRunUpdate) SetSandboxIdentity(v *biz.SandboxIdentity) *WorkflowRunUpdate {
+	_u.mutation.SetSandboxIdentity(v)
+	return _u
+}
+
+// ClearSandboxIdentity clears the value of the "sandbox_identity" field.
+func (_u *WorkflowRunUpdate) ClearSandboxIdentity() *WorkflowRunUpdate {
+	_u.mutation.ClearSandboxIdentity()
+	return _u
+}
+
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (_u *WorkflowRunUpdate) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdate {
 	_u.mutation.SetContractVersionID(id)
@@ -715,6 +727,12 @@ func (_u *WorkflowRunUpdate) sqlSave(ctx context.Context) (_node int, err error)
 	}
 	if _u.mutation.PolicyHasGatesCleared() {
 		_spec.ClearField(workflowrun.FieldPolicyHasGates, field.TypeBool)
+	}
+	if value, ok := _u.mutation.SandboxIdentity(); ok {
+		_spec.SetField(workflowrun.FieldSandboxIdentity, field.TypeJSON, value)
+	}
+	if _u.mutation.SandboxIdentityCleared() {
+		_spec.ClearField(workflowrun.FieldSandboxIdentity, field.TypeJSON)
 	}
 	if _u.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1259,6 +1277,18 @@ func (_u *WorkflowRunUpdateOne) ClearPolicyHasGates() *WorkflowRunUpdateOne {
 	return _u
 }
 
+// SetSandboxIdentity sets the "sandbox_identity" field.
+func (_u *WorkflowRunUpdateOne) SetSandboxIdentity(v *biz.SandboxIdentity) *WorkflowRunUpdateOne {
+	_u.mutation.SetSandboxIdentity(v)
+	return _u
+}
+
+// ClearSandboxIdentity clears the value of the "sandbox_identity" field.
+func (_u *WorkflowRunUpdateOne) ClearSandboxIdentity() *WorkflowRunUpdateOne {
+	_u.mutation.ClearSandboxIdentity()
+	return _u
+}
+
 // SetContractVersionID sets the "contract_version" edge to the WorkflowContractVersion entity by ID.
 func (_u *WorkflowRunUpdateOne) SetContractVersionID(id uuid.UUID) *WorkflowRunUpdateOne {
 	_u.mutation.SetContractVersionID(id)
@@ -1579,6 +1609,12 @@ func (_u *WorkflowRunUpdateOne) sqlSave(ctx context.Context) (_node *WorkflowRun
 	}
 	if _u.mutation.PolicyHasGatesCleared() {
 		_spec.ClearField(workflowrun.FieldPolicyHasGates, field.TypeBool)
+	}
+	if value, ok := _u.mutation.SandboxIdentity(); ok {
+		_spec.SetField(workflowrun.FieldSandboxIdentity, field.TypeJSON, value)
+	}
+	if _u.mutation.SandboxIdentityCleared() {
+		_spec.ClearField(workflowrun.FieldSandboxIdentity, field.TypeJSON)
 	}
 	if _u.mutation.ContractVersionCleared() {
 		edge := &sqlgraph.EdgeSpec{

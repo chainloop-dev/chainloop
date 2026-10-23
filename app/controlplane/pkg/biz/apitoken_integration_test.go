@@ -1199,6 +1199,26 @@ func (s *apiTokenTestSuite) TestExplicitPoliciesAreNotWidenedForScopedTokens() {
 	s.ElementsMatch(explicit, scoped.Policies)
 }
 
+// Only a system token can hold the permission to issue a sandbox identity, so that a user
+// cannot create a token that signs sandbox identities.
+func (s *apiTokenTestSuite) TestCreateSandboxIdentityPermission() {
+	ctx := context.Background()
+	policies := []*authz.Policy{authz.PolicyArtifactUpload, authz.PolicySandboxIdentityIssue}
+
+	s.Run("a token that is not a system token cannot hold it", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithPolicies(policies))
+		s.Error(err)
+		s.True(biz.IsErrValidation(err))
+		s.Nil(token)
+	})
+
+	s.Run("a system token can hold it", func() {
+		token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, biz.APITokenWithPolicies(policies), biz.APITokenAsSystem())
+		s.Require().NoError(err)
+		s.Contains(token.Policies, authz.PolicySandboxIdentityIssue)
+	})
+}
+
 // A product token is created with the projects it reaches, stored deduplicated and sorted.
 func (s *apiTokenTestSuite) TestCreateAProductTokenWithItsProjects() {
 	ctx := context.Background()

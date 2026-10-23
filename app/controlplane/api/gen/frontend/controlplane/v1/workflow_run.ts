@@ -117,7 +117,14 @@ export interface AttestationServiceInitRequest {
    * false: skip latest promotion.
    * Mutually exclusive with use_latest_version.
    */
-  markAsLatest?: boolean | undefined;
+  markAsLatest?:
+    | boolean
+    | undefined;
+  /**
+   * Optional identity token that the Chainloop platform gives to a Chainloop sandbox.
+   * The control plane verifies it only for the CHAINLOOP_SANDBOX runner.
+   */
+  sandboxIdentity: string;
 }
 
 export interface AttestationServiceInitResponse {
@@ -140,6 +147,15 @@ export interface AttestationServiceInitResponse_Result {
   enableAiAgentCollector: boolean;
   /** Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation */
   skipRunnerEnvVars: boolean;
+  /** The result of the verification of the sandbox identity, when the request has one */
+  sandboxIdentity?: AttestationServiceInitResponse_SandboxIdentityResult;
+}
+
+export interface AttestationServiceInitResponse_SandboxIdentityResult {
+  /** Whether the control plane verified the identity and recorded it on the workflow run */
+  verified: boolean;
+  /** Why the identity did not verify */
+  reason: string;
 }
 
 export interface AttestationServiceInitResponse_SigningOptions {
@@ -1117,6 +1133,7 @@ function createBaseAttestationServiceInitRequest(): AttestationServiceInitReques
     requireExistingVersion: false,
     useLatestVersion: false,
     markAsLatest: undefined,
+    sandboxIdentity: "",
   };
 }
 
@@ -1148,6 +1165,9 @@ export const AttestationServiceInitRequest = {
     }
     if (message.markAsLatest !== undefined) {
       writer.uint32(72).bool(message.markAsLatest);
+    }
+    if (message.sandboxIdentity !== "") {
+      writer.uint32(82).string(message.sandboxIdentity);
     }
     return writer;
   },
@@ -1222,6 +1242,13 @@ export const AttestationServiceInitRequest = {
 
           message.markAsLatest = reader.bool();
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.sandboxIdentity = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1242,6 +1269,7 @@ export const AttestationServiceInitRequest = {
       requireExistingVersion: isSet(object.requireExistingVersion) ? Boolean(object.requireExistingVersion) : false,
       useLatestVersion: isSet(object.useLatestVersion) ? Boolean(object.useLatestVersion) : false,
       markAsLatest: isSet(object.markAsLatest) ? Boolean(object.markAsLatest) : undefined,
+      sandboxIdentity: isSet(object.sandboxIdentity) ? String(object.sandboxIdentity) : "",
     };
   },
 
@@ -1256,6 +1284,7 @@ export const AttestationServiceInitRequest = {
     message.requireExistingVersion !== undefined && (obj.requireExistingVersion = message.requireExistingVersion);
     message.useLatestVersion !== undefined && (obj.useLatestVersion = message.useLatestVersion);
     message.markAsLatest !== undefined && (obj.markAsLatest = message.markAsLatest);
+    message.sandboxIdentity !== undefined && (obj.sandboxIdentity = message.sandboxIdentity);
     return obj;
   },
 
@@ -1276,6 +1305,7 @@ export const AttestationServiceInitRequest = {
     message.requireExistingVersion = object.requireExistingVersion ?? false;
     message.useLatestVersion = object.useLatestVersion ?? false;
     message.markAsLatest = object.markAsLatest ?? undefined;
+    message.sandboxIdentity = object.sandboxIdentity ?? "";
     return message;
   },
 };
@@ -1351,6 +1381,7 @@ function createBaseAttestationServiceInitResponse_Result(): AttestationServiceIn
     uiDashboardUrl: "",
     enableAiAgentCollector: false,
     skipRunnerEnvVars: false,
+    sandboxIdentity: undefined,
   };
 }
 
@@ -1379,6 +1410,10 @@ export const AttestationServiceInitResponse_Result = {
     }
     if (message.skipRunnerEnvVars === true) {
       writer.uint32(72).bool(message.skipRunnerEnvVars);
+    }
+    if (message.sandboxIdentity !== undefined) {
+      AttestationServiceInitResponse_SandboxIdentityResult.encode(message.sandboxIdentity, writer.uint32(82).fork())
+        .ldelim();
     }
     return writer;
   },
@@ -1446,6 +1481,16 @@ export const AttestationServiceInitResponse_Result = {
 
           message.skipRunnerEnvVars = reader.bool();
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.sandboxIdentity = AttestationServiceInitResponse_SandboxIdentityResult.decode(
+            reader,
+            reader.uint32(),
+          );
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1469,6 +1514,9 @@ export const AttestationServiceInitResponse_Result = {
       uiDashboardUrl: isSet(object.uiDashboardUrl) ? String(object.uiDashboardUrl) : "",
       enableAiAgentCollector: isSet(object.enableAiAgentCollector) ? Boolean(object.enableAiAgentCollector) : false,
       skipRunnerEnvVars: isSet(object.skipRunnerEnvVars) ? Boolean(object.skipRunnerEnvVars) : false,
+      sandboxIdentity: isSet(object.sandboxIdentity)
+        ? AttestationServiceInitResponse_SandboxIdentityResult.fromJSON(object.sandboxIdentity)
+        : undefined,
     };
   },
 
@@ -1489,6 +1537,9 @@ export const AttestationServiceInitResponse_Result = {
     message.uiDashboardUrl !== undefined && (obj.uiDashboardUrl = message.uiDashboardUrl);
     message.enableAiAgentCollector !== undefined && (obj.enableAiAgentCollector = message.enableAiAgentCollector);
     message.skipRunnerEnvVars !== undefined && (obj.skipRunnerEnvVars = message.skipRunnerEnvVars);
+    message.sandboxIdentity !== undefined && (obj.sandboxIdentity = message.sandboxIdentity
+      ? AttestationServiceInitResponse_SandboxIdentityResult.toJSON(message.sandboxIdentity)
+      : undefined);
     return obj;
   },
 
@@ -1514,6 +1565,87 @@ export const AttestationServiceInitResponse_Result = {
     message.uiDashboardUrl = object.uiDashboardUrl ?? "";
     message.enableAiAgentCollector = object.enableAiAgentCollector ?? false;
     message.skipRunnerEnvVars = object.skipRunnerEnvVars ?? false;
+    message.sandboxIdentity = (object.sandboxIdentity !== undefined && object.sandboxIdentity !== null)
+      ? AttestationServiceInitResponse_SandboxIdentityResult.fromPartial(object.sandboxIdentity)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAttestationServiceInitResponse_SandboxIdentityResult(): AttestationServiceInitResponse_SandboxIdentityResult {
+  return { verified: false, reason: "" };
+}
+
+export const AttestationServiceInitResponse_SandboxIdentityResult = {
+  encode(
+    message: AttestationServiceInitResponse_SandboxIdentityResult,
+    writer: _m0.Writer = _m0.Writer.create(),
+  ): _m0.Writer {
+    if (message.verified === true) {
+      writer.uint32(8).bool(message.verified);
+    }
+    if (message.reason !== "") {
+      writer.uint32(18).string(message.reason);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): AttestationServiceInitResponse_SandboxIdentityResult {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAttestationServiceInitResponse_SandboxIdentityResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.verified = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.reason = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AttestationServiceInitResponse_SandboxIdentityResult {
+    return {
+      verified: isSet(object.verified) ? Boolean(object.verified) : false,
+      reason: isSet(object.reason) ? String(object.reason) : "",
+    };
+  },
+
+  toJSON(message: AttestationServiceInitResponse_SandboxIdentityResult): unknown {
+    const obj: any = {};
+    message.verified !== undefined && (obj.verified = message.verified);
+    message.reason !== undefined && (obj.reason = message.reason);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AttestationServiceInitResponse_SandboxIdentityResult>, I>>(
+    base?: I,
+  ): AttestationServiceInitResponse_SandboxIdentityResult {
+    return AttestationServiceInitResponse_SandboxIdentityResult.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<AttestationServiceInitResponse_SandboxIdentityResult>, I>>(
+    object: I,
+  ): AttestationServiceInitResponse_SandboxIdentityResult {
+    const message = createBaseAttestationServiceInitResponse_SandboxIdentityResult();
+    message.verified = object.verified ?? false;
+    message.reason = object.reason ?? "";
     return message;
   },
 };
