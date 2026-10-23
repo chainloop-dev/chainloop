@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"slices"
@@ -407,6 +408,7 @@ func handleAgentPreToolUse(provider trace.Provider, input *trace.HookInput, log 
 		// checkouts the command names first, so the snapshot covers them.
 		registerCommandCheckouts(provider, input, repoRoot, log)
 		captureWorktreeSnapshot(store, repoRoot, shellCallKey(input), log)
+		tagShellCommand(provider, input, log)
 	case provider.IsFileWritingTool(input.ToolName):
 		if input.FilePath == "" {
 			log.Debug().Str("tool", input.ToolName).Msg("pre-tool-use: file-writing tool produced no file path, skipping")
@@ -437,33 +439,65 @@ func shellCallKey(input *trace.HookInput) state.ShellCallKey {
 // run in the session's own checkout. Best-effort: failures are logged and
 // never block the agent.
 func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
-	client := tracegit.NewGitClient()
-	sigs := make(state.WorktreeSignatures)
-	heads := make(map[string]string)
+	client := tracegit.NewGoGitClient()
 	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
-		sig, err := client.SnapshotWorktree(root)
+		worktreeSig, err := client.SnapshotWorktree(root)
 		if err != nil {
 			log.Debug().Err(err).Str("root", root).Msg("pre-command: worktree snapshot failed")
 			continue
 		}
-		sigs[root] = sig
+		indexSig, err := client.SnapshotIndex(root)
+		if err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: index snapshot failed")
+			continue
+		}
 
+		rootStore := store
+		if !sameDir(root, repoRoot) {
+			s, resolvedRoot, err := state.LocateFrom(root)
+			if err != nil {
+				log.Debug().Err(err).Str("root", root).Msg("pre-command: no trace state for checkout")
+				continue
+			}
+			rootStore, root = s, resolvedRoot
+			if err := copySessionRecord(store, rootStore, key.SessionID); err != nil {
+				log.Debug().Err(err).Str("session_id", key.SessionID).Msg("pre-command: copy session record failed")
+			}
+		}
+
+		heads := make(map[string]string)
 		// A checkout with no commit yet has no HEAD; its files count as new.
 		if sha, _, err := client.CommitHeadInfo(root); err == nil {
 			heads[root] = sha
 		}
+
+		if err := rootStore.SaveShellPreSignature(key, state.WorktreeSignatures{root: worktreeSig}); err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: save worktree signature failed")
+		}
+		if err := rootStore.SaveShellPreIndexSignature(key, state.WorktreeSignatures{root: indexSig}); err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: save index signature failed")
+		}
+		if err := rootStore.SaveShellPreHeads(key, heads); err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: save HEAD commits failed")
+		}
+	}
+}
+
+func copySessionRecord(source, target *state.Store, sessionID string) error {
+	rec, err := source.LoadSessionRecord(sessionID)
+	if err != nil {
+		return fmt.Errorf("load session record: %w", err)
+	}
+	if rec == nil {
+		return nil
 	}
 
-	if len(sigs) == 0 {
-		return
+	recordCopy := *rec
+	if err := target.SaveSessionRecord(&recordCopy); err != nil {
+		return fmt.Errorf("save session record: %w", err)
 	}
 
-	if err := store.SaveShellPreSignature(key, sigs); err != nil {
-		log.Debug().Err(err).Msg("pre-command: save worktree signature failed")
-	}
-	if err := store.SaveShellPreHeads(key, heads); err != nil {
-		log.Debug().Err(err).Msg("pre-command: save HEAD commits failed")
-	}
+	return nil
 }
 
 // shellSnapshotRoots returns the checkouts that a shell command of the session
@@ -879,27 +913,7 @@ func recordFileEdit(store *state.Store, sessionID, relPath string, before, after
 // blocks the agent.
 func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, store *state.Store, repoRoot string, log zerolog.Logger) {
 	key := shellCallKey(input)
-	before, err := store.LoadShellPreSignature(key)
-	if err != nil {
-		// No pre-command snapshot (missed pre hook, or an overlapping call
-		// of an agent without tool call IDs overwrote it) — skip.
-		log.Debug().Err(err).Msg("post-command: no pre-command worktree signature")
-		return
-	}
-	defer store.DeleteShellPreSignature(key)
-	// A pre hook from an older CLI saved no HEAD. That case, and a heads file
-	// that cannot be read, fall back to the current HEAD.
-	heads, err := store.LoadShellPreHeads(key)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		log.Debug().Err(err).Msg("post-command: cannot read pre-command HEAD commits; using the current HEAD")
-	}
-
-	for root, rootBefore := range before {
-		base := heads[root]
-		if base == "" {
-			base = "HEAD"
-		}
-
+	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
 		rootStore := store
 		if !sameDir(root, repoRoot) {
 			s, r, err := state.LocateFrom(root)
@@ -911,7 +925,29 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 			rootStore, root = s, r
 		}
 
-		recordRootChanges(rootStore, root, base, rootBefore, key.SessionID, log)
+		before, err := rootStore.LoadShellPreSignature(key)
+		if err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("post-command: no pre-command worktree signature")
+			continue
+		}
+		// A pre hook from an older CLI saved no HEAD. That case, and a heads
+		// file that cannot be read, fall back to the current HEAD.
+		heads, err := rootStore.LoadShellPreHeads(key)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Debug().Err(err).Str("root", root).Msg("post-command: cannot read pre-command HEAD commits; using the current HEAD")
+		}
+
+		for snapshotRoot, rootBefore := range before {
+			if sameDir(snapshotRoot, root) {
+				base := heads[snapshotRoot]
+				if base == "" {
+					base = "HEAD"
+				}
+				recordRootChanges(rootStore, root, base, rootBefore, key.SessionID, log)
+				break
+			}
+		}
+		rootStore.DeleteShellPreSignature(key)
 	}
 }
 
@@ -945,7 +981,19 @@ func recordRootChanges(store *state.Store, repoRoot, base string, before map[str
 
 	open := store.LoadAILineAttribution(sessionID).Open
 	record := func(relPath string, edit attribution.Edit) error {
-		return store.RecordEdit(sessionID, relPath, editRecord(attribution.DropOpen(edit, open[relPath])))
+		edit = attribution.DropOpen(edit, open[relPath])
+		if err := store.RecordEdit(sessionID, relPath, editRecord(edit)); err != nil {
+			return err
+		}
+		// Fingerprints intentionally ignore whitespace. Keep a legacy touch
+		// marker when a real line diff therefore has counts but no fingerprints,
+		// so binary CRLF changes still stay pending for a later commit.
+		if len(edit.Added) == 0 && len(edit.Removed) == 0 &&
+			(edit.AddedCount > 0 || edit.RemovedCount > 0) {
+			return store.RecordLineRanges(sessionID, relPath, nil)
+		}
+
+		return nil
 	}
 
 	changed, deleted := attribution.ChangedPaths(before, after)
@@ -954,10 +1002,17 @@ func recordRootChanges(store *state.Store, repoRoot, base string, before map[str
 		if err != nil {
 			continue
 		}
+		beforeContent := atBase(relPath)
+		if _, existed := before[relPath]; !existed {
+			// The call created this path after its latest checkpoint. HEAD can
+			// still hold the old file when that checkpoint staged and committed
+			// a deletion, so it is not the content before this new edit.
+			beforeContent = nil
+		}
 		// ChangedPaths already proved the file changed, so record it even when
 		// the diff finds nothing (created empty, or restored to base): the
 		// file is then AI-touched with zero lines, as a deletion-only edit.
-		if err := record(relPath, attribution.ComputeEdit(atBase(relPath), content)); err != nil {
+		if err := record(relPath, attribution.ComputeEdit(beforeContent, content)); err != nil {
 			log.Debug().Err(err).Str("file", relPath).Msg("post-command: record line ranges failed")
 		}
 	}
