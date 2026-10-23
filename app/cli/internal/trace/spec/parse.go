@@ -309,6 +309,29 @@ func split(doc string) (header, body string) {
 	return "", doc
 }
 
+// HTMLBody returns the body of a spec document, the part below its header, and
+// reports whether that body is an HTML page: it opens with a doctype or an html
+// root element. Markdown that only holds HTML tags does not open like that, so
+// it is never taken for a page.
+func HTMLBody(doc []byte) ([]byte, bool) {
+	_, body := split(string(doc))
+
+	start := strings.TrimLeft(body, "\ufeff\r\n\t ")
+	for _, prefix := range []string{"<!doctype html", "<html"} {
+		if len(start) < len(prefix) || !strings.EqualFold(start[:len(prefix)], prefix) {
+			continue
+		}
+
+		// The name must end here, so that <htmlish> is not a page.
+		if rest := start[len(prefix):]; rest == "" || strings.ContainsRune(">/ \t\r\n", rune(rest[0])) {
+			// The body is a suffix of doc.
+			return doc[len(doc)-len(body):], true
+		}
+	}
+
+	return nil, false
+}
+
 // isPlaceholder reports whether a body holds only the placeholder line.
 func isPlaceholder(body string) bool {
 	return strings.TrimSpace(body) == Placeholder
