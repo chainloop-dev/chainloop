@@ -89,6 +89,7 @@ const (
 const (
 	scenarioEditAndCommit = "edit-and-commit"
 	scenarioTicket        = "ticket"
+	scenarioHTMLSpec      = "html-spec"
 	scenarioSkill         = "skill"
 	scenarioSubagent      = "subagent"
 	scenarioClone         = "clone"
@@ -121,8 +122,11 @@ const (
 )
 
 const (
-	ticketPath   = "docs/ticket-e2e-42.md"
-	ticketTitle  = "E2E-42: Add a farewell file"
+	ticketPath  = "docs/ticket-e2e-42.md"
+	ticketTitle = "E2E-42: Add a farewell file"
+	// designPath is a spec source that is an HTML page.
+	designPath   = "docs/design-e2e-43.html"
+	designTitle  = "E2E-43: Add a farewell file"
 	skillName    = "e2e-farewell"
 	subagentFile = "subagent.txt"
 	// cloneDir is the checkout that the clone scenario creates, relative to
@@ -168,6 +172,15 @@ The deploy token ` + fakeSecret + ` is for a later task: do not use it.`,
 		// The file tool keeps the change in the session: a commit in the same
 		// shell command that writes the file does not carry the session.
 		Prompt: "This is an automated test. Implement the ticket in " + ticketPath + ". Write the file with your file-writing tool. Then commit your change and push it with git, in a separate shell command.",
+	},
+	scenarioHTMLSpec: {
+		Name: scenarioHTMLSpec,
+		Seed: map[string]string{
+			readmePath: seedReadme,
+			designPath: "<!doctype html>\n<html><head><title>" + designTitle + "</title><style>body { font-family: sans-serif; }</style></head>\n" +
+				"<body><h1>" + designTitle + "</h1><p>Create the file farewell.txt with the single line: goodbye</p></body></html>\n",
+		},
+		Prompt: "This is an automated test. Implement the design document in " + designPath + ". Write the file with your file-writing tool. Then commit your change and push it with git, in a separate shell command.",
 	},
 	scenarioSkill: {
 		Name: scenarioSkill,

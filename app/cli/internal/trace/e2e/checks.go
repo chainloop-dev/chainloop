@@ -126,6 +126,7 @@ var features = map[string]Feature{
 	"Spec source role, title, and description": {
 		ModelDriven: true, Checks: []Check{{scenarioTicket, checkTicketHeader}},
 	},
+	"HTML spec sources":     {ModelDriven: true, Checks: []Check{{scenarioHTMLSpec, checkHTMLSpecStored}}},
 	"Pasted image pointers": {Checks: []Check{{scenarioPastedImage, checkPastedImage}}},
 
 	// Security
@@ -372,6 +373,32 @@ func checkTicketContentStored(s *Session) error {
 	}
 	if !bytes.Contains(content, []byte(ticketTitle)) {
 		return errors.New("the spec material does not hold the text of the ticket file")
+	}
+	return nil
+}
+
+// checkHTMLSpecStored checks that the capture of an HTML page is stored as the
+// page alone: it starts with the doctype, with no header above it.
+func checkHTMLSpecStored(s *Session) error {
+	var entry *aicodingsession.SpecEntry
+	for i, e := range evidence(s).Spec {
+		if e.Kind != aicodingsession.SpecKindSkill && strings.Contains(e.URI, filepath.Base(designPath)) {
+			entry = &evidence(s).Spec[i]
+			break
+		}
+	}
+	if entry == nil {
+		return errors.New("the evidence has no spec entry for the design document")
+	}
+	content, err := s.Stored.Material(entry.Digest)
+	if err != nil {
+		return fmt.Errorf("read the spec material: %w", err)
+	}
+	if !bytes.HasPrefix(bytes.ToLower(bytes.TrimSpace(content)), []byte("<!doctype html")) {
+		return errors.New("the spec material does not start with the doctype of the page")
+	}
+	if !bytes.Contains(content, []byte(designTitle)) {
+		return errors.New("the spec material does not hold the text of the design document")
 	}
 	return nil
 }
