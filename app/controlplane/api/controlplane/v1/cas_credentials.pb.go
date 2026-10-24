@@ -94,8 +94,11 @@ type CASCredentialsServiceGetRequest struct {
 	// flag the minted token as internal platform traffic so the CAS skips audit
 	// event emission for it. Only honored for system API tokens, rejected otherwise.
 	SourceInternal bool `protobuf:"varint,3,opt,name=source_internal,json=sourceInternal,proto3" json:"source_internal,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// scope the downloader token to the requested digest, so the CAS rejects reads of any other artifact.
+	// Requires the downloader role and a digest.
+	ScopeToDigest bool `protobuf:"varint,4,opt,name=scope_to_digest,json=scopeToDigest,proto3" json:"scope_to_digest,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *CASCredentialsServiceGetRequest) Reset() {
@@ -145,6 +148,13 @@ func (x *CASCredentialsServiceGetRequest) GetDigest() string {
 func (x *CASCredentialsServiceGetRequest) GetSourceInternal() bool {
 	if x != nil {
 		return x.SourceInternal
+	}
+	return false
+}
+
+func (x *CASCredentialsServiceGetRequest) GetScopeToDigest() bool {
+	if x != nil {
+		return x.ScopeToDigest
 	}
 	return false
 }
@@ -249,12 +259,13 @@ var File_controlplane_v1_cas_credentials_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_cas_credentials_proto_rawDesc = "" +
 	"\n" +
-	"%controlplane/v1/cas_credentials.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a'controlplane/v1/response_messages.proto\"\xff\x01\n" +
+	"%controlplane/v1/cas_credentials.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\x1a'controlplane/v1/response_messages.proto\"\xa7\x02\n" +
 	"\x1fCASCredentialsServiceGetRequest\x12U\n" +
 	"\x04role\x18\x01 \x01(\x0e25.controlplane.v1.CASCredentialsServiceGetRequest.RoleB\n" +
 	"\xbaH\a\x82\x01\x04\x18\x01\x18\x02R\x04role\x12\x16\n" +
 	"\x06digest\x18\x02 \x01(\tR\x06digest\x12'\n" +
-	"\x0fsource_internal\x18\x03 \x01(\bR\x0esourceInternal\"D\n" +
+	"\x0fsource_internal\x18\x03 \x01(\bR\x0esourceInternal\x12&\n" +
+	"\x0fscope_to_digest\x18\x04 \x01(\bR\rscopeToDigest\"D\n" +
 	"\x04Role\x12\x14\n" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fROLE_DOWNLOADER\x10\x01\x12\x11\n" +

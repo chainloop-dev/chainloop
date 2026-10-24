@@ -389,6 +389,49 @@ func (s *bytestreamSuite) TestDownloadOk() {
 	s.False(info.Skipped)
 }
 
+func (s *bytestreamSuite) TestReadAuthorizedDigest() {
+	const (
+		digest      = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
+		otherDigest = "7d865e959b2466918c9863afca942d0fb89d7c9ac0c99bafc3749504ded97730"
+	)
+
+	testCases := []struct {
+		name             string
+		authorizedDigest string
+		wantErr          bool
+	}{
+		{name: "token scoped to the digest", authorizedDigest: "sha256:" + digest},
+		{name: "token scoped to another digest", authorizedDigest: "sha256:" + otherDigest, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			// the mock fails the test on a download of a forbidden digest
+			if !tc.wantErr {
+				s.ociBackend.On("Download", mock.Anything, mock.Anything, digest).
+					Return(nil).Run(func(args mock.Arguments) {
+					_, err := io.WriteString(args.Get(1).(io.Writer), "hello world")
+					s.NoError(err)
+				})
+			}
+
+			ctx := metadata.AppendToOutgoingContext(s.downCtx, "authorized-digest", tc.authorizedDigest)
+			reader, err := s.client.Read(ctx, &bytestream.ReadRequest{ResourceName: digest})
+			s.Require().NoError(err)
+
+			got, err := reader.Recv()
+			if tc.wantErr {
+				assertGRPCError(s.T(), err, codes.PermissionDenied, "not authorized for this digest")
+				s.Empty(s.audit.published)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Equal("hello world", string(got.Data))
+		})
+	}
+}
+
 func (s *bytestreamSuite) TestDownloadFoundMistmathedDigest() {
 	s.ociBackend.On("Download", mock.Anything, mock.Anything, "deadbeef").
 		Return(nil).Run(func(args mock.Arguments) {
@@ -486,6 +529,9 @@ func (s *bytestreamSuite) setup(opts ...NewOpt) {
 					}
 					if v := md.Get("org-id"); len(v) > 0 {
 						claims.OrgID = v[0]
+					}
+					if v := md.Get("authorized-digest"); len(v) > 0 {
+						claims.Digest = v[0]
 					}
 					if v := md.Get("source-internal"); len(v) > 0 {
 						claims.SourceInternal = true

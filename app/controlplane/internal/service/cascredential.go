@@ -82,6 +82,11 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 		policyToCheck = authz.PolicyArtifactUpload
 	}
 
+	// Without a digest the scoped request would silently mint an unscoped token
+	if req.GetScopeToDigest() && req.GetDigest() == "" {
+		return nil, errors.BadRequest("invalid argument", "a digest is required to scope the credentials")
+	}
+
 	// Enforce required role
 	if ok, err := s.authzUC.Enforce(ctx, currentAuthzSubject, policyToCheck); err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
@@ -149,6 +154,10 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}
 
 	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID, SourceInternal: sourceInternal}
+	if req.GetScopeToDigest() {
+		ref.Digest = req.GetDigest()
+	}
+
 	t, err := s.casUC.GenerateTemporaryCredentials(ref)
 	if err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)

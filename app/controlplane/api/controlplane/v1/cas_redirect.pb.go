@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,8 +38,10 @@ const (
 )
 
 type GetDownloadURLRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Digest        string                 `protobuf:"bytes,1,opt,name=digest,proto3" json:"digest,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Digest string                 `protobuf:"bytes,1,opt,name=digest,proto3" json:"digest,omitempty"`
+	// scope the token in the URL to the requested digest, so the CAS rejects reads of any other artifact
+	ScopeToDigest bool `protobuf:"varint,2,opt,name=scope_to_digest,json=scopeToDigest,proto3" json:"scope_to_digest,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -79,6 +81,13 @@ func (x *GetDownloadURLRequest) GetDigest() string {
 		return x.Digest
 	}
 	return ""
+}
+
+func (x *GetDownloadURLRequest) GetScopeToDigest() bool {
+	if x != nil {
+		return x.ScopeToDigest
+	}
+	return false
 }
 
 type GetDownloadURLResponse struct {
@@ -173,9 +182,10 @@ var File_controlplane_v1_cas_redirect_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_cas_redirect_proto_rawDesc = "" +
 	"\n" +
-	"\"controlplane/v1/cas_redirect.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\"8\n" +
+	"\"controlplane/v1/cas_redirect.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\"`\n" +
 	"\x15GetDownloadURLRequest\x12\x1f\n" +
-	"\x06digest\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06digest\"|\n" +
+	"\x06digest\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x06digest\x12&\n" +
+	"\x0fscope_to_digest\x18\x02 \x01(\bR\rscopeToDigest\"|\n" +
 	"\x16GetDownloadURLResponse\x12F\n" +
 	"\x06result\x18\x01 \x01(\v2..controlplane.v1.GetDownloadURLResponse.ResultR\x06result\x1a\x1a\n" +
 	"\x06Result\x12\x10\n" +

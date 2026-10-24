@@ -42,6 +42,8 @@ func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceG
 	resp, err := client.Get(context.Background(), &pb.CASCredentialsServiceGetRequest{
 		Role:   role,
 		Digest: digest,
+		// a download is for a single digest, so the token can only read that digest
+		ScopeToDigest: role == pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER && digest != "",
 	})
 	if err != nil {
 		return nil, err

@@ -187,6 +187,83 @@ func TestGenerateJWT(t *testing.T) {
 	}
 }
 
+func TestGenerateJWTWithDigest(t *testing.T) {
+	b, err := NewBuilder(
+		WithIssuer("my-issuer"),
+		WithPrivateKey("testdata/test-key.ec.pem"),
+		WithExpiration(5*time.Second),
+	)
+	require.NoError(t, err)
+
+	const hex = "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"
+
+	tests := []struct {
+		name       string
+		role       Role
+		digest     string
+		wantDigest string
+		wantErr    bool
+	}{
+		{name: "downloader with prefixed digest", role: Downloader, digest: "sha256:" + hex, wantDigest: "sha256:" + hex},
+		{name: "downloader with bare hex digest", role: Downloader, digest: hex, wantDigest: "sha256:" + hex},
+		{name: "invalid digest", role: Downloader, digest: "sha256:deadbeef", wantErr: true},
+		{name: "uploader can not be scoped to a digest", role: Uploader, digest: "sha256:" + hex, wantErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			token, err := b.GenerateJWT("OCI", "secret-id", JWTAudience, tc.role, 0, "org-uuid", WithDigest(tc.digest))
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			rawKey, err := os.ReadFile("testdata/test-key.ec.pub")
+			require.NoError(t, err)
+
+			claims := &Claims{}
+			_, err = jwt.ParseWithClaims(token, claims, loadPublicKey(rawKey))
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantDigest, claims.Digest)
+		})
+	}
+}
+
+func TestCheckDigest(t *testing.T) {
+	const (
+		hex      = "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c"
+		otherHex = "7d865e959b2466918c9863afca942d0fb89d7c9ac0c99bafc3749504ded97730"
+	)
+
+	tests := []struct {
+		name      string
+		claim     string
+		requested string
+		wantErr   bool
+	}{
+		{name: "no claim allows any digest", claim: "", requested: otherHex},
+		{name: "matching bare hex", claim: "sha256:" + hex, requested: hex},
+		{name: "matching prefixed digest", claim: "sha256:" + hex, requested: "sha256:" + hex},
+		{name: "different digest", claim: "sha256:" + hex, requested: otherHex, wantErr: true},
+		{name: "different prefixed digest", claim: "sha256:" + hex, requested: "sha256:" + otherHex, wantErr: true},
+		{name: "empty requested digest", claim: "sha256:" + hex, requested: "", wantErr: true},
+		{name: "invalid requested digest", claim: "sha256:" + hex, requested: "sha256:nothex", wantErr: true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &Claims{Role: Downloader, Digest: tc.claim}
+			err := c.CheckDigest(tc.requested)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
 // load key for verification
 func loadPublicKey(rawKey []byte) jwt.Keyfunc {
 	return func(_ *jwt.Token) (any, error) {
