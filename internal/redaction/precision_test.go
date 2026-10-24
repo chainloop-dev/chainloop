@@ -218,6 +218,12 @@ func TestRulesConfigStillRedactsSecrets(t *testing.T) {
 			wantRule: ruleGenericAPIKey,
 		},
 		{
+			name:     "key that continues a fingerprint with a separator",
+			text:     "signing key SHA256:" + strings.Repeat(sampleAPIKey, 3)[:43] + "-" + sampleAPIKey + "\n",
+			secret:   sampleAPIKey,
+			wantRule: ruleGenericAPIKey,
+		},
+		{
 			name:     "api key on the line after an ssh key fingerprint",
 			text:     "Good \"git\" signature with ED25519 key SHA256:" + sampleSSHFingerprint + "\napi_key: " + sampleAPIKey + "\n",
 			secret:   sampleAPIKey,

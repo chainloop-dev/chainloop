@@ -27,10 +27,10 @@ targetRules = ["generic-api-key"]
 regexTarget = "match"
 # OpenSSH prints a fingerprint as SHA256: and the unpadded base64 of the hash,
 # which is always 43 characters. The fingerprint must end the match, so a
-# longer value after SHA256: is still redacted. RE2 has no lookahead, and the
-# last character can be + or /, so the end is a non-base64 character or the
-# end of the match instead of \b.
-regexes = ['''\bSHA256:[A-Za-z0-9+/]{43}(?:[^A-Za-z0-9+/=]|$)''']
+# longer value after SHA256:, also one that goes on after a - . or _, is still
+# redacted. Only the terminator the rule itself adds to its match can follow:
+# a quote, a backtick, whitespace, a semicolon, or an escaped line break.
+regexes = ['''\bSHA256:[A-Za-z0-9+/]{43}(?:[\x60'"\s;]|\\[nr])?$''']
 
 [[allowlists]]
 description = "Code expressions, test durations and the bare key word, which are not password values"
