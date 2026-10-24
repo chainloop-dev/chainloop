@@ -373,3 +373,61 @@ func TestDownloadServiceConditionalRequests(t *testing.T) {
 		})
 	}
 }
+
+func TestDownloadServiceAuthorizedDigest(t *testing.T) {
+	const otherDigest = "sha256:7d865e959b2466918c9863afca942d0fb89d7c9ac0c99bafc3749504ded97730"
+
+	tests := []struct {
+		name       string
+		digest     string
+		wantStatus int
+	}{
+		{name: "token without digest claim reads the artifact", wantStatus: http.StatusOK},
+		{name: "token scoped to the digest reads the artifact", digest: "sha256:" + downloadDigestHex, wantStatus: http.StatusOK},
+		{name: "token scoped to another digest is forbidden", digest: otherDigest, wantStatus: http.StatusForbidden},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := mocks.NewProvider(t)
+			// the mocks fail the test on any backend call made for a forbidden digest
+			if tc.wantStatus == http.StatusOK {
+				uploaderDownloader := mocks.NewUploaderDownloader(t)
+				provider.On("FromCredentials", mock.Anything, mock.Anything).Return(uploaderDownloader, nil)
+				uploaderDownloader.On("Describe", mock.Anything, downloadDigestHex).
+					Return(&v1.CASResource{FileName: downloadFileName, Digest: downloadDigestHex, Size: int64(len(downloadContent))}, nil)
+				uploaderDownloader.On("Download", mock.Anything, mock.Anything, downloadDigestHex).Return(nil).
+					Run(func(args mock.Arguments) {
+						_, err := io.WriteString(args.Get(1).(io.Writer), downloadContent)
+						require.NoError(t, err)
+					})
+			}
+
+			svc := NewDownloadService(
+				backend.Providers{downloadBackendType: provider},
+				WithLogger(log.DefaultLogger),
+				WithStagingDir(t.TempDir()),
+			)
+
+			claims := &casJWT.Claims{
+				Role:           casJWT.Downloader,
+				StoredSecretID: testStoredSecretID,
+				BackendType:    downloadBackendType,
+				OrgID:          testOrgID,
+				Digest:         tc.digest,
+			}
+
+			req := httptest.NewRequest(http.MethodGet, "/download/sha256:"+downloadDigestHex, nil)
+			req = mux.SetURLVars(req, map[string]string{"digest": "sha256:" + downloadDigestHex})
+			req = req.WithContext(jwtMiddleware.NewContext(req.Context(), claims))
+
+			w := httptest.NewRecorder()
+			svc.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.wantStatus, w.Code)
+			if tc.wantStatus == http.StatusOK {
+				assert.Equal(t, downloadContent, w.Body.String())
+			}
+		})
+	}
+}

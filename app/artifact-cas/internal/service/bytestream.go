@@ -332,6 +332,11 @@ func (s *ByteStreamService) Read(req *bytestream.ReadRequest, stream bytestream.
 		return kerrors.BadRequest("resource name", "empty resource name")
 	}
 
+	// A token scoped to a digest can only read that digest
+	if err := info.CheckDigest(req.ResourceName); err != nil {
+		return kerrors.Forbidden("service", err.Error())
+	}
+
 	backend, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
 	if err != nil && kerrors.IsNotFound(err) {
 		return err

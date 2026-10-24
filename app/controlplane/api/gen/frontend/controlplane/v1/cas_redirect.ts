@@ -7,6 +7,8 @@ export const protobufPackage = "controlplane.v1";
 
 export interface GetDownloadURLRequest {
   digest: string;
+  /** scope the token in the URL to the requested digest, so the CAS rejects reads of any other artifact */
+  scopeToDigest: boolean;
 }
 
 export interface GetDownloadURLResponse {
@@ -18,13 +20,16 @@ export interface GetDownloadURLResponse_Result {
 }
 
 function createBaseGetDownloadURLRequest(): GetDownloadURLRequest {
-  return { digest: "" };
+  return { digest: "", scopeToDigest: false };
 }
 
 export const GetDownloadURLRequest = {
   encode(message: GetDownloadURLRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.digest !== "") {
       writer.uint32(10).string(message.digest);
+    }
+    if (message.scopeToDigest === true) {
+      writer.uint32(16).bool(message.scopeToDigest);
     }
     return writer;
   },
@@ -43,6 +48,13 @@ export const GetDownloadURLRequest = {
 
           message.digest = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.scopeToDigest = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -53,12 +65,16 @@ export const GetDownloadURLRequest = {
   },
 
   fromJSON(object: any): GetDownloadURLRequest {
-    return { digest: isSet(object.digest) ? String(object.digest) : "" };
+    return {
+      digest: isSet(object.digest) ? String(object.digest) : "",
+      scopeToDigest: isSet(object.scopeToDigest) ? Boolean(object.scopeToDigest) : false,
+    };
   },
 
   toJSON(message: GetDownloadURLRequest): unknown {
     const obj: any = {};
     message.digest !== undefined && (obj.digest = message.digest);
+    message.scopeToDigest !== undefined && (obj.scopeToDigest = message.scopeToDigest);
     return obj;
   },
 
@@ -69,6 +85,7 @@ export const GetDownloadURLRequest = {
   fromPartial<I extends Exact<DeepPartial<GetDownloadURLRequest>, I>>(object: I): GetDownloadURLRequest {
     const message = createBaseGetDownloadURLRequest();
     message.digest = object.digest ?? "";
+    message.scopeToDigest = object.scopeToDigest ?? false;
     return message;
   },
 };

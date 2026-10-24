@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,9 +34,11 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
+	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/chainloop-dev/chainloop/pkg/blobmanager/oci"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -180,6 +183,67 @@ func (s *casDownloadRBACIntegrationSuite) TestCASCredentialsGet() {
 		s.Require().NoError(err)
 		s.NotEmpty(resp.GetResult().GetToken())
 	})
+}
+
+// SEC-634: callers can ask for a downloader token that can only read the requested digest
+func (s *casDownloadRBACIntegrationSuite) TestDigestScopedTokens() {
+	ctx := s.ctxForToken(s.orgToken)
+
+	testCases := []struct {
+		name          string
+		scopeToDigest bool
+		wantDigest    string
+	}{
+		{name: "token is not scoped by default"},
+		{name: "token scoped to the requested digest", scopeToDigest: true, wantDigest: digestProjectA},
+	}
+
+	for _, tc := range testCases {
+		s.Run("GetDownloadURL: "+tc.name, func() {
+			resp, err := s.redirectSvc.GetDownloadURL(ctx, &pb.GetDownloadURLRequest{Digest: digestProjectA, ScopeToDigest: tc.scopeToDigest})
+			s.Require().NoError(err)
+
+			u, err := url.Parse(resp.GetResult().GetUrl())
+			s.Require().NoError(err)
+			s.Equal(tc.wantDigest, s.casClaims(u.Query().Get("t")).Digest)
+		})
+
+		s.Run("CASCredentialsService.Get: "+tc.name, func() {
+			resp, err := s.credentialsSvc.Get(ctx, &pb.CASCredentialsServiceGetRequest{
+				Digest:        digestProjectA,
+				Role:          pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER,
+				ScopeToDigest: tc.scopeToDigest,
+			})
+			s.Require().NoError(err)
+			s.Equal(tc.wantDigest, s.casClaims(resp.GetResult().GetToken()).Digest)
+		})
+	}
+
+	s.Run("CASCredentialsService.Get: scoped token requires a digest", func() {
+		_, err := s.credentialsSvc.Get(ctx, &pb.CASCredentialsServiceGetRequest{
+			Role:          pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER,
+			ScopeToDigest: true,
+		})
+		s.True(kerrors.IsBadRequest(err), "expected bad request, got %v", err)
+	})
+
+	s.Run("CASCredentialsService.Get: uploader token can not be scoped", func() {
+		_, err := s.credentialsSvc.Get(ctx, &pb.CASCredentialsServiceGetRequest{
+			Digest:        digestProjectA,
+			Role:          pb.CASCredentialsServiceGetRequest_ROLE_UPLOADER,
+			ScopeToDigest: true,
+		})
+		s.True(kerrors.IsBadRequest(err), "expected bad request, got %v", err)
+	})
+}
+
+// casClaims decodes the claims of a CAS token without verifying its signature
+func (s *casDownloadRBACIntegrationSuite) casClaims(token string) *casJWT.Claims {
+	claims := &casJWT.Claims{}
+	_, _, err := jwt.NewParser().ParseUnverified(token, claims)
+	s.Require().NoError(err)
+
+	return claims
 }
 
 // ctxForToken builds a context equivalent to the one the authz middlewares produce for an
