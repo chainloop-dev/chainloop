@@ -22,6 +22,17 @@ regexTarget = "match"
 regexes = ['''(?i)\bsha(?:1|224|256|384|512):[0-9a-f]{40,128}\b''']
 
 [[allowlists]]
+description = "SSH public key fingerprints, such as the output of git log --show-signature"
+targetRules = ["generic-api-key"]
+regexTarget = "match"
+# OpenSSH prints a fingerprint as SHA256: and the unpadded base64 of the hash,
+# which is always 43 characters. The fingerprint must end the match, so a
+# longer value after SHA256: is still redacted. RE2 has no lookahead, and the
+# last character can be + or /, so the end is a non-base64 character or the
+# end of the match instead of \b.
+regexes = ['''\bSHA256:[A-Za-z0-9+/]{43}(?:[^A-Za-z0-9+/=]|$)''']
+
+[[allowlists]]
 description = "Code expressions, test durations and the bare key word, which are not password values"
 targetRules = ["generic-password"]
 # The scanned text is JSON-encoded, so a match of this rule can run on through
