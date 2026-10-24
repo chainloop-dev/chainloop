@@ -49,6 +49,7 @@ func TestParseSessionEvidence(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "pi", result.Data.Agent.Name)
+	assert.Equal(t, "v2", result.Data.SchemaVersion)
 	assert.Equal(t, "0.80.10", result.Data.Agent.Version)
 	assert.Equal(t, testSessionID, result.Data.Session.ID)
 	assert.Equal(t, "2026-01-02T03:04:00Z", result.Data.Session.StartedAt)
@@ -63,7 +64,7 @@ func TestParseSessionEvidence(t *testing.T) {
 	require.NotNil(t, result.Data.Usage)
 	assert.Equal(t, 300, result.Data.Usage.InputTokens)
 	assert.Equal(t, 60, result.Data.Usage.OutputTokens)
-	assert.Equal(t, 395, result.Data.Usage.TotalTokens)
+	assert.Equal(t, 360, result.Data.Usage.TotalTokens)
 	assert.Equal(t, 30, result.Data.Usage.CacheReadInputTokens)
 	assert.Equal(t, 7, result.Data.Usage.CacheCreationInputTokens)
 	assert.InDelta(t, 0.3, result.Data.Usage.EstimatedCostUSD, 0.0000001)
@@ -209,11 +210,50 @@ func TestParseSessionUsageOverflow(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, maxInt, result.Data.Usage.InputTokens)
 	assert.Equal(t, 1000, result.Data.Usage.OutputTokens)
+	assert.Zero(t, result.Data.Usage.TotalTokens)
 	assert.InDelta(t, 1.7e308, result.Data.Usage.EstimatedCostUSD, 1e292)
 	assert.Equal(t, []string{
 		"Pi entry on line 3 has invalid usage.input; ignored",
 		"Pi entry on line 3 has invalid usage.cost.total; ignored",
+		"Pi input + output token total overflows; total_tokens omitted",
 	}, result.Data.Warnings)
+}
+
+func TestParseSessionCacheExclusiveTotals(t *testing.T) {
+	for _, total := range []string{`135`, `0`, `null`, `"bad"`, `1e400`} {
+		t.Run(total, func(t *testing.T) {
+			// Given: native counters are disjoint, regardless of the supplied total.
+			content := fmt.Sprintf(`{"type":"session","version":3,"id":"pi-session-1","timestamp":"2026-01-02T03:04:00Z","cwd":"/work/repo"}
+{"type":"message","id":"first001","parentId":null,"timestamp":"2026-01-02T03:04:01Z","message":{"role":"assistant","usage":{"input":100,"output":20,"cacheRead":10,"cacheWrite":5,"totalTokens":%s,"cost":{"total":0.1234}}}}
+`, total)
+			// When
+			result, err := parseBytes(t, []byte(content))
+			// Then
+			require.NoError(t, err)
+			assert.Equal(t, &aicodingsession.Usage{
+				InputTokens: 100, OutputTokens: 20, TotalTokens: 120,
+				CacheReadInputTokens: 10, CacheCreationInputTokens: 5, EstimatedCostUSD: 0.1234,
+			}, result.Data.Usage)
+			assert.NoError(t, validateEvidenceData(result.Data))
+		})
+	}
+}
+
+func TestParseSessionResumedUsage(t *testing.T) {
+	// Given: a resumed transcript extends the selected branch.
+	content := `{"type":"session","version":3,"id":"pi-session-1","timestamp":"2026-01-02T03:04:00Z","cwd":"/work/repo"}
+{"type":"message","id":"first001","parentId":null,"timestamp":"2026-01-02T03:04:01Z","message":{"role":"assistant","usage":{"input":100,"output":20,"cacheRead":10,"cacheWrite":5,"cost":{"total":0.1}}}}
+{"type":"message","id":"resume01","parentId":"first001","timestamp":"2026-01-03T03:04:01Z","message":{"role":"assistant","usage":{"input":30,"output":4,"cacheRead":50,"cacheWrite":2,"totalTokens":86,"cost":{"total":0.2}}}}
+`
+	// When
+	result, err := parseBytes(t, []byte(content))
+	// Then
+	require.NoError(t, err)
+	assert.Equal(t, &aicodingsession.Usage{
+		InputTokens: 130, OutputTokens: 24, TotalTokens: 154,
+		CacheReadInputTokens: 60, CacheCreationInputTokens: 7, EstimatedCostUSD: 0.3,
+	}, result.Data.Usage)
+	assert.Empty(t, result.Data.Warnings)
 }
 
 func parseBytes(t *testing.T, content []byte) (*aicodingsession.Evidence, error) {

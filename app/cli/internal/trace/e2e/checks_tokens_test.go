@@ -23,6 +23,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +38,7 @@ func cacheSession(agent string, records ...string) *Session {
 	d := &s.Stored.Evidence.Data
 	d.Agent.Name = agent
 	d.SchemaVersion = "v1"
-	if agent == codex.Name {
+	if agent == codex.Name || agent == pi.Name {
 		d.SchemaVersion = "v2"
 	}
 	d.Usage = &aicodingsession.Usage{
@@ -110,10 +111,64 @@ func TestClaudeCacheComparisonDoesNotDeduplicate(t *testing.T) {
 func TestCacheAccountingNotCovered(t *testing.T) {
 	for _, s := range []*Session{
 		cacheSession("cursor"),
+		cacheSession(pi.Name, `{"type":"message","message":{"role":"assistant","usage":{"input":100,"output":50}}}`),
 		cacheSession(codex.Name, `{"type":"token_usage_record","payload":{"response_id":"a","usage":{"input_tokens":1000,"output_tokens":50}}}`),
 	} {
 		require.ErrorIs(t, checkCacheTokenAccounting(s), errNotCovered)
 	}
+}
+
+func TestPiCacheAccountingSourceComparison(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		change func(*aicodingsession.Data)
+	}{
+		{name: "native disjoint counters"},
+		{name: "inclusive total", change: func(d *aicodingsession.Data) { d.Usage.TotalTokens = 1050 }},
+		{name: "cache subtracted from base input", change: func(d *aicodingsession.Data) {
+			d.Usage.InputTokens = 0
+			d.Usage.TotalTokens = 50
+		}},
+		{name: "missing cache writes", change: func(d *aicodingsession.Data) { d.Usage.CacheCreationInputTokens = 0 }},
+		{name: "inflated consistent counts", change: func(d *aicodingsession.Data) {
+			d.Usage.InputTokens = 200
+			d.Usage.TotalTokens = 250
+		}},
+		{name: "legacy schema", change: func(d *aicodingsession.Data) { d.SchemaVersion = "v1" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Given: selected raw records include a continuation and non-assistant usage.
+			raw := `{"type":"message","message":{"role":"assistant","usage":{"input":50,"output":25,"cacheRead":400,"cacheWrite":50,"totalTokens":525}}}`
+			s := cacheSession(pi.Name, raw, raw,
+				`{"type":"message","message":{"role":"user","usage":{"input":999}}}`,
+				`{"type":"compaction","message":{"role":"assistant","usage":{"input":999}}}`)
+			if tc.change != nil {
+				tc.change(&s.Stored.Evidence.Data)
+			}
+			// When
+			err := checkCacheTokenAccounting(s)
+			// Then
+			if tc.change == nil {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				require.NotErrorIs(t, err, errNotCovered)
+			}
+		})
+	}
+}
+
+func TestPiCacheAccountingSelectedBranchFixture(t *testing.T) {
+	// Given: stored evidence retains selected raw records with invalid usage,
+	// compaction, and both cache categories from the parser fixture.
+	raw, err := os.ReadFile("../pi/testdata/session-v3.golden.json")
+	require.NoError(t, err)
+	s := &Session{Stored: &StoredSession{}}
+	require.NoError(t, json.Unmarshal(raw, &s.Stored.Evidence))
+	// When
+	err = checkCacheTokenAccounting(s)
+	// Then
+	require.NoError(t, err)
 }
 
 func TestCacheAccountingCompactedSession(t *testing.T) {

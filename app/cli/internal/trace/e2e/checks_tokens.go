@@ -18,9 +18,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
 
@@ -39,6 +41,43 @@ func checkCacheTokenAccounting(s *Session) error {
 		want, err = codexSourceUsage(d.RawSession["main"])
 		if err != nil {
 			return err
+		}
+	case pi.Name:
+		if d.SchemaVersion != "v2" {
+			return errors.New("Pi cache accounting requires evidence schema_version v2")
+		}
+		// Pi raw_session contains only the selected branch. Read native fields
+		// independently of the provider parser; source totalTokens may include cache.
+		for _, raw := range d.RawSession["main"] {
+			var r struct {
+				Type    string `json:"type"`
+				Message struct {
+					Role  string                     `json:"role"`
+					Usage map[string]json.RawMessage `json:"usage"`
+				} `json:"message"`
+			}
+			if json.Unmarshal(raw, &r) != nil || r.Type != "message" || r.Message.Role != "assistant" {
+				continue
+			}
+			for _, field := range []struct {
+				name  string
+				total *int
+			}{
+				{"input", &want.InputTokens}, {"output", &want.OutputTokens},
+				{"cacheRead", &want.CacheReadInputTokens}, {"cacheWrite", &want.CacheCreationInputTokens},
+			} {
+				value, ok := new(big.Rat).SetString(string(r.Message.Usage[field.name]))
+				if !ok || value.Sign() < 0 || !value.IsInt() || !value.Num().IsInt64() {
+					continue
+				}
+				count := value.Num().Int64()
+				if count <= int64(int(^uint(0)>>1)-*field.total) {
+					*field.total += int(count)
+				}
+			}
+		}
+		if want.OutputTokens > int(^uint(0)>>1)-want.InputTokens {
+			return errors.New("Pi source input + output token total overflows")
 		}
 	case claude.Name:
 		for _, records := range d.RawSession {
