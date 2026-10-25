@@ -61,8 +61,8 @@ make api
 
 By default CLI uses the following values for the Control Plane and Artifacts CAS API endpoints:
 
-- Artifacts CAS: api.cas.chainloop.dev:443
-- Control Plane API: api.cp.chainloop.dev:443
+- Artifacts CAS: cas.chainloop.dev:443
+- Control Plane API: cp.chainloop.dev:443
 
 If you want to change them to your custom endpoints, you can do that at build time. We will use `ldflags` and the following variables: `defaultCASAPI` and `defaultCPAPI`. We assume in this example that we have our instance of Chainloop running at the following locations: `api.cas.acme.com:443` and `api.cp.acme.com:443`.
 

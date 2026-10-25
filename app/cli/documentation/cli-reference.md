@@ -41,10 +41,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -68,10 +68,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -102,10 +102,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -137,10 +137,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -169,10 +169,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -204,10 +204,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -281,10 +281,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
@@ -319,10 +319,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
@@ -366,10 +366,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
@@ -430,10 +430,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
@@ -466,10 +466,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
@@ -501,10 +501,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
@@ -549,10 +549,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
@@ -578,10 +578,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -609,10 +609,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -645,10 +645,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -677,10 +677,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -704,10 +704,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -736,10 +736,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -772,10 +772,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
@@ -814,10 +814,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
@@ -855,10 +855,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
@@ -894,10 +894,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
@@ -931,10 +931,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -967,10 +967,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -999,10 +999,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1031,10 +1031,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1066,10 +1066,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
@@ -1105,10 +1105,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
@@ -1145,10 +1145,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
@@ -1182,10 +1182,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
@@ -1220,10 +1220,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 --default                   set the backend as default in your organization
@@ -1251,10 +1251,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1287,10 +1287,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1318,10 +1318,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1355,10 +1355,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1386,10 +1386,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1421,10 +1421,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1448,10 +1448,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1475,10 +1475,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1520,10 +1520,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1552,10 +1552,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1588,10 +1588,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1621,10 +1621,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1648,10 +1648,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1681,10 +1681,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1717,10 +1717,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1748,10 +1748,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1784,10 +1784,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1811,10 +1811,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1851,10 +1851,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1883,10 +1883,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1919,10 +1919,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1950,10 +1950,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -1977,10 +1977,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2008,10 +2008,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2043,10 +2043,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2079,10 +2079,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2113,10 +2113,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2145,10 +2145,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2177,10 +2177,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2213,10 +2213,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2244,10 +2244,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2280,10 +2280,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2312,10 +2312,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2343,10 +2343,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2370,10 +2370,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2402,10 +2402,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2438,10 +2438,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2465,10 +2465,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2498,10 +2498,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2534,10 +2534,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2565,10 +2565,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2597,10 +2597,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2656,10 +2656,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2689,10 +2689,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2734,10 +2734,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2774,10 +2774,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2801,10 +2801,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2833,10 +2833,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2886,10 +2886,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2922,10 +2922,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -2974,10 +2974,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3014,10 +3014,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3050,10 +3050,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3077,10 +3077,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3113,10 +3113,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3195,10 +3195,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3264,10 +3264,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3296,10 +3296,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3326,10 +3326,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3353,10 +3353,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3380,10 +3380,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3425,10 +3425,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3457,10 +3457,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3493,10 +3493,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3526,10 +3526,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3553,10 +3553,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3588,10 +3588,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3620,10 +3620,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3653,10 +3653,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3689,10 +3689,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3720,10 +3720,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3754,10 +3754,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3808,10 +3808,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3841,10 +3841,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3874,10 +3874,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3910,10 +3910,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3961,10 +3961,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -3997,10 +3997,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -4024,10 +4024,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -4061,10 +4061,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -4097,10 +4097,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
@@ -4136,10 +4136,10 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "api.cas.chainloop.dev:443")
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
 --artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "api.cp.chainloop.dev:443")
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)

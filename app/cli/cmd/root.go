@@ -43,8 +43,8 @@ var (
 	flagOutputFormat string
 	ActionOpts       *action.ActionsOpts
 	logger           zerolog.Logger
-	defaultCPAPI     = "api.cp.chainloop.dev:443"
-	defaultCASAPI    = "api.cas.chainloop.dev:443"
+	defaultCPAPI     = "cp.chainloop.dev:443"
+	defaultCASAPI    = "cas.chainloop.dev:443"
 	apiToken         string
 	flagYes          bool
 	// authTokenIsUser records whether the credentials in use are a user session

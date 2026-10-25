@@ -36,7 +36,7 @@ const (
 	testCmdList         = "list"
 	testCmdWorkflowList = testCmdWorkflow + " " + testCmdList
 	testOrgName         = "my-org"
-	testCPURL           = "api.cp.chainloop.dev:443"
+	testCPURL           = "cp.chainloop.dev:443"
 )
 
 // newTestRootCommand builds a root with the same name the real one uses, so the helpers
