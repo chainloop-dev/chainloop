@@ -12,20 +12,77 @@
 
 ## Current decisions
 
-| Decision | Choice | Why | Source | Code |
-|----------|--------|-----|--------|------|
-| The single endpoint | The current HTTP port becomes the single port. The gRPC port is the legacy listener | The human-facing hostname is already on the HTTP port. | [issue-3628-single-endpoint D-012](../specs/issue-3628-single-endpoint.md) | not built yet: parent issue #3628 is open |
-| Deprecation default | Legacy gRPC port on by default, then off by default, then deleted | No upgrade breaks. | [issue-3628-single-endpoint D-003](../specs/issue-3628-single-endpoint.md) | not built yet: parent issue #3628 is open |
-| Length of the deprecation period | Off by default three months after the single port ships, deleted three months later | Operators get two release windows. | [issue-3628-single-endpoint D-007](../specs/issue-3628-single-endpoint.md) | not built yet: parent issue #3628 is open |
-| Ingress shape | One Service and one hostname per service. Two Ingress objects on one host only where the controller needs it | nginx sets the backend protocol per Ingress object. Partly replaced by [issue-3628-controlplane-http-dispatch D-002](../specs/issue-3628-controlplane-http-dispatch.md) for the control plane (planned). | [issue-3628-single-endpoint D-004](../specs/issue-3628-single-endpoint.md) | not built yet: parent issue #3628 is open |
-| TLS on the single port | All protocols on the single port use the configured TLS. An HTTP ingress uses an HTTPS backend | One certificate and one setting per service. | [issue-3628-single-endpoint D-008](../specs/issue-3628-single-endpoint.md) | not built yet: parent issue #3628 is open |
-| gRPC-Web | Only on the control plane | No CAS client needs it. | [issue-3628-single-endpoint D-011](../specs/issue-3628-single-endpoint.md) | not built yet: parent issue #3628 is open |
-| Upstream connections | Separate upstream connections for native gRPC and plain HTTP, with a one-way fallback. Partly replaced by [issue-3628-controlplane-http-dispatch D-001](../specs/issue-3628-controlplane-http-dispatch.md) for the control plane (planned) | No measured traffic shows mixed upstream connections. | [issue-3628-single-endpoint D-014](../specs/issue-3628-single-endpoint.md) | not built yet: parent issue #3628 is open |
-| Where multiplexing is solved | In the server process, with tested proxy configurations for nginx and Traefik. Partly replaced by [issue-3628-controlplane-http-dispatch D-001](../specs/issue-3628-controlplane-http-dispatch.md) for the control plane (planned) | No extra process in any deployment. | [issue-3628-single-endpoint D-015](../specs/issue-3628-single-endpoint.md) | not built yet: parent issue #3628 is open |
-| CAS shared endpoint | Per-request dispatch with a standard-library reverse proxy to a private native gRPC server | Supersedes D-017, D-018, and D-019. | [issue-3628-single-endpoint D-020](../specs/issue-3628-single-endpoint.md) | not built yet: parent issue #3628 is open |
-| Control-plane connection | The HTTP server owns the connection and routes each request | Proxies can reuse upstream connections in any order. | [issue-3628-controlplane-http-dispatch D-001](../specs/issue-3628-controlplane-http-dispatch.md) | not built yet: parent issue #3628 is open |
-| Control-plane ingress | One ingress path with HTTP/2 upstream | Per-request dispatch serves all request types on one upstream connection. | [issue-3628-controlplane-http-dispatch D-002](../specs/issue-3628-controlplane-http-dispatch.md) | not built yet: parent issue #3628 is open |
-| CAS transport | The CAS keeps its native gRPC transport and separate endpoints for now | The HTTP adapter can read ahead of the receive pace. | [issue-3628-controlplane-http-dispatch D-003](../specs/issue-3628-controlplane-http-dispatch.md) | not built yet: parent issue #3628 is open |
+### The single endpoint
+The current HTTP port becomes the single port. The gRPC port is the legacy listener.
+- Why: The human-facing hostname is already on the HTTP port.
+- Source: [issue-3628-single-endpoint D-012](../specs/issue-3628-single-endpoint.md)
+- Code: not built yet: parent issue #3628 is open
+
+### Deprecation default
+Legacy gRPC port on by default, then off by default, then deleted.
+- Why: No upgrade breaks.
+- Source: [issue-3628-single-endpoint D-003](../specs/issue-3628-single-endpoint.md)
+- Code: not built yet: parent issue #3628 is open
+
+### Length of the deprecation period
+Off by default three months after the single port ships, deleted three months later.
+- Why: Operators get two release windows.
+- Source: [issue-3628-single-endpoint D-007](../specs/issue-3628-single-endpoint.md)
+- Code: not built yet: parent issue #3628 is open
+
+### Ingress shape
+One Service and one hostname per service. Two Ingress objects on one host only where the controller needs it.
+- Why: nginx sets the backend protocol per Ingress object. Partly replaced by [issue-3628-controlplane-http-dispatch D-002](../specs/issue-3628-controlplane-http-dispatch.md) for the control plane (planned).
+- Source: [issue-3628-single-endpoint D-004](../specs/issue-3628-single-endpoint.md)
+- Code: not built yet: parent issue #3628 is open
+
+### TLS on the single port
+All protocols on the single port use the configured TLS. An HTTP ingress uses an HTTPS backend.
+- Why: One certificate and one setting per service.
+- Source: [issue-3628-single-endpoint D-008](../specs/issue-3628-single-endpoint.md)
+- Code: not built yet: parent issue #3628 is open
+
+### gRPC-Web
+Only on the control plane.
+- Why: No CAS client needs it.
+- Source: [issue-3628-single-endpoint D-011](../specs/issue-3628-single-endpoint.md)
+- Code: not built yet: parent issue #3628 is open
+
+### Upstream connections
+Separate upstream connections for native gRPC and plain HTTP, with a one-way fallback. Partly replaced by [issue-3628-controlplane-http-dispatch D-001](../specs/issue-3628-controlplane-http-dispatch.md) for the control plane (planned).
+- Why: No measured traffic shows mixed upstream connections.
+- Source: [issue-3628-single-endpoint D-014](../specs/issue-3628-single-endpoint.md)
+- Code: not built yet: parent issue #3628 is open
+
+### Where multiplexing is solved
+In the server process, with tested proxy configurations for nginx and Traefik. Partly replaced by [issue-3628-controlplane-http-dispatch D-001](../specs/issue-3628-controlplane-http-dispatch.md) for the control plane (planned).
+- Why: No extra process in any deployment.
+- Source: [issue-3628-single-endpoint D-015](../specs/issue-3628-single-endpoint.md)
+- Code: not built yet: parent issue #3628 is open
+
+### CAS shared endpoint
+Per-request dispatch with a standard-library reverse proxy to a private native gRPC server.
+- Why: Supersedes D-017, D-018, and D-019.
+- Source: [issue-3628-single-endpoint D-020](../specs/issue-3628-single-endpoint.md)
+- Code: not built yet: parent issue #3628 is open
+
+### Control-plane connection
+The HTTP server owns the connection and routes each request.
+- Why: Proxies can reuse upstream connections in any order.
+- Source: [issue-3628-controlplane-http-dispatch D-001](../specs/issue-3628-controlplane-http-dispatch.md)
+- Code: not built yet: parent issue #3628 is open
+
+### Control-plane ingress
+One ingress path with HTTP/2 upstream.
+- Why: Per-request dispatch serves all request types on one upstream connection.
+- Source: [issue-3628-controlplane-http-dispatch D-002](../specs/issue-3628-controlplane-http-dispatch.md)
+- Code: not built yet: parent issue #3628 is open
+
+### CAS transport
+The CAS keeps its native gRPC transport and separate endpoints for now.
+- Why: The HTTP adapter can read ahead of the receive pace.
+- Source: [issue-3628-controlplane-http-dispatch D-003](../specs/issue-3628-controlplane-http-dispatch.md)
+- Code: not built yet: parent issue #3628 is open
 
 Not shown: 2 smaller decisions of [issue-3628-single-endpoint](../specs/issue-3628-single-endpoint.md).
 

@@ -25,62 +25,362 @@
 
 ## Current decisions
 
-| Decision | Choice | Why | Source | Code |
-|----------|--------|-----|--------|------|
-| Who decides what the spec is | The agent, told by an instruction at session start. For skills, the CLI makes the entries ([issue-3540 D-002](../specs/issue-3540-trace-skills-used.md)), and for pasted images the CLI captures them ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md)) | Only the agent knows which input sets the task. Rejected: extraction from the transcript by the CLI. | [issue-3495-session-spec-capture D-001](../specs/issue-3495-session-spec-capture.md) | verified: the session-start hook gives the capture instruction (`app/cli/pkg/action/trace_spec.go`) |
-| Where the spec content goes | One EVIDENCE material per source, with references in the session material | One copy in the CAS for all sessions, and each source is verifiable alone. Rejected: text inside the session material. | [issue-3495-session-spec-capture D-002](../specs/issue-3495-session-spec-capture.md) | verified: `trace_spec_materials.go` stores each capture as its own material |
-| Folder location | A folder in the working tree that ignores itself | The agent writes there with no permission prompt. Rejected: a folder in the git directory. | [issue-3495-session-spec-capture D-004](../specs/issue-3495-session-spec-capture.md) | verified: `.chainloop/specs/<session>` with a `*` `.gitignore` (`internal/trace/spec/spec.go`) |
-| When the session folder is deleted | When the session ends | Each push of a session must hold its spec. Rejected: delete after each push. | [issue-3495-session-spec-capture D-009](../specs/issue-3495-session-spec-capture.md) | verified: the session-end hook removes the folder |
-| Images | A file image is copied byte for byte. A pasted image becomes a description that the agent writes. Partly replaced by [issue-3515 D-009](../specs/issue-3515-spec-capture-during-session.md) (planned) | The agent cannot recover the bytes of a pasted image. | [issue-3495-session-spec-capture D-010](../specs/issue-3495-session-spec-capture.md) | verified for file images. Pasted images are saved by the CLI from the transcript ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md)), not described by the agent |
-| Redaction on later pushes | Keep the redacted copy of each file, keyed by the digest of the source, and reuse it | Redaction is expensive. Rejected: scan again on each push. | [issue-3495-session-spec-capture D-011](../specs/issue-3495-session-spec-capture.md) | verified: `specRedactor` in `trace_spec_materials.go` |
-| Capture of a user prompt | Do not capture the user's request prompt. Capture a spec that the user pastes | The transcript holds the prompt. Rejected: keep it and label it "prompt". | [issue-3515-spec-capture-during-session D-001](../specs/issue-3515-spec-capture-during-session.md) | not built yet: parent issue #3515 is open. The code already does it (`trace_spec.go`) |
-| How specs are found after session start | A short reminder at each user prompt | It keeps the agent as the decider and covers resumed sessions. Rejected: a general capture rule, and a hook that watches spec paths. | [issue-3515-spec-capture-during-session D-002](../specs/issue-3515-spec-capture-during-session.md) | not built yet: parent issue #3515 is open. The code already does it, with five cases (`trace_agent_hook.go`) |
-| Spec file limit | 25 files. Never drop a file that an earlier push recorded | Long sessions get more specs, and the oldest are the start sources. Rejected: keep the newest files. | [issue-3515-spec-capture-during-session D-005](../specs/issue-3515-spec-capture-during-session.md) | not built yet: parent issue #3515 is open. The code already does it (`spec.MaxEntries`) |
-| Pasted images (agent) | The agent does not capture a pasted image | A description is not the image. Rejected: a description of kind `image`. | [issue-3515-spec-capture-during-session D-009](../specs/issue-3515-spec-capture-during-session.md) | not built yet: parent issue #3515 is open. The instruction already says it. The CLI saves each pasted image ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md)) |
-| How to record the purpose | A role field next to the kind | The kind is the format, the role is the purpose. Rejected: more kinds. | [issue-3531-spec-source-role D-001](../specs/issue-3531-spec-source-role.md) | verified: `Role` in the spec entry and the `chainloop.spec.role` annotation |
-| Role values | `task`, `spec`, `plan`, `reference` | They cover what a reviewer looks for. Rejected: only `spec`. | [issue-3531-spec-source-role D-002](../specs/issue-3531-spec-source-role.md) | verified: `ResolveSpecRole` drops other values |
-| Role of a binary file | A companion `<file>.meta.yaml` that the agent writes | The agent decides the role of every source. Rejected: the CLI sets `reference` for images. | [issue-3531-spec-source-role D-003](../specs/issue-3531-spec-source-role.md) | verified: `MetaSuffix` in `internal/trace/spec/spec.go` |
-| Where to record skill use | A spec entry of kind `skill` for each used skill | A skill is a source of the session. Rejected: a separate `skills_used` list. | [issue-3540-trace-skills-used D-001](../specs/issue-3540-trace-skills-used.md) | verified: `SpecKindSkill` in `trace_skills.go` |
-| Who makes skill entries | The CLI, from the transcript and hook events | Skill use is a fact in the transcript. This departs from issue-3495 D-001 for skills only. | [issue-3540-trace-skills-used D-002](../specs/issue-3540-trace-skills-used.md) | verified: Claude Code, OpenCode, and also Codex |
-| Skill content | The full skill folder as one reproducible archive | A skill can run its own scripts. Rejected: the `SKILL.md` text from the transcript. | [issue-3540-trace-skills-used D-004](../specs/issue-3540-trace-skills-used.md) | verified: `internal/trace/skill/skill.go` |
-| How a viewer shows a skill | `SKILL.md` as its own material, which the entry points to. The archive is the download | A viewer needs no archive support. Rejected: the archive only. | [issue-3540-trace-skills-used D-016](../specs/issue-3540-trace-skills-used.md) | verified: two materials per skill in `trace_skills.go` |
-| Copies of a source in the transcript | Keep the content in the material, and a pointer with the digest in the transcript | The transcript gets small and keeps the position of each copy. Rejected: drop the copies. | [issue-3556-session-image-placeholders D-001](../specs/issue-3556-session-image-placeholders.md) | verified: `internal/trace/pointer/pointer.go` |
-| Where the replacement runs | In the CLI at push time, before the session material is recorded and redacted | Only the CLI can read the file on disk. Rejected: in the control plane after upload. | [issue-3556-session-image-placeholders D-002](../specs/issue-3556-session-image-placeholders.md) | verified: `replaceSpecCopies` before `addSessionEvidence` |
-| Certainty before removal | Replace a copy only when its material is in the CAS and the digest matches exactly | A wrong pointer loses evidence. Rejected: a match by size or name. | [issue-3556-session-image-placeholders D-010](../specs/issue-3556-session-image-placeholders.md) | verified: exact sha256 match in `claude/speccopies.go` |
-| Scope of the replacement | Each exact copy of a spec source, all file types, from file reads and writes | One rule for images and text. Rejected: images only. | [issue-3556-session-image-placeholders D-013](../specs/issue-3556-session-image-placeholders.md) | verified: read and write tools both matched |
-| How the push treats a local source | Read the file at push time and record its content | The record no longer depends on the agent. Rejected: warn on a difference. | [issue-3561-up-to-date-local-spec-evidence D-001](../specs/issue-3561-up-to-date-local-spec-evidence.md) | verified: `internal/trace/spec/local.go` |
-| Size limit for a local file | 1 MiB. Over it, the agent's body stays | A spec is small text. | [issue-3561-up-to-date-local-spec-evidence D-006](../specs/issue-3561-up-to-date-local-spec-evidence.md) | verified: `maxLocalSourceSize` |
-| Who captures a pasted image | The CLI, at push time, from the image bytes in the transcript | The capture does not depend on the agent. Rejected: replace only the images the agent captured. | [issue-3569-pasted-image-pointers D-001](../specs/issue-3569-pasted-image-pointers.md) | verified: Claude Code and Codex finders (`trace_pasted_images.go`) |
-| Agent capture of pasted images | Keep the capture instruction. One entry per digest, and the agent's entry wins | The agent adds a role and a title. Rejected: take pasted images out of the instruction. | [issue-3569-pasted-image-pointers D-004](../specs/issue-3569-pasted-image-pointers.md) | drift: pasted images are saved, and the agent entry wins by digest. But the instruction now tells the agent not to capture pasted images, so CLI entries have no role. See Open conflicts |
-| Pi integration point | A project-local TypeScript extension | Pi documents lifecycle and tool events. Rejected: a Pi fork or a file watcher. | [issue-3520-pi-trace-provider D-001](../specs/issue-3520-pi-trace-provider.md) | verified: `.pi/extensions/chainloop-trace.ts` (`internal/trace/pi/hooks.go`) |
-| Pi transcript source | The copied Pi JSONL v3 session | It is authoritative for model, usage, and tool data. Rejected: a second transcript from the extension. | [issue-3520-pi-trace-provider D-006](../specs/issue-3520-pi-trace-provider.md) | verified: `pi/provider.go`, version 3 only |
-| Pi model communication | Full instruction once per session ID, short reminder every turn | No duplicate instruction after a reload. | [issue-3520-pi-trace-provider D-008](../specs/issue-3520-pi-trace-provider.md) | verified: marker per session ID in `pi/hooks.go` |
-| Codex integration point | Native Codex hooks | They cover session, prompt, patch, and shell events with no extension. | [issue-3657-codex-trace-provider D-001](../specs/issue-3657-codex-trace-provider.md) | verified: `.codex/hooks.json` (`internal/trace/codex/hooks.go`) |
-| Codex transcript source | Copied native rollouts, cost from embedded prices | Evidence stays after Codex moves or deletes its transcript. | [issue-3657-codex-trace-provider D-003](../specs/issue-3657-codex-trace-provider.md) | verified: `codex/copy.go`, `codex/pricing.go` |
-| End-to-end runs | The real harness CLI in headless mode with a real model | Only a real run shows that hooks fire and the model follows the instruction. | [issue-3635-trace-e2e-matrix D-001](../specs/issue-3635-trace-e2e-matrix.md) | verified: adapters in `internal/trace/e2e/` |
-| Expected matrix | The feature table of the Trace README, with no second list | One place to keep up to date. | [issue-3635-trace-e2e-matrix D-002](../specs/issue-3635-trace-e2e-matrix.md) | verified: `e2e/expected.go` reads the README |
-| Model-driven cells | 3 runs, 2 must pass | One run is too noisy. Rejected: retry until pass. | [issue-3635-trace-e2e-matrix D-004](../specs/issue-3635-trace-e2e-matrix.md) | verified: `e2e/config.yaml`, `e2e/runner.go` |
-| Storage mode of the suite | Local mode only, no control plane | No test organization and no long-lived token in a public repository. | [issue-3635-trace-e2e-matrix D-007](../specs/issue-3635-trace-e2e-matrix.md) | verified: each workspace runs `trace init --local` |
-| Harness versions | Pinned per harness, bumped by hand. Supersedes D-006 | The nightly job has secrets and must not run a release nobody selected. | [issue-3635-trace-e2e-matrix D-013](../specs/issue-3635-trace-e2e-matrix.md) | drift: `e2e/config.yaml` pins versions, but the suite runs the installed version and only logs a mismatch. See Open conflicts |
-| What local mode writes | The evidence set, not a signed attestation | A developer needs the evidence, not a signature. Rejected: a signed bundle with no control plane. | [issue-3582-trace-evidence-export D-002](../specs/issue-3582-trace-evidence-export.md) | verified: `trace_local_store.go`, no signing |
-| Local output layout | Content-addressed: each material under its digest, plus an index | A reader maps each reference to its material. Rejected: a flat dump. | [issue-3582-trace-evidence-export D-003](../specs/issue-3582-trace-evidence-export.md) | verified: `<session>/evidence/<digest>` |
-| Secrets in local output | Redaction on by default, with an opt-out | The output equals a push. Rejected: no redaction. | [issue-3582-trace-evidence-export D-004](../specs/issue-3582-trace-evidence-export.md) | verified: opt-out is the `CHAINLOOP_TRACE_NO_REDACT` environment variable |
-| The surface that stores locally | The pre-push hook stores the session on disk when the storage mode is local | The normal flow works with no new step. | [issue-3582-trace-evidence-export D-017](../specs/issue-3582-trace-evidence-export.md) | verified: `HandlePrePushHookLocal` |
-| How local mode is configured | `.chainloop.yml` carries `traceStorage`, `tracePath`, and `traceRequired`. `requireTrace` and `localTrace` are deprecated. Supersedes D-013 | A committed storage mode is an explicit team policy. Rejected: a per-clone flag. | [issue-3582-trace-evidence-export D-018](../specs/issue-3582-trace-evidence-export.md) | verified, with a gap: `requireTrace` is a deprecated fallback, `localTrace` was never in the code |
-| Index of a stored session | An unsigned in-toto statement, `statement.json`, with the Chainloop predicate | The same renderer as a push, so readers and policies work. Rejected: a custom manifest. | [issue-3582-trace-evidence-export D-021](../specs/issue-3582-trace-evidence-export.md) | verified: `NewChainloopRendererV02`, no envelope |
-| What `tracePath` sets | The trace directory in every storage mode. Default `.git/chainloop-trace` | A path is not a storage mode. Rejected: a `tracePath` that turns on local mode. | [issue-3582-trace-evidence-export D-022](../specs/issue-3582-trace-evidence-export.md) | verified: `internal/trace/state/store.go` |
-| How `trace run` selects local mode | A `--local` flag. It does not read `traceStorage` | A single run takes its settings from its flags. | [issue-3582-trace-evidence-export D-023](../specs/issue-3582-trace-evidence-export.md) | verified: `cmd/trace_run.go` |
-| Reported split | Net contribution: the lines a session added that no later commit replaced | It gives the expected split and removes the double count across commits. | [issue-3639-trace-line-attribution D-001](../specs/issue-3639-trace-line-attribution.md) | verified: blame of HEAD matched with the ledger (`attribution/enrich.go`) |
-| Update after a replacement | A later commit that replaces lines of a session sends that session's evidence again | The platform already replaces session data with newer evidence. | [issue-3639-trace-line-attribution D-002](../specs/issue-3639-trace-line-attribution.md) | verified: `trace_replacements.go` |
-| Line ownership state | Fingerprints in the ledger, owners rebuilt at push from git blame, commit records, and the ledger. No separate owner data | No second store can disagree. | [issue-3639-trace-line-attribution D-003](../specs/issue-3639-trace-line-attribution.md) | drift: commit records also store the fingerprints of joined human lines. See Open conflicts |
-| Unlinked lines | A line the CLI cannot link to an observed agent edit is human | No change to the evidence categories. | [issue-3639-trace-line-attribution D-005](../specs/issue-3639-trace-line-attribution.md) | verified: `attribution/enrich.go` |
-| Human commits with no session | They join each session whose lines they replaced, as human lines | The human work gets credit where it changed the session's code. | [issue-3639-trace-line-attribution D-009](../specs/issue-3639-trace-line-attribution.md) | verified: `trace_replacements.go` |
-| Generated-line counts | Keep them in the ledger now, report them in a later spec | Generated lines against the committed result is a separate metric. This spec keeps the data it needs. | [issue-3639-trace-line-attribution D-011](../specs/issue-3639-trace-line-attribution.md) | drift: the evidence already reports `ai_generated_lines_added` and `ai_generated_lines_removed` (#3680). See Open conflicts |
-| Trace state retention | 30 days after session start, counted only after a push attested all the work | It covers a normal review cycle. | [issue-3639-trace-line-attribution D-012](../specs/issue-3639-trace-line-attribution.md) | drift: ledger and session records expire after 30 days, commit records only by reachability. See Open conflicts |
-| Branch scope of a resend | Only from the branch with the session's commits | The push reads only the commits of its branch. | [issue-3639-trace-line-attribution D-013](../specs/issue-3639-trace-line-attribution.md) | verified: `trace_hook_handler.go` |
-| Line ranges | The existing range list gets an AI or human attribution property | One list, and an additive change. | [issue-3639-line-ranges D-001](../specs/issue-3639-line-ranges.md) | verified: `LineRange.attribution` in `aicodingsession.go` |
-| Range positions | In the file at the pushed commit | The ranges agree with the net counts and the pull request. | [issue-3639-line-ranges D-002](../specs/issue-3639-line-ranges.md) | verified: blame at HEAD |
-| Schema before writer | One CLI release opens the schema, a later one writes the property | Readers with an older schema reject the property. | [issue-3639-line-ranges D-005](../specs/issue-3639-line-ranges.md) | drift: the schema (#3664) and the writer (#3665) shipped in the same release, v1.126.0. See Open conflicts |
+### Who decides what the spec is
+The agent, told by an instruction at session start. For skills, the CLI makes the entries ([issue-3540 D-002](../specs/issue-3540-trace-skills-used.md)), and for pasted images the CLI captures them ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md)).
+- Why: Only the agent knows which input sets the task.
+- Rejected: extraction from the transcript by the CLI.
+- Source: [issue-3495-session-spec-capture D-001](../specs/issue-3495-session-spec-capture.md)
+- Code: verified: the session-start hook gives the capture instruction (`app/cli/pkg/action/trace_spec.go`)
+
+### Where the spec content goes
+One EVIDENCE material per source, with references in the session material.
+- Why: One copy in the CAS for all sessions, and each source is verifiable alone.
+- Rejected: text inside the session material.
+- Source: [issue-3495-session-spec-capture D-002](../specs/issue-3495-session-spec-capture.md)
+- Code: verified: `trace_spec_materials.go` stores each capture as its own material
+
+### Folder location
+A folder in the working tree that ignores itself.
+- Why: The agent writes there with no permission prompt.
+- Rejected: a folder in the git directory.
+- Source: [issue-3495-session-spec-capture D-004](../specs/issue-3495-session-spec-capture.md)
+- Code: verified: `.chainloop/specs/<session>` with a `*` `.gitignore` (`internal/trace/spec/spec.go`)
+
+### When the session folder is deleted
+When the session ends.
+- Why: Each push of a session must hold its spec.
+- Rejected: delete after each push.
+- Source: [issue-3495-session-spec-capture D-009](../specs/issue-3495-session-spec-capture.md)
+- Code: verified: the session-end hook removes the folder
+
+### Images
+A file image is copied byte for byte. A pasted image becomes a description that the agent writes. Partly replaced by [issue-3515 D-009](../specs/issue-3515-spec-capture-during-session.md) (planned).
+- Why: The agent cannot recover the bytes of a pasted image.
+- Source: [issue-3495-session-spec-capture D-010](../specs/issue-3495-session-spec-capture.md)
+- Code: verified for file images. Pasted images are saved by the CLI from the transcript ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md)), not described by the agent
+
+### Redaction on later pushes
+Keep the redacted copy of each file, keyed by the digest of the source, and reuse it.
+- Why: Redaction is expensive.
+- Rejected: scan again on each push.
+- Source: [issue-3495-session-spec-capture D-011](../specs/issue-3495-session-spec-capture.md)
+- Code: verified: `specRedactor` in `trace_spec_materials.go`
+
+### Capture of a user prompt
+Do not capture the user's request prompt. Capture a spec that the user pastes.
+- Why: The transcript holds the prompt.
+- Rejected: keep it and label it "prompt".
+- Source: [issue-3515-spec-capture-during-session D-001](../specs/issue-3515-spec-capture-during-session.md)
+- Code: not built yet: parent issue #3515 is open. The code already does it (`trace_spec.go`)
+
+### How specs are found after session start
+A short reminder at each user prompt.
+- Why: It keeps the agent as the decider and covers resumed sessions.
+- Rejected: a general capture rule, and a hook that watches spec paths.
+- Source: [issue-3515-spec-capture-during-session D-002](../specs/issue-3515-spec-capture-during-session.md)
+- Code: not built yet: parent issue #3515 is open. The code already does it, with five cases (`trace_agent_hook.go`)
+
+### Spec file limit
+25 files. Never drop a file that an earlier push recorded.
+- Why: Long sessions get more specs, and the oldest are the start sources.
+- Rejected: keep the newest files.
+- Source: [issue-3515-spec-capture-during-session D-005](../specs/issue-3515-spec-capture-during-session.md)
+- Code: not built yet: parent issue #3515 is open. The code already does it (`spec.MaxEntries`)
+
+### Pasted images (agent)
+The agent does not capture a pasted image.
+- Why: A description is not the image.
+- Rejected: a description of kind `image`.
+- Source: [issue-3515-spec-capture-during-session D-009](../specs/issue-3515-spec-capture-during-session.md)
+- Code: not built yet: parent issue #3515 is open. The instruction already says it. The CLI saves each pasted image ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md))
+
+### How to record the purpose
+A role field next to the kind.
+- Why: The kind is the format, the role is the purpose.
+- Rejected: more kinds.
+- Source: [issue-3531-spec-source-role D-001](../specs/issue-3531-spec-source-role.md)
+- Code: verified: `Role` in the spec entry and the `chainloop.spec.role` annotation
+
+### Role values
+`task`, `spec`, `plan`, `reference`.
+- Why: They cover what a reviewer looks for.
+- Rejected: only `spec`.
+- Source: [issue-3531-spec-source-role D-002](../specs/issue-3531-spec-source-role.md)
+- Code: verified: `ResolveSpecRole` drops other values
+
+### Role of a binary file
+A companion `<file>.meta.yaml` that the agent writes.
+- Why: The agent decides the role of every source.
+- Rejected: the CLI sets `reference` for images.
+- Source: [issue-3531-spec-source-role D-003](../specs/issue-3531-spec-source-role.md)
+- Code: verified: `MetaSuffix` in `internal/trace/spec/spec.go`
+
+### Where to record skill use
+A spec entry of kind `skill` for each used skill.
+- Why: A skill is a source of the session.
+- Rejected: a separate `skills_used` list.
+- Source: [issue-3540-trace-skills-used D-001](../specs/issue-3540-trace-skills-used.md)
+- Code: verified: `SpecKindSkill` in `trace_skills.go`
+
+### Who makes skill entries
+The CLI, from the transcript and hook events.
+- Why: Skill use is a fact in the transcript. This departs from issue-3495 D-001 for skills only.
+- Source: [issue-3540-trace-skills-used D-002](../specs/issue-3540-trace-skills-used.md)
+- Code: verified: Claude Code, OpenCode, and also Codex
+
+### Skill content
+The full skill folder as one reproducible archive.
+- Why: A skill can run its own scripts.
+- Rejected: the `SKILL.md` text from the transcript.
+- Source: [issue-3540-trace-skills-used D-004](../specs/issue-3540-trace-skills-used.md)
+- Code: verified: `internal/trace/skill/skill.go`
+
+### How a viewer shows a skill
+`SKILL.md` as its own material, which the entry points to. The archive is the download.
+- Why: A viewer needs no archive support.
+- Rejected: the archive only.
+- Source: [issue-3540-trace-skills-used D-016](../specs/issue-3540-trace-skills-used.md)
+- Code: verified: two materials per skill in `trace_skills.go`
+
+### Copies of a source in the transcript
+Keep the content in the material, and a pointer with the digest in the transcript.
+- Why: The transcript gets small and keeps the position of each copy.
+- Rejected: drop the copies.
+- Source: [issue-3556-session-image-placeholders D-001](../specs/issue-3556-session-image-placeholders.md)
+- Code: verified: `internal/trace/pointer/pointer.go`
+
+### Where the replacement runs
+In the CLI at push time, before the session material is recorded and redacted.
+- Why: Only the CLI can read the file on disk.
+- Rejected: in the control plane after upload.
+- Source: [issue-3556-session-image-placeholders D-002](../specs/issue-3556-session-image-placeholders.md)
+- Code: verified: `replaceSpecCopies` before `addSessionEvidence`
+
+### Certainty before removal
+Replace a copy only when its material is in the CAS and the digest matches exactly.
+- Why: A wrong pointer loses evidence.
+- Rejected: a match by size or name.
+- Source: [issue-3556-session-image-placeholders D-010](../specs/issue-3556-session-image-placeholders.md)
+- Code: verified: exact sha256 match in `claude/speccopies.go`
+
+### Scope of the replacement
+Each exact copy of a spec source, all file types, from file reads and writes.
+- Why: One rule for images and text.
+- Rejected: images only.
+- Source: [issue-3556-session-image-placeholders D-013](../specs/issue-3556-session-image-placeholders.md)
+- Code: verified: read and write tools both matched
+
+### How the push treats a local source
+Read the file at push time and record its content.
+- Why: The record no longer depends on the agent.
+- Rejected: warn on a difference.
+- Source: [issue-3561-up-to-date-local-spec-evidence D-001](../specs/issue-3561-up-to-date-local-spec-evidence.md)
+- Code: verified: `internal/trace/spec/local.go`
+
+### Size limit for a local file
+1 MiB. Over it, the agent's body stays.
+- Why: A spec is small text.
+- Source: [issue-3561-up-to-date-local-spec-evidence D-006](../specs/issue-3561-up-to-date-local-spec-evidence.md)
+- Code: verified: `maxLocalSourceSize`
+
+### Who captures a pasted image
+The CLI, at push time, from the image bytes in the transcript.
+- Why: The capture does not depend on the agent.
+- Rejected: replace only the images the agent captured.
+- Source: [issue-3569-pasted-image-pointers D-001](../specs/issue-3569-pasted-image-pointers.md)
+- Code: verified: Claude Code and Codex finders (`trace_pasted_images.go`)
+
+### Agent capture of pasted images
+Keep the capture instruction. One entry per digest, and the agent's entry wins.
+- Why: The agent adds a role and a title.
+- Rejected: take pasted images out of the instruction.
+- Source: [issue-3569-pasted-image-pointers D-004](../specs/issue-3569-pasted-image-pointers.md)
+- Code: drift: pasted images are saved, and the agent entry wins by digest. But the instruction now tells the agent not to capture pasted images, so CLI entries have no role. See Open conflicts
+
+### Pi integration point
+A project-local TypeScript extension.
+- Why: Pi documents lifecycle and tool events.
+- Rejected: a Pi fork or a file watcher.
+- Source: [issue-3520-pi-trace-provider D-001](../specs/issue-3520-pi-trace-provider.md)
+- Code: verified: `.pi/extensions/chainloop-trace.ts` (`internal/trace/pi/hooks.go`)
+
+### Pi transcript source
+The copied Pi JSONL v3 session.
+- Why: It is authoritative for model, usage, and tool data.
+- Rejected: a second transcript from the extension.
+- Source: [issue-3520-pi-trace-provider D-006](../specs/issue-3520-pi-trace-provider.md)
+- Code: verified: `pi/provider.go`, version 3 only
+
+### Pi model communication
+Full instruction once per session ID, short reminder every turn.
+- Why: No duplicate instruction after a reload.
+- Source: [issue-3520-pi-trace-provider D-008](../specs/issue-3520-pi-trace-provider.md)
+- Code: verified: marker per session ID in `pi/hooks.go`
+
+### Codex integration point
+Native Codex hooks.
+- Why: They cover session, prompt, patch, and shell events with no extension.
+- Source: [issue-3657-codex-trace-provider D-001](../specs/issue-3657-codex-trace-provider.md)
+- Code: verified: `.codex/hooks.json` (`internal/trace/codex/hooks.go`)
+
+### Codex transcript source
+Copied native rollouts, cost from embedded prices.
+- Why: Evidence stays after Codex moves or deletes its transcript.
+- Source: [issue-3657-codex-trace-provider D-003](../specs/issue-3657-codex-trace-provider.md)
+- Code: verified: `codex/copy.go`, `codex/pricing.go`
+
+### End-to-end runs
+The real harness CLI in headless mode with a real model.
+- Why: Only a real run shows that hooks fire and the model follows the instruction.
+- Source: [issue-3635-trace-e2e-matrix D-001](../specs/issue-3635-trace-e2e-matrix.md)
+- Code: verified: adapters in `internal/trace/e2e/`
+
+### Expected matrix
+The feature table of the Trace README, with no second list.
+- Why: One place to keep up to date.
+- Source: [issue-3635-trace-e2e-matrix D-002](../specs/issue-3635-trace-e2e-matrix.md)
+- Code: verified: `e2e/expected.go` reads the README
+
+### Model-driven cells
+3 runs, 2 must pass.
+- Why: One run is too noisy.
+- Rejected: retry until pass.
+- Source: [issue-3635-trace-e2e-matrix D-004](../specs/issue-3635-trace-e2e-matrix.md)
+- Code: verified: `e2e/config.yaml`, `e2e/runner.go`
+
+### Storage mode of the suite
+Local mode only, no control plane.
+- Why: No test organization and no long-lived token in a public repository.
+- Source: [issue-3635-trace-e2e-matrix D-007](../specs/issue-3635-trace-e2e-matrix.md)
+- Code: verified: each workspace runs `trace init --local`
+
+### Harness versions
+Pinned per harness, bumped by hand. Supersedes D-006.
+- Why: The nightly job has secrets and must not run a release nobody selected.
+- Source: [issue-3635-trace-e2e-matrix D-013](../specs/issue-3635-trace-e2e-matrix.md)
+- Code: drift: `e2e/config.yaml` pins versions, but the suite runs the installed version and only logs a mismatch. See Open conflicts
+
+### What local mode writes
+The evidence set, not a signed attestation.
+- Why: A developer needs the evidence, not a signature.
+- Rejected: a signed bundle with no control plane.
+- Source: [issue-3582-trace-evidence-export D-002](../specs/issue-3582-trace-evidence-export.md)
+- Code: verified: `trace_local_store.go`, no signing
+
+### Local output layout
+Content-addressed: each material under its digest, plus an index.
+- Why: A reader maps each reference to its material.
+- Rejected: a flat dump.
+- Source: [issue-3582-trace-evidence-export D-003](../specs/issue-3582-trace-evidence-export.md)
+- Code: verified: `<session>/evidence/<digest>`
+
+### Secrets in local output
+Redaction on by default, with an opt-out.
+- Why: The output equals a push.
+- Rejected: no redaction.
+- Source: [issue-3582-trace-evidence-export D-004](../specs/issue-3582-trace-evidence-export.md)
+- Code: verified: opt-out is the `CHAINLOOP_TRACE_NO_REDACT` environment variable
+
+### The surface that stores locally
+The pre-push hook stores the session on disk when the storage mode is local.
+- Why: The normal flow already runs at push time, so storing there needs no new wrapper.
+- Rejected: a `trace run --export` flag as the surface (it is a single-run command, not the normal push-time path).
+- Source: [issue-3582-trace-evidence-export D-017](../specs/issue-3582-trace-evidence-export.md)
+- Code: verified: `HandlePrePushHookLocal`
+
+### How local mode is configured
+`.chainloop.yml` carries `traceStorage`, `tracePath`, and `traceRequired`. `requireTrace` and `localTrace` are deprecated. Supersedes D-013.
+- Why: A committed storage mode is an explicit team policy.
+- Rejected: a per-clone flag.
+- Source: [issue-3582-trace-evidence-export D-018](../specs/issue-3582-trace-evidence-export.md)
+- Code: verified, with a gap: `requireTrace` is a deprecated fallback, `localTrace` was never in the code
+
+### Index of a stored session
+An unsigned in-toto statement, `statement.json`, with the Chainloop predicate.
+- Why: The same renderer as a push, so readers and policies work.
+- Rejected: a custom manifest.
+- Source: [issue-3582-trace-evidence-export D-021](../specs/issue-3582-trace-evidence-export.md)
+- Code: verified: `NewChainloopRendererV02`, no envelope
+
+### What `tracePath` sets
+The trace directory in every storage mode. Default `.git/chainloop-trace`.
+- Why: A path is not a storage mode.
+- Rejected: a `tracePath` that turns on local mode.
+- Source: [issue-3582-trace-evidence-export D-022](../specs/issue-3582-trace-evidence-export.md)
+- Code: verified: `internal/trace/state/store.go`
+
+### How `trace run` selects local mode
+A `--local` flag. It does not read `traceStorage`.
+- Why: A single run takes its settings from its flags.
+- Rejected: reading `traceStorage` from `.chainloop.yml` (a single run then depends on a repository policy).
+- Source: [issue-3582-trace-evidence-export D-023](../specs/issue-3582-trace-evidence-export.md)
+- Code: verified: `cmd/trace_run.go`
+
+### Reported split
+Net contribution: the lines a session added that no later commit replaced.
+- Why: It gives the expected split and removes the double count across commits.
+- Source: [issue-3639-trace-line-attribution D-001](../specs/issue-3639-trace-line-attribution.md)
+- Code: verified: blame of HEAD matched with the ledger (`attribution/enrich.go`)
+
+### Update after a replacement
+A later commit that replaces lines of a session sends that session's evidence again.
+- Why: The platform already replaces session data with newer evidence.
+- Source: [issue-3639-trace-line-attribution D-002](../specs/issue-3639-trace-line-attribution.md)
+- Code: verified: `trace_replacements.go`
+
+### Line ownership state
+Fingerprints in the ledger, owners rebuilt at push from git blame, commit records, and the ledger. No separate owner data.
+- Why: No second store can disagree.
+- Source: [issue-3639-trace-line-attribution D-003](../specs/issue-3639-trace-line-attribution.md)
+- Code: drift: commit records also store the fingerprints of joined human lines. See Open conflicts
+
+### Unlinked lines
+A line the CLI cannot link to an observed agent edit is human.
+- Why: No change to the evidence categories.
+- Source: [issue-3639-trace-line-attribution D-005](../specs/issue-3639-trace-line-attribution.md)
+- Code: verified: `attribution/enrich.go`
+
+### Human commits with no session
+They join each session whose lines they replaced, as human lines.
+- Why: The human work gets credit where it changed the session's code.
+- Source: [issue-3639-trace-line-attribution D-009](../specs/issue-3639-trace-line-attribution.md)
+- Code: verified: `trace_replacements.go`
+
+### Generated-line counts
+Keep them in the ledger now, report them in a later spec.
+- Why: Generated lines against the committed result is a separate metric. This spec keeps the data it needs.
+- Source: [issue-3639-trace-line-attribution D-011](../specs/issue-3639-trace-line-attribution.md)
+- Code: drift: the evidence already reports `ai_generated_lines_added` and `ai_generated_lines_removed` (#3680). See Open conflicts
+
+### Trace state retention
+30 days after session start, counted only after a push attested all the work.
+- Why: It covers a normal review cycle.
+- Source: [issue-3639-trace-line-attribution D-012](../specs/issue-3639-trace-line-attribution.md)
+- Code: drift: ledger and session records expire after 30 days, commit records only by reachability. See Open conflicts
+
+### Branch scope of a resend
+Only from the branch with the session's commits.
+- Why: The push reads only the commits of its branch.
+- Source: [issue-3639-trace-line-attribution D-013](../specs/issue-3639-trace-line-attribution.md)
+- Code: verified: `trace_hook_handler.go`
+
+### Line ranges
+The existing range list gets an AI or human attribution property.
+- Why: One list, and an additive change.
+- Source: [issue-3639-line-ranges D-001](../specs/issue-3639-line-ranges.md)
+- Code: verified: `LineRange.attribution` in `aicodingsession.go`
+
+### Range positions
+In the file at the pushed commit.
+- Why: The ranges agree with the net counts and the pull request.
+- Source: [issue-3639-line-ranges D-002](../specs/issue-3639-line-ranges.md)
+- Code: verified: blame at HEAD
+
+### Schema before writer
+One CLI release opens the schema, a later one writes the property.
+- Why: Readers with an older schema reject the property.
+- Source: [issue-3639-line-ranges D-005](../specs/issue-3639-line-ranges.md)
+- Code: drift: the schema (#3664) and the writer (#3665) shipped in the same release, v1.126.0. See Open conflicts
 
 Not shown: 6 smaller decisions of [issue-3495](../specs/issue-3495-session-spec-capture.md), 5 of [issue-3515](../specs/issue-3515-spec-capture-during-session.md), 8 of [issue-3531](../specs/issue-3531-spec-source-role.md), 12 of [issue-3540](../specs/issue-3540-trace-skills-used.md), 9 of [issue-3556](../specs/issue-3556-session-image-placeholders.md), 8 of [issue-3561](../specs/issue-3561-up-to-date-local-spec-evidence.md), 6 of [issue-3569](../specs/issue-3569-pasted-image-pointers.md), 12 of [issue-3520](../specs/issue-3520-pi-trace-provider.md), 2 of [issue-3657](../specs/issue-3657-codex-trace-provider.md), 7 of [issue-3635](../specs/issue-3635-trace-e2e-matrix.md), 8 of [issue-3582](../specs/issue-3582-trace-evidence-export.md), 5 of [issue-3639-trace-line-attribution](../specs/issue-3639-trace-line-attribution.md), 3 of [issue-3639-line-ranges](../specs/issue-3639-line-ranges.md).
 

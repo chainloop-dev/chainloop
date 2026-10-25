@@ -12,14 +12,41 @@
 
 ## Current decisions
 
-| Decision | Choice | Why | Source | Code |
-|----------|--------|-----|--------|------|
-| Token delivery | A single-use handoff code that the client exchanges for the token | It takes the token out of the URL. | [issue-3626-login-code-exchange D-001](../specs/issue-3626-login-code-exchange.md) | verified: `ExchangeHandoff` in `internal/service/auth.go` |
-| Code binding | PKCE-style S256 challenge from the client, plus the callback URL | Works for the CLI and a browser app, with no cookie at exchange. | [issue-3626-login-code-exchange D-002](../specs/issue-3626-login-code-exchange.md) | verified: S256 only, verifier and callback checked |
-| Code store | Database table with the code hash, the user, the expiry, and an atomic consume. No token at rest | Works with many replicas and enforces single use. | [issue-3626-login-code-exchange D-004](../specs/issue-3626-login-code-exchange.md) | verified: `ent/schema/loginhandoff.go` |
-| Deprecation | Three phases: allowed by default, then denied by default, then deleted | Operators get time and a measured deletion condition. | [issue-3626-login-code-exchange D-006](../specs/issue-3626-login-code-exchange.md) | verified: phase 1, with the `allow_legacy_login_callback` setting |
-| Browser artifact download flow | No change: it stays on the legacy callback | Its token expires after 10 seconds, and a separate change can move it. | [issue-3626-login-code-exchange D-008](../specs/issue-3626-login-code-exchange.md) | drift: the download flow now requires a handoff code and rejects `?t=` (`internal/service/casredirect.go`). See Open conflicts |
-| Exchange endpoint | gRPC only, unauthenticated, with no HTTP mapping. Supersedes D-003 | No client needs a plain HTTP route, and the public surface stays smaller. | [issue-3626-login-code-exchange D-013](../specs/issue-3626-login-code-exchange.md) | verified: no `google.api.http` option on the RPC |
+### Token delivery
+A single-use handoff code that the client exchanges for the token.
+- Why: It takes the token out of the URL.
+- Source: [issue-3626-login-code-exchange D-001](../specs/issue-3626-login-code-exchange.md)
+- Code: verified: `ExchangeHandoff` in `internal/service/auth.go`
+
+### Code binding
+PKCE-style S256 challenge from the client, plus the callback URL.
+- Why: Works for the CLI and a browser app, with no cookie at exchange.
+- Source: [issue-3626-login-code-exchange D-002](../specs/issue-3626-login-code-exchange.md)
+- Code: verified: S256 only, verifier and callback checked
+
+### Code store
+Database table with the code hash, the user, the expiry, and an atomic consume. No token at rest.
+- Why: Works with many replicas and enforces single use.
+- Source: [issue-3626-login-code-exchange D-004](../specs/issue-3626-login-code-exchange.md)
+- Code: verified: `ent/schema/loginhandoff.go`
+
+### Deprecation
+Three phases: allowed by default, then denied by default, then deleted.
+- Why: Operators get time and a measured deletion condition.
+- Source: [issue-3626-login-code-exchange D-006](../specs/issue-3626-login-code-exchange.md)
+- Code: verified: phase 1, with the `allow_legacy_login_callback` setting
+
+### Browser artifact download flow
+No change: it stays on the legacy callback.
+- Why: Its token expires after 10 seconds, and a separate change can move it.
+- Source: [issue-3626-login-code-exchange D-008](../specs/issue-3626-login-code-exchange.md)
+- Code: drift: the download flow now requires a handoff code and rejects `?t=` (`internal/service/casredirect.go`). See Open conflicts
+
+### Exchange endpoint
+gRPC only, unauthenticated, with no HTTP mapping. Supersedes D-003.
+- Why: No client needs a plain HTTP route, and the public surface stays smaller.
+- Source: [issue-3626-login-code-exchange D-013](../specs/issue-3626-login-code-exchange.md)
+- Code: verified: no `google.api.http` option on the RPC
 
 Not shown: 6 smaller decisions of [issue-3626-login-code-exchange](../specs/issue-3626-login-code-exchange.md).
 

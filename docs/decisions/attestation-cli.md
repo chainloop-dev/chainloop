@@ -12,12 +12,33 @@
 
 ## Current decisions
 
-| Decision | Choice | Why | Source | Code |
-|----------|--------|-----|--------|------|
-| Key names in the file | `projectName` and `organization` | `chainloop trace init` already writes these keys. Rejected: a new `project` key. | [issue-3063-attestation-repo-config D-001](../specs/issue-3063-attestation-repo-config.md) | not built yet: parent issue #3063 is open |
-| Order for the organization | Flag, environment variable, file, saved default | The file pins the organization for the repository. Rejected: saved default before the file. | [issue-3063-attestation-repo-config D-002](../specs/issue-3063-attestation-repo-config.md) | not built yet: parent issue #3063 is open |
-| No project from the flag or the file | Stop with an error | The project is a required flag today. Rejected: a warning only. | [issue-3063-attestation-repo-config D-003](../specs/issue-3063-attestation-repo-config.md) | not built yet: parent issue #3063 is open |
-| API token for a different organization | Stop early with a clear error | The trace commands do the same check. Rejected: send the request and let the control plane fail. | [issue-3063-attestation-repo-config D-006](../specs/issue-3063-attestation-repo-config.md) | not built yet: parent issue #3063 is open |
+### Key names in the file
+`projectName` and `organization`.
+- Why: `chainloop trace init` already writes these keys.
+- Rejected: a new `project` key.
+- Source: [issue-3063-attestation-repo-config D-001](../specs/issue-3063-attestation-repo-config.md)
+- Code: not built yet: parent issue #3063 is open
+
+### Order for the organization
+Flag, environment variable, file, saved default.
+- Why: The file pins the organization for the repository.
+- Rejected: saved default before the file.
+- Source: [issue-3063-attestation-repo-config D-002](../specs/issue-3063-attestation-repo-config.md)
+- Code: not built yet: parent issue #3063 is open
+
+### No project from the flag or the file
+Stop with an error.
+- Why: The project is a required flag today.
+- Rejected: a warning only.
+- Source: [issue-3063-attestation-repo-config D-003](../specs/issue-3063-attestation-repo-config.md)
+- Code: not built yet: parent issue #3063 is open
+
+### API token for a different organization
+Stop early with a clear error.
+- Why: The trace commands do the same check.
+- Rejected: send the request and let the control plane fail.
+- Source: [issue-3063-attestation-repo-config D-006](../specs/issue-3063-attestation-repo-config.md)
+- Code: not built yet: parent issue #3063 is open
 
 Not shown: 5 smaller decisions of [issue-3063-attestation-repo-config](../specs/issue-3063-attestation-repo-config.md). The file reader decision (D-007) is in the repository-wide part of the [index](README.md).
 

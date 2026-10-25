@@ -12,17 +12,66 @@
 
 ## Current decisions
 
-| Decision | Choice | Why | Source | Code |
-|----------|--------|-----|--------|------|
-| Cache store | Shared cache library: NATS KV when connected, in-memory LRU otherwise | Shared hits across replicas, with no new hard dependency. Rejected: memory only, and NATS required. | [issue-3543-cas-existence-cache D-001](../specs/issue-3543-cas-existence-cache.md) | verified: `pkg/cache/cache.go`, `pkg/cache/casexistence/` |
-| Where the cache lives | Artifact CAS, server side | Works for all CLI versions with no API change. Rejected: a cache in the CLI. | [issue-3543-cas-existence-cache D-003](../specs/issue-3543-cas-existence-cache.md) | verified: `ByteStreamService.Write` |
-| Cache key and tenant namespace | Organization first, then backend type, hashed secret reference, digest, in a separate bucket | One tenant's upload must never answer for another tenant. Rejected: the digest alone. | [issue-3543-cas-existence-cache D-004](../specs/issue-3543-cas-existence-cache.md) | verified: bucket `chainloop-cas-existence` |
-| Negative results | Not cached | A missing blob can appear at any time, and the gain is small. | [issue-3543-cas-existence-cache D-005](../specs/issue-3543-cas-existence-cache.md) | verified: only present blobs are stored |
-| Credentials in a shared store | Never. The client cache stays in memory | Credentials must not leave the process. | [issue-3543-cas-existence-cache D-006](../specs/issue-3543-cas-existence-cache.md) | verified: process-local LRU, only the size goes to the shared store |
-| Existence entry lifetime | 24 hours, configurable | Blobs cannot be deleted through Chainloop, so the only risk is a purge outside it. Rejected: 7 days. | [issue-3543-cas-existence-cache D-007](../specs/issue-3543-cas-existence-cache.md) | drift: 24 hours is a constant with no configuration (`pkg/cache/casexistence/casexistence.go`). See Open conflicts |
-| Where downloads are cached | The browser HTTP cache | The browser downloads straight from the CAS. Rejected: a server cache in the control plane. | [issue-3549-cas-download-browser-cache D-001](../specs/issue-3549-cas-download-browser-cache.md) | verified: `ETag` and 304 path in `internal/service/download.go` |
-| How the browser checks its copy | `ETag` set to the digest, with `Cache-Control: private, no-cache` | The CAS checks access on each open. Rejected: `max-age` with no check. | [issue-3549-cas-download-browser-cache D-002](../specs/issue-3549-cas-download-browser-cache.md) | verified: set on the 200 and the 304 |
-| How the URL stays the same | Token in an `Authorization` header, which wins over the query | The browser cache uses the URL as its key. Rejected: reuse one token per user and digest. | [issue-3549-cas-download-browser-cache D-003](../specs/issue-3549-cas-download-browser-cache.md) | verified: `pkg/middlewares/http/jwt.go` |
+### Cache store
+Shared cache library: NATS KV when connected, in-memory LRU otherwise.
+- Why: Shared hits across replicas, with no new hard dependency.
+- Rejected: memory only, and NATS required.
+- Source: [issue-3543-cas-existence-cache D-001](../specs/issue-3543-cas-existence-cache.md)
+- Code: verified: `pkg/cache/cache.go`, `pkg/cache/casexistence/`
+
+### Where the cache lives
+Artifact CAS, server side.
+- Why: Works for all CLI versions with no API change.
+- Rejected: a cache in the CLI.
+- Source: [issue-3543-cas-existence-cache D-003](../specs/issue-3543-cas-existence-cache.md)
+- Code: verified: `ByteStreamService.Write`
+
+### Cache key and tenant namespace
+Organization first, then backend type, hashed secret reference, digest, in a separate bucket.
+- Why: One tenant's upload must never answer for another tenant.
+- Rejected: the digest alone.
+- Source: [issue-3543-cas-existence-cache D-004](../specs/issue-3543-cas-existence-cache.md)
+- Code: verified: bucket `chainloop-cas-existence`
+
+### Negative results
+Not cached.
+- Why: A missing blob can appear at any time, and the gain is small.
+- Source: [issue-3543-cas-existence-cache D-005](../specs/issue-3543-cas-existence-cache.md)
+- Code: verified: only present blobs are stored
+
+### Credentials in a shared store
+Never. The client cache stays in memory.
+- Why: Credentials must not leave the process.
+- Source: [issue-3543-cas-existence-cache D-006](../specs/issue-3543-cas-existence-cache.md)
+- Code: verified: process-local LRU, only the size goes to the shared store
+
+### Existence entry lifetime
+24 hours, configurable.
+- Why: Blobs cannot be deleted through Chainloop, so the only risk is a purge outside it.
+- Rejected: 7 days.
+- Source: [issue-3543-cas-existence-cache D-007](../specs/issue-3543-cas-existence-cache.md)
+- Code: drift: 24 hours is a constant with no configuration (`pkg/cache/casexistence/casexistence.go`). See Open conflicts
+
+### Where downloads are cached
+The browser HTTP cache.
+- Why: The browser downloads straight from the CAS.
+- Rejected: a server cache in the control plane.
+- Source: [issue-3549-cas-download-browser-cache D-001](../specs/issue-3549-cas-download-browser-cache.md)
+- Code: verified: `ETag` and 304 path in `internal/service/download.go`
+
+### How the browser checks its copy
+`ETag` set to the digest, with `Cache-Control: private, no-cache`.
+- Why: The CAS checks access on each open.
+- Rejected: `max-age` with no check.
+- Source: [issue-3549-cas-download-browser-cache D-002](../specs/issue-3549-cas-download-browser-cache.md)
+- Code: verified: set on the 200 and the 304
+
+### How the URL stays the same
+Token in an `Authorization` header, which wins over the query.
+- Why: The browser cache uses the URL as its key.
+- Rejected: reuse one token per user and digest.
+- Source: [issue-3549-cas-download-browser-cache D-003](../specs/issue-3549-cas-download-browser-cache.md)
+- Code: verified: `pkg/middlewares/http/jwt.go`
 
 Not shown: 3 smaller decisions of [issue-3543-cas-existence-cache](../specs/issue-3543-cas-existence-cache.md), 3 of [issue-3549-cas-download-browser-cache](../specs/issue-3549-cas-download-browser-cache.md).
 

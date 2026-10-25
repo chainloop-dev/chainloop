@@ -55,6 +55,9 @@ Last refresh: 2026-10-23, commit 01d4899e.
 
 ## Repository-wide decisions
 
-| Decision | Choice | Why | Source | Code |
-|----------|--------|-----|--------|------|
-| File readers | One reader of `.chainloop.yml` for attestation and trace | Two readers already disagree on file order. Rejected: a second change to the attestation reader only. | [issue-3063-attestation-repo-config D-007](../specs/issue-3063-attestation-repo-config.md) | not built yet: parent issue #3063 is open |
+### File readers
+One reader of `.chainloop.yml` for attestation and trace.
+- Why: Two readers already disagree on file order.
+- Rejected: a second change to the attestation reader only.
+- Source: [issue-3063-attestation-repo-config D-007](../specs/issue-3063-attestation-repo-config.md)
+- Code: not built yet: parent issue #3063 is open
