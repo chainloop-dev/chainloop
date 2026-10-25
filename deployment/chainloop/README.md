@@ -241,6 +241,8 @@ or as shown before, provide them as imperative inputs during Helm Install/Upgrad
 
 ### Enable a custom domain with TLS
 
+Since Chainloop v1.126.0 (chart version 1.469.0), the control plane and the Artifact CAS each serve native gRPC and HTTP on one port, exposed through the shared ingress (`controlplane.ingress` and `cas.ingress`). The separate gRPC-only endpoints (`serviceAPI` and `ingressAPI`) are deprecated but remain available. See [Opt in to shared client endpoints](#opt-in-to-shared-client-endpoints).
+
 The control plane ingress serves HTTP, gRPC-Web, and native gRPC on the same hostname.
 Its HTTP server routes each request, so these protocols can share an upstream HTTP/2 connection.
 The existing gRPC ingress stays available. Existing clients can keep their current endpoints.
@@ -263,7 +265,7 @@ cas:
 
 With `tls: true`, configure a certificate source — the cert-manager issuer annotation above, or a pre-created Secret named `cas.example.com-tls` — so the rendered Ingress references a Secret that exists.
 
-`cas.ingress.enabled` defaults to `false`, so a setup that only copies the documented `cas.ingressAPI` block leaves the shared hostname disabled. Retain `cas.ingressAPI` only while the legacy gRPC endpoint is also required. `cas.serviceAPI`, and the control plane's connection to the legacy CAS endpoint keep their existing settings. CAS adds no gRPC-Web or Connect support. Deployed-controller qualification and the full streaming-performance evidence still need work. See the [experiment instructions](../../app/artifact-cas/README.md#shared-endpoint).
+`cas.ingress.enabled` defaults to `false`, so a setup that only copies the documented `cas.ingressAPI` block leaves the shared hostname disabled. Retain `cas.ingressAPI` only while the legacy gRPC endpoint is also required. `cas.serviceAPI` keeps its existing settings. The control plane connects to the legacy CAS endpoint unless `useSharedEndpoints` is enabled. CAS adds no gRPC-Web or Connect support. Deployed-controller qualification and the full streaming-performance evidence still need work. See the [experiment instructions](../../app/artifact-cas/README.md#shared-endpoint).
 
 The chart configures HTTP/2 upstream traffic for these controllers:
 
@@ -299,24 +301,20 @@ The NGINX gRPC module path supports the shared endpoint without path or content-
 The regression suite checks that path with NGINX Open Source. It does not certify every controller or NGINX Plus release.
 See the [F5 annotation reference](https://docs.nginx.com/nginx-ingress-controller/configuration/ingress-resources/advanced-configuration-with-annotations/) for controller requirements.
 
-Enable the shared control plane ingress and the existing gRPC ingresses as needed.
-
 See below an example of a `values.yaml` override
 
 ```yaml
+useSharedEndpoints: true
+
 controlplane:
   ingress:
     enabled: true
     hostname: cp.chainloop.dev
 
-  ingressAPI:
-    enabled: true
-    hostname: api.cp.chainloop.dev
-
 cas:
-  ingressAPI:
-  enabled: true
-  hostname: api.cas.chainloop.dev
+  ingress:
+    enabled: true
+    hostname: cas.chainloop.dev
 ```
 
 A complete setup that uses
@@ -324,9 +322,11 @@ A complete setup that uses
 - [NGINX as ingress Controller](https://kubernetes.github.io/ingress-nginx)
 - [cert-manager](https://cert-manager.io/) as TLS provider
 
-would look like
+would look like the following. The chart already sets the gRPC backend protocol and the CAS upload body-size annotations on the shared ingresses.
 
 ```yaml
+useSharedEndpoints: true
+
 controlplane:
   ingress:
     enabled: true
@@ -334,36 +334,40 @@ controlplane:
     ingressClassName: nginx
     hostname: cp.chainloop.dev
     annotations:
-      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
       # This depends on your configured issuer
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
 
-  ingressAPI:
-    enabled: true
-    tls: true
-    ingressClassName: nginx
-    hostname: api.cp.chainloop.dev
-    annotations:
-      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-      cert-manager.io/cluster-issuer: "letsencrypt-prod"
-
 cas:
-  ingressAPI:
+  ingress:
     enabled: true
     tls: true
     ingressClassName: nginx
-    hostname: api.cas.chainloop.dev
+    hostname: cas.chainloop.dev
     annotations:
-      nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
-      # limit the size of the files that go through the proxy
-      # 0 means to not check the size of the request so we do not get 413 error.
-      # For now we are going to set a limit on 100MB files
-      # Even though we send data in chunks of 1MB, this size refers to all the data sent in the streaming connection
-      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
 ```
 
 Remember, once you have set up your domain, make sure you use the [CLI pointing](#configure-chainloop-cli-to-point-to-your-instance) to it instead of the defaults.
+
+#### Opt in to shared client endpoints
+
+The chart keeps the existing client endpoint selection by default. Enable `useSharedEndpoints` to move native gRPC clients to the shared HTTP endpoints:
+
+```yaml
+useSharedEndpoints: true
+```
+
+This flag switches the control plane CAS client to the shared CAS Service. It also changes the CLI addresses in the installation notes to the shared ingress hostnames. With the examples above, the CLI uses `cp.chainloop.dev:443` and `cas.chainloop.dev:443`.
+
+The separate control plane and CAS `ingressAPI` and `serviceAPI` settings are deprecated. They remain functional in this release. The flag changes client selection, not endpoint exposure. Removal belongs to a later release after existing clients migrate.
+
+An installed CLI retains its saved addresses. Reconfigure it explicitly when migrating:
+
+```bash
+chainloop config save --control-plane cp.chainloop.dev:443 --artifact-cas cas.chainloop.dev:443
+```
+
+Set `useSharedEndpoints: false` to restore the previous client endpoint selection. Reconfigure installed CLIs separately if they need to return to the legacy addresses.
 
 ### Connect to an external PostgreSQL database
 
@@ -581,6 +585,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `global.imagePullSecrets`                             | Global Docker registry secret names as an array                                                                                                                                                                                                                                                                                                                     | `[]`    |
 | `global.compatibility.openshift.adaptSecurityContext` | Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation) | `auto`  |
 | `development`                                         | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases                                                                                                                                                                                              | `false` |
+| `useSharedEndpoints`                                  | Opt in to shared control plane and CAS HTTP endpoints for native gRPC clients and the CLI addresses in the installation notes. Legacy endpoints remain available.                                                                                                                                                                                                   | `false` |
 
 ### Common parameters
 
@@ -697,7 +702,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.service.extraPorts`                  | Extra ports to expose in controlplane service (normally used with the `sidecars` value)                                          | `[]`                     |
 | `controlplane.service.sessionAffinity`             | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
 | `controlplane.service.sessionAffinityConfig`       | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
-| `controlplane.serviceAPI.type`                     | Service type                                                                                                                     | `ClusterIP`              |
+| `controlplane.serviceAPI.type`                     | Deprecated gRPC-only Service type. Use the shared service with useSharedEndpoints enabled.                                       | `ClusterIP`              |
 | `controlplane.serviceAPI.ports.http`               | controlplane service HTTP port                                                                                                   | `80`                     |
 | `controlplane.serviceAPI.ports.https`              | controlplane service HTTPS port                                                                                                  | `443`                    |
 | `controlplane.serviceAPI.nodePorts.http`           | Node port for HTTP                                                                                                               | `""`                     |
@@ -723,7 +728,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `controlplane.ingress.extraTls`                    | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
 | `controlplane.ingress.secrets`                     | Custom TLS certificates as secrets                                                                                               | `[]`                     |
 | `controlplane.ingress.extraRules`                  | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
-| `controlplane.ingressAPI.enabled`                  | Enable ingress record generation for controlplane                                                                                | `false`                  |
+| `controlplane.ingressAPI.enabled`                  | Enable the deprecated gRPC-only ingress. Retained during migration.                                                              | `false`                  |
 | `controlplane.ingressAPI.pathType`                 | Ingress path type                                                                                                                | `ImplementationSpecific` |
 | `controlplane.ingressAPI.hostname`                 | Default host for the ingress record                                                                                              | `api.cp.dev.local`       |
 | `controlplane.ingressAPI.ingressClassName`         | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
@@ -879,7 +884,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.service.extraPorts`                  | Extra ports to expose in cas service (normally used with the `sidecars` value)                                                   | `[]`                     |
 | `cas.service.sessionAffinity`             | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
 | `cas.service.sessionAffinityConfig`       | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
-| `cas.serviceAPI.type`                     | Service type                                                                                                                     | `ClusterIP`              |
+| `cas.serviceAPI.type`                     | Deprecated gRPC-only Service type. Use the shared service with useSharedEndpoints enabled.                                       | `ClusterIP`              |
 | `cas.serviceAPI.ports.http`               | cas service HTTP port                                                                                                            | `80`                     |
 | `cas.serviceAPI.ports.https`              | cas service HTTPS port                                                                                                           | `443`                    |
 | `cas.serviceAPI.nodePorts.http`           | Node port for HTTP                                                                                                               | `""`                     |
@@ -905,7 +910,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.ingress.extraTls`                    | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
 | `cas.ingress.secrets`                     | Custom TLS certificates as secrets                                                                                               | `[]`                     |
 | `cas.ingress.extraRules`                  | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
-| `cas.ingressAPI.enabled`                  | Enable ingress record generation for controlplane                                                                                | `false`                  |
+| `cas.ingressAPI.enabled`                  | Enable the deprecated gRPC-only ingress. Retained during migration.                                                              | `false`                  |
 | `cas.ingressAPI.pathType`                 | Ingress path type                                                                                                                | `ImplementationSpecific` |
 | `cas.ingressAPI.hostname`                 | Default host for the ingress record                                                                                              | `api.cas.dev.local`      |
 | `cas.ingressAPI.ingressClassName`         | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
