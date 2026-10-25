@@ -60,4 +60,4 @@ One reader of `.chainloop.yml` for attestation and trace.
 - Why: Two readers already disagree on file order.
 - Rejected: a second change to the attestation reader only.
 - Source: [issue-3063-attestation-repo-config D-007](../specs/issue-3063-attestation-repo-config.md)
-- Code: not built yet: parent issue #3063 is open
+- Code: not built yet: issue #3063 is open; the code already does it (#3502, #3518). `repositoryconfig.LoadChainloopYML` is the only reader, and Trace calls it too (`app/cli/internal/repositoryconfig/config.go`)
