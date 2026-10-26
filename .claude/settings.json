@@ -13,7 +13,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook claude post-tool-use",
+            "command": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook claude post-tool-use'",
             "type": "command"
           }
         ],
@@ -24,7 +24,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook claude post-tool-use",
+            "command": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook claude post-tool-use'",
             "type": "command"
           }
         ],
@@ -35,7 +35,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook claude pre-tool-use",
+            "command": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook claude pre-tool-use'",
             "type": "command"
           }
         ],
@@ -46,7 +46,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook claude session-end",
+            "command": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook claude session-end'",
             "type": "command"
           }
         ]
@@ -56,7 +56,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook claude session-start",
+            "command": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook claude session-start'",
             "type": "command"
           }
         ]
@@ -66,7 +66,7 @@
       {
         "hooks": [
           {
-            "command": "chainloop trace hook claude user-prompt-submit",
+            "command": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook claude user-prompt-submit'",
             "type": "command"
           }
         ]
