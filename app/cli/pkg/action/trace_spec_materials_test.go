@@ -221,6 +221,73 @@ func TestAttachSpecs(t *testing.T) {
 		assert.Equal(t, aicodingsession.SpecKindImage, entries[0].Kind)
 	})
 
+	t.Run("an HTML body is stored as an HTML file", func(t *testing.T) {
+		const page = "<!doctype html>\n<html><head><style>p{}</style><script>x()</script></head><body><p>spec</p></body></html>\n"
+
+		testCases := []struct {
+			name         string
+			fileName     string
+			doc          string
+			wantFileName string
+			wantContent  string
+		}{
+			{
+				// The header is in the annotations and the reference, and a
+				// header above the doctype would break the page.
+				name:         "a page below a header",
+				fileName:     "design-proposal.md",
+				doc:          "---\nkind: document\nuri: docs/design.html\nrole: spec\n---\n" + page,
+				wantFileName: "design-proposal.html",
+				wantContent:  page,
+			},
+			{
+				name:         "a page with no header keeps its name",
+				fileName:     "page.html",
+				doc:          page,
+				wantFileName: "page.html",
+				wantContent:  page,
+			},
+			{
+				name:         "a file name with no extension",
+				fileName:     "design",
+				doc:          "---\nkind: document\n---\n" + page,
+				wantFileName: "design.html",
+				wantContent:  page,
+			},
+			{
+				name:         "secrets are removed from the page",
+				fileName:     "design.md",
+				doc:          "---\nkind: document\n---\n<!doctype html><p>token " + pat + "</p>",
+				wantFileName: "design.html",
+				wantContent:  "<!doctype html><p>token [CHAINLOOP_TRACE_REDACTED:github-pat]</p>",
+			},
+			{
+				name:         "markdown that opens with a fragment stays markdown",
+				fileName:     "readme.md",
+				doc:          "---\nkind: document\n---\n<p align=\"center\">logo</p>\n\n# Spec\n",
+				wantFileName: "readme.md",
+				wantContent:  "---\nkind: document\n---\n<p align=\"center\">logo</p>\n\n# Spec\n",
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				adder := &fakeMaterialAdder{}
+				c := specCapture(t, tc.fileName, tc.doc, "2026-09-16T10:12:03Z")
+
+				entries, warnings, stored, _ := attachSpecs(context.Background(), adder, newSpecRedactor(t.TempDir(), false), materials.NewNameAllocator(nil), sessionID, []spec.Capture{c}, zerolog.Nop())
+
+				assert.Empty(t, warnings)
+				require.Len(t, entries, 1)
+				require.Len(t, adder.added, 1)
+				assert.Equal(t, tc.wantFileName, adder.added[0].fileName)
+				assert.Equal(t, tc.wantContent, adder.added[0].content)
+				// The spec folder still holds the file under the agent's name.
+				assert.Equal(t, []string{tc.fileName}, stored)
+			})
+		}
+	})
+
 	t.Run("a role, a title and a description go into the annotations and the reference", func(t *testing.T) {
 		adder := &fakeMaterialAdder{}
 		described := specCapture(t, "ticket.md",

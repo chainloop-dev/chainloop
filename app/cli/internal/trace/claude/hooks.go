@@ -248,14 +248,38 @@ func addHookEntry(hooks map[string]any, event, command, matcher string) bool {
 		if !entryContainsChainloopHook(entry) {
 			continue
 		}
-		// Chainloop entry exists — check if it needs updating (e.g., matcher changed)
+		// Chainloop entry exists — check if it needs updating (e.g., matcher
+		// changed, or an entry written before the missing-CLI guard)
 		m, _ := entry.(map[string]any)
 		existingMatcher, _ := m["matcher"].(string)
-		if existingMatcher == matcher {
+		guarded := trace.GuardHookCommand(command)
+		if existingMatcher == matcher && chainloopHookCommand(m) == guarded {
 			return false // already up to date
 		}
-		// Replace the entry with updated version
-		entries[i] = buildHookEntry(command, matcher)
+		// The group can also hold the user's own handlers: keep them.
+		handlers, _ := m["hooks"].([]any)
+		var others []any
+		for _, h := range handlers {
+			if !handlerIsChainloop(h) {
+				others = append(others, h)
+			}
+		}
+		switch {
+		case len(others) == 0:
+			entries[i] = buildHookEntry(command, matcher)
+		case existingMatcher == matcher:
+			// Only the command is out of date: update the Chainloop handler in place.
+			for _, h := range handlers {
+				if handlerIsChainloop(h) {
+					h.(map[string]any)["command"] = guarded
+				}
+			}
+		default:
+			// The matcher changed: leave the user's handlers under their matcher
+			// and give the Chainloop handler a group of its own.
+			m["hooks"] = others
+			entries = append(entries, buildHookEntry(command, matcher))
+		}
 		hooks[event] = entries
 		return true
 	}
@@ -265,12 +289,31 @@ func addHookEntry(hooks map[string]any, event, command, matcher string) bool {
 	return true
 }
 
+// handlerIsChainloop reports whether a handler in a hook group runs the Chainloop CLI.
+func handlerIsChainloop(h any) bool {
+	handler, _ := h.(map[string]any)
+	cmd, _ := handler["command"].(string)
+	return strings.Contains(cmd, hookMarker)
+}
+
+// chainloopHookCommand returns the command of the Chainloop handler in a hook group.
+func chainloopHookCommand(entry map[string]any) string {
+	handlers, _ := entry["hooks"].([]any)
+	for _, h := range handlers {
+		handler, _ := h.(map[string]any)
+		if cmd, _ := handler["command"].(string); strings.Contains(cmd, hookMarker) {
+			return cmd
+		}
+	}
+	return ""
+}
+
 func buildHookEntry(command, matcher string) map[string]any {
 	entry := map[string]any{
 		"hooks": []any{
 			map[string]any{
 				"type":    "command",
-				"command": command,
+				"command": trace.GuardHookCommand(command),
 			},
 		},
 	}
@@ -287,13 +330,29 @@ func removeHookEntry(hooks map[string]any, event string) bool {
 	}
 
 	var kept []any
+	changed := false
 	for _, entry := range entries {
 		if !entryContainsChainloopHook(entry) {
 			kept = append(kept, entry)
+			continue
+		}
+		changed = true
+		// Strip only the Chainloop handler: the group can also hold the user's own.
+		m, _ := entry.(map[string]any)
+		handlers, _ := m["hooks"].([]any)
+		var others []any
+		for _, h := range handlers {
+			if !handlerIsChainloop(h) {
+				others = append(others, h)
+			}
+		}
+		if len(others) > 0 {
+			m["hooks"] = others
+			kept = append(kept, m)
 		}
 	}
 
-	if len(kept) == len(entries) {
+	if !changed {
 		return false
 	}
 

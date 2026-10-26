@@ -17,6 +17,8 @@ package e2e
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -229,6 +231,38 @@ func TestCheckRenamed(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			err := checkRenamed(sessionWith(nil, tc.file))
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+			assert.ErrorContains(t, err, tc.wantErr)
+		})
+	}
+}
+
+func TestCheckHTMLSpecStored(t *testing.T) {
+	page := "<!doctype html>\n<html><body><h1>" + designTitle + "</h1></body></html>\n"
+	cases := []struct {
+		name    string
+		uri     string
+		stored  string
+		wantErr string
+	}{
+		{name: "the page alone", uri: designPath, stored: page},
+		{name: "a header above the page", uri: designPath, stored: "---\nkind: document\n---\n" + page, wantErr: "doctype"},
+		{name: "another page", uri: designPath, stored: "<!doctype html><p>other</p>", wantErr: "text of the design"},
+		{name: "no entry for the design document", uri: ticketPath, stored: page, wantErr: "no spec entry"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			require.NoError(t, os.MkdirAll(filepath.Join(dir, "evidence"), 0o700))
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "evidence", "sha256-abc"), []byte(tc.stored), 0o600))
+
+			s := &Session{Stored: &StoredSession{Dir: dir}}
+			evidence(s).Spec = []aicodingsession.SpecEntry{{Kind: aicodingsession.SpecKindDocument, URI: tc.uri, Digest: "sha256:abc"}}
+
+			err := checkHTMLSpecStored(s)
 			if tc.wantErr == "" {
 				assert.NoError(t, err)
 				return

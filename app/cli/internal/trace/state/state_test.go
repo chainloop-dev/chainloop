@@ -84,7 +84,8 @@ func TestWipeTraceDir(t *testing.T) {
 	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "abc123", Message: "test", SessionIDs: []string{"sess-1"}, Timestamp: "2026-03-28T00:00:00Z"}))
 	require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: "sess-1", Active: true, StartedAt: "2026-03-28T00:00:00Z"}))
 	require.NoError(t, store.RecordLineRanges("sess-1", "src/foo.go", []aicodingsession.LineRange{{Start: 1, End: 5}}))
-	require.NoError(t, store.SaveFileSnapshot("sess-1", "src/foo.go", []byte("before")))
+	snapshotKey := FileSnapshotKey{SessionID: "sess-1", FilePath: "src/foo.go"}
+	require.NoError(t, store.SaveFileSnapshot(snapshotKey, []byte("before")))
 
 	require.NoError(t, store.WipeTraceDir())
 
@@ -92,7 +93,7 @@ func TestWipeTraceDir(t *testing.T) {
 	assert.True(t, store.IsTraceInitialized())
 
 	// Single-use state is gone (would otherwise leak into the next push).
-	_, err := store.LoadFileSnapshot("sess-1", "src/foo.go")
+	_, err := store.LoadFileSnapshot(snapshotKey)
 	assert.True(t, os.IsNotExist(err), "snapshots should be wiped")
 
 	// Attribution-bearing state survives so a future rebase that replays
@@ -362,26 +363,56 @@ func TestFileSnapshots(t *testing.T) {
 	require.NoError(t, store.InitTraceDir())
 
 	t.Run("save and load snapshot", func(t *testing.T) {
+		key := FileSnapshotKey{SessionID: "sess-1", FilePath: "/path/to/file.go"}
 		content := []byte("func main() {\n\tfmt.Println(\"hello\")\n}\n")
-		require.NoError(t, store.SaveFileSnapshot("sess-1", "/path/to/file.go", content))
+		require.NoError(t, store.SaveFileSnapshot(key, content))
 
-		loaded, err := store.LoadFileSnapshot("sess-1", "/path/to/file.go")
+		loaded, err := store.LoadFileSnapshot(key)
 		require.NoError(t, err)
 		assert.Equal(t, content, loaded)
 	})
 
 	t.Run("load nonexistent snapshot returns error", func(t *testing.T) {
-		_, err := store.LoadFileSnapshot("sess-1", "/nonexistent/file.go")
+		_, err := store.LoadFileSnapshot(FileSnapshotKey{SessionID: "sess-1", FilePath: "/nonexistent/file.go"})
 		assert.Error(t, err)
 	})
 
+	t.Run("tool calls keep separate snapshots", func(t *testing.T) {
+		first := FileSnapshotKey{SessionID: "sess-1", FilePath: "/same.go", ToolUseID: "call-1"}
+		second := FileSnapshotKey{SessionID: "sess-1", FilePath: "/same.go", ToolUseID: "call-2"}
+		require.NoError(t, store.SaveFileSnapshot(first, []byte("first")))
+		require.NoError(t, store.SaveFileSnapshot(second, []byte("second")))
+
+		firstContent, err := store.LoadFileSnapshot(first)
+		require.NoError(t, err)
+		secondContent, err := store.LoadFileSnapshot(second)
+		require.NoError(t, err)
+		assert.Equal(t, "first", string(firstContent))
+		assert.Equal(t, "second", string(secondContent))
+	})
+
+	t.Run("keyed post hook loads and cleans legacy snapshot", func(t *testing.T) {
+		legacy := FileSnapshotKey{SessionID: "sess-1", FilePath: "/upgraded.go"}
+		keyed := FileSnapshotKey{SessionID: legacy.SessionID, FilePath: legacy.FilePath, ToolUseID: "call-after-upgrade"}
+		require.NoError(t, store.SaveFileSnapshot(legacy, []byte("before upgrade")))
+
+		content, err := store.LoadFileSnapshot(keyed)
+		require.NoError(t, err)
+		assert.Equal(t, "before upgrade", string(content))
+
+		store.DeleteFileSnapshot(keyed)
+		_, err = store.LoadFileSnapshot(legacy)
+		assert.ErrorIs(t, err, os.ErrNotExist)
+	})
+
 	t.Run("delete snapshot", func(t *testing.T) {
+		key := FileSnapshotKey{SessionID: "sess-1", FilePath: "/delete/me.go"}
 		content := []byte("content")
-		require.NoError(t, store.SaveFileSnapshot("sess-1", "/delete/me.go", content))
+		require.NoError(t, store.SaveFileSnapshot(key, content))
 
-		store.DeleteFileSnapshot("sess-1", "/delete/me.go")
+		store.DeleteFileSnapshot(key)
 
-		_, err := store.LoadFileSnapshot("sess-1", "/delete/me.go")
+		_, err := store.LoadFileSnapshot(key)
 		assert.Error(t, err)
 	})
 }

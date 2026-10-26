@@ -201,8 +201,18 @@ func addSpecMaterial(ctx context.Context, adder specMaterialAdder, dir, name, se
 		return "", fmt.Errorf("staging the file: %w", err)
 	}
 
-	path := filepath.Join(dir, filepath.Base(c.FileName))
-	if err := os.WriteFile(path, c.Raw, 0o600); err != nil {
+	fileName, content := filepath.Base(c.FileName), c.Raw
+	// An HTML page is stored as one, so that a reader can tell it from
+	// markdown. The header goes: the annotations and the reference carry its
+	// values, and text above the doctype would break the page.
+	if !c.Verbatim {
+		if body, ok := spec.HTMLBody(c.Raw); ok {
+			fileName, content = strings.TrimSuffix(fileName, filepath.Ext(fileName))+".html", body
+		}
+	}
+
+	path := filepath.Join(dir, fileName)
+	if err := os.WriteFile(path, content, 0o600); err != nil {
 		return "", fmt.Errorf("staging the file: %w", err)
 	}
 

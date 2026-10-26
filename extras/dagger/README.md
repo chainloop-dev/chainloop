@@ -348,13 +348,13 @@ This module also provides access to the underlying Chainloop CLI by exposing som
 By default, this dagger module points to Chainloop's upstream instance, but if you want to point to your own instance, you can do it by running the with-instance command just right after `dagger call`
 
 ```sh
-dagger call with-instance --controlplane-api api.cp.chainloop.dev:443 --cas-api api.cas.chainloop.dev:443 [SUBCOMMAND]
+dagger call with-instance --controlplane-api cp.chainloop.dev:443 --cas-api cas.chainloop.dev:443 [SUBCOMMAND]
 ```
 
 example initializing an attestation
 
 ```sh
-dagger call with-instance --controlplane-api api.cp.chainloop.dev:443 --cas-api api.cas.chainloop.dev:443 \
+dagger call with-instance --controlplane-api cp.chainloop.dev:443 --cas-api cas.chainloop.dev:443 \
 init --token env:CHAINLOOP_TOKEN --workflow-name test-from-dagger-2 attestation-id
 ```
 

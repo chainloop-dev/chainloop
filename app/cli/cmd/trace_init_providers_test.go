@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 
 	"github.com/stretchr/testify/assert"
@@ -30,6 +31,8 @@ import (
 // rather than taken from the package constant so that renaming it shows up here
 // as a failing test instead of passing silently.
 const providerClaudeCode = "claude-code"
+const providerCursor = "cursor"
+const providerOpenCode = "opencode"
 
 func TestResolveTraceProviders(t *testing.T) {
 	testCases := []struct {
@@ -49,16 +52,16 @@ func TestResolveTraceProviders(t *testing.T) {
 	}{
 		{
 			name:  "a single flag wins and asks nothing",
-			flags: traceProviderFlags{cursor: true},
+			flags: traceProviderFlags{pi: true},
 			// Interactive, to show the flag is what suppresses the question.
 			interactive: true,
-			want:        []string{"cursor"},
+			want:        []string{pi.Name},
 		},
 		{
 			name:        "several flags are all honored",
-			flags:       traceProviderFlags{claude: true, opencode: true},
+			flags:       traceProviderFlags{claude: true, opencode: true, pi: true},
 			interactive: true,
-			want:        []string{providerClaudeCode, "opencode"},
+			want:        []string{providerClaudeCode, providerOpenCode, pi.Name},
 		},
 		{
 			name: "without a terminal the default provider is kept",
@@ -67,35 +70,35 @@ func TestResolveTraceProviders(t *testing.T) {
 		{
 			name:         "on a terminal the user picks",
 			interactive:  true,
-			answer:       []string{"cursor", "opencode"},
-			want:         []string{"cursor", "opencode"},
+			answer:       []string{providerCursor, providerOpenCode},
+			want:         []string{providerCursor, providerOpenCode},
 			wantPrompted: true,
 			wantDefaults: []string{providers.DefaultProvider},
 		},
 		{
 			name:         "a re-run comes up with the configured harnesses ticked",
 			interactive:  true,
-			configured:   []string{providerClaudeCode, "cursor", "opencode"},
-			answer:       []string{providerClaudeCode, "cursor", "opencode"},
-			want:         []string{providerClaudeCode, "cursor", "opencode"},
+			configured:   []string{providerClaudeCode, providerCursor, providerOpenCode},
+			answer:       []string{providerClaudeCode, providerCursor, providerOpenCode},
+			want:         []string{providerClaudeCode, providerCursor, providerOpenCode},
 			wantPrompted: true,
-			wantDefaults: []string{providerClaudeCode, "cursor", "opencode"},
+			wantDefaults: []string{providerClaudeCode, providerCursor, providerOpenCode},
 		},
 		{
 			name:         "a re-run without the default ticks only what is configured",
 			interactive:  true,
-			configured:   []string{"cursor"},
-			answer:       []string{"cursor"},
-			want:         []string{"cursor"},
+			configured:   []string{providerCursor},
+			answer:       []string{providerCursor},
+			want:         []string{providerCursor},
 			wantPrompted: true,
-			wantDefaults: []string{"cursor"},
+			wantDefaults: []string{providerCursor},
 		},
 		{
 			name:        "flags still win over the configured harnesses",
 			flags:       traceProviderFlags{opencode: true},
 			interactive: true,
-			configured:  []string{"cursor"},
-			want:        []string{"opencode"},
+			configured:  []string{providerCursor},
+			want:        []string{providerOpenCode},
 		},
 		{
 			name:         "picking nothing is refused",
@@ -160,9 +163,9 @@ func TestConfiguredTraceProviders(t *testing.T) {
 		},
 		{
 			name:      "some harnesses set up",
-			installed: []string{"opencode", "cursor"},
+			installed: []string{providerOpenCode, pi.Name, providerCursor},
 			// In the registry's order, the same order the prompt lists them in.
-			want: []string{"cursor", "opencode"},
+			want: []string{providerCursor, providerOpenCode, pi.Name},
 		},
 	}
 
@@ -183,21 +186,21 @@ func TestConfiguredTraceProviders(t *testing.T) {
 func TestConfiguredTraceProvidersSkipsUnreadableSettings(t *testing.T) {
 	repoRoot := t.TempDir()
 
-	cursor := providers.ByName("cursor")
+	cursor := providers.ByName(providerCursor)
 	require.NoError(t, cursor.InstallHooks(repoRoot))
 
 	claudeSettings := providers.ByName(providerClaudeCode).SettingsFile(repoRoot)
 	require.NoError(t, os.MkdirAll(filepath.Dir(claudeSettings), 0o755))
 	require.NoError(t, os.WriteFile(claudeSettings, []byte("{not json"), 0o600))
 
-	assert.Equal(t, []string{"cursor"}, configuredTraceProviders(repoRoot))
+	assert.Equal(t, []string{providerCursor}, configuredTraceProviders(repoRoot))
 }
 
 func TestTraceProviderFlags(t *testing.T) {
-	t.Run("codex flag", func(t *testing.T) {
-		f := traceProviderFlags{codex: true}
+	t.Run("pi flag", func(t *testing.T) {
+		f := traceProviderFlags{pi: true}
 		assert.True(t, f.any())
-		assert.Equal(t, []string{"codex"}, f.namesOrDefault())
+		assert.Equal(t, []string{pi.Name}, f.namesOrDefault())
 	})
 	t.Run("no flag set", func(t *testing.T) {
 		assert.False(t, traceProviderFlags{}.any())
@@ -205,10 +208,15 @@ func TestTraceProviderFlags(t *testing.T) {
 	})
 
 	t.Run("names follow the registry order, not the flag order", func(t *testing.T) {
-		f := traceProviderFlags{opencode: true, claude: true}
+		f := traceProviderFlags{codex: true, pi: true, claude: true}
 		assert.True(t, f.any())
-		assert.Equal(t, []string{providerClaudeCode, "opencode"}, f.names())
+		assert.Equal(t, []string{providerClaudeCode, pi.Name, "codex"}, f.names())
 	})
+}
+
+func TestTraceCommandsExposePiFlag(t *testing.T) {
+	assert.NotNil(t, newTraceInitCmd().Flags().Lookup("pi"))
+	assert.NotNil(t, newTraceRunCmd().Flags().Lookup("pi"))
 }
 
 // TestTraceProviderNamesMatchesRegistry guards the multi-select against a

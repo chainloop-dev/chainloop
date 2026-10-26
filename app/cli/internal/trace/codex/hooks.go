@@ -31,8 +31,9 @@ import (
 const (
 	hookMarker   = "chainloop trace hook codex"
 	settingsFile = ".codex/hooks.json"
-	// Skip tracing when the CLI is missing, before any Go handler can run.
-	hookCommandPrefix = "sh -c 'if ! command -v chainloop >/dev/null 2>&1; then exit 0; fi; exec "
+	// Skip tracing on Windows when the CLI is missing, before any Go handler
+	// can run. The POSIX command uses trace.GuardHookCommand, like the other
+	// providers.
 	windowsHookPrefix = `cmd.exe /d /s /c "where chainloop >nul 2>nul & if errorlevel 1 (exit /b 0) else (`
 
 	// Codex hook event names.
@@ -254,7 +255,7 @@ func addHookEntry(hooks map[string]any, event, command, matcher, statusMessage s
 		existingMatcher, _ := group["matcher"].(string)
 		if len(handlers) == 1 && existingMatcher == matcher {
 			handler, _ := handlers[0].(map[string]any)
-			if handler["command"] == hookCommandPrefix+command+"'" && handler["commandWindows"] == windowsHookPrefix+command+`)"` && handler["statusMessage"] == statusMessage {
+			if handler["command"] == trace.GuardHookCommand(command) && handler["commandWindows"] == windowsHookPrefix+command+`)"` && handler["statusMessage"] == statusMessage {
 				return false
 			}
 		}
@@ -271,7 +272,7 @@ func buildHookEntry(command, matcher, statusMessage string) map[string]any {
 			map[string]any{
 				"type":           "command",
 				"statusMessage":  statusMessage,
-				"command":        hookCommandPrefix + command + "'",
+				"command":        trace.GuardHookCommand(command),
 				"commandWindows": windowsHookPrefix + command + `)"`,
 			},
 		},
@@ -319,14 +320,18 @@ func removeHookEntry(hooks map[string]any, event string) bool {
 	return true
 }
 
+// guardPrefix is the part of a guarded command that comes before the wrapped
+// command; trace.GuardHookCommand closes it with a single quote.
+var guardPrefix = strings.TrimSuffix(trace.GuardHookCommand(""), "'")
+
 func isChainloopHandler(handler any) bool {
 	h, ok := handler.(map[string]any)
 	if !ok {
 		return false
 	}
 	command, _ := h["command"].(string)
-	if strings.HasPrefix(command, hookCommandPrefix) && strings.HasSuffix(command, "'") {
-		command = strings.TrimSuffix(strings.TrimPrefix(command, hookCommandPrefix), "'")
+	if strings.HasPrefix(command, guardPrefix) && strings.HasSuffix(command, "'") {
+		command = strings.TrimSuffix(strings.TrimPrefix(command, guardPrefix), "'")
 	}
 	return strings.HasPrefix(command, hookMarker+" ")
 }

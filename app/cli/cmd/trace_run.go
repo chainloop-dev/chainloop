@@ -64,6 +64,7 @@ func newTraceRunCmd() *cobra.Command {
 		claudeFlag   bool
 		cursorFlag   bool
 		opencodeFlag bool
+		piFlag       bool
 		codexFlag    bool
 	)
 
@@ -166,7 +167,7 @@ func newTraceRunCmd() *cobra.Command {
 			return action.TraceRun(cmd.Context(), logger, action.TraceRunOpts{
 				Store:            store,
 				RepoRoot:         repoRoot,
-				Providers:        traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag, codex: codexFlag}.namesOrDefault(),
+				Providers:        traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag, pi: piFlag, codex: codexFlag}.namesOrDefault(),
 				Command:          args,
 				ProjectName:      projectFlag,
 				Organization:     organization,
@@ -188,6 +189,7 @@ func newTraceRunCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&localFlag, "local", false, "store the session on disk, with no control plane, login or workflow")
 	cmd.Flags().BoolVar(&claudeFlag, "claude", false, "install Claude Code hooks (default when no provider flag is set)")
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
+	cmd.Flags().BoolVar(&piFlag, "pi", false, "install Pi extension")
 	cmd.Flags().BoolVar(&codexFlag, "codex", false, "install Codex hooks")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 

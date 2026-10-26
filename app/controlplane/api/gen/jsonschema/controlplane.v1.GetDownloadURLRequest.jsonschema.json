@@ -2,10 +2,20 @@
   "$id": "controlplane.v1.GetDownloadURLRequest.jsonschema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
+  "patternProperties": {
+    "^(scope_to_digest)$": {
+      "description": "scope the token in the URL to the requested digest, so the CAS rejects reads of any other artifact",
+      "type": "boolean"
+    }
+  },
   "properties": {
     "digest": {
       "minLength": 1,
       "type": "string"
+    },
+    "scopeToDigest": {
+      "description": "scope the token in the URL to the requested digest, so the CAS rejects reads of any other artifact",
+      "type": "boolean"
     }
   },
   "title": "Get DownloadURL Request",

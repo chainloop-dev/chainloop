@@ -53,6 +53,8 @@ type rolloutPayload struct {
 	Role          string      `json:"role"`
 	Name          string      `json:"name"`
 	CallID        string      `json:"call_id"`
+	ResponseID    string      `json:"response_id"`
+	Usage         *tokenUsage `json:"usage"`
 	ThreadUsage   *tokenUsage `json:"thread_token_usage"`
 	Info          *struct {
 		Total *tokenUsage `json:"total_token_usage"`
@@ -75,7 +77,7 @@ func (p *Provider) ParseSession(ctx context.Context, opts *trace.ParseOpts) (*ai
 	}
 	defer f.Close()
 	d := aicodingsession.Data{
-		SchemaVersion: "v1",
+		SchemaVersion: "v2",
 		Agent:         aicodingsession.Agent{Name: Name, Version: opts.AgentVersion},
 		Session:       aicodingsession.Session{ID: opts.SessionID},
 		Model:         &aicodingsession.Model{Primary: opts.Model},
@@ -137,7 +139,20 @@ type rolloutParser struct {
 	model                 string
 	first, last           time.Time
 	previous              tokenUsage
+	usageRecords          []usageRecord
 	haveUsage, haveHeader bool
+}
+
+// Keep the model at the time of the record. Source selection happens after
+// reading the rollout so a legacy snapshot before the first native record
+// cannot be counted in addition to native usage.
+type usageRecord struct {
+	model      string
+	line       int
+	native     bool
+	responseID string
+	usage      *tokenUsage
+	total      *tokenUsage
 }
 
 func (p *rolloutParser) consume(e rolloutEntry, payload rolloutPayload, line int) error {
@@ -186,22 +201,73 @@ func (p *rolloutParser) consume(e rolloutEntry, payload rolloutPayload, line int
 		}
 	case "event_msg":
 		if payload.Type == "token_count" && payload.Info != nil && payload.Info.Total != nil {
-			p.consumeUsage(*payload.Info.Total, line)
+			p.usageRecords = append(p.usageRecords, usageRecord{model: p.model, line: line, total: payload.Info.Total})
 		}
 	case "token_usage_record":
-		if payload.ThreadUsage != nil {
-			p.consumeUsage(*payload.ThreadUsage, line)
+		if payload.Usage != nil || payload.ThreadUsage != nil {
+			p.usageRecords = append(p.usageRecords, usageRecord{
+				model: p.model, line: line, native: true,
+				responseID: payload.ResponseID, usage: payload.Usage, total: payload.ThreadUsage,
+			})
 		}
 	}
 
 	return nil
 }
 
-func (p *rolloutParser) consumeUsage(total tokenUsage, line int) {
+func (p *rolloutParser) consumeSelectedUsage() {
+	haveNative, useResponses := false, true
+	for _, r := range p.usageRecords {
+		if r.native {
+			haveNative = true
+			useResponses = useResponses && r.responseID != "" && r.usage != nil
+		}
+	}
+	seen := make(map[string]bool)
+	for _, r := range p.usageRecords {
+		if r.native != haveNative {
+			continue
+		}
+		if r.native && useResponses && seen[r.responseID] {
+			continue
+		}
+		var u *tokenUsage
+		if r.native && useResponses {
+			u = r.usage
+		} else {
+			u = r.total
+		}
+		if u == nil {
+			p.data.Warnings = append(p.data.Warnings, fmt.Sprintf("missing Codex cumulative token usage on line %d", r.line))
+			continue
+		}
+		if !p.validUsage(*u, r.line) {
+			continue
+		}
+		if r.native && useResponses {
+			seen[r.responseID] = true
+		}
+		if r.native && useResponses {
+			p.addUsage(r.model, *u)
+		} else {
+			p.consumeUsage(r.model, *u, r.line)
+		}
+	}
+}
+
+func (p *rolloutParser) validUsage(total tokenUsage, line int) bool {
 	if total.Input < 0 || total.Output < 0 || total.Cached < 0 || total.CacheWrite < 0 || total.Total < 0 {
 		p.data.Warnings = append(p.data.Warnings, fmt.Sprintf("negative Codex token count on line %d", line))
-		return
+		return false
 	}
+	if total.Cached > total.Input || total.CacheWrite > total.Input-total.Cached {
+		p.data.Warnings = append(p.data.Warnings, fmt.Sprintf("Codex cache tokens exceed input tokens on line %d", line))
+		return false
+	}
+	return true
+}
+
+func (p *rolloutParser) consumeUsage(model string, total tokenUsage, line int) {
 	// Counters are session totals, not increments. Repeated snapshots add zero.
 	delta := tokenUsage{
 		Input:      total.Input - p.previous.Input,
@@ -211,17 +277,27 @@ func (p *rolloutParser) consumeUsage(total tokenUsage, line int) {
 		Total:      total.Total - p.previous.Total,
 	}
 	if delta.Input < 0 || delta.Output < 0 || delta.Cached < 0 || delta.CacheWrite < 0 || delta.Total < 0 {
-		p.data.Warnings = append(p.data.Warnings, fmt.Sprintf("Codex token counters reset on line %d", line))
-		delta = total
+		// A lower snapshot alone cannot establish a reset. Keep the previous
+		// high-water mark instead of adding a whole session again. Native
+		// per-response records, when available, handle real counter resets.
+		p.data.Warnings = append(p.data.Warnings, fmt.Sprintf("Codex cumulative token counters decreased on line %d; ignoring snapshot", line))
+		return
 	}
-	u := p.usageByModel[p.model]
+	if !p.validUsage(delta, line) {
+		return
+	}
+	p.addUsage(model, delta)
+	p.previous = total
+}
+
+func (p *rolloutParser) addUsage(model string, delta tokenUsage) {
+	u := p.usageByModel[model]
 	u.Input += delta.Input
 	u.Cached += delta.Cached
 	u.CacheWrite += delta.CacheWrite
 	u.Output += delta.Output
 	u.Total += delta.Total
-	p.usageByModel[p.model] = u
-	p.previous = total
+	p.usageByModel[model] = u
 	p.haveUsage = true
 }
 
@@ -229,6 +305,7 @@ func (p *rolloutParser) finish() error {
 	if !p.haveHeader {
 		return errors.New("parse Codex session: missing session metadata")
 	}
+	p.consumeSelectedUsage()
 	if !p.first.IsZero() {
 		p.data.Session.StartedAt = p.first.UTC().Format(time.RFC3339)
 		p.data.Session.EndedAt = p.last.UTC().Format(time.RFC3339)
@@ -270,6 +347,10 @@ func (p *rolloutParser) finish() error {
 		sort.Strings(names)
 		for _, name := range names {
 			u := p.usageByModel[name]
+			// Match Claude's evidence convention: input and total exclude
+			// cache, which remains in separate fields and in the cost estimate.
+			u.Input -= u.Cached + u.CacheWrite
+			u.Total = u.Input + u.Output
 			p.data.Usage.InputTokens += u.Input
 			p.data.Usage.OutputTokens += u.Output
 			p.data.Usage.TotalTokens += u.Total

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,19 +44,27 @@ func (c *Client) UploadFile(ctx context.Context, filepath string) (*UpDownStatus
 	}
 	defer f.Close()
 
-	hash, _, err := cr_v1.SHA256(f)
+	digest, err := Digest(f)
 	if err != nil {
-		return nil, fmt.Errorf("generating digest: %w", err)
+		return nil, err
 	}
 
-	// Since we have already iterated on the file to calculate the digest
-	// we need to rewind the file pointer
-	_, err = f.Seek(0, io.SeekStart)
+	return c.Upload(ctx, f, path.Base(filepath), digest)
+}
+
+// Digest returns the digest of the content as the CAS stores it, i.e sha256:[hex].
+// It rewinds r, so the hashed content can then be uploaded from the same reader.
+func Digest(r io.ReadSeeker) (string, error) {
+	hash, _, err := cr_v1.SHA256(r)
 	if err != nil {
-		return nil, fmt.Errorf("rewinding file pointer: %w", err)
+		return "", fmt.Errorf("generating digest: %w", err)
 	}
 
-	return c.Upload(ctx, f, path.Base(filepath), hash.String())
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("rewinding file pointer: %w", err)
+	}
+
+	return hash.String(), nil
 }
 
 func (c *Client) Upload(ctx context.Context, r io.Reader, filename, digest string) (*UpDownStatus, error) {

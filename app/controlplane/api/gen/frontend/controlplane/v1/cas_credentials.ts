@@ -8,13 +8,18 @@ export const protobufPackage = "controlplane.v1";
 
 export interface CASCredentialsServiceGetRequest {
   role: CASCredentialsServiceGetRequest_Role;
-  /** during the download we need the digest to find the proper cas backend */
+  /** digest of the artifact, used to find the backend of a download and to scope the token when scope_to_digest is set */
   digest: string;
   /**
    * flag the minted token as internal platform traffic so the CAS skips audit
    * event emission for it. Only honored for system API tokens, rejected otherwise.
    */
   sourceInternal: boolean;
+  /**
+   * scope the token to the requested digest, so the CAS rejects reads or writes of any other artifact.
+   * Requires a digest.
+   */
+  scopeToDigest: boolean;
 }
 
 export enum CASCredentialsServiceGetRequest_Role {
@@ -66,7 +71,7 @@ export interface CASCredentialsServiceGetResponse_Result {
 }
 
 function createBaseCASCredentialsServiceGetRequest(): CASCredentialsServiceGetRequest {
-  return { role: 0, digest: "", sourceInternal: false };
+  return { role: 0, digest: "", sourceInternal: false, scopeToDigest: false };
 }
 
 export const CASCredentialsServiceGetRequest = {
@@ -79,6 +84,9 @@ export const CASCredentialsServiceGetRequest = {
     }
     if (message.sourceInternal === true) {
       writer.uint32(24).bool(message.sourceInternal);
+    }
+    if (message.scopeToDigest === true) {
+      writer.uint32(32).bool(message.scopeToDigest);
     }
     return writer;
   },
@@ -111,6 +119,13 @@ export const CASCredentialsServiceGetRequest = {
 
           message.sourceInternal = reader.bool();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.scopeToDigest = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -125,6 +140,7 @@ export const CASCredentialsServiceGetRequest = {
       role: isSet(object.role) ? cASCredentialsServiceGetRequest_RoleFromJSON(object.role) : 0,
       digest: isSet(object.digest) ? String(object.digest) : "",
       sourceInternal: isSet(object.sourceInternal) ? Boolean(object.sourceInternal) : false,
+      scopeToDigest: isSet(object.scopeToDigest) ? Boolean(object.scopeToDigest) : false,
     };
   },
 
@@ -133,6 +149,7 @@ export const CASCredentialsServiceGetRequest = {
     message.role !== undefined && (obj.role = cASCredentialsServiceGetRequest_RoleToJSON(message.role));
     message.digest !== undefined && (obj.digest = message.digest);
     message.sourceInternal !== undefined && (obj.sourceInternal = message.sourceInternal);
+    message.scopeToDigest !== undefined && (obj.scopeToDigest = message.scopeToDigest);
     return obj;
   },
 
@@ -147,6 +164,7 @@ export const CASCredentialsServiceGetRequest = {
     message.role = object.role ?? 0;
     message.digest = object.digest ?? "";
     message.sourceInternal = object.sourceInternal ?? false;
+    message.scopeToDigest = object.scopeToDigest ?? false;
     return message;
   },
 };

@@ -26,6 +26,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestTraceHookPiCommands(t *testing.T) {
+	root := newTraceHookCmd()
+	for _, name := range []string{"session-start", "user-prompt-submit", "session-end", "pre-tool-use", "post-tool-use"} {
+		command, args, err := root.Find([]string{"pi", name})
+		require.NoError(t, err)
+		assert.Equal(t, name, command.Name())
+		assert.Empty(t, args)
+	}
+}
+
 func TestApplyPrePushPolicy(t *testing.T) {
 	failure := errors.New("setup failed")
 	prePush := newTraceHookGitPrePushCmd()

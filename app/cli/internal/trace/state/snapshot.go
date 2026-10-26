@@ -20,6 +20,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -29,16 +30,29 @@ import (
 // ShellCallEnv identifies the Bash call inherited by Git commit hooks.
 const ShellCallEnv = "CHAINLOOP_TRACE_SHELL_CALL"
 
-// snapshotPath returns the path for a file snapshot: <dir>/chainloop-trace/snapshots/<session>/<path-hash>
-func (s *Store) snapshotPath(sessionID, filePath string) string {
-	h := sha256.Sum256([]byte(filePath))
+// FileSnapshotKey identifies the edit whose pre-edit content was captured.
+// ToolUseID is optional so providers without call IDs retain the prior
+// session-and-path key.
+type FileSnapshotKey struct {
+	SessionID string
+	FilePath  string
+	ToolUseID string
+}
+
+// snapshotPath returns the path for a file snapshot: <dir>/chainloop-trace/snapshots/<session>/<key-hash>.
+func (s *Store) snapshotPath(key FileSnapshotKey) string {
+	identity := key.FilePath
+	if key.ToolUseID != "" {
+		identity += "\x00" + key.ToolUseID
+	}
+	h := sha256.Sum256([]byte(identity))
 	name := hex.EncodeToString(h[:8]) // 16-char hex, enough to avoid collisions
-	return filepath.Join(s.traceDirPath(), traceDirSnapshots, sanitizeID(sessionID), name)
+	return filepath.Join(s.traceDirPath(), traceDirSnapshots, sanitizeID(key.SessionID), name)
 }
 
 // SaveFileSnapshot stores a file's content before an AI edit.
-func (s *Store) SaveFileSnapshot(sessionID, filePath string, content []byte) error {
-	path := s.snapshotPath(sessionID, filePath)
+func (s *Store) SaveFileSnapshot(key FileSnapshotKey, content []byte) error {
+	path := s.snapshotPath(key)
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("create snapshot dir: %w", err)
 	}
@@ -47,14 +61,23 @@ func (s *Store) SaveFileSnapshot(sessionID, filePath string, content []byte) err
 }
 
 // LoadFileSnapshot loads a previously stored file snapshot.
-func (s *Store) LoadFileSnapshot(sessionID, filePath string) ([]byte, error) {
-	return os.ReadFile(s.snapshotPath(sessionID, filePath))
+func (s *Store) LoadFileSnapshot(key FileSnapshotKey) ([]byte, error) {
+	content, err := os.ReadFile(s.snapshotPath(key))
+	if err == nil || key.ToolUseID == "" || !errors.Is(err, os.ErrNotExist) {
+		return content, err
+	}
+
+	key.ToolUseID = ""
+	return os.ReadFile(s.snapshotPath(key))
 }
 
 // DeleteFileSnapshot removes a file snapshot after it's been processed.
-func (s *Store) DeleteFileSnapshot(sessionID, filePath string) {
-	path := s.snapshotPath(sessionID, filePath)
-	_ = os.Remove(path)
+func (s *Store) DeleteFileSnapshot(key FileSnapshotKey) {
+	_ = os.Remove(s.snapshotPath(key))
+	if key.ToolUseID != "" {
+		key.ToolUseID = ""
+		_ = os.Remove(s.snapshotPath(key))
+	}
 }
 
 // ShellCallKey identifies the shell command that a pre-command signature

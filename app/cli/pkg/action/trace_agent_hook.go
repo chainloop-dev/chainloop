@@ -277,7 +277,14 @@ func HandleAgentSessionStart(provider trace.Provider, checkAuth TraceAuthCheck, 
 	}
 
 	if provider.SupportsSessionStartInstruction() {
-		msg.Instruction = sessionSpecInstruction(repoRoot, input.SessionID, provider.SupportsPromptReminder(), log)
+		remindsEachTurn := provider.SupportsPromptReminder()
+		deduplicator, ok := provider.(interface{ DeduplicatesSessionStartInstruction() bool })
+		if ok && deduplicator.DeduplicatesSessionStartInstruction() {
+			// Pi persists its own per-session marker. Give it the full instruction
+			// after reload/resume and let that marker decide whether delivery is new.
+			remindsEachTurn = false
+		}
+		msg.Instruction = sessionSpecInstruction(repoRoot, input.SessionID, remindsEachTurn, log)
 		// An agent with a banner tells the developer directly.
 		if authMsg != "" && !provider.SupportsSessionStartBanner() {
 			msg.Instruction = strings.TrimSpace(authProblemInstruction(authMsg) + "\n\n" + msg.Instruction)

@@ -1,5 +1,5 @@
 //
-// Copyright 2023-2025 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -44,15 +45,11 @@ func NewArtifactUpload(opts *ArtifactUploadOpts) *ArtifactUpload {
 	return &ArtifactUpload{opts.ActionsOpts, opts.ArtifactsCASConn}
 }
 
-func (a *ArtifactUpload) Run(filePath string) (*CASArtifact, error) {
+// Run uploads the open file with its digest, the one the credentials were
+// scoped to. Taking the open file, and not its path, makes the uploaded
+// content the hashed content even if the file at the path is replaced.
+func (a *ArtifactUpload) Run(f *os.File, digest string) (*CASArtifact, error) {
 	client := casclient.New(a.artifactsCASConn, casclient.WithLogger(a.Logger))
-
-	// open file and calculate size
-	f, err := os.Open(filePath)
-	if err != nil {
-		return nil, fmt.Errorf("can't open file to upload: %w", err)
-	}
-	defer f.Close()
 
 	info, err := f.Stat()
 	if err != nil {
@@ -63,7 +60,7 @@ func (a *ArtifactUpload) Run(filePath string) (*CASArtifact, error) {
 	go renderOperationStatus(context.Background(), client.ProgressStatus, info.Size())
 	defer close(client.ProgressStatus)
 
-	res, err := client.UploadFile(context.Background(), filePath)
+	res, err := client.Upload(context.Background(), f, path.Base(f.Name()), digest)
 	if err != nil {
 		return nil, err
 	}

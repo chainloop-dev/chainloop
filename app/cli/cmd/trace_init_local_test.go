@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	jwtMiddleware "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/stretchr/testify/assert"
@@ -195,11 +196,13 @@ func TestWriteTraceInitLocalSummary(t *testing.T) {
 func TestWriteTraceLocalNextSteps(t *testing.T) {
 	repoRoot := t.TempDir()
 	out := &bytes.Buffer{}
-	writeTraceLocalNextSteps(out, repoRoot, repoRoot, providers.ByNames([]string{providerClaudeCode}))
+	writeTraceLocalNextSteps(out, repoRoot, repoRoot, providers.ByNames([]string{providerClaudeCode, pi.Name}))
 
 	got := out.String()
 	assert.Contains(t, got, chainloopYMLName)
 	assert.Contains(t, got, claudeSettings)
+	assert.Contains(t, got, filepath.Join(".pi", "extensions", "chainloop-trace.ts"))
+	assert.Contains(t, got, "--approve")
 	assert.Contains(t, got, "writes the session evidence to disk")
 	assert.NotContains(t, got, "the push tells you where")
 	assert.Contains(t, got, traceDocsURL)

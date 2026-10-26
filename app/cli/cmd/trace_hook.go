@@ -24,6 +24,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/spf13/cobra"
@@ -42,6 +43,7 @@ func newTraceHookCmd() *cobra.Command {
 		newTraceHookCursorCmd(),
 		newTraceHookOpenCodeCmd(),
 		newTraceHookCodexCmd(),
+		newTraceHookPiCmd(),
 	)
 
 	return cmd
@@ -470,4 +472,46 @@ func newTraceHookCodexCmd() *cobra.Command {
 		cmd.AddCommand(&cobra.Command{Use: h.name, Short: h.description, Args: cobra.NoArgs, Annotations: map[string]string{skipActionOptsInit: trueString}, RunE: func(cmd *cobra.Command, args []string) error { InitHookLogger(); return h.run(cmd, args) }})
 	}
 	return cmd
+}
+
+func newTraceHookPiCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "pi",
+		Short: "Handle Pi hook invocations",
+	}
+
+	cmd.AddCommand(
+		newTraceHookPiActionCmd("session-start", "Capture Pi session start", func(cmd *cobra.Command) error {
+			return runAgentSessionStart(cmd, pi.New())
+		}),
+		newTraceHookPiActionCmd("user-prompt-submit", "Add Pi's per-turn trace reminder", func(_ *cobra.Command) error {
+			return action.HandleAgentPromptSubmit(pi.New(), logger)
+		}),
+		newTraceHookPiActionCmd("session-end", "Capture Pi session end", func(_ *cobra.Command) error {
+			return action.HandleAgentSessionEnd(pi.New(), logger)
+		}),
+		newTraceHookPiActionCmd("pre-tool-use", "Snapshot before a Pi tool call", func(_ *cobra.Command) error {
+			return action.HandleAgentPreToolUse(pi.New(), logger)
+		}),
+		newTraceHookPiActionCmd("post-tool-use", "Record changes from a Pi tool call", func(_ *cobra.Command) error {
+			return action.HandleAgentPostToolUse(pi.New(), logger)
+		}),
+	)
+
+	return cmd
+}
+
+func newTraceHookPiActionCmd(use, short string, run func(*cobra.Command) error) *cobra.Command {
+	return &cobra.Command{
+		Use:   use,
+		Short: short,
+		Args:  cobra.NoArgs,
+		Annotations: map[string]string{
+			"skipActionOptsInit": "true",
+		},
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			InitHookLogger()
+			return run(cmd)
+		},
+	}
 }

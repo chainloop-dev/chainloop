@@ -20,9 +20,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -456,5 +460,154 @@ func assertHookCommand(t *testing.T, hooks map[string]any, event, expectedCmd st
 
 	hook := innerHooks[0].(map[string]any)
 	assert.Equal(t, "command", hook["type"])
-	assert.Equal(t, expectedCmd, hook["command"])
+	assert.Equal(t, trace.GuardHookCommand(expectedCmd), hook["command"])
+}
+
+// The hooks are committed to the repository, so they also run for anyone who
+// opens it without the chainloop CLI installed (#3687).
+func TestInstalledHooksWithoutCLI(t *testing.T) {
+	shell := shellOnlyPath(t)
+	root := t.TempDir()
+	require.NoError(t, New().InstallHooks(root))
+
+	for _, event := range hookEvents {
+		t.Run(event.event+"/"+event.command, func(t *testing.T) {
+			cmd := exec.CommandContext(t.Context(), shell.sh, "-c", trace.GuardHookCommand(event.command)) //nolint:gosec // run the installed hook to check its shell behaviour
+			cmd.Env = append(os.Environ(), "PATH="+shell.bin)
+			cmd.Stdin = strings.NewReader(`{"session_id":"test"}`)
+			out, err := cmd.CombinedOutput()
+			require.NoError(t, err, string(out))
+			assert.Empty(t, out)
+		})
+	}
+	assertInstalledCommandsGuarded(t, root)
+}
+
+func TestInstalledHookPreservesIOAndExitStatus(t *testing.T) {
+	shell := shellOnlyPath(t)
+	stub := "#!/bin/sh\nIFS= read -r payload\nprintf '%s\\n%s\\n' \"$*\" \"$payload\"\nexit \"$HOOK_TEST_EXIT_CODE\"\n"
+	require.NoError(t, os.WriteFile(filepath.Join(shell.bin, "chainloop"), []byte(stub), 0700)) //nolint:gosec // executable stub CLI in a temporary test directory
+
+	for _, code := range []string{"0", "37"} {
+		t.Run("exit_"+code, func(t *testing.T) {
+			cmd := exec.CommandContext(t.Context(), shell.sh, "-c", trace.GuardHookCommand("chainloop trace hook claude post-tool-use")) //nolint:gosec // run the installed hook against a local stub CLI
+			cmd.Env = append(os.Environ(), "PATH="+shell.bin, "HOOK_TEST_EXIT_CODE="+code)
+			cmd.Stdin = strings.NewReader("{\"session_id\":\"test\"}\n")
+			out, err := cmd.Output()
+			if code == "0" {
+				require.NoError(t, err)
+			} else {
+				var exitErr *exec.ExitError
+				require.ErrorAs(t, err, &exitErr)
+				assert.Equal(t, 37, exitErr.ExitCode())
+			}
+			assert.Equal(t, "trace hook claude post-tool-use"+"\n{\"session_id\":\"test\"}\n", string(out))
+		})
+	}
+}
+
+type shellPath struct{ sh, bin string }
+
+// shellOnlyPath returns a PATH directory holding only sh, so chainloop is missing.
+func shellOnlyPath(t *testing.T) shellPath {
+	t.Helper()
+	if runtime.GOOS == "windows" {
+		t.Skip("the guard is a POSIX sh command")
+	}
+	sh, err := exec.LookPath("sh")
+	require.NoError(t, err)
+	bin := t.TempDir()
+	require.NoError(t, os.Symlink(sh, filepath.Join(bin, "sh")))
+	return shellPath{sh: sh, bin: bin}
+}
+
+func assertInstalledCommandsGuarded(t *testing.T, root string) {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(root, settingsFile))
+	require.NoError(t, err)
+	assert.Equal(t, len(hookEvents), strings.Count(string(data), "command -v chainloop"))
+}
+
+func TestInstallUpgradeKeepsUserHandlersInTheSameGroup(t *testing.T) {
+	const userHandler = `{"type":"command","command":"echo user-hook"}`
+	unguarded := `{"type":"command","command":"chainloop trace hook claude post-tool-use"}`
+
+	t.Run("same matcher", func(t *testing.T) {
+		root := t.TempDir()
+		path := filepath.Join(root, settingsFile)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+		legacy := `{"hooks":{"PostToolUse":[{"matcher":"` + postHookToolMatcher + `","hooks":[` + userHandler + `,` + unguarded + `]}]}}`
+		require.NoError(t, os.WriteFile(path, []byte(legacy), 0600))
+
+		require.NoError(t, New().InstallHooks(root))
+		postToolUse := readSettings(t, root)["hooks"].(map[string]any)[eventPostToolUse].([]any)
+		require.Len(t, postToolUse, 1)
+		group := postToolUse[0].(map[string]any)
+		assert.Equal(t, postHookToolMatcher, group["matcher"])
+		handlers := group["hooks"].([]any)
+		require.Len(t, handlers, 2)
+		assert.Equal(t, "echo user-hook", handlers[0].(map[string]any)["command"])
+		assert.Equal(t, trace.GuardHookCommand("chainloop trace hook claude post-tool-use"), handlers[1].(map[string]any)["command"])
+	})
+
+	t.Run("changed matcher", func(t *testing.T) {
+		root := t.TempDir()
+		path := filepath.Join(root, settingsFile)
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+		legacy := `{"hooks":{"PostToolUse":[{"matcher":"Bash","hooks":[` + userHandler + `,` + unguarded + `]}]}}`
+		require.NoError(t, os.WriteFile(path, []byte(legacy), 0600))
+
+		require.NoError(t, New().InstallHooks(root))
+		postToolUse := readSettings(t, root)["hooks"].(map[string]any)[eventPostToolUse].([]any)
+		require.Len(t, postToolUse, 2)
+		user := postToolUse[0].(map[string]any)
+		assert.Equal(t, "Bash", user["matcher"], "the user's handler keeps its matcher")
+		assert.Equal(t, []any{map[string]any{"type": "command", "command": "echo user-hook"}}, user["hooks"])
+		chainloop := postToolUse[1].(map[string]any)
+		assert.Equal(t, postHookToolMatcher, chainloop["matcher"])
+		assert.Equal(t, trace.GuardHookCommand("chainloop trace hook claude post-tool-use"), chainloopHookCommand(chainloop))
+	})
+}
+
+func TestUninstallKeepsUserHandlersInAChainloopGroup(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, settingsFile)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+	shared := `{"hooks":{"PostToolUse":[{"matcher":"` + postHookToolMatcher + `","hooks":[{"type":"command","command":"echo user-hook"},{"type":"command","command":"` +
+		strings.ReplaceAll(trace.GuardHookCommand("chainloop trace hook claude post-tool-use"), `"`, `\"`) + `"}]}]}}`
+	require.NoError(t, os.WriteFile(path, []byte(shared), 0600))
+
+	require.NoError(t, New().UninstallHooks(root))
+	postToolUse := readSettings(t, root)["hooks"].(map[string]any)[eventPostToolUse].([]any)
+	require.Len(t, postToolUse, 1)
+	group := postToolUse[0].(map[string]any)
+	assert.Equal(t, postHookToolMatcher, group["matcher"])
+	assert.Equal(t, []any{map[string]any{"type": "command", "command": "echo user-hook"}}, group["hooks"])
+}
+
+func TestInstallUpgradesUnguardedHooks(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, settingsFile)
+	require.NoError(t, os.MkdirAll(filepath.Dir(path), 0700))
+	legacy := `{"hooks":{"PostToolUse":[{"matcher":"` + postHookToolMatcher + `","hooks":[{"type":"command","command":"chainloop trace hook claude post-tool-use"}]},{"hooks":[{"type":"command","command":"echo user-hook"}]}]}}`
+	require.NoError(t, os.WriteFile(path, []byte(legacy), 0600))
+
+	require.NoError(t, New().InstallHooks(root))
+	first, err := os.ReadFile(path)
+	require.NoError(t, err)
+	var settings struct {
+		Hooks map[string][]map[string]any `json:"hooks"`
+	}
+	require.NoError(t, json.Unmarshal(first, &settings))
+	postToolUse := settings.Hooks[eventPostToolUse]
+	require.Len(t, postToolUse, 2, "the chainloop entry is replaced, not duplicated")
+	assert.Equal(t, trace.GuardHookCommand("chainloop trace hook claude post-tool-use"), chainloopHookCommand(postToolUse[0]))
+	assert.NotContains(t, string(first), `"command": "chainloop trace hook claude post-tool-use"`)
+	assert.Contains(t, string(first), "echo user-hook")
+
+	// Idempotent once upgraded.
+	require.NoError(t, New().InstallHooks(root))
+	second, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, string(first), string(second))
 }

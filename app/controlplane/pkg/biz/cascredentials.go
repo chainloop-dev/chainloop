@@ -58,6 +58,8 @@ type CASCredsOpts struct {
 	// SourceInternal flags tokens minted for the control plane's own CAS
 	// client so the CAS can skip audit events for internal traffic
 	SourceInternal bool
+	// Digest, when set, scopes the token to that single artifact
+	Digest string
 }
 
 func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(backendRef *CASCredsOpts) (string, error) {
@@ -68,6 +70,14 @@ func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(backendRef *CASCre
 	var opts []robotaccount.GenerateOpt
 	if backendRef.SourceInternal {
 		opts = append(opts, robotaccount.WithSourceInternal())
+	}
+
+	if backendRef.Digest != "" {
+		if err := validateDigest(backendRef.Digest); err != nil {
+			return "", err
+		}
+
+		opts = append(opts, robotaccount.WithDigest(backendRef.Digest))
 	}
 
 	return uc.jwtBuilder.GenerateJWT(backendRef.BackendType, backendRef.SecretPath, jwt.CASAudience, backendRef.Role, backendRef.MaxBytes, backendRef.OrgID.String(), opts...)

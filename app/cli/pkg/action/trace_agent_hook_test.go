@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/spec"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/rs/zerolog"
@@ -228,6 +229,30 @@ func TestHandleAgentSessionStart(t *testing.T) {
 		assert.Contains(t, got["systemMessage"], "Chainloop Trace is recording this session.", "the banner still goes out")
 	})
 
+	t.Run("provider-owned deduplication receives the full instruction after resume", func(t *testing.T) {
+		repoDir := initTempGitRepo(t)
+		store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+		require.NoError(t, store.InitTraceDir())
+
+		origDir, _ := os.Getwd()
+		require.NoError(t, os.Chdir(repoDir))
+		t.Cleanup(func() { _ = os.Chdir(origDir) })
+
+		require.NoError(t, spec.EnsureDir(repoDir))
+		require.NoError(t, os.MkdirAll(spec.SessionDir(repoDir, "pi-resume"), 0755))
+		require.NoError(t, os.WriteFile(
+			filepath.Join(spec.SessionDir(repoDir, "pi-resume"), "ticket.md"), []byte("the ticket"), 0600))
+
+		withStdin(t, fmt.Sprintf(`{"session_id":"pi-resume","cwd":%q}`, repoDir))
+		stdout := captureStdout(t, func() {
+			require.NoError(t, HandleAgentSessionStart(pi.New(), nil, zerolog.Nop()))
+		})
+
+		var got map[string]string
+		require.NoError(t, json.Unmarshal([]byte(stdout), &got))
+		assert.Contains(t, got["instruction"], spec.SessionDir(repoDir, "pi-resume"))
+	})
+
 	t.Run("ignores malformed stdin", func(t *testing.T) {
 		withStdin(t, `not json`)
 		assert.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
@@ -237,6 +262,49 @@ func TestHandleAgentSessionStart(t *testing.T) {
 		withStdin(t, `{"session_id":""}`)
 		assert.NoError(t, HandleAgentSessionStart(provider, nil, zerolog.Nop()))
 	})
+}
+
+func TestHandleAgentPreToolUse_PiRecoversMissedSessionStart(t *testing.T) {
+	// Given
+	const toolUseID = "call-1"
+
+	repoDir := initTempGitRepo(t)
+	store := state.NewGitStore(filepath.Join(repoDir, ".git"))
+	require.NoError(t, store.InitTraceDir())
+	target := filepath.Join(repoDir, "main.go")
+	require.NoError(t, os.WriteFile(target, []byte("before\n"), 0o600))
+	transcript := filepath.Join(repoDir, "session.jsonl")
+	require.NoError(t, os.WriteFile(transcript, nil, 0o600))
+
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(repoDir))
+	t.Cleanup(func() { _ = os.Chdir(originalDir) })
+
+	withStdin(t, fmt.Sprintf(
+		`{"session_id":"pi-missed-start","hook_event_name":"tool_call","tool_name":"write","file_path":%q,"cwd":%q,"transcript_path":%q,"tool_use_id":%q}`,
+		target, repoDir, transcript, toolUseID,
+	))
+
+	// When
+	require.NoError(t, HandleAgentPreToolUse(pi.New(), zerolog.Nop()))
+
+	// Then
+	record, err := store.LoadSessionRecord("pi-missed-start")
+	require.NoError(t, err)
+	require.NotNil(t, record)
+	assert.Equal(t, pi.Name, record.Provider)
+	assert.Equal(t, repoDir, record.Cwd)
+	assert.Equal(t, transcript, record.TranscriptPath)
+	assert.True(t, record.Active)
+
+	snapshot, err := store.LoadFileSnapshot(state.FileSnapshotKey{
+		SessionID: "pi-missed-start",
+		FilePath:  target,
+		ToolUseID: toolUseID,
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "before\n", string(snapshot))
 }
 
 // TestHandleAgentPromptSubmit covers R-002 of Spec issue-3515: the reminder comes at
@@ -584,7 +652,7 @@ func TestHandleAgentPostToolUse_DeletionAttribution(t *testing.T) {
 	withStdin(t, `{"session_id":"ses-delete-test","hook_event_name":"tool.execute.before","tool_name":"apply_patch","file_path":"`+target+`"}`)
 	require.NoError(t, HandleAgentPreToolUse(p, zerolog.Nop()))
 
-	snap, err := store.LoadFileSnapshot("ses-delete-test", target)
+	snap, err := store.LoadFileSnapshot(state.FileSnapshotKey{SessionID: "ses-delete-test", FilePath: target})
 	require.NoError(t, err)
 	assert.Equal(t, "line 1\nline 2\nline 3\n", string(snap))
 

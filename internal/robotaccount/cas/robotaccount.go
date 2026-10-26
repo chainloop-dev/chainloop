@@ -21,11 +21,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	kratosjwt "github.com/go-kratos/kratos/v2/middleware/auth/jwt"
 	"github.com/golang-jwt/jwt/v5"
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 var SigningMethod = jwt.SigningMethodES512
@@ -51,6 +53,10 @@ type Claims struct {
 	// The CAS skips audit event emission for this traffic so it doesn't
 	// pollute per-org usage numbers. The zero value (false) means client traffic.
 	SourceInternal bool `json:"source-internal,omitempty"`
+	// Digest, when set, scopes the token to a single artifact, i.e sha256:[hex].
+	// The CAS rejects reads and writes of any other digest. An empty value keeps the
+	// token valid for every artifact in the backend.
+	Digest string `json:"digest,omitempty"`
 }
 
 type Role string
@@ -127,6 +133,13 @@ func WithSourceInternal() GenerateOpt {
 	}
 }
 
+// WithDigest scopes the token to a single artifact digest
+func WithDigest(digest string) GenerateOpt {
+	return func(c *Claims) {
+		c.Digest = digest
+	}
+}
+
 // GenerateJWT mints a CAS token. All fields are required, including
 // orgID — managed providers (e.g. AWS-S3-ACCESS-POINT) need it to scope
 // per-tenant STS sessions and other providers still record it for
@@ -179,6 +192,15 @@ func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role
 		opt(claims)
 	}
 
+	if claims.Digest != "" {
+		h, err := parseDigest(claims.Digest)
+		if err != nil {
+			return "", fmt.Errorf("invalid digest: %w", err)
+		}
+
+		claims.Digest = h.String()
+	}
+
 	resultToken := jwt.NewWithClaims(SigningMethod, claims)
 	return resultToken.SignedString(ra.pk)
 }
@@ -214,6 +236,36 @@ func (c *Claims) CheckRole(r Role) error {
 	}
 
 	return nil
+}
+
+// CheckDigest verifies that the token can read or write the given digest.
+// The digest can be in its full form, i.e sha256:[hex], or only the hex part.
+// Tokens without a digest claim can access any digest.
+func (c *Claims) CheckDigest(digest string) error {
+	if c.Digest == "" {
+		return nil
+	}
+
+	requested, err := parseDigest(digest)
+	if err != nil {
+		return fmt.Errorf("invalid digest: %w", err)
+	}
+
+	// GenerateJWT stores the claim in its normalized form
+	if requested.String() != c.Digest {
+		return errors.New("token not authorized for this digest")
+	}
+
+	return nil
+}
+
+// parseDigest parses a digest in its full form or a sha256 hex string
+func parseDigest(digest string) (cr_v1.Hash, error) {
+	if !strings.Contains(digest, ":") {
+		digest = "sha256:" + digest
+	}
+
+	return cr_v1.NewHash(digest)
 }
 
 // InfoFromAuth extracts the JWT claims from the context, note that the JWT verification has happened in the middleware
