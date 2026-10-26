@@ -439,7 +439,7 @@ func shellCallKey(input *trace.HookInput) state.ShellCallKey {
 // run in the session's own checkout. Best-effort: failures are logged and
 // never block the agent.
 func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.ShellCallKey, log zerolog.Logger) {
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
 		worktreeSig, err := client.SnapshotWorktree(root)
 		if err != nil {
@@ -449,7 +449,6 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 		indexSig, err := client.SnapshotIndex(root)
 		if err != nil {
 			log.Debug().Err(err).Str("root", root).Msg("pre-command: index snapshot failed")
-			continue
 		}
 
 		rootStore := store
@@ -474,8 +473,10 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 		if err := rootStore.SaveShellPreSignature(key, state.WorktreeSignatures{root: worktreeSig}); err != nil {
 			log.Debug().Err(err).Str("root", root).Msg("pre-command: save worktree signature failed")
 		}
-		if err := rootStore.SaveShellPreIndexSignature(key, state.WorktreeSignatures{root: indexSig}); err != nil {
-			log.Debug().Err(err).Str("root", root).Msg("pre-command: save index signature failed")
+		if indexSig != nil {
+			if err := rootStore.SaveShellPreIndexSignature(key, state.WorktreeSignatures{root: indexSig}); err != nil {
+				log.Debug().Err(err).Str("root", root).Msg("pre-command: save index signature failed")
+			}
 		}
 		if err := rootStore.SaveShellPreHeads(key, heads); err != nil {
 			log.Debug().Err(err).Str("root", root).Msg("pre-command: save HEAD commits failed")

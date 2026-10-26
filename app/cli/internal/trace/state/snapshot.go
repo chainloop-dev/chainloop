@@ -26,6 +26,7 @@ import (
 	"strings"
 )
 
+// ShellCallEnv identifies the Bash call inherited by Git commit hooks.
 const ShellCallEnv = "CHAINLOOP_TRACE_SHELL_CALL"
 
 // snapshotPath returns the path for a file snapshot: <dir>/chainloop-trace/snapshots/<session>/<path-hash>
@@ -69,6 +70,7 @@ type ShellCallKey struct {
 	ToolUseID string
 }
 
+// EncodeShellCallKey serializes the call identity for its shell environment.
 func EncodeShellCallKey(key ShellCallKey) (string, error) {
 	data, err := json.Marshal(key)
 	if err != nil {
@@ -78,6 +80,7 @@ func EncodeShellCallKey(key ShellCallKey) (string, error) {
 	return base64.RawURLEncoding.EncodeToString(data), nil
 }
 
+// DecodeShellCallKey restores a call identity from its shell environment.
 func DecodeShellCallKey(encoded string) (ShellCallKey, error) {
 	data, err := base64.RawURLEncoding.DecodeString(encoded)
 	if err != nil {
@@ -131,7 +134,16 @@ type WorktreeSignatures map[string]map[string]string
 // SaveShellPreSignature stores the working-tree signatures captured before an
 // agent-run shell command, so the post-command hook can diff against them.
 func (s *Store) SaveShellPreSignature(key ShellCallKey, sig WorktreeSignatures) error {
-	path := s.shellPreSignaturePath(key)
+	return s.saveShellSignature(s.shellPreSignaturePath(key), sig)
+}
+
+// SaveShellPreIndexSignature stores the staged index signature captured before
+// an agent-run shell command.
+func (s *Store) SaveShellPreIndexSignature(key ShellCallKey, sig WorktreeSignatures) error {
+	return s.saveShellSignature(s.shellPreIndexSignaturePath(key), sig)
+}
+
+func (s *Store) saveShellSignature(path string, sig WorktreeSignatures) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("create snapshot dir: %w", err)
 	}
@@ -139,22 +151,6 @@ func (s *Store) SaveShellPreSignature(key ShellCallKey, sig WorktreeSignatures) 
 	data, err := json.Marshal(sig)
 	if err != nil {
 		return fmt.Errorf("marshal shell signature: %w", err)
-	}
-
-	return os.WriteFile(path, data, 0600)
-}
-
-// SaveShellPreIndexSignature stores the staged index signature captured before
-// an agent-run shell command.
-func (s *Store) SaveShellPreIndexSignature(key ShellCallKey, sig WorktreeSignatures) error {
-	path := s.shellPreIndexSignaturePath(key)
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return fmt.Errorf("create snapshot dir: %w", err)
-	}
-
-	data, err := json.Marshal(sig)
-	if err != nil {
-		return fmt.Errorf("marshal shell index signature: %w", err)
 	}
 
 	return os.WriteFile(path, data, 0600)
@@ -177,6 +173,8 @@ func (s *Store) LoadShellPreSignature(key ShellCallKey) (WorktreeSignatures, err
 	return sig, nil
 }
 
+// LoadShellPreIndexSignature loads the staged index signature captured before
+// the command. It is absent when the index could not be decoded.
 func (s *Store) LoadShellPreIndexSignature(key ShellCallKey) (WorktreeSignatures, error) {
 	data, err := os.ReadFile(s.shellPreIndexSignaturePath(key))
 	if err != nil {

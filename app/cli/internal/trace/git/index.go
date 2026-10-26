@@ -16,11 +16,54 @@
 package git
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"os/exec"
+	"strings"
 
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 )
+
+// SnapshotIndex reads the effective index with Git, including split and sparse
+// indexes and temporary indexes selected by GIT_INDEX_FILE.
+func (c *ExecClient) SnapshotIndex(repoRoot string) (map[string]string, error) {
+	cmd := exec.Command("git", "ls-files", "--stage", "-z", "--")
+	cmd.Dir = repoRoot
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("list staged files: %w", err)
+	}
+
+	sig := make(map[string]string)
+	for _, record := range bytes.Split(out, []byte{0}) {
+		header, path, ok := bytes.Cut(record, []byte{'\t'})
+		if !ok {
+			continue
+		}
+		fields := strings.Fields(string(header))
+		if len(fields) != 3 {
+			return nil, fmt.Errorf("invalid staged index entry %q", header)
+		}
+		if fields[2] == "0" && (fields[0] == "100644" || fields[0] == "100755") {
+			sig[string(path)] = fields[1]
+		}
+	}
+
+	return sig, nil
+}
+
+// IndexFile reads the exact staged blob, respecting GIT_INDEX_FILE.
+func (c *ExecClient) IndexFile(repoRoot, path string) ([]byte, error) {
+	cmd := exec.Command("git", "--no-replace-objects", "show", ":"+path)
+	cmd.Dir = repoRoot
+	content, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("read staged file %s: %w", path, err)
+	}
+
+	return content, nil
+}
 
 // SnapshotIndex returns the content signature currently staged in git's index.
 // It excludes symlinks and submodules to match SnapshotWorktree's file scope.

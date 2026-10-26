@@ -316,6 +316,12 @@ func (f *fakeBranchClient) StagedFiles(string) ([]string, error) { return nil, n
 func (f *fakeBranchClient) SnapshotWorktree(string) (map[string]string, error) {
 	return nil, nil
 }
+func (f *fakeBranchClient) SnapshotIndex(string) (map[string]string, error) {
+	return nil, nil
+}
+func (f *fakeBranchClient) IndexFile(string, string) ([]byte, error) {
+	return nil, nil
+}
 func (f *fakeBranchClient) IsMergeCommit(_, sha string) (bool, error) {
 	return f.mergeSHAs[sha], f.mergeErr
 }

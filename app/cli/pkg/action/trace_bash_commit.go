@@ -74,7 +74,7 @@ func checkpointActiveShellAttribution(store *state.Store, repoRoot string, stage
 		return fmt.Errorf("load pre-command HEAD commits: %w", err)
 	}
 
-	client := tracegit.NewGoGitClient()
+	client := tracegit.NewGitClient()
 	afterIndex, err := client.SnapshotIndex(repoRoot)
 	if err != nil {
 		return fmt.Errorf("snapshot staged index: %w", err)

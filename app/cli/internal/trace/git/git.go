@@ -123,6 +123,10 @@ type Client interface {
 	// directory and any .gitignore'd paths. Used to detect files changed by an
 	// agent-run shell command by diffing a before/after signature.
 	SnapshotWorktree(repoRoot string) (map[string]string, error)
+	// SnapshotIndex returns staged regular-file paths and their blob hashes.
+	SnapshotIndex(repoRoot string) (map[string]string, error)
+	// IndexFile returns the staged content for a repo-relative path.
+	IndexFile(repoRoot, path string) ([]byte, error)
 	// IsMergeCommit reports whether the commit identified by sha has more than
 	// one parent. Returns an error when the commit cannot be resolved.
 	IsMergeCommit(repoRoot, sha string) (bool, error)

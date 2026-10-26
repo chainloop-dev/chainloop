@@ -51,6 +51,49 @@ func beginTaggedBashCall(t *testing.T, key state.ShellCallKey, command string) t
 	return provider
 }
 
+func TestCommitLifecycle_SplitIndexStillAttributesBashEdit(t *testing.T) {
+	// Given
+	dir, gitDir := initGitRepo(t)
+	store := state.NewGitStore(gitDir)
+	require.NoError(t, store.InitTraceDir())
+	const sessionID = "split-index-session"
+	require.NoError(t, store.SaveSessionRecord(&state.SessionRecord{
+		SessionID: sessionID,
+		Provider:  providerClaudeCode,
+		Active:    true,
+		StartedAt: state.NowTimestamp(),
+	}))
+	runGit(t, dir, "config", "core.splitIndex", "true")
+	runGit(t, dir, "update-index", "--split-index")
+
+	// Without Git on PATH, go-git cannot decode the split index. The regular
+	// worktree and HEAD snapshots still need to survive that failure.
+	path := os.Getenv("PATH")
+	t.Setenv("PATH", "")
+	key := state.ShellCallKey{SessionID: sessionID, ToolUseID: "tool-split-index"}
+	provider := beginTaggedBashCall(t, key, "edit init.txt")
+	t.Setenv("PATH", path)
+
+	_, err := store.LoadShellPreSignature(key)
+	require.NoError(t, err)
+	heads, err := store.LoadShellPreHeads(key)
+	require.NoError(t, err)
+	require.NotEmpty(t, heads[dir])
+	_, err = store.LoadShellPreIndexSignature(key)
+	require.ErrorIs(t, err, os.ErrNotExist)
+
+	// When
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "init.txt"), []byte("init\nchanged by Bash\n"), 0600))
+	withStdin(t, fmt.Sprintf(
+		`{"session_id":%q,"tool_use_id":%q,"hook_event_name":"PostToolUse","tool_name":"Bash","tool_input":{"command":"edit init.txt"},"tool_response":{"stdout":"","stderr":"","interrupted":false}}`,
+		sessionID, key.ToolUseID,
+	))
+	require.NoError(t, HandleAgentPostToolUse(provider, zerolog.Nop()))
+
+	// Then
+	require.NotEmpty(t, store.LoadAILineAttribution(sessionID).Files["init.txt"])
+}
+
 func TestCommitLifecycle_BashCommitBeforePostToolUseAddsSession(t *testing.T) {
 	// Given
 	dir, gitDir := initGitRepo(t)
