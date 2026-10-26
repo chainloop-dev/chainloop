@@ -231,7 +231,7 @@ func (s *casDownloadRBACIntegrationSuite) TestDigestScopedTokens() {
 
 	s.Run("CASCredentialsService.Get: invalid digest", func() {
 		_, err := s.credentialsSvc.Get(ctx, &pb.CASCredentialsServiceGetRequest{
-			Digest:        "sha256:deadbeef",
+			Digest:        "sha256:nothex",
 			Role:          pb.CASCredentialsServiceGetRequest_ROLE_UPLOADER,
 			ScopeToDigest: true,
 		})
