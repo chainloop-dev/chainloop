@@ -49,7 +49,7 @@ func TestParseSessionEvidence(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "pi", result.Data.Agent.Name)
-	assert.Equal(t, "v2", result.Data.SchemaVersion)
+	assert.Equal(t, "v1", result.Data.SchemaVersion)
 	assert.Equal(t, "0.80.10", result.Data.Agent.Version)
 	assert.Equal(t, testSessionID, result.Data.Session.ID)
 	assert.Equal(t, "2026-01-02T03:04:00Z", result.Data.Session.StartedAt)
@@ -230,6 +230,7 @@ func TestParseSessionCacheExclusiveTotals(t *testing.T) {
 			result, err := parseBytes(t, []byte(content))
 			// Then
 			require.NoError(t, err)
+			assert.Equal(t, "v1", result.Data.SchemaVersion)
 			assert.Equal(t, &aicodingsession.Usage{
 				InputTokens: 100, OutputTokens: 20, TotalTokens: 120,
 				CacheReadInputTokens: 10, CacheCreationInputTokens: 5, EstimatedCostUSD: 0.1234,

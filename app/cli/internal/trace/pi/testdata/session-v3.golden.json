@@ -2,7 +2,7 @@
   "chainloop.material.evidence.id": "CHAINLOOP_AI_CODING_SESSION",
   "schema": "https://schemas.chainloop.dev/aicodingsession/0.1/ai-coding-session.schema.json",
   "data": {
-    "schema_version": "v2",
+    "schema_version": "v1",
     "agent": {
       "name": "pi",
       "version": "0.80.10"

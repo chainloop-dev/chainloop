@@ -38,7 +38,7 @@ func cacheSession(agent string, records ...string) *Session {
 	d := &s.Stored.Evidence.Data
 	d.Agent.Name = agent
 	d.SchemaVersion = "v1"
-	if agent == codex.Name || agent == pi.Name {
+	if agent == codex.Name {
 		d.SchemaVersion = "v2"
 	}
 	d.Usage = &aicodingsession.Usage{
@@ -134,7 +134,7 @@ func TestPiCacheAccountingSourceComparison(t *testing.T) {
 			d.Usage.InputTokens = 200
 			d.Usage.TotalTokens = 250
 		}},
-		{name: "legacy schema", change: func(d *aicodingsession.Data) { d.SchemaVersion = "v1" }},
+		{name: "unexpected schema", change: func(d *aicodingsession.Data) { d.SchemaVersion = "v2" }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given: selected raw records include a continuation and non-assistant usage.

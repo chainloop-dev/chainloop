@@ -322,7 +322,7 @@ func buildEvidence(parsed *parsedSession, agentVersion string) *aicodingsession.
 	duration := max(0, int(endedAt.Sub(parsed.StartedAt).Seconds()))
 
 	return aicodingsession.NewEvidence(aicodingsession.Data{
-		SchemaVersion: "v2",
+		SchemaVersion: "v1",
 		Agent: aicodingsession.Agent{
 			Name:    Name,
 			Version: agentVersion,
