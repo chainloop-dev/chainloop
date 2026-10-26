@@ -43,9 +43,6 @@ func checkCacheTokenAccounting(s *Session) error {
 			return err
 		}
 	case pi.Name:
-		if d.SchemaVersion != "v1" {
-			return errors.New("Pi cache accounting requires evidence schema_version v1")
-		}
 		// Pi raw_session contains only the selected branch. Read native fields
 		// independently of the provider parser; source totalTokens may include cache.
 		for _, raw := range d.RawSession["main"] {

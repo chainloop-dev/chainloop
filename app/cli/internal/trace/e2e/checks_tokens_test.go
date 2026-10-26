@@ -134,7 +134,6 @@ func TestPiCacheAccountingSourceComparison(t *testing.T) {
 			d.Usage.InputTokens = 200
 			d.Usage.TotalTokens = 250
 		}},
-		{name: "unexpected schema", change: func(d *aicodingsession.Data) { d.SchemaVersion = "v2" }},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// Given: selected raw records include a continuation and non-assistant usage.
@@ -156,6 +155,19 @@ func TestPiCacheAccountingSourceComparison(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPiCacheAccountingIgnoresEvidenceVersion(t *testing.T) {
+	// Given: Pi accounting comes from native usage, not the evidence version.
+	s := cacheSession(pi.Name,
+		`{"type":"message","message":{"role":"assistant","usage":{"input":100,"output":50,"cacheRead":800,"cacheWrite":100,"totalTokens":1050}}}`)
+	evidence(s).SchemaVersion = "v2"
+
+	// When
+	err := checkCacheTokenAccounting(s)
+
+	// Then
+	require.NoError(t, err)
 }
 
 func TestPiCacheAccountingSelectedBranchFixture(t *testing.T) {
