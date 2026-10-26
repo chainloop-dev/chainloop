@@ -48,7 +48,7 @@ func TestRunTelemetryFlush(t *testing.T) {
 		"command": "attestation push",
 		"duration_ms": 4321,
 		"success": true,
-		"cp_url": "api.cp.chainloop.dev:443",
+		"cp_url": "cp.chainloop.dev:443",
 		"organization_name": "my-org",
 		"token_type": "AUTH_TYPE_API_TOKEN",
 		"user_id": "6f2e4a1b-0000-4a4a-9a1e-8a6b4c2d1e0f",
@@ -65,7 +65,7 @@ func TestRunTelemetryFlush(t *testing.T) {
 	assert.Equal(t, "attestation push", client.tags["command"])
 	assert.Equal(t, testOrgName, client.tags["organization_name"])
 	assert.Equal(t, "AUTH_TYPE_API_TOKEN", client.tags["token_type"])
-	assert.Equal(t, "api.cp.chainloop.dev:443", client.tags["cp_installation_url"])
+	assert.Equal(t, "cp.chainloop.dev:443", client.tags["cp_installation_url"])
 	assert.Equal(t, "cli", client.tags["chainloop_source"])
 
 	// The whole point of the change: the duration must reach PostHog as a number, not a
@@ -87,7 +87,7 @@ func TestRunTelemetryFlushFailedCommand(t *testing.T) {
 		"duration_ms": 12,
 		"success": false,
 		"error_kind": "Unavailable",
-		"cp_url": "api.cp.chainloop.dev:443"
+		"cp_url": "cp.chainloop.dev:443"
 	}`
 
 	client := &captureClient{}

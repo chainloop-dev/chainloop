@@ -172,7 +172,7 @@ paths:
                 type: string
                 format: uri
                 example: >-
-                  https://api.cp.chainloop.dev/artifacts/sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855?token=...
+                  https://cp.chainloop.dev/artifacts/sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855?token=...
             Refresh:
               description: |
                 Browser redirect with delay and URL.
@@ -181,7 +181,7 @@ paths:
               schema:
                 type: string
                 example: >-
-                  1;url=https://api.cp.chainloop.dev/artifacts/sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855?token=...
+                  1;url=https://cp.chainloop.dev/artifacts/sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855?token=...
           content:
             text/plain:
               schema:

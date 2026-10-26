@@ -123,7 +123,7 @@ workspace:
 #             from the built-in claude agent. Declaring it again would scope a
 #             second copy to this environment.
 #   bindings: never bind a Chainloop host to a credential. Any credential
-#             targeting api.cp.chainloop.dev flips it from the proxy's tunnel to
+#             targeting cp.chainloop.dev flips it from the proxy's tunnel to
 #             its intercepted path, which serves HTTP/1.1 only — and grpc-go
 #             >=1.67 then aborts with "missing selected ALPN property", so
 #             nothing is attested. The kit's NO_PROXY keeps those hosts direct.
