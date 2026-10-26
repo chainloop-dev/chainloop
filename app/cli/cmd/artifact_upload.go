@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,12 +18,13 @@ package cmd
 import (
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
+	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 )
 
 func newArtifactUploadCmd() *cobra.Command {
-	var filePath string
+	var filePath, digest string
 	var artifactCASConn *grpc.ClientConn
 
 	cmd := &cobra.Command{
@@ -31,9 +32,13 @@ func newArtifactUploadCmd() *cobra.Command {
 		Short: "upload an artifact",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
+			digest, err = casclient.FileDigest(filePath)
+			if err != nil {
+				return err
+			}
 
-			// Retrieve temporary credentials for uploading
-			artifactCASConn, err = wrappedArtifactConn(ActionOpts.CPConnection, pb.CASCredentialsServiceGetRequest_ROLE_UPLOADER, "")
+			// Retrieve temporary credentials for uploading, scoped to the file digest
+			artifactCASConn, err = wrappedArtifactConn(ActionOpts.CPConnection, pb.CASCredentialsServiceGetRequest_ROLE_UPLOADER, digest)
 			if err != nil {
 				return err
 			}
@@ -46,7 +51,7 @@ func newArtifactUploadCmd() *cobra.Command {
 				ArtifactsCASConn: artifactCASConn,
 			}
 
-			_, err := action.NewArtifactUpload(opts).Run(filePath)
+			_, err := action.NewArtifactUpload(opts).Run(filePath, digest)
 			return err
 		},
 		PostRunE: func(cmd *cobra.Command, args []string) error {

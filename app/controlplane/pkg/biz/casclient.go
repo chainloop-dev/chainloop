@@ -111,7 +111,7 @@ func (uc *CASClientUseCase) Upload(ctx context.Context, backendType, secretID st
 
 	// client with temporary set of credentials
 	// SourceInternal flags this as the control plane's own traffic so the CAS doesn't emit audit events for it
-	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Uploader, OrgID: orgID, SourceInternal: true})
+	client, closeFn, err := uc.casAPIClient(&CASCredsOpts{BackendType: backendType, SecretPath: secretID, Role: casJWT.Uploader, OrgID: orgID, SourceInternal: true, Digest: digest})
 	if err != nil {
 		return fmt.Errorf("failed to create cas client: %w", err)
 	}

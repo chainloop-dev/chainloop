@@ -79,6 +79,12 @@ func (s *ByteStreamService) Write(stream bytestream.ByteStream_WriteServer) erro
 		return kerrors.BadRequest("resource name", err.Error())
 	}
 
+	// A token scoped to a digest can only write that digest. Checked before the
+	// existence lookup so the token can not probe for other artifacts.
+	if err := info.CheckDigest(req.resource.Digest); err != nil {
+		return kerrors.Forbidden("service", err.Error())
+	}
+
 	// A blob cached as present skips the secrets manager and the backend. The
 	// key is namespaced by the organization and backend of the signed token.
 	existenceKey := s.existenceKey(info, req.resource.Digest)

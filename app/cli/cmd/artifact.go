@@ -37,13 +37,13 @@ func newArtifactCmd() *cobra.Command {
 }
 
 func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceGetRequest_Role, digest string) (*grpc.ClientConn, error) {
-	// Retrieve temporary credentials for uploading
+	// Retrieve temporary credentials for the operation
 	client := pb.NewCASCredentialsServiceClient(cpConn)
 	resp, err := client.Get(context.Background(), &pb.CASCredentialsServiceGetRequest{
 		Role:   role,
 		Digest: digest,
-		// a download is for a single digest, so the token can only read that digest
-		ScopeToDigest: role == pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER && digest != "",
+		// an upload or a download is for a single digest, so the token can only access that digest
+		ScopeToDigest: digest != "",
 	})
 	if err != nil {
 		return nil, err

@@ -207,7 +207,7 @@ func TestGenerateJWTWithDigest(t *testing.T) {
 		{name: "downloader with prefixed digest", role: Downloader, digest: "sha256:" + hex, wantDigest: "sha256:" + hex},
 		{name: "downloader with bare hex digest", role: Downloader, digest: hex, wantDigest: "sha256:" + hex},
 		{name: "invalid digest", role: Downloader, digest: "sha256:deadbeef", wantErr: true},
-		{name: "uploader can not be scoped to a digest", role: Uploader, digest: "sha256:" + hex, wantErr: true},
+		{name: "uploader with prefixed digest", role: Uploader, digest: "sha256:" + hex, wantDigest: "sha256:" + hex},
 	}
 
 	for _, tc := range tests {

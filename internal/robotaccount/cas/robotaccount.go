@@ -53,8 +53,8 @@ type Claims struct {
 	// The CAS skips audit event emission for this traffic so it doesn't
 	// pollute per-org usage numbers. The zero value (false) means client traffic.
 	SourceInternal bool `json:"source-internal,omitempty"`
-	// Digest, when set, scopes a downloader token to a single artifact, i.e sha256:[hex].
-	// The CAS rejects reads of any other digest. An empty value keeps the
+	// Digest, when set, scopes the token to a single artifact, i.e sha256:[hex].
+	// The CAS rejects reads and writes of any other digest. An empty value keeps the
 	// token valid for every artifact in the backend.
 	Digest string `json:"digest,omitempty"`
 }
@@ -133,7 +133,7 @@ func WithSourceInternal() GenerateOpt {
 	}
 }
 
-// WithDigest scopes a downloader token to a single artifact digest
+// WithDigest scopes the token to a single artifact digest
 func WithDigest(digest string) GenerateOpt {
 	return func(c *Claims) {
 		c.Digest = digest
@@ -193,10 +193,6 @@ func (ra *Builder) GenerateJWT(backendType, secretID, audience string, role Role
 	}
 
 	if claims.Digest != "" {
-		if role != Downloader {
-			return "", fmt.Errorf("only downloader tokens can be scoped to a digest")
-		}
-
 		h, err := parseDigest(claims.Digest)
 		if err != nil {
 			return "", fmt.Errorf("invalid digest: %w", err)
@@ -242,9 +238,9 @@ func (c *Claims) CheckRole(r Role) error {
 	return nil
 }
 
-// CheckDigest verifies that the token can read the given digest.
+// CheckDigest verifies that the token can read or write the given digest.
 // The digest can be in its full form, i.e sha256:[hex], or only the hex part.
-// Tokens without a digest claim can read any digest.
+// Tokens without a digest claim can access any digest.
 func (c *Claims) CheckDigest(digest string) error {
 	if c.Digest == "" {
 		return nil

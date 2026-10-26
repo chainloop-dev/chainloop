@@ -185,7 +185,7 @@ func (s *casDownloadRBACIntegrationSuite) TestCASCredentialsGet() {
 	})
 }
 
-// SEC-634: callers can ask for a downloader token that can only read the requested digest
+// SEC-634: callers can ask for a CAS token that can only access the requested digest
 func (s *casDownloadRBACIntegrationSuite) TestDigestScopedTokens() {
 	ctx := s.ctxForToken(s.orgToken)
 
@@ -208,15 +208,17 @@ func (s *casDownloadRBACIntegrationSuite) TestDigestScopedTokens() {
 			s.Equal(tc.wantDigest, s.casClaims(u.Query().Get("t")).Digest)
 		})
 
-		s.Run("CASCredentialsService.Get: "+tc.name, func() {
-			resp, err := s.credentialsSvc.Get(ctx, &pb.CASCredentialsServiceGetRequest{
-				Digest:        digestProjectA,
-				Role:          pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER,
-				ScopeToDigest: tc.scopeToDigest,
+		for _, role := range []pb.CASCredentialsServiceGetRequest_Role{pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER, pb.CASCredentialsServiceGetRequest_ROLE_UPLOADER} {
+			s.Run("CASCredentialsService.Get "+role.String()+": "+tc.name, func() {
+				resp, err := s.credentialsSvc.Get(ctx, &pb.CASCredentialsServiceGetRequest{
+					Digest:        digestProjectA,
+					Role:          role,
+					ScopeToDigest: tc.scopeToDigest,
+				})
+				s.Require().NoError(err)
+				s.Equal(tc.wantDigest, s.casClaims(resp.GetResult().GetToken()).Digest)
 			})
-			s.Require().NoError(err)
-			s.Equal(tc.wantDigest, s.casClaims(resp.GetResult().GetToken()).Digest)
-		})
+		}
 	}
 
 	s.Run("CASCredentialsService.Get: scoped token requires a digest", func() {
@@ -227,9 +229,9 @@ func (s *casDownloadRBACIntegrationSuite) TestDigestScopedTokens() {
 		s.True(kerrors.IsBadRequest(err), "expected bad request, got %v", err)
 	})
 
-	s.Run("CASCredentialsService.Get: uploader token can not be scoped", func() {
+	s.Run("CASCredentialsService.Get: invalid digest", func() {
 		_, err := s.credentialsSvc.Get(ctx, &pb.CASCredentialsServiceGetRequest{
-			Digest:        digestProjectA,
+			Digest:        "sha256:deadbeef",
 			Role:          pb.CASCredentialsServiceGetRequest_ROLE_UPLOADER,
 			ScopeToDigest: true,
 		})

@@ -204,6 +204,51 @@ func (s *bytestreamSuite) TestWriteOK() {
 	s.Equal(resource.FileName, info.FileName)
 }
 
+// otherDigest is a digest a scoped token is not authorized for
+const otherDigest = "7d865e959b2466918c9863afca942d0fb89d7c9ac0c99bafc3749504ded97730"
+
+func (s *bytestreamSuite) TestWriteAuthorizedDigest() {
+	data := []byte("hello world")
+	resource := resourceWithDigest(data, "skynet.exe")
+
+	testCases := []struct {
+		name             string
+		authorizedDigest string
+		wantErr          bool
+	}{
+		{name: "token scoped to the digest", authorizedDigest: "sha256:" + resource.Digest},
+		{name: "token scoped to another digest", authorizedDigest: "sha256:" + otherDigest, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			// the mock fails the test on any backend call for a forbidden digest
+			if !tc.wantErr {
+				s.ociBackend.On("Exists", mock.Anything, resource.Digest).Return(false, nil)
+				s.ociBackend.On("Upload", mock.Anything, mock.Anything, resource).Return(nil)
+			}
+
+			ctx := metadata.AppendToOutgoingContext(s.upCtx, "authorized-digest", tc.authorizedDigest)
+			stream, err := s.client.Write(ctx)
+			s.Require().NoError(err)
+			_ = stream.Send(&bytestream.WriteRequest{
+				ResourceName: encodeResource(s.T(), resource),
+				Data:         data,
+			})
+
+			got, err := stream.CloseAndRecv()
+			if tc.wantErr {
+				assertGRPCError(s.T(), err, codes.PermissionDenied, "not authorized for this digest")
+				s.Empty(s.audit.published)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Equal(int64(len(data)), got.CommittedSize)
+		})
+	}
+}
+
 func (s *bytestreamSuite) TestWriteErrorUploading() {
 	data := []byte("hello world")
 	resource := resourceWithDigest(data, "skynet.exe")
@@ -390,10 +435,7 @@ func (s *bytestreamSuite) TestDownloadOk() {
 }
 
 func (s *bytestreamSuite) TestReadAuthorizedDigest() {
-	const (
-		digest      = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
-		otherDigest = "7d865e959b2466918c9863afca942d0fb89d7c9ac0c99bafc3749504ded97730"
-	)
+	const digest = "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
 
 	testCases := []struct {
 		name             string

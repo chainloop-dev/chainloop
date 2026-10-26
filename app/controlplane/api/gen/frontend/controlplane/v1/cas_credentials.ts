@@ -8,7 +8,7 @@ export const protobufPackage = "controlplane.v1";
 
 export interface CASCredentialsServiceGetRequest {
   role: CASCredentialsServiceGetRequest_Role;
-  /** during the download we need the digest to find the proper cas backend */
+  /** digest of the artifact, used to find the backend of a download and to scope the token when scope_to_digest is set */
   digest: string;
   /**
    * flag the minted token as internal platform traffic so the CAS skips audit
@@ -16,8 +16,8 @@ export interface CASCredentialsServiceGetRequest {
    */
   sourceInternal: boolean;
   /**
-   * scope the downloader token to the requested digest, so the CAS rejects reads of any other artifact.
-   * Requires the downloader role and a digest.
+   * scope the token to the requested digest, so the CAS rejects reads or writes of any other artifact.
+   * Requires a digest.
    */
   scopeToDigest: boolean;
 }

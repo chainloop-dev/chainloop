@@ -58,7 +58,7 @@ type CASCredsOpts struct {
 	// SourceInternal flags tokens minted for the control plane's own CAS
 	// client so the CAS can skip audit events for internal traffic
 	SourceInternal bool
-	// Digest, when set, scopes a downloader token to that single artifact
+	// Digest, when set, scopes the token to that single artifact
 	Digest string
 }
 
@@ -73,10 +73,6 @@ func (uc *CASCredentialsUseCase) GenerateTemporaryCredentials(backendRef *CASCre
 	}
 
 	if backendRef.Digest != "" {
-		if backendRef.Role != robotaccount.Downloader {
-			return "", NewErrValidationStr("only downloader credentials can be scoped to a digest")
-		}
-
 		if err := validateDigest(backendRef.Digest); err != nil {
 			return "", err
 		}
