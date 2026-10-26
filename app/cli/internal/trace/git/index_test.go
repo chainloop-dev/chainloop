@@ -89,6 +89,39 @@ func TestExecClient_SnapshotIndexAndIndexFile_ReadSparseIndex(t *testing.T) {
 	require.Equal(t, []byte("staged content\n"), content)
 }
 
+func TestExecClient_IndexFile_ReadsConfiguredObjectDirectory(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		alternate bool
+	}{
+		{name: "object directory"},
+		{name: "alternate object directory", alternate: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Given
+			dir := t.TempDir()
+			runIndexGit(t, dir, "init", "-q")
+			objects := filepath.Join(t.TempDir(), "objects")
+			require.NoError(t, os.MkdirAll(objects, 0o700))
+			t.Setenv("GIT_OBJECT_DIRECTORY", objects)
+			t.Setenv("GIT_ALTERNATE_OBJECT_DIRECTORIES", "")
+			require.NoError(t, os.WriteFile(filepath.Join(dir, "staged.txt"), []byte("staged content\n"), 0o600))
+			runIndexGit(t, dir, "add", "staged.txt")
+			if tc.alternate {
+				t.Setenv("GIT_OBJECT_DIRECTORY", filepath.Join(dir, ".git", "objects"))
+				t.Setenv("GIT_ALTERNATE_OBJECT_DIRECTORIES", objects)
+			}
+
+			// When
+			content, err := NewExecClient().IndexFile(dir, "staged.txt")
+
+			// Then
+			require.NoError(t, err)
+			require.Equal(t, []byte("staged content\n"), content)
+		})
+	}
+}
+
 func runIndexGit(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("git", args...)

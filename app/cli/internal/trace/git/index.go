@@ -20,10 +20,9 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strconv"
 	"strings"
 
-	gogit "github.com/go-git/go-git/v6"
-	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 )
 
@@ -65,12 +64,27 @@ func (c *ExecClient) IndexFile(repoRoot, path string) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("staged file %s not found", path)
 	}
-	repo, err := openRepo(repoRoot)
+	cmd := exec.Command("git", "--no-replace-objects", "cat-file", "--batch")
+	cmd.Dir = repoRoot
+	cmd.Stdin = strings.NewReader(hash + "\n")
+	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("open repository: %w", err)
+		return nil, fmt.Errorf("read staged blob %s: %w", path, err)
+	}
+	header, content, ok := bytes.Cut(out, []byte{'\n'})
+	if !ok {
+		return nil, fmt.Errorf("invalid staged blob header for %s", path)
+	}
+	fields := strings.Fields(string(header))
+	if len(fields) != 3 || fields[0] != hash || fields[1] != "blob" {
+		return nil, fmt.Errorf("invalid staged blob header for %s: %q", path, header)
+	}
+	size, err := strconv.Atoi(fields[2])
+	if err != nil || size < 0 || size >= len(content) || content[size] != '\n' {
+		return nil, fmt.Errorf("invalid staged blob size for %s: %q", path, fields[2])
 	}
 
-	return readIndexBlob(repo, plumbing.NewHash(hash), path)
+	return content[:size], nil
 }
 
 // SnapshotIndex returns the content signature currently staged in git's index.
@@ -112,27 +126,23 @@ func (c *GoGitClient) IndexFile(repoRoot, path string) ([]byte, error) {
 			continue
 		}
 
-		return readIndexBlob(repo, entry.Hash, path)
+		blob, err := repo.BlobObject(entry.Hash)
+		if err != nil {
+			return nil, fmt.Errorf("load staged blob %s: %w", path, err)
+		}
+		reader, err := blob.Reader()
+		if err != nil {
+			return nil, fmt.Errorf("read staged blob %s: %w", path, err)
+		}
+		defer func() { _ = reader.Close() }()
+
+		content, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, fmt.Errorf("read staged content %s: %w", path, err)
+		}
+
+		return content, nil
 	}
 
 	return nil, fmt.Errorf("staged file %s not found", path)
-}
-
-func readIndexBlob(repo *gogit.Repository, hash plumbing.Hash, path string) ([]byte, error) {
-	blob, err := repo.BlobObject(hash)
-	if err != nil {
-		return nil, fmt.Errorf("load staged blob %s: %w", path, err)
-	}
-	reader, err := blob.Reader()
-	if err != nil {
-		return nil, fmt.Errorf("read staged blob %s: %w", path, err)
-	}
-	defer func() { _ = reader.Close() }()
-
-	content, err := io.ReadAll(reader)
-	if err != nil {
-		return nil, fmt.Errorf("read staged content %s: %w", path, err)
-	}
-
-	return content, nil
 }
