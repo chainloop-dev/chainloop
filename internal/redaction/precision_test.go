@@ -37,6 +37,9 @@ const (
 	// sampleAPIKey is a random-looking key the generic-api-key rule matches.
 	sampleAPIKey = "q8Zr2LmX7v" + "Pk4TnW9sYb"
 	sampleEmail  = "sarah@chainloop.local"
+	// sampleSSHFingerprint is the unpadded base64 of a SHA-256 hash, as
+	// OpenSSH prints the fingerprint of a public key after SHA256:
+	sampleSSHFingerprint = "q3Rk8vLm2+Zx7Pw4" + "Tn9sYbHc1/Fd6Gj0" + "Ue5Ai8Ko2Ws"
 
 	ruleGenericAPIKey = "generic-api-key"
 	ruleGitHubPAT     = "github-pat"
@@ -149,6 +152,17 @@ func TestRulesConfigKeepsNonSecrets(t *testing.T) {
 			text:            "API_URL=http://localhost:48002\nCAS_ENDPOINT=localhost:49001\nTEST_EMAIL=" + sampleEmail + "\n",
 			wantDefaultRule: ruleCredentialURI,
 		},
+		{
+			// git log --show-signature on a commit signed with an SSH key
+			name:            "ssh key fingerprint of a commit signature",
+			text:            "Good \"git\" signature for " + sampleEmail + " with ED25519 key SHA256:" + sampleSSHFingerprint + "\n",
+			wantDefaultRule: ruleGenericAPIKey,
+		},
+		{
+			name:            "rsa key fingerprint of a commit signature",
+			text:            "Good \"git\" signature for " + sampleEmail + " with RSA key SHA256:" + sampleSSHFingerprint + "\n",
+			wantDefaultRule: ruleGenericAPIKey,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -254,6 +268,31 @@ func TestRulesConfigStillRedactsSecrets(t *testing.T) {
 			text:     "access_token: " + sampleDigest + "\n",
 			secret:   sampleDigest,
 			wantRule: ruleGenericAPIKey,
+		},
+		{
+			name:     "base64 key without a fingerprint prefix",
+			text:     "api_key: " + sampleSSHFingerprint + "\n",
+			secret:   sampleSSHFingerprint,
+			wantRule: ruleGenericAPIKey,
+		},
+		{
+			name:     "key longer than a fingerprint after a SHA256 prefix",
+			text:     "signing key SHA256:" + strings.Repeat(sampleAPIKey, 3) + "\n",
+			secret:   strings.Repeat(sampleAPIKey, 3),
+			wantRule: ruleGenericAPIKey,
+		},
+		{
+			name:     "key that continues a fingerprint with a separator",
+			text:     "signing key SHA256:" + strings.Repeat(sampleAPIKey, 3)[:43] + "-" + sampleAPIKey + "\n",
+			secret:   sampleAPIKey,
+			wantRule: ruleGenericAPIKey,
+		},
+		{
+			name:     "api key on the line after an ssh key fingerprint",
+			text:     "Good \"git\" signature with ED25519 key SHA256:" + sampleSSHFingerprint + "\napi_key: " + sampleAPIKey + "\n",
+			secret:   sampleAPIKey,
+			wantRule: ruleGenericAPIKey,
+			keep:     "SHA256:" + sampleSSHFingerprint,
 		},
 		{
 			name:     "password next to an email username",
