@@ -160,8 +160,8 @@ environment:
     # The Chainloop hosts MUST bypass the egress proxy: `chainloop trace` speaks
     # gRPC, and the proxy's intercepted path cannot negotiate h2, so anything that
     # routes these hosts through it silently breaks attestation. See the README.
-    NO_PROXY: "localhost,127.0.0.1,::1,gateway.docker.internal,cp.chainloop.dev,cas.chainloop.dev,api.app.chainloop.dev"
-    no_proxy: "localhost,127.0.0.1,::1,gateway.docker.internal,cp.chainloop.dev,cas.chainloop.dev,api.app.chainloop.dev"
+    NO_PROXY: "localhost,127.0.0.1,::1,gateway.docker.internal,cp.chainloop.dev,cas.chainloop.dev,api.cp.chainloop.dev,api.cas.chainloop.dev,api.app.chainloop.dev"
+    no_proxy: "localhost,127.0.0.1,::1,gateway.docker.internal,cp.chainloop.dev,cas.chainloop.dev,api.cp.chainloop.dev,api.cas.chainloop.dev,api.app.chainloop.dev"
 
 credentials:
   # No `anthropic` entry: it is inherited from the parent. Do NOT redeclare it -
@@ -178,8 +178,10 @@ permissions:
   # Egress is deny-by-default; the Anthropic/Claude hosts come from the parent.
   network:
     allow:
-      - "cp.chainloop.dev:443"           # control plane
-      - "cas.chainloop.dev:443"          # CAS, when the org backend is external
+      - "cp.chainloop.dev:443"               # control plane
+      - "cas.chainloop.dev:443"              # CAS, when the org backend is external
+      - "api.cp.chainloop.dev:443"           # legacy control plane endpoint, for older configs
+      - "api.cas.chainloop.dev:443"          # legacy CAS endpoint, for older configs
       - "api.app.chainloop.dev:443"          # platform backend
       - "t.chainloop.dev:443"                # CLI telemetry
       - "crb.chainloop.dev:443"              # CLI telemetry, older binaries
