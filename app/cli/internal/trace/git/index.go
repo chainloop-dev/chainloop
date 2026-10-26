@@ -22,6 +22,8 @@ import (
 	"os/exec"
 	"strings"
 
+	gogit "github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 )
 
@@ -53,16 +55,22 @@ func (c *ExecClient) SnapshotIndex(repoRoot string) (map[string]string, error) {
 	return sig, nil
 }
 
-// IndexFile reads the exact staged blob, respecting GIT_INDEX_FILE.
+// IndexFile reads the staged blob selected by Git's effective index.
 func (c *ExecClient) IndexFile(repoRoot, path string) ([]byte, error) {
-	cmd := exec.Command("git", "--no-replace-objects", "show", ":"+path)
-	cmd.Dir = repoRoot
-	content, err := cmd.Output()
+	index, err := c.SnapshotIndex(repoRoot)
 	if err != nil {
-		return nil, fmt.Errorf("read staged file %s: %w", path, err)
+		return nil, fmt.Errorf("snapshot staged index: %w", err)
+	}
+	hash, ok := index[path]
+	if !ok {
+		return nil, fmt.Errorf("staged file %s not found", path)
+	}
+	repo, err := openRepo(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("open repository: %w", err)
 	}
 
-	return content, nil
+	return readIndexBlob(repo, plumbing.NewHash(hash), path)
 }
 
 // SnapshotIndex returns the content signature currently staged in git's index.
@@ -104,23 +112,27 @@ func (c *GoGitClient) IndexFile(repoRoot, path string) ([]byte, error) {
 			continue
 		}
 
-		blob, err := repo.BlobObject(entry.Hash)
-		if err != nil {
-			return nil, fmt.Errorf("load staged blob %s: %w", path, err)
-		}
-		reader, err := blob.Reader()
-		if err != nil {
-			return nil, fmt.Errorf("read staged blob %s: %w", path, err)
-		}
-		defer func() { _ = reader.Close() }()
-
-		content, err := io.ReadAll(reader)
-		if err != nil {
-			return nil, fmt.Errorf("read staged content %s: %w", path, err)
-		}
-
-		return content, nil
+		return readIndexBlob(repo, entry.Hash, path)
 	}
 
 	return nil, fmt.Errorf("staged file %s not found", path)
+}
+
+func readIndexBlob(repo *gogit.Repository, hash plumbing.Hash, path string) ([]byte, error) {
+	blob, err := repo.BlobObject(hash)
+	if err != nil {
+		return nil, fmt.Errorf("load staged blob %s: %w", path, err)
+	}
+	reader, err := blob.Reader()
+	if err != nil {
+		return nil, fmt.Errorf("read staged blob %s: %w", path, err)
+	}
+	defer func() { _ = reader.Close() }()
+
+	content, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("read staged content %s: %w", path, err)
+	}
+
+	return content, nil
 }
