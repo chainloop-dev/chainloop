@@ -44,36 +44,24 @@ func (c *Client) UploadFile(ctx context.Context, filepath string) (*UpDownStatus
 	}
 	defer f.Close()
 
-	digest, err := readerDigest(f)
+	digest, err := Digest(f)
 	if err != nil {
 		return nil, err
-	}
-
-	// Since we have already iterated on the file to calculate the digest
-	// we need to rewind the file pointer
-	_, err = f.Seek(0, io.SeekStart)
-	if err != nil {
-		return nil, fmt.Errorf("rewinding file pointer: %w", err)
 	}
 
 	return c.Upload(ctx, f, path.Base(filepath), digest)
 }
 
-// FileDigest returns the digest of the file as the CAS stores it, i.e sha256:[hex]
-func FileDigest(filepath string) (string, error) {
-	f, err := os.Open(filepath)
-	if err != nil {
-		return "", fmt.Errorf("can't open file to upload: %w", err)
-	}
-	defer f.Close()
-
-	return readerDigest(f)
-}
-
-func readerDigest(r io.Reader) (string, error) {
+// Digest returns the digest of the content as the CAS stores it, i.e sha256:[hex].
+// It rewinds r, so the hashed content can then be uploaded from the same reader.
+func Digest(r io.ReadSeeker) (string, error) {
 	hash, _, err := cr_v1.SHA256(r)
 	if err != nil {
 		return "", fmt.Errorf("generating digest: %w", err)
+	}
+
+	if _, err := r.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("rewinding file pointer: %w", err)
 	}
 
 	return hash.String(), nil

@@ -16,6 +16,10 @@
 package cmd
 
 import (
+	"errors"
+	"fmt"
+	"os"
+
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -25,6 +29,7 @@ import (
 
 func newArtifactUploadCmd() *cobra.Command {
 	var filePath, digest string
+	var file *os.File
 	var artifactCASConn *grpc.ClientConn
 
 	cmd := &cobra.Command{
@@ -32,7 +37,13 @@ func newArtifactUploadCmd() *cobra.Command {
 		Short: "upload an artifact",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			var err error
-			digest, err = casclient.FileDigest(filePath)
+			// The file stays open until the upload, so the uploaded content is the hashed content
+			file, err = os.Open(filePath)
+			if err != nil {
+				return fmt.Errorf("can't open file to upload: %w", err)
+			}
+
+			digest, err = casclient.Digest(file)
 			if err != nil {
 				return err
 			}
@@ -51,15 +62,20 @@ func newArtifactUploadCmd() *cobra.Command {
 				ArtifactsCASConn: artifactCASConn,
 			}
 
-			_, err := action.NewArtifactUpload(opts).Run(filePath, digest)
+			_, err := action.NewArtifactUpload(opts).Run(file, digest)
 			return err
 		},
 		PostRunE: func(cmd *cobra.Command, args []string) error {
-			if artifactCASConn != nil {
-				return artifactCASConn.Close()
+			var errs []error
+			if file != nil {
+				errs = append(errs, file.Close())
 			}
 
-			return nil
+			if artifactCASConn != nil {
+				errs = append(errs, artifactCASConn.Close())
+			}
+
+			return errors.Join(errs...)
 		},
 	}
 
