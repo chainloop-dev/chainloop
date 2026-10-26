@@ -49,6 +49,16 @@ func (s *ResourceService) Describe(ctx context.Context, req *v1.ResourceServiceD
 		return nil, err
 	}
 
+	// Only downloader tokens are allowed
+	if err := info.CheckRole(casJWT.Downloader); err != nil {
+		return nil, errors.Unauthorized("service", err.Error())
+	}
+
+	// A token scoped to a digest can only describe that digest
+	if err := info.CheckDigest(req.Digest); err != nil {
+		return nil, errors.Forbidden("service", err.Error())
+	}
+
 	b, err := s.loadBackend(ctx, info.BackendType, info.StoredSecretID)
 	if err != nil && errors.IsNotFound(err) {
 		return nil, err

@@ -78,6 +78,12 @@ func (s *DownloadService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A token scoped to a digest can only read that digest
+	if err := auth.CheckDigest(wantChecksum.String()); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
 	b, err := s.loadBackend(ctx, auth.BackendType, auth.StoredSecretID)
 	if err != nil && kerrors.IsNotFound(err) {
 		http.Error(w, "backend not found", http.StatusNotFound)

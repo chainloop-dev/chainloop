@@ -137,6 +137,10 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 	// 2- add authentication token to the query params ?t=[token]
 	if backend.SecretName != "" {
 		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Downloader, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID}
+		if req.GetScopeToDigest() {
+			ref.Digest = req.GetDigest()
+		}
+
 		t, err := s.casCredsUseCase.GenerateTemporaryCredentials(ref)
 		if err != nil {
 			return nil, handleUseCaseErr(ctx, err, s.log)
@@ -168,6 +172,9 @@ func (s *CASRedirectService) HTTPDownload(ctx khttp.Context) error {
 	if err := ctx.BindVars(&in); err != nil {
 		return err
 	}
+
+	// The redirect is for a single digest, so the token in the URL can only read that digest
+	in.ScopeToDigest = true
 
 	// Run the downloadURLCode within the middleware chain
 	// Set identifier so it can be skipped, filtered, selected during the middleware chain
