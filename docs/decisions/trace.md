@@ -54,7 +54,7 @@ When the session ends.
 - Code: verified: the session-end hook removes the folder
 
 ### Images
-A file image is copied byte for byte. A pasted image becomes a description that the agent writes. Partly replaced by [issue-3515 D-009](../specs/issue-3515-spec-capture-during-session.md) (planned).
+A file image is copied byte for byte. A pasted image becomes a description that the agent writes. Partly replaced by [issue-3515 D-009](../specs/issue-3515-spec-capture-during-session.md) and [issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md): the agent does not describe a pasted image, and the CLI saves it.
 - Why: The agent cannot recover the bytes of a pasted image.
 - Source: [issue-3495-session-spec-capture D-010](../specs/issue-3495-session-spec-capture.md)
 - Code: verified for file images. Pasted images are saved by the CLI from the transcript ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md)), not described by the agent
@@ -71,28 +71,28 @@ Do not capture the user's request prompt. Capture a spec that the user pastes.
 - Why: The transcript holds the prompt.
 - Rejected: keep it and label it "prompt".
 - Source: [issue-3515-spec-capture-during-session D-001](../specs/issue-3515-spec-capture-during-session.md)
-- Code: not built yet: parent issue #3515 is open. The code already does it (`trace_spec.go`)
+- Code: verified: `trace_spec.go`
 
 ### How specs are found after session start
 A short reminder at each user prompt.
 - Why: It keeps the agent as the decider and covers resumed sessions.
 - Rejected: a general capture rule, and a hook that watches spec paths.
 - Source: [issue-3515-spec-capture-during-session D-002](../specs/issue-3515-spec-capture-during-session.md)
-- Code: not built yet: parent issue #3515 is open. The code already does it, with five cases (`trace_agent_hook.go`)
+- Code: verified, with five cases (`trace_agent_hook.go`)
 
 ### Spec file limit
 25 files. Never drop a file that an earlier push recorded.
 - Why: Long sessions get more specs, and the oldest are the start sources.
 - Rejected: keep the newest files.
 - Source: [issue-3515-spec-capture-during-session D-005](../specs/issue-3515-spec-capture-during-session.md)
-- Code: not built yet: parent issue #3515 is open. The code already does it (`spec.MaxEntries`)
+- Code: verified: `spec.MaxEntries`. Gap: local mode never saves the list of recorded files, so an overwritten start file can drop (`trace_local_store.go`)
 
 ### Pasted images (agent)
 The agent does not capture a pasted image.
 - Why: A description is not the image.
 - Rejected: a description of kind `image`.
 - Source: [issue-3515-spec-capture-during-session D-009](../specs/issue-3515-spec-capture-during-session.md)
-- Code: not built yet: parent issue #3515 is open. The instruction already says it. The CLI saves each pasted image ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md))
+- Code: verified: the instruction says it. The CLI saves each pasted image ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md))
 
 ### How to record the purpose
 A role field next to the kind.
@@ -120,7 +120,7 @@ A spec entry of kind `skill` for each used skill.
 - Why: A skill is a source of the session.
 - Rejected: a separate `skills_used` list.
 - Source: [issue-3540-trace-skills-used D-001](../specs/issue-3540-trace-skills-used.md)
-- Code: verified: `SpecKindSkill` in `trace_skills.go`
+- Code: verified: `SpecKindSkill` in `aicodingsession.go`, used by `trace_skills.go`
 
 ### Who makes skill entries
 The CLI, from the transcript and hook events.
@@ -168,7 +168,7 @@ Each exact copy of a spec source, all file types, from file reads and writes.
 - Why: One rule for images and text.
 - Rejected: images only.
 - Source: [issue-3556-session-image-placeholders D-013](../specs/issue-3556-session-image-placeholders.md)
-- Code: verified: read and write tools both matched
+- Code: partly built: Claude Code and Codex match read and write tools. OpenCode, Cursor, and Pi have no replacer yet (milestone 3 of the spec)
 
 ### How the push treats a local source
 Read the file at push time and record its content.
@@ -188,14 +188,14 @@ The CLI, at push time, from the image bytes in the transcript.
 - Why: The capture does not depend on the agent.
 - Rejected: replace only the images the agent captured.
 - Source: [issue-3569-pasted-image-pointers D-001](../specs/issue-3569-pasted-image-pointers.md)
-- Code: verified: Claude Code and Codex finders (`trace_pasted_images.go`)
+- Code: verified: Claude Code and Codex finders (`claude/pastedimages.go`, `codex/materials.go`), called from `trace_pasted_images.go`. Pi, Cursor, and OpenCode have no finder
 
 ### Agent capture of pasted images
 Keep the capture instruction. One entry per digest, and the agent's entry wins.
 - Why: The agent adds a role and a title.
 - Rejected: take pasted images out of the instruction.
 - Source: [issue-3569-pasted-image-pointers D-004](../specs/issue-3569-pasted-image-pointers.md)
-- Code: drift: pasted images are saved, and the agent entry wins by digest. But the instruction now tells the agent not to capture pasted images, so CLI entries have no role. See Open conflicts
+- Code: partly built: pasted images are saved, and the agent entry wins by digest. The instruction never asked the agent to capture pasted images: it said not to before this spec was built (#3524), and the build did not change it. So CLI entries have no role. See Open conflicts
 
 ### Pi integration point
 A project-local TypeScript extension.
@@ -209,7 +209,7 @@ The copied Pi JSONL v3 session.
 - Why: It is authoritative for model, usage, and tool data.
 - Rejected: a second transcript from the extension.
 - Source: [issue-3520-pi-trace-provider D-006](../specs/issue-3520-pi-trace-provider.md)
-- Code: verified: `pi/provider.go`, version 3 only
+- Code: verified: `pi/provider.go`, version 3 only. Gap: a failed refresh keeps the previous copy, against R-005 of the spec
 
 ### Pi model communication
 Full instruction once per session ID, short reminder every turn.
@@ -350,7 +350,7 @@ They join each session whose lines they replaced, as human lines.
 Keep them in the ledger now, report them in a later spec.
 - Why: Generated lines against the committed result is a separate metric. This spec keeps the data it needs.
 - Source: [issue-3639-trace-line-attribution D-011](../specs/issue-3639-trace-line-attribution.md)
-- Code: drift: the evidence already reports `ai_generated_lines_added` and `ai_generated_lines_removed` (#3680). See Open conflicts
+- Code: drift: the code on main already reports `ai_generated_lines_added` and `ai_generated_lines_removed` (#3680, not in a release yet). See Open conflicts
 
 ### Trace state retention
 30 days after session start, counted only after a push attested all the work.
@@ -387,20 +387,20 @@ Not shown: 6 smaller decisions of [issue-3495](../specs/issue-3495-session-spec-
 ## Superseded
 
 - [issue-3556-session-image-placeholders D-005](../specs/issue-3556-session-image-placeholders.md) (main rule: no inline copy of an attachment), replaced by [issue-3556-session-image-placeholders D-013](../specs/issue-3556-session-image-placeholders.md).
-- [issue-3556-session-image-placeholders D-006](../specs/issue-3556-session-image-placeholders.md) and [D-011](../specs/issue-3556-session-image-placeholders.md) (pasted images), dropped by [issue-3556-session-image-placeholders D-014](../specs/issue-3556-session-image-placeholders.md).
+- [issue-3556-session-image-placeholders D-006](../specs/issue-3556-session-image-placeholders.md) and [D-011](../specs/issue-3556-session-image-placeholders.md) (pasted images), dropped by [issue-3556-session-image-placeholders D-014](../specs/issue-3556-session-image-placeholders.md). [issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md) later brought pasted images back, with its own design.
 - [issue-3635-trace-e2e-matrix D-006](../specs/issue-3635-trace-e2e-matrix.md) (latest harness release on each run), replaced by [issue-3635-trace-e2e-matrix D-013](../specs/issue-3635-trace-e2e-matrix.md).
 - [issue-3582-trace-evidence-export D-005](../specs/issue-3582-trace-evidence-export.md) and [D-006](../specs/issue-3582-trace-evidence-export.md) (the "export" framing), replaced by [issue-3582-trace-evidence-export D-016](../specs/issue-3582-trace-evidence-export.md).
 - [issue-3582-trace-evidence-export D-010](../specs/issue-3582-trace-evidence-export.md) (a reserved local organization in the config), replaced by [issue-3582-trace-evidence-export D-013](../specs/issue-3582-trace-evidence-export.md).
 - [issue-3582-trace-evidence-export D-013](../specs/issue-3582-trace-evidence-export.md) (a per-clone local marker), replaced by [issue-3582-trace-evidence-export D-018](../specs/issue-3582-trace-evidence-export.md).
 - [issue-3582-trace-evidence-export D-015](../specs/issue-3582-trace-evidence-export.md) (ship `trace export` now), reversed by [issue-3582-trace-evidence-export D-020](../specs/issue-3582-trace-evidence-export.md).
-- [issue-3582-trace-evidence-export D-011](../specs/issue-3582-trace-evidence-export.md), [D-012](../specs/issue-3582-trace-evidence-export.md), and [D-014](../specs/issue-3582-trace-evidence-export.md) (`trace run --export`, and a push hook that does nothing in favor of `trace export`), replaced by [issue-3582-trace-evidence-export D-016](../specs/issue-3582-trace-evidence-export.md), [D-017](../specs/issue-3582-trace-evidence-export.md), [D-020](../specs/issue-3582-trace-evidence-export.md), and [D-023](../specs/issue-3582-trace-evidence-export.md). Export is not built. The review of PR #3727 confirmed this.
+- [issue-3582-trace-evidence-export D-011](../specs/issue-3582-trace-evidence-export.md), [D-012](../specs/issue-3582-trace-evidence-export.md), and [D-014](../specs/issue-3582-trace-evidence-export.md) (`trace run --export`, and a push hook that does nothing in favor of `trace export`), replaced by [issue-3582-trace-evidence-export D-016](../specs/issue-3582-trace-evidence-export.md), [D-017](../specs/issue-3582-trace-evidence-export.md), [D-020](../specs/issue-3582-trace-evidence-export.md), and [D-023](../specs/issue-3582-trace-evidence-export.md). Export is not built. The review of PR #3727 confirmed this. Only the `--export` half of D-012 is replaced: its `--local` flag for `trace init` is in the code.
 
 ## Open conflicts
 
-- **Agent wording for pasted images.** Pasted images are saved: the CLI stores each one from the transcript ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md)). The only difference is the agent instruction. [issue-3569 D-004](../specs/issue-3569-pasted-image-pointers.md) (done) keeps the instruction to capture them, so the agent can add a role and a title. [issue-3515 D-009](../specs/issue-3515-spec-capture-during-session.md) (issue open) says the agent does not capture them. The code follows issue-3515 D-009 (`app/cli/pkg/action/trace_spec.go`), so a pasted image entry has no role and the title "Pasted image N". Proposed: the owner confirms that issue-3515 D-009 holds, or fixes the instruction.
+- **Agent wording for pasted images.** Pasted images are saved: the CLI stores each one from the transcript ([issue-3569 D-001](../specs/issue-3569-pasted-image-pointers.md)). The only difference is the agent instruction. [issue-3569 D-004](../specs/issue-3569-pasted-image-pointers.md) (done) keeps an instruction to capture them, so the agent can add a role and a title. That instruction did not exist: the agent was told not to capture pasted images before issue-3569 was built (#3524). [issue-3515 D-009](../specs/issue-3515-spec-capture-during-session.md) (issue open) says the agent does not capture them. The code follows issue-3515 D-009 (`app/cli/pkg/action/trace_spec.go`), so a pasted image entry has no role and the title "Pasted image N". Proposed: the owner confirms that issue-3515 D-009 holds, or fixes the instruction.
 - **Issue #3515 is open, but its decisions are in the code.** D-001, D-002, D-005, and D-009 are live. Proposed: run `eng-spec --done` for issue-3515 and close the issue, so its decisions count as built.
-- **Generated-line counts in the evidence.** [issue-3639-trace-line-attribution D-011](../specs/issue-3639-trace-line-attribution.md) defers them to a later spec, but the evidence already reports them (#3680). Proposed: write the follow-up spec that records this.
+- **Generated-line counts in the evidence.** [issue-3639-trace-line-attribution D-011](../specs/issue-3639-trace-line-attribution.md) defers them to a later spec, but the code on main already reports them (#3680, not in a release yet). Proposed: write the follow-up spec that records this.
 - **Joined-line fingerprints in commit records.** [issue-3639-trace-line-attribution D-003](../specs/issue-3639-trace-line-attribution.md) says no separate owner data. Commit records keep the fingerprints of joined human lines (`app/cli/internal/trace/state/commit.go`). Proposed: the owner decides between a code fix and a spec.
-- **Retention of commit records.** [issue-3639-trace-line-attribution D-012](../specs/issue-3639-trace-line-attribution.md) keeps the state for 30 days. Commit records expire only when no branch reaches them (`app/cli/internal/trace/state/state.go`). Proposed: the owner decides between a code fix and a spec.
+- **Retention of commit records.** [issue-3639-trace-line-attribution D-012](../specs/issue-3639-trace-line-attribution.md) keeps the state for 30 days. Commit records never expire by age, only when no local branch reaches them, and a commit record still names a session after that session expires (`app/cli/internal/trace/state/state.go`). Proposed: the owner decides between a code fix and a spec.
 - **Schema and writer in one release.** [issue-3639-line-ranges D-005](../specs/issue-3639-line-ranges.md) asked for a release in between. Both changes shipped in v1.126.0. Proposed: no code fix. The owner checks that no reader rejects the new property.
-- **End-to-end suite has no CI job.** [issue-3635 D-011](../specs/issue-3635-trace-e2e-matrix.md) (nightly and manual), [D-003](../specs/issue-3635-trace-e2e-matrix.md) (Slack message), and [D-005](../specs/issue-3635-trace-e2e-matrix.md) (previous result as a job artifact) have no code. The suite runs only through `make -C app/cli test-trace-e2e`, and it compares with a local file. The pinned versions of [D-013](../specs/issue-3635-trace-e2e-matrix.md) are not installed. Proposed: fix the code, or write a spec if the CI job is no longer wanted.
+- **End-to-end suite has no CI job.** [issue-3635 D-011](../specs/issue-3635-trace-e2e-matrix.md) (nightly and manual), [D-003](../specs/issue-3635-trace-e2e-matrix.md) (Slack message), and [D-005](../specs/issue-3635-trace-e2e-matrix.md) (previous result as a job artifact) have no code. The suite runs only through `make -C app/cli test-trace-e2e`, and it compares with a local file. The pinned versions of [D-013](../specs/issue-3635-trace-e2e-matrix.md) are not installed. The README matrix has an OpenCode 1.x column that the suite does not test. Proposed: fix the code, or write a spec if the CI job is no longer wanted.

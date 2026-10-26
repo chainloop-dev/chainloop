@@ -40,7 +40,7 @@ Three phases: allowed by default, then denied by default, then deleted.
 No change: it stays on the legacy callback.
 - Why: Its token expires after 10 seconds, and a separate change can move it.
 - Source: [issue-3626-login-code-exchange D-008](../specs/issue-3626-login-code-exchange.md)
-- Code: drift: the download flow now requires a handoff code and rejects `?t=` (`internal/service/casredirect.go`). See Open conflicts
+- Code: drift: the download flow now requires a handoff code and rejects `?t=`, whatever the legacy switch says. It always gets a short-lived token (`internal/service/casredirect.go`, `internal/service/auth.go`). See Open conflicts
 
 ### Exchange endpoint
 gRPC only, unauthenticated, with no HTTP mapping. Supersedes D-003.
@@ -56,4 +56,4 @@ Not shown: 6 smaller decisions of [issue-3626-login-code-exchange](../specs/issu
 
 ## Open conflicts
 
-- **Browser download login.** [issue-3626 D-008](../specs/issue-3626-login-code-exchange.md) keeps the download flow on the legacy callback. The code moved it to the handoff code exchange (`app/controlplane/internal/service/casredirect.go`). Proposed: write a spec that records the change. The decision expected "a separate change" for it.
+- **Browser download login.** [issue-3626 D-008](../specs/issue-3626-login-code-exchange.md) keeps the download flow on the legacy callback. The code moved it to the handoff code exchange (`app/controlplane/internal/service/casredirect.go`). The legacy switch does not bring it back, and the download token stays short-lived. Proposed: write a spec that records the change. The decision expected "a separate change" for it.

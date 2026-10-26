@@ -50,7 +50,7 @@ Never. The client cache stays in memory.
 - Why: Blobs cannot be deleted through Chainloop, so the only risk is a purge outside it.
 - Rejected: 7 days.
 - Source: [issue-3543-cas-existence-cache D-007](../specs/issue-3543-cas-existence-cache.md)
-- Code: drift: 24 hours is a constant with no configuration (`pkg/cache/casexistence/casexistence.go`). See Open conflicts
+- Code: drift: 24 hours is a constant with no configuration, and the cache has no off switch (`pkg/cache/casexistence/casexistence.go`, `app/artifact-cas/cmd/wire.go`). See Open conflicts
 
 ### Where downloads are cached
 The browser HTTP cache.
@@ -81,5 +81,5 @@ None.
 
 ## Open conflicts
 
-- **Existence entry lifetime is not configurable.** [issue-3543 D-007](../specs/issue-3543-cas-existence-cache.md) says 24 hours, configurable. The code has a 24-hour constant and no setting (`pkg/cache/casexistence/casexistence.go`). Proposed: fix the code.
-- **Client cache reload trigger.** [issue-3543 D-009](../specs/issue-3543-cas-existence-cache.md) reloads a client once on an authentication error. The code reloads once on any existence-check error (`app/artifact-cas/internal/service/bytestream.go`). Proposed: the owner decides between a code fix and a spec.
+- **Existence entry lifetime is not configurable.** [issue-3543 D-007](../specs/issue-3543-cas-existence-cache.md) says 24 hours, configurable. The code has a 24-hour constant and no setting (`pkg/cache/casexistence/casexistence.go`). The off switch that R-004 asks for is also missing: the CAS always turns the cache on (`app/artifact-cas/cmd/wire.go`). Proposed: fix the code.
+- **Client cache reload trigger.** [issue-3543 D-009](../specs/issue-3543-cas-existence-cache.md) reloads a client once on an authentication error. The code reloads once on any existence-check error, and drops the cached client on any upload error, with no retry (`app/artifact-cas/internal/service/bytestream.go`). Proposed: the owner decides between a code fix and a spec.

@@ -17,28 +17,28 @@
 - Why: `chainloop trace init` already writes these keys.
 - Rejected: a new `project` key.
 - Source: [issue-3063-attestation-repo-config D-001](../specs/issue-3063-attestation-repo-config.md)
-- Code: not built yet: issue #3063 is open; the code already does it (#3502, #3517, #3518). Attestation commands read `organization`, and `attestation init` reads `projectName` (`app/cli/internal/repositoryconfig/config.go`, `app/cli/cmd/attestation.go`)
+- Code: verified (#3502, #3517, #3518): attestation commands read `organization`, and `attestation init` reads `projectName` (`app/cli/internal/repositoryconfig/config.go`, `app/cli/cmd/attestation.go`)
 
 ### Order for the organization
 Flag, environment variable, file, saved default.
 - Why: The file pins the organization for the repository.
 - Rejected: saved default before the file.
 - Source: [issue-3063-attestation-repo-config D-002](../specs/issue-3063-attestation-repo-config.md)
-- Code: not built yet: issue #3063 is open; the code already does it (#3518). Commands other than init also read the organization from the local attestation state before the saved default (`app/cli/cmd/attestation.go`)
+- Code: verified (#3518): commands other than init also read the organization from the local attestation state before the saved default (`app/cli/cmd/attestation.go`)
 
 ### No project from the flag or the file
 Stop with an error.
 - Why: The project is a required flag today.
 - Rejected: a warning only.
 - Source: [issue-3063-attestation-repo-config D-003](../specs/issue-3063-attestation-repo-config.md)
-- Code: not built yet: issue #3063 is open; the code already does it (#3517). `attestation init` stops with "project is required, set it via --project or projectName in .chainloop.yml"
+- Code: verified (#3517): `attestation init` stops with "project is required, set it via --project or projectName in .chainloop.yml"
 
 ### API token for a different organization
 Stop early with a clear error.
 - Why: The trace commands do the same check.
 - Rejected: send the request and let the control plane fail.
 - Source: [issue-3063-attestation-repo-config D-006](../specs/issue-3063-attestation-repo-config.md)
-- Code: not built yet: issue #3063 is open; the code already does it (#3518). The check runs before the connection, and the error names both organizations and the file (`app/cli/cmd/attestation.go`)
+- Code: verified (#3518): the check runs before the connection, and the error names both organizations and the file (`app/cli/cmd/attestation.go`)
 
 Not shown: 5 smaller decisions of [issue-3063-attestation-repo-config](../specs/issue-3063-attestation-repo-config.md). The file reader decision (D-007) is in the repository-wide part of the [index](README.md).
 
