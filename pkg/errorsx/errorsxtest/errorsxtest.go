@@ -52,7 +52,8 @@ func OriginFunction(exceptions []sentry.Exception) string {
 // ErrorExceptions returns the exceptions that Sentry records for err.
 func ErrorExceptions(err error) []sentry.Exception {
 	event := sentry.NewEvent()
-	event.SetException(err, 10)
+	// Match sentry-go's default client depth so tests see complete error chains.
+	event.SetException(err, 100)
 
 	return event.Exception
 }
