@@ -1,6 +1,7 @@
 # Codex token accounting
 
-Codex and Claude Code evidence use disjoint token categories:
+The current Codex, Pi, and Claude Code parsers use disjoint token categories
+in Chainloop evidence:
 
 - `input_tokens`: base input, excluding cache reads and cache writes.
 - `cache_read_input_tokens`: input served from cache.
@@ -78,32 +79,34 @@ total tokens, $900.8926 estimated cost, and 147 false reset warnings.
 
 ## Other provider parsers
 
-This table describes the current code. This fix changes Codex only.
+This table describes the current parsers, not agent release versions.
 
 | Provider | Input/cache fields | Total and cost | Duplicate and reasoning handling |
 | --- | --- | --- | --- |
 | Claude Code | Base input, cache reads, and cache writes are separate. | Total is base input + output. Cost includes cache reads and both 5-minute and 1-hour writes. | Sums each assistant usage record, including subagents, without message-ID deduplication. No separate reasoning count is added. Duplicate usage records can inflate counts and cost. |
 | Cursor | The collected transcript supplies no usage. | Usage and cost are unavailable, with a warning. | No token accounting to deduplicate or normalize. |
-| Pi parser | Copies input, output, cache reads, and cache writes separately. | Uses the supplied `totalTokens` and `cost.total` without reconciling categories. Its fixture total includes cache. | Rejects duplicate entry IDs and reads only the selected branch. No separate reasoning count is added. |
+| Pi parser | Copies native input, output, cache reads, and cache writes separately. | Recomputes total as base input + output, excluding cache; supplied `cost.total` remains authoritative. Earlier Chainloop parsers used supplied totals, which may include cache. | Rejects duplicate entry IDs and reads only the selected branch, including resumed history. No separate reasoning count is added. Independent E2E source comparison has regression coverage and passed a live cache-active Pi 1.3.0 run. |
 | OpenCode | Copies input, output, and cache read/write fields separately. | Total is input + output. Prefers session counters/cost over message sums. | Message sums have no ID deduplication. A separate source `reasoning` counter is not represented in the parser's token types. |
 
-Pi's selected-branch scope and source totals differ from a complete session
+Pi's selected-branch scope differs from a complete session
 spend report. OpenCode's separate reasoning counter needs a follow-up decision
 and normalization if it is to be included in output. Those behaviors and
 Claude's missing deduplication remain outside this Codex fix.
 
 ## Existing evidence and display
 
-Codex evidence now sets `data.schema_version` to `v2`. The JSON structure and
-schema URL stay the same; the data version identifies the accounting semantics.
-Consumers must check both `data.agent.name` and `data.schema_version`:
+`data.schema_version` is a Chainloop evidence field, not a Codex or Pi release
+version or the Pi JSONL session format version. Codex already emits `v2`;
+Pi continues to emit `v1`. This Pi accounting fix changes neither the schema
+nor its version. The JSON structure and schema URL stay the same.
 
 | Agent and data version | Meaning of input and total | Inclusive processed-token total |
 | --- | --- | --- |
 | Codex `v1` | Input includes cache; total includes input and output. | Use `total_tokens` without adding the cache fields. Counts may still contain the old overcount. |
 | Codex `v2` | Input and total exclude cache, matching the existing Claude convention. | Add both cache fields to `total_tokens` exactly once. |
+| Pi `v1` | Input is separate; the fixed parser recomputes total as input + output. Earlier parsers used supplied totals, which may include cache. | Recompute from native input, output, and cache fields when handling historical evidence; the evidence version alone does not distinguish the two behaviors. |
 
-Other providers retain their existing versions and semantics. An unknown
+Providers other than Codex and Pi retain their existing versions and semantics. An unknown
 version requires an explicit compatibility decision; do not infer its meaning
 from whether cache fields are present. No new evidence fields are needed.
 Consumers must not treat inclusive input as base input for pricing, or aggregate
