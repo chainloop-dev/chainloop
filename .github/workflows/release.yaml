@@ -256,26 +256,6 @@ jobs:
           echo "target_version=$TARGET_VERSION"
           chainloop project version update --project chainloop --name "$CURRENT_VERSION" --new-name "$TARGET_VERSION" || true
 
-      - name: Add attestation link to release notes
-        if: ${{ success() }}
-        env:
-          ATTESTATION_SHA: ${{ steps.attestation_push.outputs.attestation_sha }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ env.ATTESTATION_SHA }})"
-          current_notes=$(gh release view $RELEASE_TAG --json body -q '.body')
-
-          if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
-            # Replace the existing Chainloop Attestation section with the new URL
-            modified_notes=$(echo "$current_notes" | sed -E "s|## Chainloop Attestation[^\n]*\n\[View the attestation of this release\]\(https://app\.chainloop\.dev/attestation/[^\)]*\)|$chainloop_release_url|")
-          else
-            # Add the Chainloop Attestation section to the top
-            modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
-          fi
-
-          # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
-          gh release edit $RELEASE_TAG -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
-
       - name: Mark attestation as failed
         if: ${{ failure() }}
         env:
