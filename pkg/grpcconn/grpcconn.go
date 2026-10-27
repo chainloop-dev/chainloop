@@ -44,13 +44,15 @@ const DefaultMaxRecvMsgSize = 32 * 1024 * 1024
 const CLIVersionHeader = "Chainloop-Cli-Version"
 
 type newOptionalArg struct {
-	caFilePath     string
-	caContent      string
-	insecure       bool
-	orgName        string
-	cliVersion     string
-	maxRecvMsgSize int
-	tokenProvider  TokenProvider
+	caFilePath         string
+	caContent          string
+	insecure           bool
+	orgName            string
+	cliVersion         string
+	maxRecvMsgSize     int
+	tokenProvider      TokenProvider
+	unaryInterceptors  []grpc.UnaryClientInterceptor
+	streamInterceptors []grpc.StreamClientInterceptor
 }
 
 // TokenProvider returns the bearer token for the next request. Use it when the
@@ -108,6 +110,20 @@ func WithMaxRecvMsgSize(size int) Option {
 	}
 }
 
+// WithUnaryInterceptors appends interceptors to the connection's unary client chain.
+func WithUnaryInterceptors(interceptors ...grpc.UnaryClientInterceptor) Option {
+	return func(opt *newOptionalArg) {
+		opt.unaryInterceptors = append(opt.unaryInterceptors, interceptors...)
+	}
+}
+
+// WithStreamInterceptors appends interceptors to the connection's stream client chain.
+func WithStreamInterceptors(interceptors ...grpc.StreamClientInterceptor) Option {
+	return func(opt *newOptionalArg) {
+		opt.streamInterceptors = append(opt.streamInterceptors, interceptors...)
+	}
+}
+
 func cliVersionUnaryInterceptor(version string) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		ctx = metadata.AppendToOutgoingContext(ctx, CLIVersionHeader, version)
@@ -145,6 +161,9 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 		unaryInterceptors = append(unaryInterceptors, cliVersionUnaryInterceptor(optionalArgs.cliVersion))
 		streamInterceptors = append(streamInterceptors, cliVersionStreamInterceptor(optionalArgs.cliVersion))
 	}
+
+	unaryInterceptors = append(unaryInterceptors, optionalArgs.unaryInterceptors...)
+	streamInterceptors = append(streamInterceptors, optionalArgs.streamInterceptors...)
 
 	if len(unaryInterceptors) > 0 {
 		opts = append(opts, grpc.WithChainUnaryInterceptor(unaryInterceptors...))
