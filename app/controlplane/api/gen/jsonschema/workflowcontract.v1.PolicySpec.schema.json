@@ -81,7 +81,8 @@
             "CHECKMARX_JSON",
             "OVERSECURED_JSON",
             "PITEST_XML",
-            "CHAINLOOP_AI_SECURITY_CONTEXT"
+            "CHAINLOOP_AI_SECURITY_CONTEXT",
+            "BUILD_LOG"
           ],
           "title": "Material Type",
           "type": "string"

@@ -27,6 +27,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/accesschk"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/attestation"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/buildlog"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/cobertura"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/dranzer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/jacoco"
@@ -350,6 +351,16 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 			return nil, fmt.Errorf("invalid dranzer material: %w", err)
 		}
 		return json.Marshal(bundle)
+	case v1.CraftingSchema_Material_BUILD_LOG:
+		// Build logs are binary (MSBuild -bl), plain text or HTML, possibly
+		// several in an archive. They project to the normalized diagnostics
+		// only, with no raw text: diagnostic-verbosity text logs reach hundreds
+		// of megabytes and the policy engine holds its whole input in memory.
+		report, err := buildlog.Parse(rawMaterial)
+		if err != nil {
+			return nil, fmt.Errorf("invalid build log material: %w", err)
+		}
+		return json.Marshal(report)
 	}
 
 	return rawMaterial, nil
