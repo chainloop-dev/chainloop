@@ -21,8 +21,15 @@ jobs:
           persist-credentials: false
 
       - name: Install Chainloop
+        # The installer is pinned by digest, as in package_sandbox_kit.yaml.
+        # If dl.chainloop.dev publishes a new installer, re-pin with:
+        #   curl -sfL https://dl.chainloop.dev/cli/install.sh | sha256sum
+        env:
+          INSTALLER_SHA256: 6ebcdb8edc6f22c92b6ac31a363f7d60da6e04c60c4fadda44169f18492ba46e
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh -o /tmp/chainloop-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/chainloop-install.sh" | sha256sum -c -
+          bash /tmp/chainloop-install.sh
 
       - name: Run Release Gate Attestation
         run: |
@@ -66,8 +73,15 @@ jobs:
           cosign-release: "v2.2.3"
 
       - name: Install Chainloop
+        # The installer is pinned by digest, as in package_sandbox_kit.yaml.
+        # If dl.chainloop.dev publishes a new installer, re-pin with:
+        #   curl -sfL https://dl.chainloop.dev/cli/install.sh | sha256sum
+        env:
+          INSTALLER_SHA256: 6ebcdb8edc6f22c92b6ac31a363f7d60da6e04c60c4fadda44169f18492ba46e
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh -o /tmp/chainloop-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/chainloop-install.sh" | sha256sum -c -
+          bash /tmp/chainloop-install.sh
 
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -104,12 +118,20 @@ jobs:
         uses: docker/setup-qemu-action@53851d14592bedcffcf25ea515637cff71ef929a # v3.3.0
 
       - name: Install Syft
+        env:
+          INSTALLER_SHA256: 709ae9171e3d44e456a111943c341d0bf0fd2176b41af124d019823a70c34a3f
         run: |
-          # Install Syft
-          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/c43f4fb416c34c1c4b3997373689d8d4c0fb9b36/install.sh -O - | sh -s -- -b /usr/local/bin
+          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/c43f4fb416c34c1c4b3997373689d8d4c0fb9b36/install.sh -O /tmp/syft-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/syft-install.sh" | sha256sum -c -
+          sh /tmp/syft-install.sh -b /usr/local/bin
 
       - name: Install Grype
-        run: curl -sSfL https://raw.githubusercontent.com/anchore/grype/fe186c3e986dda3cb4c5e90798f82c52aefcb4b8/install.sh | sh -s -- -b /usr/local/bin
+        env:
+          INSTALLER_SHA256: 8646f06a90b10ca64992c1809b4aa00c44e30b4f551f63c309b0b0ab66873556
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/fe186c3e986dda3cb4c5e90798f82c52aefcb4b8/install.sh -o /tmp/grype-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/grype-install.sh" | sha256sum -c -
+          sh /tmp/grype-install.sh -b /usr/local/bin
 
       - name: Run GoReleaser
         id: release

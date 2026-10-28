@@ -22,8 +22,15 @@ jobs:
       CHAINLOOP_PROJECT: "chainloop"
     steps:
       - name: Install Chainloop
+        # The installer is pinned by digest, as in package_sandbox_kit.yaml.
+        # If dl.chainloop.dev publishes a new installer, re-pin with:
+        #   curl -sfL https://dl.chainloop.dev/cli/install.sh | sha256sum
+        env:
+          INSTALLER_SHA256: 6ebcdb8edc6f22c92b6ac31a363f7d60da6e04c60c4fadda44169f18492ba46e
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh -o /tmp/chainloop-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/chainloop-install.sh" | sha256sum -c -
+          bash /tmp/chainloop-install.sh
 
       - name: Docker login to Github Packages
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
