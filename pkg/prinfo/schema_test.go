@@ -69,6 +69,7 @@ func TestSchema(t *testing.T) {
 func TestPublishedAuthorShapeIsStable(t *testing.T) {
 	const stringAuthor = `"octocat"`
 	const objectAuthor = `{"login": "octocat", "type": "User"}`
+	const stringForm, objectForm = "string", "object"
 
 	testCases := []struct {
 		version    prinfo.Version
@@ -76,14 +77,16 @@ func TestPublishedAuthorShapeIsStable(t *testing.T) {
 		wantErr    bool
 		authorForm string
 	}{
-		{version: prinfo.Version1_0, author: stringAuthor, authorForm: "string"},
-		{version: prinfo.Version1_0, author: objectAuthor, authorForm: "object", wantErr: true},
-		{version: prinfo.Version1_1, author: stringAuthor, authorForm: "string"},
-		{version: prinfo.Version1_1, author: objectAuthor, authorForm: "object", wantErr: true},
-		{version: prinfo.Version1_2, author: stringAuthor, authorForm: "string"},
-		{version: prinfo.Version1_2, author: objectAuthor, authorForm: "object", wantErr: true},
-		{version: prinfo.Version1_3, author: stringAuthor, authorForm: "string"},
-		{version: prinfo.Version1_3, author: objectAuthor, authorForm: "object"},
+		{version: prinfo.Version1_0, author: stringAuthor, authorForm: stringForm},
+		{version: prinfo.Version1_0, author: objectAuthor, authorForm: objectForm, wantErr: true},
+		{version: prinfo.Version1_1, author: stringAuthor, authorForm: stringForm},
+		{version: prinfo.Version1_1, author: objectAuthor, authorForm: objectForm, wantErr: true},
+		{version: prinfo.Version1_2, author: stringAuthor, authorForm: stringForm},
+		{version: prinfo.Version1_2, author: objectAuthor, authorForm: objectForm, wantErr: true},
+		{version: prinfo.Version1_3, author: stringAuthor, authorForm: stringForm},
+		{version: prinfo.Version1_3, author: objectAuthor, authorForm: objectForm},
+		{version: prinfo.Version1_4, author: stringAuthor, authorForm: stringForm},
+		{version: prinfo.Version1_4, author: objectAuthor, authorForm: objectForm},
 	}
 
 	for _, tc := range testCases {
@@ -94,6 +97,45 @@ func TestPublishedAuthorShapeIsStable(t *testing.T) {
 				"number": "123",
 				"url": "https://github.com/owner/repo/pull/123",
 				"author": ` + tc.author + `
+			}`
+
+			var data any
+			require.NoError(t, json.Unmarshal([]byte(payload), &data))
+
+			err := prinfo.Validate(data, tc.version)
+			if tc.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+// 1.4 adds the optional PR/MR state. Older versions reject it, because they do
+// not allow unknown properties.
+func TestValidateState(t *testing.T) {
+	testCases := []struct {
+		name    string
+		version prinfo.Version
+		state   string
+		wantErr bool
+	}{
+		{name: "open", version: prinfo.Version1_4, state: prinfo.StateOpen},
+		{name: "closed", version: prinfo.Version1_4, state: prinfo.StateClosed},
+		{name: "merged", version: prinfo.Version1_4, state: prinfo.StateMerged},
+		{name: "unknown state", version: prinfo.Version1_4, state: "draft", wantErr: true},
+		{name: "state in 1.3", version: prinfo.Version1_3, state: prinfo.StateMerged, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			payload := `{
+				"platform": "github",
+				"type": "pull_request",
+				"number": "123",
+				"url": "https://github.com/owner/repo/pull/123",
+				"state": "` + tc.state + `"
 			}`
 
 			var data any

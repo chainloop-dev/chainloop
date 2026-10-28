@@ -24,7 +24,14 @@ const (
 	// EvidenceID is the identifier for the PR/MR info material type
 	EvidenceID = "CHAINLOOP_PR_INFO"
 	// EvidenceSchemaURL is the URL to the JSON schema for PR/MR info
-	EvidenceSchemaURL = "https://schemas.chainloop.dev/prinfo/1.3/pr-info.schema.json"
+	EvidenceSchemaURL = "https://schemas.chainloop.dev/prinfo/1.4/pr-info.schema.json"
+
+	// StateOpen is the state of a PR/MR that is not closed or merged
+	StateOpen = "open"
+	// StateClosed is the state of a PR/MR that was closed without a merge
+	StateClosed = "closed"
+	// StateMerged is the state of a merged PR/MR
+	StateMerged = "merged"
 
 	// AuthorTypeUser represents a human user account
 	AuthorTypeUser = "User"
@@ -60,6 +67,7 @@ type Data struct {
 	URL          string     `json:"url" jsonschema:"required,format=uri,description=Direct URL to the PR/MR"`
 	Author       *Author    `json:"author,omitempty" jsonschema:"description=The PR/MR author"`
 	Reviewers    []Reviewer `json:"reviewers,omitempty" jsonschema:"description=List of reviewers who reviewed or were requested to review"`
+	State        string     `json:"state,omitempty" jsonschema:"enum=open,enum=closed,enum=merged,description=The PR/MR state when the data was collected"`
 }
 
 // UnmarshalJSON implements custom JSON unmarshaling for Data to handle

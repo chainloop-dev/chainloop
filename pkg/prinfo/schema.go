@@ -37,9 +37,11 @@ const (
 	Version1_2 Version = "1.2"
 	// Version1_3 represents PR/MR Info version 1.3 schema (author as object with type).
 	Version1_3 Version = "1.3"
+	// Version1_4 represents PR/MR Info version 1.4 schema (adds the PR/MR state).
+	Version1_4 Version = "1.4"
 
 	// LatestVersion is the schema version emitted by this package.
-	LatestVersion = Version1_3
+	LatestVersion = Version1_4
 )
 
 // ErrInvalidJSONPayload represents an error for an invalid JSON payload.
@@ -54,6 +56,8 @@ var (
 	specVersion1_2 string
 	//go:embed schemas/pr-info-1.3.schema.json
 	specVersion1_3 string
+	//go:embed schemas/pr-info-1.4.schema.json
+	specVersion1_4 string
 )
 
 // rawSchemas holds the canonical JSON schema documents indexed by version.
@@ -62,6 +66,7 @@ var rawSchemas = map[Version]string{
 	Version1_1: specVersion1_1,
 	Version1_2: specVersion1_2,
 	Version1_3: specVersion1_3,
+	Version1_4: specVersion1_4,
 }
 
 var (
@@ -86,7 +91,7 @@ func Schema(version Version) (string, error) {
 
 // Versions returns the supported schema versions, oldest first.
 func Versions() []Version {
-	return []Version{Version1_0, Version1_1, Version1_2, Version1_3}
+	return []Version{Version1_0, Version1_1, Version1_2, Version1_3, Version1_4}
 }
 
 func initSchemas() {
