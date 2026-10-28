@@ -1,0 +1,30 @@
+# Paths that the OpenGrep SAST scan skips. The managed sast-scan workflow runs
+# OpenGrep from the repository root, which reads this file.
+#
+# This file replaces the default ignore list of OpenGrep, so the first block
+# repeats those defaults.
+node_modules/
+build/
+dist/
+vendor/
+.env/
+.venv/
+.tox/
+*.min.js
+.npm/
+.yarn/
+test/
+tests/
+*_test.go
+.semgrep
+.semgrep_logs/
+
+# Test data: test keys, sample reports with fake tokens, and test fixtures.
+testdata/
+
+# Development-only setup: development keys, Dex users and docs with example
+# tokens. None of it is shipped.
+devel/
+
+# Documentation of the vendored Bitnami charts.
+deployment/chainloop/charts/*/README.md

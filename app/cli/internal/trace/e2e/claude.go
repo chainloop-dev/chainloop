@@ -54,7 +54,7 @@ func (c *Claude) TraceFlag() string { return "--claude" }
 
 // Version implements Harness. `claude --version` prints "2.1.0 (Claude Code)".
 func (c *Claude) Version(ctx context.Context) (string, error) {
-	out, err := exec.CommandContext(ctx, c.bin(), "--version").Output() //nolint:gosec // the harness binary under test
+	out, err := exec.CommandContext(ctx, c.bin(), "--version").Output() //nolint:gosec // the harness binary under test // nosemgrep
 	if err != nil {
 		return "", fmt.Errorf("claude --version: %w", err)
 	}

@@ -71,7 +71,7 @@ func (o *OpenCode) TraceFlag() string { return "--opencode" }
 // An installed major version that is not the one of the column is an error,
 // because the cells would test the wrong column.
 func (o *OpenCode) Version(ctx context.Context) (string, error) {
-	out, err := exec.CommandContext(ctx, o.bin(), "--version").Output() //nolint:gosec // the harness binary under test
+	out, err := exec.CommandContext(ctx, o.bin(), "--version").Output() //nolint:gosec // the harness binary under test // nosemgrep
 	if err != nil {
 		return "", fmt.Errorf("opencode --version: %w", err)
 	}
