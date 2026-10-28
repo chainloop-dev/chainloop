@@ -66,6 +66,9 @@ jobs:
         uses: github/codeql-action/init@6a28655e3dcb49cb0840ea372fd6d17733edd8a4 # v2.21.8
         with:
           languages: ${{ matrix.language }}
+          # The alert suppression query marks the alerts that a `// codeql[<query-id>]`
+          # comment covers with a SARIF suppressions field. The default queries still run.
+          packs: codeql/go-queries:AlertSuppression.ql
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@6a28655e3dcb49cb0840ea372fd6d17733edd8a4 # v2.21.8
