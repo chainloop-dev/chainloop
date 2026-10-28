@@ -25,12 +25,19 @@ import (
 
 	contractAPI "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/buildlog"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+)
+
+// Values that other tests of the package repeat.
+const (
+	buildLogMissingFile   = "no such file or directory"
+	buildLogOtherMaterial = "./testdata/sbom-spdx.json"
 )
 
 func TestNewBuildLogCrafter(t *testing.T) {
@@ -40,11 +47,11 @@ func TestNewBuildLogCrafter(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:  "happy path",
+			name:  "build log material",
 			input: &contractAPI.CraftingSchema_Material{Type: contractAPI.CraftingSchema_Material_BUILD_LOG},
 		},
 		{
-			name:    "wrong type",
+			name:    "other material type",
 			input:   &contractAPI.CraftingSchema_Material{Type: contractAPI.CraftingSchema_Material_SARIF},
 			wantErr: true,
 		},
@@ -77,6 +84,21 @@ func writeBuildLogZip(t *testing.T) string {
 	return p
 }
 
+// writeMixedBuildLogZip zips a binary log with a Visual C++ build log, as a
+// product that builds with both tools does.
+func writeMixedBuildLogZip(t *testing.T) string {
+	t.Helper()
+	entries := map[string][]byte{}
+	for _, n := range []string{"sample.binlog", "vcbuild.htm"} {
+		content, err := os.ReadFile(filepath.Join("./testdata/buildlog", n))
+		require.NoError(t, err)
+		entries["logs/"+n] = content
+	}
+	p := filepath.Join(t.TempDir(), "logs.zip")
+	writeZip(t, p, entries)
+	return p
+}
+
 // writeOldBinlog writes a binary log header in a format version that predates
 // length-prefixed records.
 func writeOldBinlog(t *testing.T) string {
@@ -99,13 +121,13 @@ func TestBuildLogCrafter_Craft(t *testing.T) {
 		annotations map[string]string
 	}{
 		{
-			name:     "invalid path",
+			name:     "missing file",
 			filePath: func(*testing.T) string { return "./testdata/non-existing.binlog" },
-			wantErr:  "no such file or directory",
+			wantErr:  buildLogMissingFile,
 		},
 		{
-			name:     "wrong content",
-			filePath: func(*testing.T) string { return "./testdata/sbom-spdx.json" },
+			name:     "not a build log",
+			filePath: func(*testing.T) string { return buildLogOtherMaterial },
 			wantErr:  "does not look like a build log",
 		},
 		{
@@ -117,35 +139,43 @@ func TestBuildLogCrafter_Craft(t *testing.T) {
 			name:     "msbuild binary log",
 			filePath: func(*testing.T) string { return "./testdata/buildlog/sample.binlog" },
 			annotations: map[string]string{
-				"chainloop.material.tool.name":                "msbuild",
-				"chainloop.material.build_log.logs.count":     "1",
-				"chainloop.material.build_log.warnings.count": "4",
-				"chainloop.material.build_log.errors.count":   "0",
+				materials.AnnotationToolNameKey:           buildlog.ToolMSBuild,
+				materials.AnnotationBuildLogLogsCount:     "1",
+				materials.AnnotationBuildLogWarningsCount: "4",
+				materials.AnnotationBuildLogErrorsCount:   "0",
 			},
 		},
 		{
 			name:     "msbuild text log",
 			filePath: func(*testing.T) string { return "./testdata/buildlog/msbuild.txt" },
 			annotations: map[string]string{
-				"chainloop.material.tool.name":                "msbuild",
-				"chainloop.material.build_log.warnings.count": "4",
+				materials.AnnotationToolNameKey:           buildlog.ToolMSBuild,
+				materials.AnnotationBuildLogWarningsCount: "4",
 			},
 		},
 		{
 			name:     "visual c++ build log",
 			filePath: func(*testing.T) string { return "./testdata/buildlog/vcbuild.htm" },
 			annotations: map[string]string{
-				"chainloop.material.tool.name":                "vcbuild",
-				"chainloop.material.build_log.warnings.count": "4",
+				materials.AnnotationToolNameKey:           buildlog.ToolVCBuild,
+				materials.AnnotationBuildLogWarningsCount: "4",
 			},
 		},
 		{
 			name:     "archive of binary logs",
 			filePath: writeBuildLogZip,
 			annotations: map[string]string{
-				"chainloop.material.tool.name":                "msbuild",
-				"chainloop.material.build_log.logs.count":     "2",
-				"chainloop.material.build_log.warnings.count": "4",
+				materials.AnnotationToolNameKey:           buildlog.ToolMSBuild,
+				materials.AnnotationBuildLogLogsCount:     "2",
+				materials.AnnotationBuildLogWarningsCount: "4",
+			},
+		},
+		{
+			name:     "archive of binary and Visual C++ build logs",
+			filePath: writeMixedBuildLogZip,
+			annotations: map[string]string{
+				materials.AnnotationToolsKey:          `["msbuild","vcbuild"]`,
+				materials.AnnotationBuildLogLogsCount: "2",
 			},
 		},
 	}

@@ -82,6 +82,55 @@ func TestParseLocalizedMSBuildTextLogs(t *testing.T) {
 			result: "Сборка успешно завершена.", warnings: "Предупреждений: 1", errors: "Ошибок: 0",
 			wantResult: ResultSucceeded, wantReported: &Counts{Warnings: 1},
 		},
+		// The current translations in MSBuild's resources.
+		{
+			lang:  "de current",
+			start: "Der Buildvorgang wurde am 28.10.2026 09:00:00 gestartet.", project: `1>Projekt "C:\src\a.sln" auf Knoten "1" (Standardziele).`,
+			result: "Der Buildvorgang wurde erfolgreich ausgeführt.", warnings: "    1 Warnung(en)", errors: "    0 Fehler",
+			wantResult: ResultSucceeded, wantReported: &Counts{Warnings: 1},
+		},
+		{
+			lang:  "de failed",
+			start: "Der Buildvorgang wurde am 28.10.2026 09:00:00 gestartet.", project: `1>Projekt "C:\src\a.sln" auf Knoten "1" (Standardziele).`,
+			result: "Fehler beim Buildvorgang.", warnings: "    1 Warnung(en)", errors: "    1 Fehler",
+			wantResult: ResultFailed, wantReported: &Counts{Warnings: 1, Errors: 1},
+		},
+		{
+			lang:  "ko succeeded",
+			start: "빌드 시작: 2026-10-28 오전 9:00:00", project: `1>1 노드의 "C:\src\a.sln" 프로젝트(기본 대상)입니다.`,
+			result: "빌드했습니다.", warnings: "    경고 1개", errors: "    오류 0개",
+			wantResult: ResultSucceeded, wantReported: &Counts{Warnings: 1},
+		},
+		{
+			lang:  "ko failed with counts",
+			start: "빌드 시작: 2026-10-28 오전 9:00:00", project: `1>1 노드의 "C:\src\a.sln" 프로젝트(기본 대상)입니다.`,
+			result: "빌드하지 못했습니다.", warnings: "    경고 1개", errors: "    오류 1개",
+			wantResult: ResultFailed, wantReported: &Counts{Warnings: 1, Errors: 1},
+		},
+		{
+			lang:  "zh-TW failed",
+			start: "已經開始建置於 2026/10/28 上午 09:00:00。", project: `1>節點 1 (預設目標) 上的專案 "C:\src\a.sln"。`,
+			result: "建置失敗。", warnings: "    1 個警告", errors: "    1 個錯誤",
+			wantResult: ResultFailed, wantReported: &Counts{Warnings: 1, Errors: 1},
+		},
+		{
+			lang:  "ja failed",
+			start: "2026/10/28 9:00:00 にビルドを開始しました。", project: `1>ノード 1 上のプロジェクト "C:\src\a.sln" (既定のターゲット)。`,
+			result: "ビルドに失敗しました。", warnings: "    1 個の警告", errors: "    1 エラー",
+			wantResult: ResultFailed, wantReported: &Counts{Warnings: 1, Errors: 1},
+		},
+		{
+			lang:  "fr succeeded",
+			start: "La génération a démarré 28/10/2026 09:00:00.", project: `1>Projet "C:\src\a.sln" sur le nœud 1 (cibles par défaut).`,
+			result: "La génération a réussi.", warnings: "    1 Avertissement(s)", errors: "    0 Erreur(s)",
+			wantResult: ResultSucceeded, wantReported: &Counts{Warnings: 1},
+		},
+		{
+			lang:  "ru failed",
+			start: "Сборка начата 28.10.2026 9:00:00.", project: `1>Проект "C:\src\a.sln" в узле 1 (целевые объекты по умолчанию).`,
+			result: "Ошибка сборки.", warnings: "Предупреждений: 1", errors: "Ошибок: 1",
+			wantResult: ResultFailed, wantReported: &Counts{Warnings: 1, Errors: 1},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.lang, func(t *testing.T) {

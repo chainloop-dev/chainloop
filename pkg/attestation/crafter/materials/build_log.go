@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -89,6 +90,15 @@ func (i *BuildLogCrafter) injectAnnotations(m *api.Attestation_Material, report 
 	if report.Tool.Version != "" {
 		m.Annotations[AnnotationToolVersionKey] = report.Tool.Version
 	}
+	// An archive can hold the logs of several tools: list each of them.
+	var tools []Tool
+	for _, l := range report.Logs {
+		tool := Tool{Name: l.Tool.Name, Version: l.Tool.Version}
+		if !slices.Contains(tools, tool) {
+			tools = append(tools, tool)
+		}
+	}
+	SetToolsAnnotation(m, tools)
 	m.Annotations[AnnotationBuildLogLogsCount] = strconv.Itoa(len(report.Logs))
 	m.Annotations[AnnotationBuildLogWarningsCount] = strconv.Itoa(report.Summary.Warnings)
 	m.Annotations[AnnotationBuildLogErrorsCount] = strconv.Itoa(report.Summary.Errors)

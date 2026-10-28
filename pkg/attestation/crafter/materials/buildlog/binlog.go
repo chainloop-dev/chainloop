@@ -88,8 +88,9 @@ var ErrUnsupportedBinlog = errors.New("unsupported MSBuild binary log version")
 // gigabytes.
 const maxBinlogRecord = 64 << 20
 
-// formatArgRe matches a .NET composite-format placeholder such as {0} or {1,-8:N2}.
-var formatArgRe = regexp.MustCompile(`\{(\d+)(?:,[^}:]*)?(?::[^}]*)?\}`)
+// formatArgRe matches a .NET composite-format placeholder such as {0} or
+// {1,-8:N2}, or an escaped brace, "{{" or "}}".
+var formatArgRe = regexp.MustCompile(`\{\{|\}\}|\{(\d+)(?:,[^}:]*)?(?::[^}]*)?\}`)
 
 // isBinlog reports whether peeked bytes are the start of an MSBuild binary log:
 // a gzip stream whose first decompressed int32 is a plausible format version.
@@ -401,6 +402,9 @@ func formatMessage(format string, arguments []string) string {
 		return format
 	}
 	return formatArgRe.ReplaceAllStringFunc(format, func(m string) string {
+		if m == "{{" || m == "}}" {
+			return m[:1]
+		}
 		i, err := strconv.Atoi(formatArgRe.FindStringSubmatch(m)[1])
 		if err != nil || i >= len(arguments) {
 			return m

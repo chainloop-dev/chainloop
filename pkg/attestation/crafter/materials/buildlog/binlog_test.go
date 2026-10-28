@@ -238,3 +238,18 @@ func TestParseBinlogMalformedRecordFails(t *testing.T) {
 	_, err := Parse(w.bytes(t))
 	assert.Error(t, err)
 }
+
+func TestFormatMessage(t *testing.T) {
+	// .NET composite format: "{{" and "}}" are literal braces.
+	for format, want := range map[string]string{
+		"{0} is unused":      "x is unused",
+		"{{0}} is {0}":       "{0} is x",
+		"{{{0}}}":            "{x}",
+		"}} {1,-8:N2} {{":    "} y {",
+		"{2} has no value":   "{2} has no value",
+		"{{ and }} only":     "{ and } only",
+		"unbalanced } and {": "unbalanced } and {",
+	} {
+		assert.Equal(t, want, formatMessage(format, []string{"x", "y"}), format)
+	}
+}

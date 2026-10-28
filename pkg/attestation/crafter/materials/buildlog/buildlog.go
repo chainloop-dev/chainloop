@@ -228,7 +228,7 @@ func isArchiveName(name string) bool {
 // hold the binary logs already zipped per solution. Other entries are skipped,
 // but at least one log must be found.
 func parseArchive(walk walker) (*Report, error) {
-	var c collected
+	c := collected{budget: budget{limits: archiveLimits()}}
 	if err := c.walk(walk, "", 0); err != nil {
 		return nil, fmt.Errorf("reading build log archive: %w", err)
 	}
@@ -248,6 +248,40 @@ func parseArchive(walk walker) (*Report, error) {
 type collected struct {
 	logs    []*parsedLog
 	skipped []string
+	budget  budget
+}
+
+// budget counts the entries and bytes read from the material's archive and
+// from the archives inside it. Each archive walk applies its limits to itself
+// only, so without a shared count every nested archive could expand to the
+// full limits again.
+type budget struct {
+	limits  archiveio.Limits
+	entries int
+	read    int64
+}
+
+// entry counts an entry and returns a reader that counts its bytes.
+func (b *budget) entry(r io.Reader) (io.Reader, error) {
+	b.entries++
+	if b.entries > b.limits.MaxEntries {
+		return nil, archiveio.ErrTooManyEntries
+	}
+	return &budgetReader{r: r, b: b}, nil
+}
+
+type budgetReader struct {
+	r io.Reader
+	b *budget
+}
+
+func (br *budgetReader) Read(p []byte) (int, error) {
+	n, err := br.r.Read(p)
+	br.b.read += int64(n)
+	if br.b.read > br.b.limits.MaxTotalSize {
+		return n, archiveio.ErrArchiveTooLarge
+	}
+	return n, err
 }
 
 // projectImportsSuffix names the archive of project files that
@@ -260,6 +294,10 @@ const projectImportsSuffix = ".projectimports.zip"
 func (c *collected) walk(walk walker, prefix string, depth int) error {
 	return walk(func(name string, r io.Reader) error {
 		source := prefix + name
+		r, err := c.budget.entry(r)
+		if err != nil {
+			return err
+		}
 		switch {
 		case strings.HasSuffix(strings.ToLower(name), projectImportsSuffix):
 			c.skipped = append(c.skipped, source)

@@ -21,8 +21,10 @@ package buildlog
 
 import (
 	"bytes"
+	"io"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/archiveio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -184,4 +186,53 @@ func TestParseDiagnosticLineEdgeCases(t *testing.T) {
 
 func TestSniffOldMSBuildBanner(t *testing.T) {
 	assert.Equal(t, FormatMSBuildText, sniffText([]byte("Microsoft (R) Build Engine Version 3.5.30729.1\r\n[Microsoft .NET Framework, Version 2.0.50727.8806]\r\n")))
+}
+
+func TestParseRejectsResultLineWithoutBuild(t *testing.T) {
+	// Other tools print "Build succeeded." too. A result line with no sign
+	// of an MSBuild build would pass as a clean build.
+	for name, log := range map[string]string{
+		"result line only":       "Build succeeded.\n",
+		"inside other output":    "Restoring tools\nBuild succeeded.\nDone in 3s\n",
+		"translated result only": "La génération a réussi.\n",
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := Parse([]byte(log))
+			assert.ErrorIs(t, err, ErrNoBuildLog)
+		})
+	}
+
+	t.Run("with its counts", func(t *testing.T) {
+		// A clean `dotnet build`: the counts after the result line are the
+		// build's own record that nothing was reported.
+		report, err := Parse([]byte("Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n"))
+		require.NoError(t, err)
+		require.Len(t, report.Logs, 1)
+		assert.Equal(t, ResultSucceeded, report.Logs[0].Result)
+		assert.Equal(t, &Counts{}, report.Logs[0].Reported)
+	})
+}
+
+func TestParseArchiveBoundsNestedArchivesTogether(t *testing.T) {
+	// Each archive walk applies the limits to itself only, so the archives
+	// inside the material's archive must share what the material allows.
+	log := readTestdata(t, msbuildText)
+	nested := zipOf(t, map[string][]byte{"build.log": log})
+	outer := zipOf(t, map[string][]byte{"a.zip": nested, "b.zip": nested})
+	walk := func(yield func(string, io.Reader) error) error {
+		return archiveio.WalkBytes(outer, archiveio.DetectBytes(outer), archiveLimits(), yield)
+	}
+
+	// Room for one nested archive and its log, not for two.
+	one := int64(len(nested) + len(log))
+	c := collected{budget: budget{limits: archiveio.Limits{MaxEntries: 1024, MaxTotalSize: one + one/2}}}
+	require.ErrorIs(t, c.walk(walk, "", 0), archiveio.ErrArchiveTooLarge)
+
+	// Four entries: two archives and a log in each.
+	c = collected{budget: budget{limits: archiveio.Limits{MaxEntries: 3, MaxTotalSize: 1 << 30}}}
+	require.ErrorIs(t, c.walk(walk, "", 0), archiveio.ErrTooManyEntries)
+
+	c = collected{budget: budget{limits: archiveio.Limits{MaxEntries: 4, MaxTotalSize: 2 * one}}}
+	require.NoError(t, c.walk(walk, "", 0))
+	assert.Len(t, c.logs, 2)
 }

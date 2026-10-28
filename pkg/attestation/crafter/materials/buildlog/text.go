@@ -40,9 +40,10 @@ var (
 	diagnosticRe = regexp.MustCompile(`^\s*(?:\d+(?::\d+)?>)?(.*?)(?:\((\d+)(?:([,-])(\d+))?(?:[,-]\d+)*\))?\s*:\s*(?:[^:]*?\s)?(fatal error|error|warning)(?:\s+([A-Za-z]+[0-9]+))?\s*:\s*(.*?)(?:\s+\[([^\]\-][^\]]*)\])?\s*$`)
 	// MSBuild's own lines are translated when Visual Studio runs in another
 	// language, while compiler diagnostics keep the canonical English form. The
-	// patterns below hold the English line and the translations seen in real
-	// logs (zh-CN, zh-TW, ja, ko, de, fr, ru). A translation not listed leaves
-	// the fact unknown, which the policy treats as incomplete evidence.
+	// patterns below hold the English line, its zh-CN, zh-TW, ja, ko, de, fr and
+	// ru translations in MSBuild's resources, and older translations seen in
+	// real logs. A translation not listed leaves the fact unknown, which the
+	// policy treats as incomplete evidence.
 
 	// msbuildBannerRe extracts the MSBuild version from the console banner.
 	msbuildBannerRe = regexp.MustCompile(`^(?:MSBuild (?i:version)|Microsoft \(R\) Build Engine (?i:version)|.*MSBuild 版本) ([0-9][^\s]*)`)
@@ -50,15 +51,15 @@ var (
 	// diagnostics logged while it runs, then the end-of-build summary that
 	// repeats them.
 	msbuildStartRe     = regexp.MustCompile(`^(?:Build started\b|生成启动时间为|已經開始建置於|빌드 시작:|Der Buildvorgang wurde am .* gestartet\.|La génération a démarré|Сборка начата)|にビルドを開始しました。\s*$`)
-	msbuildSucceededRe = regexp.MustCompile(`^(?:Build succeeded\.|已成功生成。|生成成功。|建置成功。|ビルドに成功しました。|Build erfolgreich\.|Сборка успешно завершена\.)\s*$`)
-	msbuildFailedRe    = regexp.MustCompile(`^(?:Build FAILED\.|生成失败。|빌드하지 못했습니다\.|ÉCHEC de la build\.)\s*$`)
+	msbuildSucceededRe = regexp.MustCompile(`^(?:Build succeeded\.|已成功生成。|生成成功。|建置成功。|ビルドに成功しました。|빌드했습니다\.|Der Buildvorgang wurde erfolgreich ausgeführt\.|Build erfolgreich\.|La génération a réussi\.|Сборка успешно завершена\.)\s*$`)
+	msbuildFailedRe    = regexp.MustCompile(`^(?:Build FAILED\.|生成失败。|建置失敗。|ビルドに失敗しました。|빌드하지 못했습니다\.|Fehler beim Buildvorgang\.|ÉCHEC de la build\.|Ошибка сборки\.)\s*$`)
 	// msbuildProjectRe matches the start of a project build,
 	// `Project "path" on node N`, which may follow other text on its line.
 	msbuildProjectRe = regexp.MustCompile(`\bProject "([^"]+)" on node \d+|项目“([^”]+)”在节点 \d+ 上|節點 \d+ .*?上的專案 "([^"]+)"|ノード \d+ 上のプロジェクト "([^"]+)"|\d+ 노드의 "([^"]+)" 프로젝트|Projekt "([^"]+)" auf Knoten|Projet "([^"]+)" sur le nœud|Проект "([^"]+)" в узле`)
 	// msbuildWarningsRe and msbuildErrorsRe match the summary counters
 	// "N Warning(s)" and "N Error(s)".
-	msbuildWarningsRe = regexp.MustCompile(`^\s*(?:(\d+) (?:Warning\(s\)|个警告|個の警告|Avertissement\(s\))|Предупреждений: (\d+))\s*$`)
-	msbuildErrorsRe   = regexp.MustCompile(`^\s*(?:(\d+) (?:Error\(s\)|个错误|エラー|Erreur\(s\))|Ошибок: (\d+))\s*$`)
+	msbuildWarningsRe = regexp.MustCompile(`^\s*(?:(\d+) (?:Warning\(s\)|个警告|個警告|個の警告|Warnung\(en\)|Avertissement\(s\))|경고 (\d+)개|Предупреждений: (\d+))\s*$`)
+	msbuildErrorsRe   = regexp.MustCompile(`^\s*(?:(\d+) (?:Error\(s\)|个错误|個錯誤|エラー|Fehler|Erreur\(s\))|오류 (\d+)개|Ошибок: (\d+))\s*$`)
 	// ciPrefixRe matches what CI systems put before each console line: an ISO
 	// timestamp (GitHub Actions, Azure DevOps) or "[hh:mm:ss] " (AppVeyor).
 	ciPrefixRe = regexp.MustCompile(`^(?:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z |\[\d{2}:\d{2}:\d{2}\] )`)
@@ -150,9 +151,11 @@ type run struct {
 	reported                  *Counts
 }
 
-// empty reports whether nothing of the run has been seen yet.
-func (r *run) empty() bool {
-	return !r.opened && r.result == "" && r.reported == nil && len(r.inline)+len(r.summary) == 0
+// build reports whether the run shows an MSBuild build: its banner or start
+// line, the counts of its summary, or a diagnostic. A result line alone does
+// not, as other tools print "Build succeeded." too.
+func (r *run) build() bool {
+	return r.opened || r.reported != nil || len(r.inline)+len(r.summary) > 0
 }
 
 func (r *run) count() *Counts {
@@ -249,7 +252,7 @@ func scanMSBuild(scanner *bufio.Scanner) ([]*parsedLog, error) {
 	var logs []*parsedLog
 	cur := &run{}
 	next := func() {
-		if !cur.empty() {
+		if cur.build() {
 			logs = append(logs, cur.log())
 		}
 		cur = &run{}
@@ -306,10 +309,6 @@ func scanMSBuild(scanner *bufio.Scanner) ([]*parsedLog, error) {
 		}
 	}
 	next()
-	if len(logs) == 0 {
-		// A recognized log with nothing in it is still one build.
-		logs = append(logs, (&run{}).log())
-	}
 	return logs, scanner.Err()
 }
 
