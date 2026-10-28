@@ -65,10 +65,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install Dagger CLI
+        # The installer is pinned by digest. If dl.dagger.io publishes a new
+        # installer, re-pin with: curl -sfL https://dl.dagger.io/dagger/install.sh | sha256sum
+        env:
+          INSTALLER_SHA256: 2f7d6c4892d22dfb89e3ac226b33d20627aa4ab62cd33ae8dd792588935f673d
         run: |
           mkdir -p ~/.local/bin
           cd ~/.local
-          curl -L https://dl.dagger.io/dagger/install.sh | DAGGER_VERSION=0.21.10  sh
+          curl -sfL https://dl.dagger.io/dagger/install.sh -o /tmp/dagger-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/dagger-install.sh" | sha256sum -c -
+          DAGGER_VERSION=0.21.10 sh /tmp/dagger-install.sh
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
