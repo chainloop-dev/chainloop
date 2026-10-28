@@ -29,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chainloop-dev/chainloop/internal/orcarouter"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -41,6 +42,14 @@ const (
 	// codexOpenRouterProvider defines the OpenRouter provider, which reads
 	// its key from OPENROUTER_API_KEY.
 	codexOpenRouterProvider = `model_providers.openrouter={name="OpenRouter",base_url="https://openrouter.ai/api/v1",env_key="OPENROUTER_API_KEY"}`
+	// codexOrcaRouterPrefix selects OrcaRouter Cyber Inference for a model of
+	// the suite config. The rest of the value is the model ID as the catalog
+	// lists it, for example "orcarouter:orcarouter/auto".
+	codexOrcaRouterPrefix = "orcarouter:"
+	// codexOrcaRouterProvider defines the OrcaRouter Cyber Inference provider,
+	// which reads its key from ORCAROUTER_API_KEY. The path mirrors the
+	// definition the CLI's `orcarouter` command uses.
+	codexOrcaRouterProvider = `model_providers.orcarouter={name="` + orcarouter.Name + `",base_url="` + orcarouter.BaseURL + `",env_key="` + orcarouter.EnvKey + `"}`
 )
 
 var codexVersionRe = regexp.MustCompile(`\d+\.\d+\.\d+`)
@@ -84,9 +93,18 @@ func parseCodexVersion(out []byte) (string, error) {
 }
 
 // codexModelArgs returns the arguments that select the model. A model with
-// the "openrouter/" prefix runs on OpenRouter. Any other model runs on the
+// the "orcarouter:" prefix runs on OrcaRouter Cyber Inference, a model with the
+// "openrouter/" prefix runs on OpenRouter, and any other model runs on the
 // default provider of Codex, which reads its key from CODEX_API_KEY.
 func codexModelArgs(model string) []string {
+	if name, ok := strings.CutPrefix(model, codexOrcaRouterPrefix); ok {
+		return []string{
+			flagModel, name,
+			"-c", "model_provider=orcarouter",
+			"-c", codexOrcaRouterProvider,
+		}
+	}
+
 	name, ok := strings.CutPrefix(model, codexOpenRouterPrefix)
 	if !ok {
 		return []string{flagModel, model}

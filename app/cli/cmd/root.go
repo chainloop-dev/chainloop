@@ -329,7 +329,7 @@ Command reference: ` + cliReferenceURL,
 		newAttestationCmd(), newArtifactCmd(), newConfigCmd(),
 		newIntegrationCmd(), newOrganizationCmd(), newCASBackendCmd(),
 		newReferrerDiscoverCmd(), newPolicyCmd(), newApplyCmd(),
-		newTraceCmd(), newTelemetryCmd(),
+		newTraceCmd(), newTelemetryCmd(), newOrcaRouterCmd(),
 	)
 
 	return rootCmd
