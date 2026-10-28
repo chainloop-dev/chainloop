@@ -351,7 +351,7 @@ func (m *Attestation_Material) ingestMaterialToJSON(rawMaterial []byte, value st
 			return nil, fmt.Errorf("invalid dranzer material: %w", err)
 		}
 		return json.Marshal(bundle)
-	case v1.CraftingSchema_Material_BUILD_LOG:
+	case v1.CraftingSchema_Material_MSBUILD_LOG:
 		// Build logs are binary (MSBuild -bl), plain text or HTML, possibly
 		// several in an archive. They project to the normalized diagnostics
 		// only, with no raw text: diagnostic-verbosity text logs reach hundreds

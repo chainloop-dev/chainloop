@@ -40,7 +40,7 @@ const (
 	buildLogOtherMaterial = "./testdata/sbom-spdx.json"
 )
 
-func TestNewBuildLogCrafter(t *testing.T) {
+func TestNewMSBuildLogCrafter(t *testing.T) {
 	testCases := []struct {
 		name    string
 		input   *contractAPI.CraftingSchema_Material
@@ -48,7 +48,7 @@ func TestNewBuildLogCrafter(t *testing.T) {
 	}{
 		{
 			name:  "build log material",
-			input: &contractAPI.CraftingSchema_Material{Type: contractAPI.CraftingSchema_Material_BUILD_LOG},
+			input: &contractAPI.CraftingSchema_Material{Type: contractAPI.CraftingSchema_Material_MSBUILD_LOG},
 		},
 		{
 			name:    "other material type",
@@ -59,7 +59,7 @@ func TestNewBuildLogCrafter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := materials.NewBuildLogCrafter(tc.input, nil, nil)
+			_, err := materials.NewMSBuildLogCrafter(tc.input, nil, nil)
 			if tc.wantErr {
 				assert.Error(t, err)
 				return
@@ -113,7 +113,7 @@ func writeOldBinlog(t *testing.T) string {
 	return p
 }
 
-func TestBuildLogCrafter_Craft(t *testing.T) {
+func TestMSBuildLogCrafter_Craft(t *testing.T) {
 	testCases := []struct {
 		name        string
 		filePath    func(t *testing.T) string
@@ -139,50 +139,50 @@ func TestBuildLogCrafter_Craft(t *testing.T) {
 			name:     "msbuild binary log",
 			filePath: func(*testing.T) string { return "./testdata/buildlog/sample.binlog" },
 			annotations: map[string]string{
-				materials.AnnotationToolNameKey:           buildlog.ToolMSBuild,
-				materials.AnnotationBuildLogLogsCount:     "1",
-				materials.AnnotationBuildLogWarningsCount: "4",
-				materials.AnnotationBuildLogErrorsCount:   "0",
+				materials.AnnotationToolNameKey:             buildlog.ToolMSBuild,
+				materials.AnnotationMSBuildLogLogsCount:     "1",
+				materials.AnnotationMSBuildLogWarningsCount: "4",
+				materials.AnnotationMSBuildLogErrorsCount:   "0",
 			},
 		},
 		{
 			name:     "msbuild text log",
 			filePath: func(*testing.T) string { return "./testdata/buildlog/msbuild.txt" },
 			annotations: map[string]string{
-				materials.AnnotationToolNameKey:           buildlog.ToolMSBuild,
-				materials.AnnotationBuildLogWarningsCount: "4",
+				materials.AnnotationToolNameKey:             buildlog.ToolMSBuild,
+				materials.AnnotationMSBuildLogWarningsCount: "4",
 			},
 		},
 		{
 			name:     "visual c++ build log",
 			filePath: func(*testing.T) string { return "./testdata/buildlog/vcbuild.htm" },
 			annotations: map[string]string{
-				materials.AnnotationToolNameKey:           buildlog.ToolVCBuild,
-				materials.AnnotationBuildLogWarningsCount: "4",
+				materials.AnnotationToolNameKey:             buildlog.ToolVCBuild,
+				materials.AnnotationMSBuildLogWarningsCount: "4",
 			},
 		},
 		{
 			name:     "archive of binary logs",
 			filePath: writeBuildLogZip,
 			annotations: map[string]string{
-				materials.AnnotationToolNameKey:           buildlog.ToolMSBuild,
-				materials.AnnotationBuildLogLogsCount:     "2",
-				materials.AnnotationBuildLogWarningsCount: "4",
+				materials.AnnotationToolNameKey:             buildlog.ToolMSBuild,
+				materials.AnnotationMSBuildLogLogsCount:     "2",
+				materials.AnnotationMSBuildLogWarningsCount: "4",
 			},
 		},
 		{
 			name:     "archive of binary and Visual C++ build logs",
 			filePath: writeMixedBuildLogZip,
 			annotations: map[string]string{
-				materials.AnnotationToolsKey:          `["msbuild","vcbuild"]`,
-				materials.AnnotationBuildLogLogsCount: "2",
+				materials.AnnotationToolsKey:            `["msbuild","vcbuild"]`,
+				materials.AnnotationMSBuildLogLogsCount: "2",
 			},
 		},
 	}
 
 	schema := &contractAPI.CraftingSchema_Material{
 		Name: "build-log",
-		Type: contractAPI.CraftingSchema_Material_BUILD_LOG,
+		Type: contractAPI.CraftingSchema_Material_MSBUILD_LOG,
 	}
 
 	l := zerolog.Nop()
@@ -195,7 +195,7 @@ func TestBuildLogCrafter_Craft(t *testing.T) {
 			}
 
 			backend := &casclient.CASBackend{Uploader: uploader}
-			crafter, err := materials.NewBuildLogCrafter(schema, backend, &l)
+			crafter, err := materials.NewMSBuildLogCrafter(schema, backend, &l)
 			require.NoError(t, err)
 
 			got, err := craftedMaterial(crafter.Craft(context.TODO(), tc.filePath(t)))
@@ -205,7 +205,7 @@ func TestBuildLogCrafter_Craft(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, contractAPI.CraftingSchema_Material_BUILD_LOG.String(), got.MaterialType.String())
+			assert.Equal(t, contractAPI.CraftingSchema_Material_MSBUILD_LOG.String(), got.MaterialType.String())
 			assert.True(t, got.UploadedToCas)
 			for k, v := range tc.annotations {
 				assert.Equal(t, v, got.Annotations[k], k)

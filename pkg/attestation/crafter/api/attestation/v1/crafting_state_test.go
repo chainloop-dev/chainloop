@@ -372,13 +372,13 @@ func TestDranzerBundleIsEvaluable(t *testing.T) {
 	assert.Len(t, decoded["reports"], 4)
 }
 
-// TestBuildLogIsEvaluable guards that a BUILD_LOG material, which is stored as
+// TestMSBuildLogIsEvaluable guards that an MSBUILD_LOG material, which is stored as
 // the raw (often gzip-compressed binary) log, projects to the normalized
 // diagnostics policies evaluate. Handing the engine the raw bytes would fail
 // to parse, or for a text log yield nothing to evaluate.
-func TestBuildLogIsEvaluable(t *testing.T) {
+func TestMSBuildLogIsEvaluable(t *testing.T) {
 	m := &Attestation_Material{
-		MaterialType: schemaapi.CraftingSchema_Material_BUILD_LOG,
+		MaterialType: schemaapi.CraftingSchema_Material_MSBUILD_LOG,
 		M: &Attestation_Material_Artifact_{
 			Artifact: &Attestation_Material_Artifact{Name: "build-log", Digest: "sha256:deadbeef"},
 		},

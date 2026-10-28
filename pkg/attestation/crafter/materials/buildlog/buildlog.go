@@ -124,7 +124,7 @@ type Log struct {
 	Reported *Counts `json:"reported,omitempty"`
 }
 
-// Report is the policy projection of a BUILD_LOG material. Skipped lists the
+// Report is the policy projection of an MSBUILD_LOG material. Skipped lists the
 // archive entries that were not read as logs, so a policy can tell a log that
 // could not be read from a file that is not a log.
 type Report struct {
@@ -152,7 +152,7 @@ func archiveLimits() archiveio.Limits {
 	return archiveio.Limits{MaxEntries: 1024, MaxTotalSize: 4 << 30}
 }
 
-// Parse projects a BUILD_LOG material held in memory.
+// Parse projects an MSBUILD_LOG material held in memory.
 func Parse(data []byte) (*Report, error) {
 	if isBinlog(data) {
 		return parseSingle(bytes.NewReader(data))
@@ -165,7 +165,7 @@ func Parse(data []byte) (*Report, error) {
 	return parseSingle(bytes.NewReader(data))
 }
 
-// ParseFile projects a BUILD_LOG material on disk, streaming it.
+// ParseFile projects an MSBUILD_LOG material on disk, streaming it.
 func ParseFile(p string) (*Report, error) {
 	f, err := os.Open(p)
 	if err != nil {

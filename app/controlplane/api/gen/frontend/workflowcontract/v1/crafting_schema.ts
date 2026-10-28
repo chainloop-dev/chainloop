@@ -343,11 +343,12 @@ export enum CraftingSchema_Material_MaterialType {
    */
   CHAINLOOP_AI_SECURITY_CONTEXT = 45,
   /**
-   * BUILD_LOG - Build log of Microsoft build tools: an MSBuild binary log (-bl), an
-   * MSBuild text log, a Visual C++ build log (BuildLog.htm), or an archive
-   * of them. Its compiler and build warnings and errors are evaluated.
+   * MSBUILD_LOG - Build log of Microsoft build tools: an MSBuild binary log (-bl), an
+   * MSBuild text log, a Visual C++ build log (BuildLog.htm, written by
+   * VCBuild), or an archive of them. Its compiler and build warnings and
+   * errors are evaluated.
    */
-  BUILD_LOG = 46,
+  MSBUILD_LOG = 46,
   UNRECOGNIZED = -1,
 }
 
@@ -492,8 +493,8 @@ export function craftingSchema_Material_MaterialTypeFromJSON(object: any): Craft
     case "CHAINLOOP_AI_SECURITY_CONTEXT":
       return CraftingSchema_Material_MaterialType.CHAINLOOP_AI_SECURITY_CONTEXT;
     case 46:
-    case "BUILD_LOG":
-      return CraftingSchema_Material_MaterialType.BUILD_LOG;
+    case "MSBUILD_LOG":
+      return CraftingSchema_Material_MaterialType.MSBUILD_LOG;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -595,8 +596,8 @@ export function craftingSchema_Material_MaterialTypeToJSON(object: CraftingSchem
       return "PITEST_XML";
     case CraftingSchema_Material_MaterialType.CHAINLOOP_AI_SECURITY_CONTEXT:
       return "CHAINLOOP_AI_SECURITY_CONTEXT";
-    case CraftingSchema_Material_MaterialType.BUILD_LOG:
-      return "BUILD_LOG";
+    case CraftingSchema_Material_MaterialType.MSBUILD_LOG:
+      return "MSBUILD_LOG";
     case CraftingSchema_Material_MaterialType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

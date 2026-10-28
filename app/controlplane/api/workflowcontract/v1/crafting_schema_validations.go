@@ -42,7 +42,7 @@ import (
 //     an app platform), but the export envelope is not published by the vendor,
 //     so pinning it here would bet every other JSON kind on a shape inferred
 //     from a sample.
-//   - BUILD_LOG: recognizing a log means parsing it, and diagnostic-verbosity
+//   - MSBUILD_LOG: recognizing a log means parsing it, and diagnostic-verbosity
 //     text logs reach hundreds of megabytes; probing every file for it would
 //     slow down every auto-detected material.
 //

@@ -63,7 +63,7 @@
             "OVERSECURED_JSON",
             "PITEST_XML",
             "CHAINLOOP_AI_SECURITY_CONTEXT",
-            "BUILD_LOG"
+            "MSBUILD_LOG"
           ],
           "title": "Material Type",
           "type": "string"
@@ -162,7 +162,7 @@
             "OVERSECURED_JSON",
             "PITEST_XML",
             "CHAINLOOP_AI_SECURITY_CONTEXT",
-            "BUILD_LOG"
+            "MSBUILD_LOG"
           ],
           "title": "Material Type",
           "type": "string"

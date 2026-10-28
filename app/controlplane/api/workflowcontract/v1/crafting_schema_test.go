@@ -361,7 +361,7 @@ func TestMaterialKindsExcludedFromAutoDetection(t *testing.T) {
 		},
 		{
 			name: "build log probing parses whole logs of hundreds of megabytes",
-			kind: v1.CraftingSchema_Material_BUILD_LOG,
+			kind: v1.CraftingSchema_Material_MSBUILD_LOG,
 		},
 	}
 

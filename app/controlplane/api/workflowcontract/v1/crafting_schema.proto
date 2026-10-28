@@ -210,9 +210,10 @@ message CraftingSchema {
       // and byte-verifiable evidence anchors backing each claim
       CHAINLOOP_AI_SECURITY_CONTEXT = 45;
       // Build log of Microsoft build tools: an MSBuild binary log (-bl), an
-      // MSBuild text log, a Visual C++ build log (BuildLog.htm), or an archive
-      // of them. Its compiler and build warnings and errors are evaluated.
-      BUILD_LOG = 46;
+      // MSBuild text log, a Visual C++ build log (BuildLog.htm, written by
+      // VCBuild), or an archive of them. Its compiler and build warnings and
+      // errors are evaluated.
+      MSBUILD_LOG = 46;
     }
   }
 }
