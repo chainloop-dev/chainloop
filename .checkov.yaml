@@ -1,0 +1,21 @@
+# Root Checkov config, read automatically by the IaC scans that Chainloop runs
+# on this repository (the iac-scan workflow and the scan in pr-validation).
+# PR validation passes the changed files with -f, so --skip-path does not
+# apply there. Use skip-framework and skip-check only.
+#
+# Secret detection belongs to the secret scans (secret-scan and pr-validation).
+# Checkov's secrets framework only duplicates them, and here it reports
+# development configs, vendored charts and test data.
+#
+# The openapi framework matches only validator test data and the spec that is
+# generated from the protos (app/controlplane/api/gen/openapi). A fix for a
+# finding in the generated spec has to go in the generator.
+skip-framework:
+  - secrets
+  - openapi
+
+# The release images are FROM scratch and have no shell to run a HEALTHCHECK.
+# The Helm chart sets liveness and readiness probes, and the CLI and migrations
+# images run as jobs.
+skip-check:
+  - CKV_DOCKER_2
