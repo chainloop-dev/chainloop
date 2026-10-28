@@ -2,22 +2,39 @@
 # OpenGrep from the repository root, which reads this file.
 #
 # This file replaces the default ignore list of OpenGrep, so the first block
-# repeats those defaults.
-node_modules/
+# repeats those defaults (OpenGrep 1.12.0, src/targeting/Semgrepignore.ml).
+
+# Administrative folder or file used by popular version control systems
+.git
+.svn
+.hg
+_darcs
+CVS
+
+# Paths to files and folders that are typically large and ignorable
 build/
-dist/
 vendor/
-.env/
-.venv/
-.tox/
+dist/
 *.min.js
+.env/
+.tox/
+
+# Package managers
+node_modules/
 .npm/
 .yarn/
+.venv/
+_opam/
+_build/
+_cargo/
+
+# Common test paths
 test/
 tests/
+testsuite/
 *_test.go
-.semgrep
-.semgrep_logs/
+
+# End of the OpenGrep defaults.
 
 # Test data: test keys, sample reports with fake tokens, and test fixtures.
 testdata/
@@ -26,5 +43,5 @@ testdata/
 # tokens. None of it is shipped.
 devel/
 
-# Documentation of the vendored Bitnami charts.
-deployment/chainloop/charts/*/README.md
+# Documentation of the vendored Bitnami charts, also of nested chart dependencies.
+deployment/chainloop/charts/**/README.md
