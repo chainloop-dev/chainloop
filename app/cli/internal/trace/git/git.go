@@ -127,6 +127,8 @@ type Client interface {
 	SnapshotIndex(repoRoot string) (map[string]string, error)
 	// IndexFile returns the staged content for a repo-relative path.
 	IndexFile(repoRoot, path string) ([]byte, error)
+	// IndexBlobs returns the content of the supplied snapshot hashes by path.
+	IndexBlobs(repoRoot string, hashes map[string]string) (map[string][]byte, error)
 	// IsMergeCommit reports whether the commit identified by sha has more than
 	// one parent. Returns an error when the commit cannot be resolved.
 	IsMergeCommit(repoRoot, sha string) (bool, error)

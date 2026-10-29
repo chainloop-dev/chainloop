@@ -322,6 +322,11 @@ func (f *fakeBranchClient) SnapshotIndex(string) (map[string]string, error) {
 func (f *fakeBranchClient) IndexFile(string, string) ([]byte, error) {
 	return nil, nil
 }
+
+func (f *fakeBranchClient) IndexBlobs(string, map[string]string) (map[string][]byte, error) {
+	return nil, nil
+}
+
 func (f *fakeBranchClient) IsMergeCommit(_, sha string) (bool, error) {
 	return f.mergeSHAs[sha], f.mergeErr
 }

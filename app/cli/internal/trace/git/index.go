@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 )
 
@@ -64,27 +65,54 @@ func (c *ExecClient) IndexFile(repoRoot, path string) ([]byte, error) {
 	if !ok {
 		return nil, fmt.Errorf("staged file %s not found", path)
 	}
-	cmd := exec.Command("git", "--no-replace-objects", "cat-file", "--batch")
-	cmd.Dir = repoRoot
-	cmd.Stdin = strings.NewReader(hash + "\n")
-	out, err := cmd.Output()
+	contents, err := c.IndexBlobs(repoRoot, map[string]string{path: hash})
 	if err != nil {
-		return nil, fmt.Errorf("read staged blob %s: %w", path, err)
-	}
-	header, content, ok := bytes.Cut(out, []byte{'\n'})
-	if !ok {
-		return nil, fmt.Errorf("invalid staged blob header for %s", path)
-	}
-	fields := strings.Fields(string(header))
-	if len(fields) != 3 || fields[0] != hash || fields[1] != "blob" {
-		return nil, fmt.Errorf("invalid staged blob header for %s: %q", path, header)
-	}
-	size, err := strconv.Atoi(fields[2])
-	if err != nil || size < 0 || size >= len(content) || content[size] != '\n' {
-		return nil, fmt.Errorf("invalid staged blob size for %s: %q", path, fields[2])
+		return nil, err
 	}
 
-	return content[:size], nil
+	return contents[path], nil
+}
+
+// IndexBlobs reads the supplied staged blob hashes in one git process.
+func (c *ExecClient) IndexBlobs(repoRoot string, hashes map[string]string) (map[string][]byte, error) {
+	contents := make(map[string][]byte, len(hashes))
+	if len(hashes) == 0 {
+		return contents, nil
+	}
+
+	paths := make([]string, 0, len(hashes))
+	var input strings.Builder
+	for path, hash := range hashes {
+		paths = append(paths, path)
+		input.WriteString(hash)
+		input.WriteByte('\n')
+	}
+	cmd := exec.Command("git", "--no-replace-objects", "cat-file", "--batch")
+	cmd.Dir = repoRoot
+	cmd.Stdin = strings.NewReader(input.String())
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("read staged blobs: %w", err)
+	}
+
+	for _, path := range paths {
+		header, content, ok := bytes.Cut(out, []byte{'\n'})
+		if !ok {
+			return nil, fmt.Errorf("invalid staged blob header for %s", path)
+		}
+		fields := strings.Fields(string(header))
+		if len(fields) != 3 || fields[0] != hashes[path] || fields[1] != "blob" {
+			return nil, fmt.Errorf("invalid staged blob header for %s: %q", path, header)
+		}
+		size, err := strconv.Atoi(fields[2])
+		if err != nil || size < 0 || size >= len(content) || content[size] != '\n' {
+			return nil, fmt.Errorf("invalid staged blob size for %s: %q", path, fields[2])
+		}
+		contents[path] = content[:size]
+		out = content[size+1:]
+	}
+
+	return contents, nil
 }
 
 // SnapshotIndex returns the content signature currently staged in git's index.
@@ -145,4 +173,37 @@ func (c *GoGitClient) IndexFile(repoRoot, path string) ([]byte, error) {
 	}
 
 	return nil, fmt.Errorf("staged file %s not found", path)
+}
+
+// IndexBlobs reads the supplied snapshot hashes without scanning the index again.
+func (c *GoGitClient) IndexBlobs(repoRoot string, hashes map[string]string) (map[string][]byte, error) {
+	contents := make(map[string][]byte, len(hashes))
+	if len(hashes) == 0 {
+		return contents, nil
+	}
+	repo, err := openRepo(repoRoot)
+	if err != nil {
+		return nil, fmt.Errorf("open repository: %w", err)
+	}
+	for path, hash := range hashes {
+		blob, err := repo.BlobObject(plumbing.NewHash(hash))
+		if err != nil {
+			return nil, fmt.Errorf("load staged blob %s: %w", path, err)
+		}
+		reader, err := blob.Reader()
+		if err != nil {
+			return nil, fmt.Errorf("read staged blob %s: %w", path, err)
+		}
+		content, readErr := io.ReadAll(reader)
+		closeErr := reader.Close()
+		if readErr != nil {
+			return nil, fmt.Errorf("read staged content %s: %w", path, readErr)
+		}
+		if closeErr != nil {
+			return nil, fmt.Errorf("close staged blob %s: %w", path, closeErr)
+		}
+		contents[path] = content
+	}
+
+	return contents, nil
 }

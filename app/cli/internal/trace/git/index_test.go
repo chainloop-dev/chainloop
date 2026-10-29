@@ -122,6 +122,39 @@ func TestExecClient_IndexFile_ReadsConfiguredObjectDirectory(t *testing.T) {
 	}
 }
 
+func TestClients_IndexBlobs_ReadsMultipleSnapshotHashes(t *testing.T) {
+	// Given
+	dir := t.TempDir()
+	runIndexGit(t, dir, "init", "-q")
+	first := []byte("first staged content\n")
+	binary := []byte{0, '\n', 0xff}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "first.txt"), first, 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "binary.dat"), binary, 0o600))
+	runIndexGit(t, dir, "add", "first.txt", "binary.dat")
+	hashes, err := NewExecClient().SnapshotIndex(dir)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "first.txt"), []byte("later staged content\n"), 0o600))
+	runIndexGit(t, dir, "add", "first.txt")
+
+	for _, tc := range []struct {
+		name   string
+		client Client
+	}{
+		{name: "exec", client: NewExecClient()},
+		{name: "go-git", client: NewGoGitClient()},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// When
+			contents, err := tc.client.IndexBlobs(dir, hashes)
+
+			// Then
+			require.NoError(t, err)
+			require.Equal(t, first, contents["first.txt"])
+			require.Equal(t, binary, contents["binary.dat"])
+		})
+	}
+}
+
 func runIndexGit(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command("git", args...)

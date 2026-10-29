@@ -96,6 +96,18 @@ func checkpointActiveShellAttribution(store *state.Store, repoRoot string, stage
 		}
 
 		changed, deleted := attribution.ChangedPaths(indexBefore, afterIndex)
+		stagedHashes := make(map[string]string)
+		for _, relPath := range changed {
+			if hash, exists := afterIndex[relPath]; exists {
+				if _, ok := staged[relPath]; ok {
+					stagedHashes[relPath] = hash
+				}
+			}
+		}
+		stagedContent, err := client.IndexBlobs(repoRoot, stagedHashes)
+		if err != nil {
+			return fmt.Errorf("read staged blobs: %w", err)
+		}
 		checkpointed := false
 		for _, relPath := range append(changed, deleted...) {
 			if _, ok := staged[relPath]; !ok {
@@ -109,12 +121,7 @@ func checkpointActiveShellAttribution(store *state.Store, repoRoot string, stage
 			beforeContent, _ := client.FileAt(repoRoot, base, relPath)
 			var afterContent []byte
 			if hash, exists := afterIndex[relPath]; exists {
-				content, err := client.IndexFile(repoRoot, relPath)
-				if err != nil {
-					errs = append(errs, fmt.Errorf("read staged file %s: %w", relPath, err))
-					continue
-				}
-				afterContent = content
+				afterContent = stagedContent[relPath]
 				indexBefore[relPath] = hash
 				// SnapshotWorktree also hashes raw bytes with SHA-256.
 				// Checkpointing to the staged blob makes PostToolUse retain
