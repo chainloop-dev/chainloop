@@ -214,6 +214,14 @@ jobs:
             chainloop attestation add --name $material_name --value $entry --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
           done
 
+      - name: Publish release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          # goreleaser creates the release as a draft. Publish it after all
+          # assets are uploaded: an immutable release cannot get new assets.
+          gh release edit "$RELEASE_TAG" --draft=false --latest
+
       - name: Include source code on attestation
         env:
           ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}

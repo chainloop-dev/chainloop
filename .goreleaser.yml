@@ -246,5 +246,9 @@ docker_manifests:
       - "ghcr.io/chainloop-dev/chainloop/cli:{{ .Tag }}-arm64"
 
 release:
+  # The release workflow uploads the SBOMs after goreleaser and then publishes
+  # the release, so the release does not change after it is published.
+  draft: true
+  replace_existing_draft: true
   extra_files:
     - glob: ./.github/workflows/cosign.pub
