@@ -372,6 +372,35 @@ func TestDranzerBundleIsEvaluable(t *testing.T) {
 	assert.Len(t, decoded["reports"], 4)
 }
 
+// TestMSBuildLogIsEvaluable guards that an MSBUILD_LOG material, which is stored as
+// the raw (often gzip-compressed binary) log, projects to the normalized
+// diagnostics policies evaluate. Handing the engine the raw bytes would fail
+// to parse, or for a text log yield nothing to evaluate.
+func TestMSBuildLogIsEvaluable(t *testing.T) {
+	m := &Attestation_Material{
+		MaterialType: schemaapi.CraftingSchema_Material_MSBUILD_LOG,
+		M: &Attestation_Material_Artifact_{
+			Artifact: &Attestation_Material_Artifact{Name: "build-log", Digest: "sha256:deadbeef"},
+		},
+	}
+
+	for _, name := range []string{"sample.binlog", "msbuild.txt", "vcbuild.htm"} {
+		t.Run(name, func(t *testing.T) {
+			content, err := m.GetEvaluableContent("../../../materials/testdata/buildlog/"+name, nil)
+			require.NoError(t, err)
+
+			var decoded map[string]any
+			require.NoError(t, json.NewDecoder(bytes.NewReader(content)).Decode(&decoded))
+
+			assert.NotEmpty(t, decoded["tool"].(map[string]any)["name"])
+			assert.EqualValues(t, 4, decoded["summary"].(map[string]any)["warnings"])
+			assert.Len(t, decoded["diagnostics"], 4)
+			assert.Len(t, decoded["logs"], 1)
+			assert.Contains(t, decoded, "chainloop_metadata")
+		})
+	}
+}
+
 // TestRadamsaReportArchiveIsEvaluable guards that a RADAMSA_REPORT material whose
 // value is an archive of per-run -M logs projects to input.elements holding the
 // records merged across every entry. Recording the archive whole without merging

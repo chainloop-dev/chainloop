@@ -83,7 +83,8 @@
             "CHECKMARX_JSON",
             "OVERSECURED_JSON",
             "PITEST_XML",
-            "CHAINLOOP_AI_SECURITY_CONTEXT"
+            "CHAINLOOP_AI_SECURITY_CONTEXT",
+            "MSBUILD_LOG"
           ],
           "title": "Material Type",
           "type": "string"
