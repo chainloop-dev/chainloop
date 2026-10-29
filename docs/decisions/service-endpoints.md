@@ -33,7 +33,7 @@ Off by default three months after the single port ships, deleted three months la
 - Code: not built yet: the single port shipped on 2026-10-19, so the first step is not due. No release note announces the dates yet
 
 ### Ingress shape
-One Service and one hostname per service. Two Ingress objects on one host only where the controller needs it. Replaced, for the control plane, by [issue-3628-controlplane-http-dispatch D-002](../specs/issue-3628-controlplane-http-dispatch.md), and for the CAS by [issue-3628-single-endpoint D-020](../specs/issue-3628-single-endpoint.md): one catch-all Ingress with HTTP/2 upstream, and no second Ingress.
+One Service and one hostname per service. Two Ingress objects on one host only where the controller needs it. Replaced, for the control plane, by [issue-3628-controlplane-http-dispatch D-002](../specs/issue-3628-controlplane-http-dispatch.md), and for the CAS by [issue-3628-single-endpoint D-020](../specs/issue-3628-single-endpoint.md): one catch-all Ingress with HTTP/2 upstream, and no second Ingress for the shared endpoint. The control plane keeps its legacy gRPC ingress, independent of the shared one.
 - Why: nginx sets the backend protocol per Ingress object, so one object cannot carry both protocols.
 - Source: [issue-3628-single-endpoint D-004](../specs/issue-3628-single-endpoint.md)
 - Code: partly built (#3647, #3663): each shared ingress is one Ingress with path `/` and no split. The chart still renders two Services and keeps the legacy API ingress on a second hostname. The shared and the legacy API ingresses are all off by default
