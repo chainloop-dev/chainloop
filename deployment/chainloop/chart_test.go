@@ -277,6 +277,36 @@ type chartProbe struct {
 	} `yaml:"httpGet"`
 }
 
+// useSharedEndpoints moves the control plane CAS client to the shared CAS
+// Service. The legacy gRPC Services and ingresses remain available.
+func TestUseSharedEndpoints(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		args    []string
+		casAddr string
+	}{
+		{name: "defaults", casAddr: "test-chainloop-cas-api:80"},
+		{name: "explicitly disabled", args: []string{helmSet, "useSharedEndpoints=false"}, casAddr: "test-chainloop-cas-api:80"},
+		{name: "enabled", args: []string{helmSet, "useSharedEndpoints=true"}, casAddr: "test-chainloop-cas:80"},
+		{
+			name:    "enabled with custom service port",
+			args:    []string{helmSet, "useSharedEndpoints=true", helmSet, "cas.service.port=8083"},
+			casAddr: "test-chainloop-cas:8083",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			resources := renderChart(t, tc.args)
+			require.Contains(t, resources["ConfigMap/test-chainloop-controlplane"].Data["config.yaml"], "addr: "+tc.casAddr+"\n")
+			for _, name := range []string{"test-chainloop-controlplane-api", "test-chainloop-cas-api"} {
+				_, ok := resources["Service/"+name]
+				require.True(t, ok, name)
+				_, ok = resources["Ingress/"+name]
+				require.True(t, ok, name)
+			}
+		})
+	}
+}
+
 func TestCASSharedIngressTLS(t *testing.T) {
 	resources := renderChart(t, []string{helmSet, casIngressEnabled, helmSet, "cas.ingress.tls=true",
 		helmSetString, `cas.ingress.annotations.cert-manager\.io/cluster-issuer=test-issuer`})

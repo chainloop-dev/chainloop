@@ -33,6 +33,10 @@ global:
 ##
 development: false
 
+## @param useSharedEndpoints Opt in to shared control plane and CAS HTTP endpoints for native gRPC clients and the CLI addresses in the installation notes. Legacy endpoints remain available.
+##
+useSharedEndpoints: false
+
 ## @section Common parameters
 ##
 ## @param kubeVersion Override Kubernetes version
@@ -375,7 +379,7 @@ controlplane:
       annotations: {}
 
   serviceAPI:
-    ## @param controlplane.serviceAPI.type Service type
+    ## @param controlplane.serviceAPI.type Deprecated gRPC-only Service type. Use the shared service with useSharedEndpoints enabled.
     type: ClusterIP
 
     ## @param controlplane.serviceAPI.ports.http controlplane service HTTP port
@@ -540,7 +544,7 @@ controlplane:
 
   ## ref: http://kubernetes.io/docs/user-guide/ingress/
   ingressAPI:
-    ## @param controlplane.ingressAPI.enabled Enable ingress record generation for controlplane
+    ## @param controlplane.ingressAPI.enabled Enable the deprecated gRPC-only ingress. Retained during migration.
     ##
     enabled: false
     ## @param controlplane.ingressAPI.pathType Ingress path type
@@ -1159,7 +1163,7 @@ cas:
       annotations: {}
 
   serviceAPI:
-    ## @param cas.serviceAPI.type Service type
+    ## @param cas.serviceAPI.type Deprecated gRPC-only Service type. Use the shared service with useSharedEndpoints enabled.
     type: ClusterIP
 
     ## @param cas.serviceAPI.ports.http cas service HTTP port
@@ -1338,7 +1342,7 @@ cas:
 
   ## ref: http://kubernetes.io/docs/user-guide/ingress/
   ingressAPI:
-    ## @param cas.ingressAPI.enabled Enable ingress record generation for controlplane
+    ## @param cas.ingressAPI.enabled Enable the deprecated gRPC-only ingress. Retained during migration.
     ##
     enabled: false
     ## @param cas.ingressAPI.pathType Ingress path type
