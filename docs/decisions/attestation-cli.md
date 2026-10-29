@@ -17,7 +17,7 @@
 - Why: `chainloop trace init` already writes these keys.
 - Rejected: a new `project` key.
 - Source: [issue-3063-attestation-repo-config D-001](../specs/issue-3063-attestation-repo-config.md)
-- Code: verified (#3502, #3517, #3518): `attestation init`, `add`, `push`, `status` and `reset` read `organization` (other attestation commands, such as `verify`, do not), and `attestation init` reads `projectName` (`app/cli/internal/repositoryconfig/config.go`, `app/cli/cmd/attestation.go`)
+- Code: verified (#3502, #3517, #3518): `attestation init`, `add`, `push`, `status` and `reset` read `organization` (other attestation commands, such as `verify`, do not), and `attestation init` reads `projectName` (`app/cli/internal/repositoryconfig/config.go`, `app/cli/cmd/attestation.go`, `app/cli/cmd/attestation_init.go`)
 
 ### Order for the organization
 Flag, environment variable, file, saved default.
