@@ -50,3 +50,39 @@ func TestOrgLevelPoliciesStayOutOfDefaults(t *testing.T) {
 			p.Resource, p.Action)
 	}
 }
+
+// The permission to issue a sandbox identity must never reach a token or a user by default (D-004).
+func TestSandboxIdentityPolicyIsNeverGrantedByDefault(t *testing.T) {
+	assert.NotContains(t, defaultAuthzPolicies, authz.PolicySandboxIdentityIssue)
+	assert.NotContains(t, orgLevelTokenPolicies, authz.PolicySandboxIdentityIssue)
+
+	for role, policies := range authz.RolesMap {
+		assert.NotContainsf(t, policies, authz.PolicySandboxIdentityIssue, "role %s holds the sandbox identity policy", role)
+	}
+}
+
+func TestCheckSandboxIdentityPolicy(t *testing.T) {
+	testCases := []struct {
+		name     string
+		policies []*authz.Policy
+		isSystem bool
+		wantErr  bool
+	}{
+		{name: "a system token", policies: []*authz.Policy{authz.PolicyArtifactUpload, authz.PolicySandboxIdentityIssue}, isSystem: true},
+		{name: "a token that is not a system token", policies: []*authz.Policy{{Resource: authz.ResourceSandboxIdentity, Action: authz.ActionCreate}}, wantErr: true},
+		{name: "a token without the policy", policies: []*authz.Policy{authz.PolicyArtifactUpload}},
+		{name: "a token with a nil policy", policies: []*authz.Policy{nil}},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := checkSandboxIdentityPolicy(tc.policies, tc.isSystem)
+			if tc.wantErr {
+				assert.True(t, IsErrValidation(err))
+				return
+			}
+
+			assert.NoError(t, err)
+		})
+	}
+}

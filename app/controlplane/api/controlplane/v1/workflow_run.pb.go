@@ -608,9 +608,12 @@ type AttestationServiceInitRequest struct {
 	// true: force promote to latest (only pre-release versions).
 	// false: skip latest promotion.
 	// Mutually exclusive with use_latest_version.
-	MarkAsLatest  *bool `protobuf:"varint,9,opt,name=mark_as_latest,json=markAsLatest,proto3,oneof" json:"mark_as_latest,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	MarkAsLatest *bool `protobuf:"varint,9,opt,name=mark_as_latest,json=markAsLatest,proto3,oneof" json:"mark_as_latest,omitempty"`
+	// Optional identity token that the Chainloop platform gives to a Chainloop sandbox.
+	// The control plane verifies it only for the CHAINLOOP_SANDBOX runner.
+	SandboxIdentity string `protobuf:"bytes,10,opt,name=sandbox_identity,json=sandboxIdentity,proto3" json:"sandbox_identity,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *AttestationServiceInitRequest) Reset() {
@@ -704,6 +707,13 @@ func (x *AttestationServiceInitRequest) GetMarkAsLatest() bool {
 		return *x.MarkAsLatest
 	}
 	return false
+}
+
+func (x *AttestationServiceInitRequest) GetSandboxIdentity() string {
+	if x != nil {
+		return x.SandboxIdentity
+	}
+	return ""
 }
 
 type AttestationServiceInitResponse struct {
@@ -1429,8 +1439,10 @@ type AttestationServiceInitResponse_Result struct {
 	EnableAiAgentCollector bool `protobuf:"varint,8,opt,name=enable_ai_agent_collector,json=enableAiAgentCollector,proto3" json:"enable_ai_agent_collector,omitempty"`
 	// Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation
 	SkipRunnerEnvVars bool `protobuf:"varint,9,opt,name=skip_runner_env_vars,json=skipRunnerEnvVars,proto3" json:"skip_runner_env_vars,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// The result of the verification of the sandbox identity, when the request has one
+	SandboxIdentity *AttestationServiceInitResponse_SandboxIdentityResult `protobuf:"bytes,10,opt,name=sandbox_identity,json=sandboxIdentity,proto3" json:"sandbox_identity,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *AttestationServiceInitResponse_Result) Reset() {
@@ -1519,6 +1531,67 @@ func (x *AttestationServiceInitResponse_Result) GetSkipRunnerEnvVars() bool {
 	return false
 }
 
+func (x *AttestationServiceInitResponse_Result) GetSandboxIdentity() *AttestationServiceInitResponse_SandboxIdentityResult {
+	if x != nil {
+		return x.SandboxIdentity
+	}
+	return nil
+}
+
+type AttestationServiceInitResponse_SandboxIdentityResult struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Whether the control plane verified the identity and recorded it on the workflow run
+	Verified bool `protobuf:"varint,1,opt,name=verified,proto3" json:"verified,omitempty"`
+	// Why the identity did not verify
+	Reason        string `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AttestationServiceInitResponse_SandboxIdentityResult) Reset() {
+	*x = AttestationServiceInitResponse_SandboxIdentityResult{}
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AttestationServiceInitResponse_SandboxIdentityResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AttestationServiceInitResponse_SandboxIdentityResult) ProtoMessage() {}
+
+func (x *AttestationServiceInitResponse_SandboxIdentityResult) ProtoReflect() protoreflect.Message {
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AttestationServiceInitResponse_SandboxIdentityResult.ProtoReflect.Descriptor instead.
+func (*AttestationServiceInitResponse_SandboxIdentityResult) Descriptor() ([]byte, []int) {
+	return file_controlplane_v1_workflow_run_proto_rawDescGZIP(), []int{10, 1}
+}
+
+func (x *AttestationServiceInitResponse_SandboxIdentityResult) GetVerified() bool {
+	if x != nil {
+		return x.Verified
+	}
+	return false
+}
+
+func (x *AttestationServiceInitResponse_SandboxIdentityResult) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 type AttestationServiceInitResponse_SigningOptions struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// TSA service to be used for signing
@@ -1531,7 +1604,7 @@ type AttestationServiceInitResponse_SigningOptions struct {
 
 func (x *AttestationServiceInitResponse_SigningOptions) Reset() {
 	*x = AttestationServiceInitResponse_SigningOptions{}
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[23]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1543,7 +1616,7 @@ func (x *AttestationServiceInitResponse_SigningOptions) String() string {
 func (*AttestationServiceInitResponse_SigningOptions) ProtoMessage() {}
 
 func (x *AttestationServiceInitResponse_SigningOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[23]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1556,7 +1629,7 @@ func (x *AttestationServiceInitResponse_SigningOptions) ProtoReflect() protorefl
 
 // Deprecated: Use AttestationServiceInitResponse_SigningOptions.ProtoReflect.Descriptor instead.
 func (*AttestationServiceInitResponse_SigningOptions) Descriptor() ([]byte, []int) {
-	return file_controlplane_v1_workflow_run_proto_rawDescGZIP(), []int{10, 1}
+	return file_controlplane_v1_workflow_run_proto_rawDescGZIP(), []int{10, 2}
 }
 
 func (x *AttestationServiceInitResponse_SigningOptions) GetTimestampAuthorityUrl() string {
@@ -1583,7 +1656,7 @@ type AttestationServiceStoreResponse_Result struct {
 
 func (x *AttestationServiceStoreResponse_Result) Reset() {
 	*x = AttestationServiceStoreResponse_Result{}
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[24]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1595,7 +1668,7 @@ func (x *AttestationServiceStoreResponse_Result) String() string {
 func (*AttestationServiceStoreResponse_Result) ProtoMessage() {}
 
 func (x *AttestationServiceStoreResponse_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[24]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1631,7 +1704,7 @@ type WorkflowRunServiceViewResponse_Result struct {
 
 func (x *WorkflowRunServiceViewResponse_Result) Reset() {
 	*x = WorkflowRunServiceViewResponse_Result{}
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[25]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1643,7 +1716,7 @@ func (x *WorkflowRunServiceViewResponse_Result) String() string {
 func (*WorkflowRunServiceViewResponse_Result) ProtoMessage() {}
 
 func (x *WorkflowRunServiceViewResponse_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[25]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1699,7 +1772,7 @@ type WorkflowRunServiceViewResponse_VerificationResult struct {
 
 func (x *WorkflowRunServiceViewResponse_VerificationResult) Reset() {
 	*x = WorkflowRunServiceViewResponse_VerificationResult{}
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[26]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1711,7 +1784,7 @@ func (x *WorkflowRunServiceViewResponse_VerificationResult) String() string {
 func (*WorkflowRunServiceViewResponse_VerificationResult) ProtoMessage() {}
 
 func (x *WorkflowRunServiceViewResponse_VerificationResult) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[26]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1751,7 +1824,7 @@ type AttestationServiceGetUploadCredsResponse_Result struct {
 
 func (x *AttestationServiceGetUploadCredsResponse_Result) Reset() {
 	*x = AttestationServiceGetUploadCredsResponse_Result{}
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[27]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1763,7 +1836,7 @@ func (x *AttestationServiceGetUploadCredsResponse_Result) String() string {
 func (*AttestationServiceGetUploadCredsResponse_Result) ProtoMessage() {}
 
 func (x *AttestationServiceGetUploadCredsResponse_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[27]
+	mi := &file_controlplane_v1_workflow_run_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1832,7 +1905,7 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x06result\x18\x01 \x01(\v2=.controlplane.v1.AttestationServiceGetContractResponse.ResultR\x06result\x1a\x8d\x01\n" +
 	"\x06Result\x129\n" +
 	"\bworkflow\x18\x01 \x01(\v2\x1d.controlplane.v1.WorkflowItemR\bworkflow\x12H\n" +
-	"\bcontract\x18\x02 \x01(\v2,.controlplane.v1.WorkflowContractVersionItemR\bcontract\"\xdd\x03\n" +
+	"\bcontract\x18\x02 \x01(\v2,.controlplane.v1.WorkflowContractVersionItemR\bcontract\"\x88\x04\n" +
 	"\x1dAttestationServiceInitRequest\x12+\n" +
 	"\x11contract_revision\x18\x01 \x01(\x05R\x10contractRevision\x12\x17\n" +
 	"\ajob_url\x18\x02 \x01(\tR\x06jobUrl\x12M\n" +
@@ -1842,10 +1915,12 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x0fproject_version\x18\x06 \x01(\tR\x0eprojectVersion\x128\n" +
 	"\x18require_existing_version\x18\a \x01(\bR\x16requireExistingVersion\x12,\n" +
 	"\x12use_latest_version\x18\b \x01(\bR\x10useLatestVersion\x12)\n" +
-	"\x0emark_as_latest\x18\t \x01(\bH\x00R\fmarkAsLatest\x88\x01\x01B\x11\n" +
-	"\x0f_mark_as_latest\"\xc5\x05\n" +
+	"\x0emark_as_latest\x18\t \x01(\bH\x00R\fmarkAsLatest\x88\x01\x01\x12)\n" +
+	"\x10sandbox_identity\x18\n" +
+	" \x01(\tR\x0fsandboxIdentityB\x11\n" +
+	"\x0f_mark_as_latest\"\x84\a\n" +
 	"\x1eAttestationServiceInitResponse\x12N\n" +
-	"\x06result\x18\x01 \x01(\v26.controlplane.v1.AttestationServiceInitResponse.ResultR\x06result\x1a\xe9\x03\n" +
+	"\x06result\x18\x01 \x01(\v26.controlplane.v1.AttestationServiceInitResponse.ResultR\x06result\x1a\xdb\x04\n" +
 	"\x06Result\x12C\n" +
 	"\fworkflow_run\x18\x02 \x01(\v2 .controlplane.v1.WorkflowRunItemR\vworkflowRun\x12\"\n" +
 	"\forganization\x18\x03 \x01(\tR\forganization\x129\n" +
@@ -1854,7 +1929,12 @@ const file_controlplane_v1_workflow_run_proto_rawDesc = "" +
 	"\x1apolicies_allowed_hostnames\x18\x06 \x03(\tR\x18policiesAllowedHostnames\x12(\n" +
 	"\x10ui_dashboard_url\x18\a \x01(\tR\x0euiDashboardUrl\x129\n" +
 	"\x19enable_ai_agent_collector\x18\b \x01(\bR\x16enableAiAgentCollector\x12/\n" +
-	"\x14skip_runner_env_vars\x18\t \x01(\bR\x11skipRunnerEnvVars\x1ag\n" +
+	"\x14skip_runner_env_vars\x18\t \x01(\bR\x11skipRunnerEnvVars\x12p\n" +
+	"\x10sandbox_identity\x18\n" +
+	" \x01(\v2E.controlplane.v1.AttestationServiceInitResponse.SandboxIdentityResultR\x0fsandboxIdentity\x1aK\n" +
+	"\x15SandboxIdentityResult\x12\x1a\n" +
+	"\bverified\x18\x01 \x01(\bR\bverified\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\x1ag\n" +
 	"\x0eSigningOptions\x126\n" +
 	"\x17timestamp_authority_url\x18\x01 \x01(\tR\x15timestampAuthorityUrl\x12\x1d\n" +
 	"\n" +
@@ -1945,105 +2025,107 @@ func file_controlplane_v1_workflow_run_proto_rawDescGZIP() []byte {
 }
 
 var file_controlplane_v1_workflow_run_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_controlplane_v1_workflow_run_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
+var file_controlplane_v1_workflow_run_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_controlplane_v1_workflow_run_proto_goTypes = []any{
-	(AttestationServiceCancelRequest_TriggerType)(0),          // 0: controlplane.v1.AttestationServiceCancelRequest.TriggerType
-	(*FindOrCreateWorkflowRequest)(nil),                       // 1: controlplane.v1.FindOrCreateWorkflowRequest
-	(*FindOrCreateWorkflowResponse)(nil),                      // 2: controlplane.v1.FindOrCreateWorkflowResponse
-	(*AttestationServiceGetPolicyRequest)(nil),                // 3: controlplane.v1.AttestationServiceGetPolicyRequest
-	(*AttestationServiceGetPolicyResponse)(nil),               // 4: controlplane.v1.AttestationServiceGetPolicyResponse
-	(*RemotePolicyReference)(nil),                             // 5: controlplane.v1.RemotePolicyReference
-	(*AttestationServiceGetPolicyGroupRequest)(nil),           // 6: controlplane.v1.AttestationServiceGetPolicyGroupRequest
-	(*AttestationServiceGetPolicyGroupResponse)(nil),          // 7: controlplane.v1.AttestationServiceGetPolicyGroupResponse
-	(*AttestationServiceGetContractRequest)(nil),              // 8: controlplane.v1.AttestationServiceGetContractRequest
-	(*AttestationServiceGetContractResponse)(nil),             // 9: controlplane.v1.AttestationServiceGetContractResponse
-	(*AttestationServiceInitRequest)(nil),                     // 10: controlplane.v1.AttestationServiceInitRequest
-	(*AttestationServiceInitResponse)(nil),                    // 11: controlplane.v1.AttestationServiceInitResponse
-	(*AttestationServiceStoreRequest)(nil),                    // 12: controlplane.v1.AttestationServiceStoreRequest
-	(*AttestationServiceStoreResponse)(nil),                   // 13: controlplane.v1.AttestationServiceStoreResponse
-	(*AttestationServiceCancelRequest)(nil),                   // 14: controlplane.v1.AttestationServiceCancelRequest
-	(*AttestationServiceCancelResponse)(nil),                  // 15: controlplane.v1.AttestationServiceCancelResponse
-	(*WorkflowRunServiceListRequest)(nil),                     // 16: controlplane.v1.WorkflowRunServiceListRequest
-	(*WorkflowRunServiceListResponse)(nil),                    // 17: controlplane.v1.WorkflowRunServiceListResponse
-	(*WorkflowRunServiceViewRequest)(nil),                     // 18: controlplane.v1.WorkflowRunServiceViewRequest
-	(*WorkflowRunServiceViewResponse)(nil),                    // 19: controlplane.v1.WorkflowRunServiceViewResponse
-	(*AttestationServiceGetUploadCredsRequest)(nil),           // 20: controlplane.v1.AttestationServiceGetUploadCredsRequest
-	(*AttestationServiceGetUploadCredsResponse)(nil),          // 21: controlplane.v1.AttestationServiceGetUploadCredsResponse
-	(*AttestationServiceGetContractResponse_Result)(nil),      // 22: controlplane.v1.AttestationServiceGetContractResponse.Result
-	(*AttestationServiceInitResponse_Result)(nil),             // 23: controlplane.v1.AttestationServiceInitResponse.Result
-	(*AttestationServiceInitResponse_SigningOptions)(nil),     // 24: controlplane.v1.AttestationServiceInitResponse.SigningOptions
-	(*AttestationServiceStoreResponse_Result)(nil),            // 25: controlplane.v1.AttestationServiceStoreResponse.Result
-	(*WorkflowRunServiceViewResponse_Result)(nil),             // 26: controlplane.v1.WorkflowRunServiceViewResponse.Result
-	(*WorkflowRunServiceViewResponse_VerificationResult)(nil), // 27: controlplane.v1.WorkflowRunServiceViewResponse.VerificationResult
-	(*AttestationServiceGetUploadCredsResponse_Result)(nil),   // 28: controlplane.v1.AttestationServiceGetUploadCredsResponse.Result
-	(*WorkflowItem)(nil),                                      // 29: controlplane.v1.WorkflowItem
-	(*v1.Policy)(nil),                                         // 30: workflowcontract.v1.Policy
-	(*v1.PolicyGroup)(nil),                                    // 31: workflowcontract.v1.PolicyGroup
-	(v1.CraftingSchema_Runner_RunnerType)(0),                  // 32: workflowcontract.v1.CraftingSchema.Runner.RunnerType
-	(RunStatus)(0),                                            // 33: controlplane.v1.RunStatus
-	(PolicyViolationsFilter)(0),                               // 34: controlplane.v1.PolicyViolationsFilter
-	(PolicyStatusFilter)(0),                                   // 35: controlplane.v1.PolicyStatusFilter
-	(PolicyGatesFilter)(0),                                    // 36: controlplane.v1.PolicyGatesFilter
-	(*CursorPaginationRequest)(nil),                           // 37: controlplane.v1.CursorPaginationRequest
-	(*WorkflowRunItem)(nil),                                   // 38: controlplane.v1.WorkflowRunItem
-	(*CursorPaginationResponse)(nil),                          // 39: controlplane.v1.CursorPaginationResponse
-	(*WorkflowContractVersionItem)(nil),                       // 40: controlplane.v1.WorkflowContractVersionItem
-	(*AttestationItem)(nil),                                   // 41: controlplane.v1.AttestationItem
-	(*CASBackendItem)(nil),                                    // 42: controlplane.v1.CASBackendItem
+	(AttestationServiceCancelRequest_TriggerType)(0),             // 0: controlplane.v1.AttestationServiceCancelRequest.TriggerType
+	(*FindOrCreateWorkflowRequest)(nil),                          // 1: controlplane.v1.FindOrCreateWorkflowRequest
+	(*FindOrCreateWorkflowResponse)(nil),                         // 2: controlplane.v1.FindOrCreateWorkflowResponse
+	(*AttestationServiceGetPolicyRequest)(nil),                   // 3: controlplane.v1.AttestationServiceGetPolicyRequest
+	(*AttestationServiceGetPolicyResponse)(nil),                  // 4: controlplane.v1.AttestationServiceGetPolicyResponse
+	(*RemotePolicyReference)(nil),                                // 5: controlplane.v1.RemotePolicyReference
+	(*AttestationServiceGetPolicyGroupRequest)(nil),              // 6: controlplane.v1.AttestationServiceGetPolicyGroupRequest
+	(*AttestationServiceGetPolicyGroupResponse)(nil),             // 7: controlplane.v1.AttestationServiceGetPolicyGroupResponse
+	(*AttestationServiceGetContractRequest)(nil),                 // 8: controlplane.v1.AttestationServiceGetContractRequest
+	(*AttestationServiceGetContractResponse)(nil),                // 9: controlplane.v1.AttestationServiceGetContractResponse
+	(*AttestationServiceInitRequest)(nil),                        // 10: controlplane.v1.AttestationServiceInitRequest
+	(*AttestationServiceInitResponse)(nil),                       // 11: controlplane.v1.AttestationServiceInitResponse
+	(*AttestationServiceStoreRequest)(nil),                       // 12: controlplane.v1.AttestationServiceStoreRequest
+	(*AttestationServiceStoreResponse)(nil),                      // 13: controlplane.v1.AttestationServiceStoreResponse
+	(*AttestationServiceCancelRequest)(nil),                      // 14: controlplane.v1.AttestationServiceCancelRequest
+	(*AttestationServiceCancelResponse)(nil),                     // 15: controlplane.v1.AttestationServiceCancelResponse
+	(*WorkflowRunServiceListRequest)(nil),                        // 16: controlplane.v1.WorkflowRunServiceListRequest
+	(*WorkflowRunServiceListResponse)(nil),                       // 17: controlplane.v1.WorkflowRunServiceListResponse
+	(*WorkflowRunServiceViewRequest)(nil),                        // 18: controlplane.v1.WorkflowRunServiceViewRequest
+	(*WorkflowRunServiceViewResponse)(nil),                       // 19: controlplane.v1.WorkflowRunServiceViewResponse
+	(*AttestationServiceGetUploadCredsRequest)(nil),              // 20: controlplane.v1.AttestationServiceGetUploadCredsRequest
+	(*AttestationServiceGetUploadCredsResponse)(nil),             // 21: controlplane.v1.AttestationServiceGetUploadCredsResponse
+	(*AttestationServiceGetContractResponse_Result)(nil),         // 22: controlplane.v1.AttestationServiceGetContractResponse.Result
+	(*AttestationServiceInitResponse_Result)(nil),                // 23: controlplane.v1.AttestationServiceInitResponse.Result
+	(*AttestationServiceInitResponse_SandboxIdentityResult)(nil), // 24: controlplane.v1.AttestationServiceInitResponse.SandboxIdentityResult
+	(*AttestationServiceInitResponse_SigningOptions)(nil),        // 25: controlplane.v1.AttestationServiceInitResponse.SigningOptions
+	(*AttestationServiceStoreResponse_Result)(nil),               // 26: controlplane.v1.AttestationServiceStoreResponse.Result
+	(*WorkflowRunServiceViewResponse_Result)(nil),                // 27: controlplane.v1.WorkflowRunServiceViewResponse.Result
+	(*WorkflowRunServiceViewResponse_VerificationResult)(nil),    // 28: controlplane.v1.WorkflowRunServiceViewResponse.VerificationResult
+	(*AttestationServiceGetUploadCredsResponse_Result)(nil),      // 29: controlplane.v1.AttestationServiceGetUploadCredsResponse.Result
+	(*WorkflowItem)(nil),                                         // 30: controlplane.v1.WorkflowItem
+	(*v1.Policy)(nil),                                            // 31: workflowcontract.v1.Policy
+	(*v1.PolicyGroup)(nil),                                       // 32: workflowcontract.v1.PolicyGroup
+	(v1.CraftingSchema_Runner_RunnerType)(0),                     // 33: workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	(RunStatus)(0),                                               // 34: controlplane.v1.RunStatus
+	(PolicyViolationsFilter)(0),                                  // 35: controlplane.v1.PolicyViolationsFilter
+	(PolicyStatusFilter)(0),                                      // 36: controlplane.v1.PolicyStatusFilter
+	(PolicyGatesFilter)(0),                                       // 37: controlplane.v1.PolicyGatesFilter
+	(*CursorPaginationRequest)(nil),                              // 38: controlplane.v1.CursorPaginationRequest
+	(*WorkflowRunItem)(nil),                                      // 39: controlplane.v1.WorkflowRunItem
+	(*CursorPaginationResponse)(nil),                             // 40: controlplane.v1.CursorPaginationResponse
+	(*WorkflowContractVersionItem)(nil),                          // 41: controlplane.v1.WorkflowContractVersionItem
+	(*AttestationItem)(nil),                                      // 42: controlplane.v1.AttestationItem
+	(*CASBackendItem)(nil),                                       // 43: controlplane.v1.CASBackendItem
 }
 var file_controlplane_v1_workflow_run_proto_depIdxs = []int32{
-	29, // 0: controlplane.v1.FindOrCreateWorkflowResponse.result:type_name -> controlplane.v1.WorkflowItem
-	30, // 1: controlplane.v1.AttestationServiceGetPolicyResponse.policy:type_name -> workflowcontract.v1.Policy
+	30, // 0: controlplane.v1.FindOrCreateWorkflowResponse.result:type_name -> controlplane.v1.WorkflowItem
+	31, // 1: controlplane.v1.AttestationServiceGetPolicyResponse.policy:type_name -> workflowcontract.v1.Policy
 	5,  // 2: controlplane.v1.AttestationServiceGetPolicyResponse.reference:type_name -> controlplane.v1.RemotePolicyReference
-	31, // 3: controlplane.v1.AttestationServiceGetPolicyGroupResponse.group:type_name -> workflowcontract.v1.PolicyGroup
+	32, // 3: controlplane.v1.AttestationServiceGetPolicyGroupResponse.group:type_name -> workflowcontract.v1.PolicyGroup
 	5,  // 4: controlplane.v1.AttestationServiceGetPolicyGroupResponse.reference:type_name -> controlplane.v1.RemotePolicyReference
 	22, // 5: controlplane.v1.AttestationServiceGetContractResponse.result:type_name -> controlplane.v1.AttestationServiceGetContractResponse.Result
-	32, // 6: controlplane.v1.AttestationServiceInitRequest.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
+	33, // 6: controlplane.v1.AttestationServiceInitRequest.runner:type_name -> workflowcontract.v1.CraftingSchema.Runner.RunnerType
 	23, // 7: controlplane.v1.AttestationServiceInitResponse.result:type_name -> controlplane.v1.AttestationServiceInitResponse.Result
-	25, // 8: controlplane.v1.AttestationServiceStoreResponse.result:type_name -> controlplane.v1.AttestationServiceStoreResponse.Result
+	26, // 8: controlplane.v1.AttestationServiceStoreResponse.result:type_name -> controlplane.v1.AttestationServiceStoreResponse.Result
 	0,  // 9: controlplane.v1.AttestationServiceCancelRequest.trigger:type_name -> controlplane.v1.AttestationServiceCancelRequest.TriggerType
-	33, // 10: controlplane.v1.WorkflowRunServiceListRequest.status:type_name -> controlplane.v1.RunStatus
-	34, // 11: controlplane.v1.WorkflowRunServiceListRequest.policy_violations:type_name -> controlplane.v1.PolicyViolationsFilter
-	35, // 12: controlplane.v1.WorkflowRunServiceListRequest.policy_status:type_name -> controlplane.v1.PolicyStatusFilter
-	36, // 13: controlplane.v1.WorkflowRunServiceListRequest.policy_gates:type_name -> controlplane.v1.PolicyGatesFilter
-	37, // 14: controlplane.v1.WorkflowRunServiceListRequest.pagination:type_name -> controlplane.v1.CursorPaginationRequest
-	38, // 15: controlplane.v1.WorkflowRunServiceListResponse.result:type_name -> controlplane.v1.WorkflowRunItem
-	39, // 16: controlplane.v1.WorkflowRunServiceListResponse.pagination:type_name -> controlplane.v1.CursorPaginationResponse
-	26, // 17: controlplane.v1.WorkflowRunServiceViewResponse.result:type_name -> controlplane.v1.WorkflowRunServiceViewResponse.Result
-	28, // 18: controlplane.v1.AttestationServiceGetUploadCredsResponse.result:type_name -> controlplane.v1.AttestationServiceGetUploadCredsResponse.Result
-	29, // 19: controlplane.v1.AttestationServiceGetContractResponse.Result.workflow:type_name -> controlplane.v1.WorkflowItem
-	40, // 20: controlplane.v1.AttestationServiceGetContractResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractVersionItem
-	38, // 21: controlplane.v1.AttestationServiceInitResponse.Result.workflow_run:type_name -> controlplane.v1.WorkflowRunItem
-	24, // 22: controlplane.v1.AttestationServiceInitResponse.Result.signing_options:type_name -> controlplane.v1.AttestationServiceInitResponse.SigningOptions
-	38, // 23: controlplane.v1.WorkflowRunServiceViewResponse.Result.workflow_run:type_name -> controlplane.v1.WorkflowRunItem
-	41, // 24: controlplane.v1.WorkflowRunServiceViewResponse.Result.attestation:type_name -> controlplane.v1.AttestationItem
-	27, // 25: controlplane.v1.WorkflowRunServiceViewResponse.Result.verification:type_name -> controlplane.v1.WorkflowRunServiceViewResponse.VerificationResult
-	42, // 26: controlplane.v1.AttestationServiceGetUploadCredsResponse.Result.backend:type_name -> controlplane.v1.CASBackendItem
-	1,  // 27: controlplane.v1.AttestationService.FindOrCreateWorkflow:input_type -> controlplane.v1.FindOrCreateWorkflowRequest
-	8,  // 28: controlplane.v1.AttestationService.GetContract:input_type -> controlplane.v1.AttestationServiceGetContractRequest
-	10, // 29: controlplane.v1.AttestationService.Init:input_type -> controlplane.v1.AttestationServiceInitRequest
-	12, // 30: controlplane.v1.AttestationService.Store:input_type -> controlplane.v1.AttestationServiceStoreRequest
-	20, // 31: controlplane.v1.AttestationService.GetUploadCreds:input_type -> controlplane.v1.AttestationServiceGetUploadCredsRequest
-	14, // 32: controlplane.v1.AttestationService.Cancel:input_type -> controlplane.v1.AttestationServiceCancelRequest
-	3,  // 33: controlplane.v1.AttestationService.GetPolicy:input_type -> controlplane.v1.AttestationServiceGetPolicyRequest
-	6,  // 34: controlplane.v1.AttestationService.GetPolicyGroup:input_type -> controlplane.v1.AttestationServiceGetPolicyGroupRequest
-	16, // 35: controlplane.v1.WorkflowRunService.List:input_type -> controlplane.v1.WorkflowRunServiceListRequest
-	18, // 36: controlplane.v1.WorkflowRunService.View:input_type -> controlplane.v1.WorkflowRunServiceViewRequest
-	2,  // 37: controlplane.v1.AttestationService.FindOrCreateWorkflow:output_type -> controlplane.v1.FindOrCreateWorkflowResponse
-	9,  // 38: controlplane.v1.AttestationService.GetContract:output_type -> controlplane.v1.AttestationServiceGetContractResponse
-	11, // 39: controlplane.v1.AttestationService.Init:output_type -> controlplane.v1.AttestationServiceInitResponse
-	13, // 40: controlplane.v1.AttestationService.Store:output_type -> controlplane.v1.AttestationServiceStoreResponse
-	21, // 41: controlplane.v1.AttestationService.GetUploadCreds:output_type -> controlplane.v1.AttestationServiceGetUploadCredsResponse
-	15, // 42: controlplane.v1.AttestationService.Cancel:output_type -> controlplane.v1.AttestationServiceCancelResponse
-	4,  // 43: controlplane.v1.AttestationService.GetPolicy:output_type -> controlplane.v1.AttestationServiceGetPolicyResponse
-	7,  // 44: controlplane.v1.AttestationService.GetPolicyGroup:output_type -> controlplane.v1.AttestationServiceGetPolicyGroupResponse
-	17, // 45: controlplane.v1.WorkflowRunService.List:output_type -> controlplane.v1.WorkflowRunServiceListResponse
-	19, // 46: controlplane.v1.WorkflowRunService.View:output_type -> controlplane.v1.WorkflowRunServiceViewResponse
-	37, // [37:47] is the sub-list for method output_type
-	27, // [27:37] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	34, // 10: controlplane.v1.WorkflowRunServiceListRequest.status:type_name -> controlplane.v1.RunStatus
+	35, // 11: controlplane.v1.WorkflowRunServiceListRequest.policy_violations:type_name -> controlplane.v1.PolicyViolationsFilter
+	36, // 12: controlplane.v1.WorkflowRunServiceListRequest.policy_status:type_name -> controlplane.v1.PolicyStatusFilter
+	37, // 13: controlplane.v1.WorkflowRunServiceListRequest.policy_gates:type_name -> controlplane.v1.PolicyGatesFilter
+	38, // 14: controlplane.v1.WorkflowRunServiceListRequest.pagination:type_name -> controlplane.v1.CursorPaginationRequest
+	39, // 15: controlplane.v1.WorkflowRunServiceListResponse.result:type_name -> controlplane.v1.WorkflowRunItem
+	40, // 16: controlplane.v1.WorkflowRunServiceListResponse.pagination:type_name -> controlplane.v1.CursorPaginationResponse
+	27, // 17: controlplane.v1.WorkflowRunServiceViewResponse.result:type_name -> controlplane.v1.WorkflowRunServiceViewResponse.Result
+	29, // 18: controlplane.v1.AttestationServiceGetUploadCredsResponse.result:type_name -> controlplane.v1.AttestationServiceGetUploadCredsResponse.Result
+	30, // 19: controlplane.v1.AttestationServiceGetContractResponse.Result.workflow:type_name -> controlplane.v1.WorkflowItem
+	41, // 20: controlplane.v1.AttestationServiceGetContractResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractVersionItem
+	39, // 21: controlplane.v1.AttestationServiceInitResponse.Result.workflow_run:type_name -> controlplane.v1.WorkflowRunItem
+	25, // 22: controlplane.v1.AttestationServiceInitResponse.Result.signing_options:type_name -> controlplane.v1.AttestationServiceInitResponse.SigningOptions
+	24, // 23: controlplane.v1.AttestationServiceInitResponse.Result.sandbox_identity:type_name -> controlplane.v1.AttestationServiceInitResponse.SandboxIdentityResult
+	39, // 24: controlplane.v1.WorkflowRunServiceViewResponse.Result.workflow_run:type_name -> controlplane.v1.WorkflowRunItem
+	42, // 25: controlplane.v1.WorkflowRunServiceViewResponse.Result.attestation:type_name -> controlplane.v1.AttestationItem
+	28, // 26: controlplane.v1.WorkflowRunServiceViewResponse.Result.verification:type_name -> controlplane.v1.WorkflowRunServiceViewResponse.VerificationResult
+	43, // 27: controlplane.v1.AttestationServiceGetUploadCredsResponse.Result.backend:type_name -> controlplane.v1.CASBackendItem
+	1,  // 28: controlplane.v1.AttestationService.FindOrCreateWorkflow:input_type -> controlplane.v1.FindOrCreateWorkflowRequest
+	8,  // 29: controlplane.v1.AttestationService.GetContract:input_type -> controlplane.v1.AttestationServiceGetContractRequest
+	10, // 30: controlplane.v1.AttestationService.Init:input_type -> controlplane.v1.AttestationServiceInitRequest
+	12, // 31: controlplane.v1.AttestationService.Store:input_type -> controlplane.v1.AttestationServiceStoreRequest
+	20, // 32: controlplane.v1.AttestationService.GetUploadCreds:input_type -> controlplane.v1.AttestationServiceGetUploadCredsRequest
+	14, // 33: controlplane.v1.AttestationService.Cancel:input_type -> controlplane.v1.AttestationServiceCancelRequest
+	3,  // 34: controlplane.v1.AttestationService.GetPolicy:input_type -> controlplane.v1.AttestationServiceGetPolicyRequest
+	6,  // 35: controlplane.v1.AttestationService.GetPolicyGroup:input_type -> controlplane.v1.AttestationServiceGetPolicyGroupRequest
+	16, // 36: controlplane.v1.WorkflowRunService.List:input_type -> controlplane.v1.WorkflowRunServiceListRequest
+	18, // 37: controlplane.v1.WorkflowRunService.View:input_type -> controlplane.v1.WorkflowRunServiceViewRequest
+	2,  // 38: controlplane.v1.AttestationService.FindOrCreateWorkflow:output_type -> controlplane.v1.FindOrCreateWorkflowResponse
+	9,  // 39: controlplane.v1.AttestationService.GetContract:output_type -> controlplane.v1.AttestationServiceGetContractResponse
+	11, // 40: controlplane.v1.AttestationService.Init:output_type -> controlplane.v1.AttestationServiceInitResponse
+	13, // 41: controlplane.v1.AttestationService.Store:output_type -> controlplane.v1.AttestationServiceStoreResponse
+	21, // 42: controlplane.v1.AttestationService.GetUploadCreds:output_type -> controlplane.v1.AttestationServiceGetUploadCredsResponse
+	15, // 43: controlplane.v1.AttestationService.Cancel:output_type -> controlplane.v1.AttestationServiceCancelResponse
+	4,  // 44: controlplane.v1.AttestationService.GetPolicy:output_type -> controlplane.v1.AttestationServiceGetPolicyResponse
+	7,  // 45: controlplane.v1.AttestationService.GetPolicyGroup:output_type -> controlplane.v1.AttestationServiceGetPolicyGroupResponse
+	17, // 46: controlplane.v1.WorkflowRunService.List:output_type -> controlplane.v1.WorkflowRunServiceListResponse
+	19, // 47: controlplane.v1.WorkflowRunService.View:output_type -> controlplane.v1.WorkflowRunServiceViewResponse
+	38, // [38:48] is the sub-list for method output_type
+	28, // [28:38] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_workflow_run_proto_init() }
@@ -2065,7 +2147,7 @@ func file_controlplane_v1_workflow_run_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_controlplane_v1_workflow_run_proto_rawDesc), len(file_controlplane_v1_workflow_run_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   28,
+			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   2,
 		},

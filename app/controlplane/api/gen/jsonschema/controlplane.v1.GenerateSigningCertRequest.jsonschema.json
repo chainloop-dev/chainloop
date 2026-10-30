@@ -7,6 +7,10 @@
       "minLength": 2,
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
+    },
+    "^(sandbox_identity_issuer)$": {
+      "description": "Request a certificate that can sign the identity of a Chainloop sandbox.\n Only a caller with the dedicated permission gets it, other callers are denied.",
+      "type": "boolean"
     }
   },
   "properties": {
@@ -14,6 +18,10 @@
       "minLength": 2,
       "pattern": "^[A-Za-z0-9+/]*={0,2}$",
       "type": "string"
+    },
+    "sandboxIdentityIssuer": {
+      "description": "Request a certificate that can sign the identity of a Chainloop sandbox.\n Only a caller with the dedicated permission gets it, other callers are denied.",
+      "type": "boolean"
     }
   },
   "title": "Generate Signing Cert Request",
