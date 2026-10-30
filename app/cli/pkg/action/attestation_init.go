@@ -519,8 +519,10 @@ func extractAuthInfo(authToken string) (*clientAPI.Attestation_Auth, error) {
 	}
 
 	return &clientAPI.Attestation_Auth{
-		Type: parsed.TokenType,
-		Id:   parsed.ID,
+		Type:    parsed.TokenType,
+		Id:      parsed.ID,
+		Name:    parsed.Name,
+		Subject: parsed.Subject,
 	}, nil
 }
 

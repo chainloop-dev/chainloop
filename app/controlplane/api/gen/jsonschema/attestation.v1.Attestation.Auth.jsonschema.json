@@ -8,6 +8,14 @@
       "minLength": 1,
       "type": "string"
     },
+    "name": {
+      "description": "Name of the API token. Set only for AUTH_TYPE_API_TOKEN.",
+      "type": "string"
+    },
+    "subject": {
+      "description": "OIDC subject (\"sub\" claim) of the federated token. Set only for AUTH_TYPE_FEDERATED.",
+      "type": "string"
+    },
     "type": {
       "anyOf": [
         {
