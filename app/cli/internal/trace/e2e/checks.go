@@ -437,6 +437,9 @@ func checkTicketPointer(s *Session) error {
 }
 
 func checkSubagents(s *Session) error {
+	if evidence(s).Agent.Name == "pi" {
+		return checkPiSubagents(evidence(s))
+	}
 	subs := evidence(s).Subagents
 	if len(subs) == 0 {
 		return errors.New("the evidence has no subagent")

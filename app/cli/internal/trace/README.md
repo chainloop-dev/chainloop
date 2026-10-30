@@ -14,7 +14,11 @@ Pi supports the JSONL v3 format used by Pi 0.80.10. The compatibility suite pins
 
 Pi evidence preserves native `input`, `output`, `cacheRead`, and `cacheWrite` as separate categories. Evidence `total_tokens` is recomputed as base input + output, excluding both cache categories, regardless of supplied `totalTokens`. The 100/20/10/5 fixture therefore records total 120, not 135. Supplied `cost.total` remains authoritative, without repricing. Invalid or overflowing counters are ignored with deterministic warnings; if input + output overflows, the evidence total is omitted with a warning while individual counters remain. Missing usage contributes zero. Only the selected branch is counted, including its history after resume, not abandoned branches or complete session spend. The Chainloop evidence field `schema_version` remains `v1`; it is not a Pi release or JSONL format version. Earlier Chainloop parsers used supplied totals, which may include cache, under the same evidence version; normalize historical evidence from raw records before combining totals.
 
-Pi 1.3.0 passed 26 feature checks in the local end-to-end suite, including a cache-active accounting run. Pi 0.80.10 also completed targeted TUI and JSON-headless smokes that exercised session start, `write`, `edit`, `bash`, commit attribution and session shutdown; the TUI showed the local-mode welcome message. Subagents, skills tracking, spec source pointers and pasted image pointers are not implemented. The headless suite cannot verify the UI-only welcome message, the control-plane credentials warning, the session link after a control-plane push or control-plane attestation. The multi-agent feature has no registered check.
+Pi 1.3.0 passed 26 feature checks in the local end-to-end suite, including a cache-active accounting run. Pi 0.80.10 also completed targeted TUI and JSON-headless smokes that exercised session start, `write`, `edit`, `bash`, commit attribution and session shutdown; the TUI showed the local-mode welcome message. The new pinned-format subagent scenario was attempted with Pi 1.3.0, but could not run because the validation environment has no OpenRouter API key. Skills tracking, spec source pointers and pasted image pointers are not implemented. The headless suite cannot verify the UI-only welcome message, the control-plane credentials warning, the session link after a control-plane push or control-plane attestation. The multi-agent feature has no registered check.
+
+Pi subagent support is limited to the official example extension's completed result format at [commit `71023aec1546d6d677a65669c5665c0927ce0dd0`](https://github.com/earendil-works/pi/tree/71023aec1546d6d677a65669c5665c0927ce0dd0/packages/coding-agent/examples/extensions/subagent), shipped in [Pi 1.3.0](https://github.com/earendil-works/pi/blob/71023aec1546d6d677a65669c5665c0927ce0dd0/packages/coding-agent/package.json). The supporting sources are [`index.ts`](https://github.com/earendil-works/pi/blob/71023aec1546d6d677a65669c5665c0927ce0dd0/packages/coding-agent/examples/extensions/subagent/index.ts), [`agents.ts`](https://github.com/earendil-works/pi/blob/71023aec1546d6d677a65669c5665c0927ce0dd0/packages/coding-agent/examples/extensions/subagent/agents.ts), and its [README](https://github.com/earendil-works/pi/blob/71023aec1546d6d677a65669c5665c0927ce0dd0/packages/coding-agent/examples/extensions/subagent/README.md). This does not claim arbitrary third-party extension support.
+
+For `single`, `parallel`, and `chain` results on the selected root branch, Trace reads `toolResult.details.results`, assigns IDs `subagent-<result-entry-id>-<1-based-result-index>`, and preserves each child's native messages, including tool results, in its own `raw_session` stream. Child messages are wrapped as Pi entries; missing message timestamps use the containing result's timestamp. Root conversation and tool summaries stay root-only, and the primary model stays the last selected root assistant's model. Child assistant models join `models_used`. Usage adds the completed result's aggregate `input`, `output`, `cacheRead`, `cacheWrite`, and numeric `cost` exactly once, not again from embedded assistant messages. Cache stays separate, `total_tokens` remains input + output, cost is not repriced, and `schema_version` remains `v1`. Failed children are retained; unavailable conversations or malformed optional data produce best-effort evidence and warnings. Abandoned branches and unrelated tools do not contribute children. The example runs children with `--no-session`; `parentSession` is not used to infer children.
 
 Codex uses native hooks in `.codex/hooks.json` (Codex CLI 0.163.0). Run `chainloop trace init --codex` or `chainloop trace run --local --codex -- codex exec …`. Review and trust the installed hooks in Codex before starting a session. See the [official hooks documentation](https://learn.chatgpt.com/docs/hooks). Installed hooks have a `Chainloop Trace` status label in Codex. Re-running init adds labels to existing Chainloop hooks. Changing the hooks requires a new trust review.
 
@@ -53,12 +57,12 @@ What the session evidence holds about the conversation.
 | Token usage and cost | The evidence holds the tokens that the session used and their cost in USD. | Yes | No | Yes | Yes | Yes | Yes |
 | Cache token accounting | Cache reads and writes stay in separate evidence fields. Base input and total exclude cache. The suite compares stored token counts with the raw usage records. | Unknown | No | Unknown | Unknown | Yes | Unknown |
 | Model detection | The evidence names the primary model and the other models that the session used. | Yes | Partial | Yes | Yes | Yes | Yes |
-| Subagents | The evidence holds the conversations of the subagents, and their token usage, as part of the session. | Yes | No | No | No | No | No |
+| Subagents | The evidence holds the conversations of the subagents, and their token usage, as part of the session. | Yes | No | No | No | Partial | No |
 | Missed session start | A session whose session-start hook did not fire is still recorded, from its first tool hook. | Yes | Unknown | Unknown | Yes | Yes | Unknown |
 
 Why not Yes:
 
-- **Subagents, Pi:** the provider records the selected root session only. Child session transcripts are not collected.
+- **Subagents, Pi:** only the commit-pinned official example result format is supported, not arbitrary extensions or inferred child sessions. Parser and packaging regressions cover all three modes, usage, and child content; the supported-format live scenario is blocked by missing OpenRouter authentication.
 - **Missed session start, Codex:** the scenario produces evidence, but its check also needs hook messages that Codex does not report in headless mode.
 - **Transcript, OpenCode:** OpenCode has no transcript file. The provider runs `opencode export` (1.x) or `opencode session export` (2) and rebuilds the transcript from the export. It keeps the text and the inputs of the tool calls. It drops the tool outputs, the reasoning and the file parts. OpenCode 2 exports also have no agent version and no session slug.
 - **Token usage and cost, Cursor:** the Cursor transcript does not hold token usage. Usage and cost are zero, and the evidence has a warning that tells so. (For OpenCode, the cost is the value that OpenCode reports. For Claude Code, Chainloop computes it from its price table.)
@@ -242,6 +246,16 @@ To run Pi only, set `OPENROUTER_API_KEY` in your environment, then run:
 ```bash
 CHAINLOOP_E2E_HARNESS=Pi make -C app/cli test-trace-e2e
 ```
+
+To check the supported Pi subagent format only, use an npm installation of Pi 1.3.0 with its shipped examples and set `OPENROUTER_API_KEY`, then run:
+
+```bash
+CHAINLOOP_E2E_HARNESS=Pi \
+CHAINLOOP_E2E_FEATURE=Subagents \
+make -C app/cli test-trace-e2e
+```
+
+This scenario loads the real official example from the installed package and checks the SHA-256 of both `index.ts` and `agents.ts` against the pinned commit before running. It uses an isolated read-only worker, then lets the parent write, commit, and push after the child returns. Its check compares stored child conversations and tool-result content with the native completed result and verifies parent plus child usage, cache, and cost exactly once. This is a live test command, not a recorded pass.
 
 To retain the workspace and agent output for a failure:
 

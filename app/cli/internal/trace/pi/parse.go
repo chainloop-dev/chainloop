@@ -250,9 +250,11 @@ func selectLastBranch(entries []*sessionEntry, byID map[string]*sessionEntry) ([
 
 type messageView struct {
 	Role     string
+	ToolName string
 	Provider string
 	Model    string
 	Content  json.RawMessage
+	Details  json.RawMessage
 	Usage    json.RawMessage
 	HasUsage bool
 }
@@ -270,10 +272,15 @@ type evidenceAccumulator struct {
 	userMessages    int
 	assistantMsgs   int
 	warnings        []string
+	subagents       []aicodingsession.Subagent
+	childStreams    map[string][]json.RawMessage
 }
 
 func buildEvidence(parsed *parsedSession, agentVersion string) *aicodingsession.Evidence {
-	acc := evidenceAccumulator{models: make(map[string]struct{}), tools: make(map[string]int)}
+	acc := evidenceAccumulator{
+		models: make(map[string]struct{}), tools: make(map[string]int),
+		childStreams: make(map[string][]json.RawMessage),
+	}
 	raw := make([]json.RawMessage, 0, len(parsed.Selected))
 
 	for _, entry := range parsed.Selected {
@@ -289,6 +296,10 @@ func buildEvidence(parsed *parsedSession, agentVersion string) *aicodingsession.
 			continue
 		}
 		switch message.Role {
+		case "toolResult":
+			if message.ToolName == "subagent" {
+				acc.addSubagentResults(entry, message.Details)
+			}
 		case "user":
 			acc.userMessages++
 		case "assistant":
@@ -320,6 +331,7 @@ func buildEvidence(parsed *parsedSession, agentVersion string) *aicodingsession.
 		}
 	}
 	duration := max(0, int(endedAt.Sub(parsed.StartedAt).Seconds()))
+	acc.childStreams["main"] = raw
 
 	return aicodingsession.NewEvidence(aicodingsession.Data{
 		SchemaVersion: "v1",
@@ -355,7 +367,8 @@ func buildEvidence(parsed *parsedSession, agentVersion string) *aicodingsession.
 			UserMessages:      acc.userMessages,
 			AssistantMessages: acc.assistantMsgs,
 		},
-		RawSession: map[string][]json.RawMessage{"main": raw},
+		Subagents:  acc.subagents,
+		RawSession: acc.childStreams,
 		Warnings:   acc.warnings,
 	})
 }
@@ -427,13 +440,16 @@ func decodeMessage(raw json.RawMessage) (messageView, bool) {
 	}
 	provider, _ := rawString(fields["provider"])
 	model, _ := rawString(fields["model"])
+	toolName, _ := rawString(fields["toolName"])
 	usage, hasUsage := fields["usage"]
 
 	return messageView{
 		Role:     role,
+		ToolName: toolName,
 		Provider: provider,
 		Model:    model,
 		Content:  cloneRaw(fields["content"]),
+		Details:  cloneRaw(fields["details"]),
 		Usage:    cloneRaw(usage),
 		HasUsage: hasUsage,
 	}, true

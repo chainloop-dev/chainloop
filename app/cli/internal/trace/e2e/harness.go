@@ -32,6 +32,8 @@ const (
 
 // RunRequest is one headless session of a harness.
 type RunRequest struct {
+	// Scenario lets an adapter prepare a harness-specific extension.
+	Scenario string
 	// Dir is the repository the session runs in.
 	Dir string
 	// Model is the model of the session, as the harness names it.

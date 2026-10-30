@@ -98,6 +98,15 @@ func (p *Pi) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 		flagModel, req.Model,
 		"--session-dir", sessionDir,
 	}
+	prompt := req.Prompt
+	if req.Scenario == scenarioSubagent {
+		extension, err := p.prepareSubagent(ctx, base)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, "--extension", extension)
+		prompt = piSubagentPrompt
+	}
 
 	// A pasted image goes in as an attached file, from outside the
 	// repository, so that the agent cannot commit it.
@@ -115,7 +124,7 @@ func (p *Pi) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 			args = append(args, "@"+path)
 		}
 	}
-	args = append(args, req.Prompt)
+	args = append(args, prompt)
 
 	name := p.bin()
 	if len(req.Wrapper) > 0 {

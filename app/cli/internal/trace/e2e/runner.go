@@ -222,7 +222,7 @@ func (r *Runner) runScenario(ctx context.Context, h Harness, model string, sc Sc
 		return &Session{Scenario: sc.Name, Model: model, Harness: h, Workspace: ws, Output: &RunOutput{}, Checkout: ws.Dir}, nil
 	}
 
-	req := RunRequest{Dir: ws.Dir, Model: model, Prompt: sc.Prompt, Env: ws.Env, Images: sc.Images}
+	req := RunRequest{Scenario: sc.Name, Dir: ws.Dir, Model: model, Prompt: sc.Prompt, Env: ws.Env, Images: sc.Images}
 	if sc.WrapTraceRun {
 		req.Wrapper = []string{r.ChainloopBin, "trace", "run", "--local", h.TraceFlag(), "--"}
 	}
