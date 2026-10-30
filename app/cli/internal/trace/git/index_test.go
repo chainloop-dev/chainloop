@@ -140,7 +140,7 @@ func TestClients_IndexBlobs_ReadsMultipleSnapshotHashes(t *testing.T) {
 		name   string
 		client Client
 	}{
-		{name: "exec", client: NewExecClient()},
+		{name: "git binary", client: NewExecClient()},
 		{name: "go-git", client: NewGoGitClient()},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
