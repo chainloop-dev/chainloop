@@ -255,7 +255,7 @@ CHAINLOOP_E2E_FEATURE=Subagents \
 make -C app/cli test-trace-e2e
 ```
 
-This scenario loads the real official example from the installed package and checks the SHA-256 of both `index.ts` and `agents.ts` against the pinned commit before running. It uses an isolated read-only worker, then lets the parent write, commit, and push after the child returns. Its check compares stored child conversations and tool-result content with the native completed result and verifies parent plus child usage, cache, and cost exactly once. This is a live test command, not a recorded pass.
+This scenario loads the real official example from the installed package and checks the SHA-256 of both `index.ts` and `agents.ts` against the pinned commit before running. It uses an isolated read-only worker, then lets the parent write, commit, and push after the child returns. Its check compares stored child conversations and tool-result content with the native completed result and verifies parent plus child usage, cache, and cost exactly once. A manual Pi 1.3.0 check with `openai-codex/gpt-6.1-sol` completed one real worker using the hash-verified official example. The pinned OpenRouter matrix remains blocked by an expired API key; the manual check is not a pass for that matrix.
 
 To retain the workspace and agent output for a failure:
 
