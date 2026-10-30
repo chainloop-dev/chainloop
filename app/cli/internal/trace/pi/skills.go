@@ -138,17 +138,20 @@ func selectedSkills(parsed *parsedSession, after int64) []trace.SkillUse {
 			}
 		case "assistant":
 			var blocks []struct {
-				Type      string        `json:"type"`
-				ID        string        `json:"id"`
-				Name      string        `json:"name"`
-				Arguments skillReadCall `json:"arguments"`
+				Type      string          `json:"type"`
+				ID        string          `json:"id"`
+				Name      string          `json:"name"`
+				Arguments json.RawMessage `json:"arguments"`
 			}
 			if json.Unmarshal(message.Content, &blocks) != nil {
 				continue
 			}
 			for _, block := range blocks {
 				if block.Type == "toolCall" && block.ID != "" && block.Name == "read" {
-					calls[block.ID] = block.Arguments
+					var call skillReadCall
+					if json.Unmarshal(block.Arguments, &call) == nil {
+						calls[block.ID] = call
+					}
 				}
 			}
 		case "toolResult":

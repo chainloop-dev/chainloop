@@ -61,6 +61,32 @@ func TestPiSessionSkills(t *testing.T) {
 		{name: "no loads", messages: []string{`{"role":"user","content":"List available skills."}`}},
 		{name: "available catalog is not a use", messages: []string{`{"role":"user","content":"<available_skills><skill><name>review</name><location>/skills/review/SKILL.md</location></skill></available_skills>"}`}},
 		{name: "completed read", messages: []string{read, result}, model: 1},
+		{
+			name: "non-read arguments do not discard completed reads",
+			messages: []string{
+				strings.Replace(read, `"content":[`, `"content":[{"type":"toolCall","id":"other","name":"bash","arguments":{"path":42}},`, 1),
+				result,
+			},
+			model: 1,
+		},
+		{
+			name: "malformed read arguments do not discard sibling reads",
+			messages: []string{
+				strings.Replace(read, `"content":[`, `"content":[{"type":"toolCall","id":"invalid","name":"read","arguments":{"path":42}},`, 1),
+				strings.ReplaceAll(result, "load-1", "invalid"),
+				result,
+			},
+			model: 1,
+		},
+		{
+			name: "fractional read offset does not discard sibling reads",
+			messages: []string{
+				strings.Replace(read, `"content":[`, `"content":[{"type":"toolCall","id":"invalid","name":"read","arguments":{"path":"skills/review/SKILL.md","offset":1.5}},`, 1),
+				strings.ReplaceAll(result, "load-1", "invalid"),
+				result,
+			},
+			model: 1,
+		},
 		{name: "CRLF definition", messages: []string{read, strings.Replace(result, fmt.Sprintf("%q", skillTestDefinition), fmt.Sprintf("%q", strings.ReplaceAll(skillTestDefinition, "\n", "\r\n")), 1)}, model: 1},
 		{name: "unfinished read", messages: []string{read}},
 		{name: "failed read", messages: []string{read, strings.Replace(result, `"isError":false`, `"isError":true`, 1)}},
