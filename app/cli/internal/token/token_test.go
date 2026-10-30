@@ -53,6 +53,7 @@ func TestParse(t *testing.T) {
 			want: &ParsedToken{
 				ID:        "https://chainloop.gitlab.com",
 				TokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+				Subject:   "project_path:chainloop/project:ref_type:branch:ref:main",
 			},
 		},
 		{
@@ -61,6 +62,25 @@ func TestParse(t *testing.T) {
 			want: &ParsedToken{
 				ID:        "https://token.actions.githubusercontent.com",
 				TokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+				Subject:   "repo:matiasinsaurralde/project:ref:refs/heads/main",
+			},
+		},
+		{
+			name:  "federated token without subject",
+			token: signedToken(t, federatedTokenAudience, jwt.MapClaims{"iss": "https://issuer.example.com"}),
+			want: &ParsedToken{
+				ID:        "https://issuer.example.com",
+				TokenType: v1.Attestation_Auth_AUTH_TYPE_FEDERATED,
+			},
+		},
+		{
+			name:  "api token with name",
+			token: signedToken(t, APIAudience, jwt.MapClaims{"jti": "token-id", "org_name": "my-org", "token_name": "release-pipeline-token"}),
+			want: &ParsedToken{
+				ID:        "token-id",
+				TokenType: v1.Attestation_Auth_AUTH_TYPE_API_TOKEN,
+				OrgName:   "my-org",
+				Name:      "release-pipeline-token",
 			},
 		},
 		{
@@ -93,17 +113,24 @@ func TestParse(t *testing.T) {
 			assert.Equal(t, tt.want.TokenType, got.TokenType)
 			assert.Equal(t, tt.want.OrgID, got.OrgID)
 			assert.Equal(t, tt.want.OrgName, got.OrgName)
+			assert.Equal(t, tt.want.Name, got.Name)
+			assert.Equal(t, tt.want.Subject, got.Subject)
 		})
 	}
+}
+
+func signedToken(t *testing.T, audience string, claims jwt.MapClaims) string {
+	t.Helper()
+	claims["aud"] = audience
+	raw, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("secret"))
+	require.NoError(t, err)
+	return raw
 }
 
 func TestMismatchedOrganization(t *testing.T) {
 	apiToken := func(t *testing.T, org string) string {
 		t.Helper()
-		claims := jwt.MapClaims{"aud": APIAudience, "jti": "some-id", "org_name": org}
-		raw, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("secret"))
-		require.NoError(t, err)
-		return raw
+		return signedToken(t, APIAudience, jwt.MapClaims{"jti": "some-id", "org_name": org})
 	}
 
 	t.Run("returns API token organization when it differs", func(t *testing.T) {

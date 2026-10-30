@@ -172,6 +172,10 @@ message Attestation {
     }];
     // Identifier of the authentication (user ID, token ID, etc.)
     string id = 2 [(buf.validate.field).string = {min_len: 1}];
+    // Name of the API token. Set only for AUTH_TYPE_API_TOKEN.
+    string name = 3;
+    // OIDC subject ("sub" claim) of the federated token. Set only for AUTH_TYPE_FEDERATED.
+    string subject = 4;
 
     enum AuthType {
       AUTH_TYPE_UNSPECIFIED = 0;
