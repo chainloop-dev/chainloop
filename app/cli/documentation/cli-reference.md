@@ -1964,6 +1964,318 @@ Options inherited from parent commands
 -y, --yes                       Skip confirmation
 ```
 
+## chainloop orcarouter
+
+Configure OrcaRouter Cyber Inference
+
+Synopsis
+
+OrcaRouter Cyber Inference is an OpenAI-compatible inference gateway for security teams.
+
+Cyber models for your red team, gateway controls for your blue team: it admits
+authorized, scoped security inference that general gateways often refuse or
+silently downgrade. See https://www.orcarouter.ai/cyber and the cyber model catalog at
+https://www.orcarouter.ai/models?tier=cyber.
+
+Two credential paths end at the same durable API key, and either one works on
+its own:
+
+chainloop orcarouter login       paste an existing sk-orca-... key
+chainloop orcarouter connect     authorize in a browser with OAuth 2.0 + PKCE
+
+Authentication uses https://www.orcarouter.ai; inference and model discovery use
+https://api.orcarouter.ai/v1.
+
+Options
+
+```
+-h, --help   help for orcarouter
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+### chainloop orcarouter chat
+
+Send one prompt through OrcaRouter Cyber Inference
+
+Synopsis
+
+Send one prompt to https://api.orcarouter.ai/v1 with the stored credential.
+
+The model is an ID from https://www.orcarouter.ai/models?tier=cyber; it defaults to
+orcarouter/auto, which routes automatically. Inference and model
+discovery use the inference origin, never the authentication origin.
+
+```
+chainloop orcarouter chat <prompt> [flags]
+```
+
+Options
+
+```
+-h, --help           help for chat
+--model string   model ID (default orcarouter/auto)
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+### chainloop orcarouter connect
+
+Authorize with an OrcaRouter Cyber Inference account (OAuth 2.0 + PKCE)
+
+Synopsis
+
+Authorize this machine with an OrcaRouter Cyber Inference account.
+
+The login opens a browser, receives the code on a loopback redirect, and
+exchanges it for a normal API key that belongs to your account: it is billed to
+you and revocable at https://www.orcarouter.ai/console/authorized-apps. No client secret is involved,
+because PKCE binds the code to this process.
+
+The key is durable and is reused until it is revoked. Re-authorizing on every
+launch would exhaust the per-user issuance limit.
+
+When no browser can be opened, the authorization URL is printed so it can be
+visited elsewhere; the loopback callback still receives the result.
+
+```
+chainloop orcarouter connect [flags]
+```
+
+Options
+
+```
+-h, --help         help for connect
+--no-browser   print the authorization URL instead of opening a browser
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+### chainloop orcarouter help
+
+Help about any command
+
+Synopsis
+
+Help provides help for any command in the application.
+Simply type orcarouter help [path to command] for full details.
+
+```
+chainloop orcarouter help [command] [flags]
+```
+
+Options
+
+```
+-h, --help   help for help
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+### chainloop orcarouter login
+
+Store an existing OrcaRouter Cyber Inference API key
+
+Synopsis
+
+Store an existing OrcaRouter Cyber Inference API key.
+
+Create or copy a key at https://www.orcarouter.ai/cyber. The key is checked for its
+documented shape only: the first request is what proves it works. It is written
+to the CLI configuration file and is never printed.
+
+```
+chainloop orcarouter login [flags]
+```
+
+Options
+
+```
+-h, --help         help for login
+--key string   API key to store; reads $ORCAROUTER_API_KEY or prompts when empty
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+### chainloop orcarouter logout
+
+Remove the stored OrcaRouter Cyber Inference credential
+
+```
+chainloop orcarouter logout [flags]
+```
+
+Options
+
+```
+-h, --help   help for logout
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+### chainloop orcarouter models
+
+List the OrcaRouter Cyber Inference models available to this credential
+
+Synopsis
+
+List the models that https://api.orcarouter.ai/v1/models returns for this credential,
+filtered for one entry point.
+
+The live catalog is authoritative. When it cannot be reached, a small verified
+fallback list is shown and marked degraded, so a fresh installation is not left
+with an empty selector.
+
+```
+chainloop orcarouter models [flags]
+```
+
+Options
+
+```
+--capability string   capability to list: chat, embedding, image, video, rerank (default "chat")
+-h, --help                help for models
+--image-input         only models that declare image input
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
+### chainloop orcarouter status
+
+Show the configured OrcaRouter Cyber Inference credential
+
+```
+chainloop orcarouter status [flags]
+```
+
+Options
+
+```
+-h, --help   help for status
+```
+
+Options inherited from parent commands
+
+```
+--artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug                     Enable debug/verbose logging mode
+-i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                organization name
+-o, --output string             Output format, valid options are json and table (default "table")
+-t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes                       Skip confirmation
+```
+
 ## chainloop organization
 
 Organizations management
