@@ -103,6 +103,8 @@ type Client interface {
 	// FileAt returns the content of a repo-relative path at a commit, or nil
 	// when the commit does not hold the path.
 	FileAt(repoRoot, sha, path string) ([]byte, error)
+	// FilesAt returns base content for each path, or nil for paths absent at sha.
+	FilesAt(repoRoot, sha string, paths []string) (map[string][]byte, error)
 	// Blame returns each line of a repo-relative path at a revision, with the
 	// commit that last wrote it, or nil when the revision does not hold the
 	// path.
@@ -123,6 +125,12 @@ type Client interface {
 	// directory and any .gitignore'd paths. Used to detect files changed by an
 	// agent-run shell command by diffing a before/after signature.
 	SnapshotWorktree(repoRoot string) (map[string]string, error)
+	// SnapshotIndex returns staged regular-file paths and their blob hashes.
+	SnapshotIndex(repoRoot string) (map[string]string, error)
+	// IndexFile returns the staged content for a repo-relative path.
+	IndexFile(repoRoot, path string) ([]byte, error)
+	// IndexBlobs returns the content of the supplied snapshot hashes by path.
+	IndexBlobs(repoRoot string, hashes map[string]string) (map[string][]byte, error)
 	// IsMergeCommit reports whether the commit identified by sha has more than
 	// one parent. Returns an error when the commit cannot be resolved.
 	IsMergeCommit(repoRoot, sha string) (bool, error)
