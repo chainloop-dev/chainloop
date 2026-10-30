@@ -103,6 +103,8 @@ type Client interface {
 	// FileAt returns the content of a repo-relative path at a commit, or nil
 	// when the commit does not hold the path.
 	FileAt(repoRoot, sha, path string) ([]byte, error)
+	// FilesAt returns base content for each path, or nil for paths absent at sha.
+	FilesAt(repoRoot, sha string, paths []string) (map[string][]byte, error)
 	// Blame returns each line of a repo-relative path at a revision, with the
 	// commit that last wrote it, or nil when the revision does not hold the
 	// path.

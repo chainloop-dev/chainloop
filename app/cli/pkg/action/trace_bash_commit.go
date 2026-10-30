@@ -96,29 +96,29 @@ func checkpointActiveShellAttribution(store *state.Store, repoRoot string, stage
 		}
 
 		changed, deleted := attribution.ChangedPaths(indexBefore, afterIndex)
+		stagedPaths := make([]string, 0, len(changed)+len(deleted))
 		stagedHashes := make(map[string]string)
-		for _, relPath := range changed {
+		for _, relPath := range append(changed, deleted...) {
+			if _, ok := staged[relPath]; !ok {
+				continue
+			}
+			stagedPaths = append(stagedPaths, relPath)
 			if hash, exists := afterIndex[relPath]; exists {
-				if _, ok := staged[relPath]; ok {
-					stagedHashes[relPath] = hash
-				}
+				stagedHashes[relPath] = hash
 			}
 		}
 		stagedContent, err := client.IndexBlobs(repoRoot, stagedHashes)
 		if err != nil {
 			return fmt.Errorf("read staged blobs: %w", err)
 		}
+		base := beforeHeads[root]
+		if base == "" {
+			base = "HEAD"
+		}
+		beforeContents, _ := client.FilesAt(repoRoot, base, stagedPaths)
 		checkpointed := false
-		for _, relPath := range append(changed, deleted...) {
-			if _, ok := staged[relPath]; !ok {
-				continue
-			}
-
-			base := beforeHeads[root]
-			if base == "" {
-				base = "HEAD"
-			}
-			beforeContent, _ := client.FileAt(repoRoot, base, relPath)
+		for _, relPath := range stagedPaths {
+			beforeContent := beforeContents[relPath]
 			var afterContent []byte
 			if hash, exists := afterIndex[relPath]; exists {
 				afterContent = stagedContent[relPath]
