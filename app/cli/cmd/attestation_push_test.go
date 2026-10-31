@@ -68,7 +68,9 @@ func TestValidatePolicyEnforcement(t *testing.T) {
 		require.Equal(t, "cdx-fresh", gateErr.PolicyName)
 	})
 
-	t.Run("does not block when strategy is enforced and policy is explicitly not gated", func(t *testing.T) {
+	// Enforcement is resolved into each evaluation's gate when the policy is
+	// evaluated, so only the per-evaluation gate decides here.
+	t.Run("blocking depends on the evaluation gate, not on the strategy flag", func(t *testing.T) {
 		status := &action.AttestationStatusResult{
 			PolicyEvaluations: map[string][]*action.PolicyEvaluation{
 				"materials": {

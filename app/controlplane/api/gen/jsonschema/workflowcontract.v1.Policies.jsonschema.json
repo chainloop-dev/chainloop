@@ -10,6 +10,10 @@
       },
       "type": "array"
     },
+    "gate": {
+      "description": "Enforce every policy of this contract, including the policies of its policy groups.\n Enforcement only tightens:\n - true: every policy of the contract acts as a gate\n - false or unset: the organization default and the attachment `gate` values decide",
+      "type": "boolean"
+    },
     "materials": {
       "description": "Policies to be applied to materials",
       "items": {

@@ -256,6 +256,11 @@ message Policies {
   repeated PolicyAttachment materials = 1;
   // Policies to be applied to attestation metadata
   repeated PolicyAttachment attestation = 2;
+  // Enforce every policy of this contract, including the policies of its policy groups.
+  // Enforcement only tightens:
+  // - true: every policy of the contract acts as a gate
+  // - false or unset: the organization default and the attachment `gate` values decide
+  optional bool gate = 3;
 }
 
 // A policy to be applied to this contract
@@ -301,10 +306,10 @@ message PolicyAttachment {
     }
   }];
 
-  // Controls whether policy violations act as a gate.
+  // Controls whether policy violations act as a gate. Enforcement only tightens.
   // - true: policy violations are blocking for this policy
-  // - false: policy violations are non-blocking for this policy
-  // - unset: inherit organization-level default behavior
+  // - false or unset: inherit the organization and contract enforcement.
+  //   It does not turn off enforcement set at those levels.
   optional bool gate = 7;
 
   message MaterialSelector {
@@ -482,10 +487,10 @@ message PolicyGroupAttachment {
   map<string, string> with = 2;
   // policy names to skip (matched against metadata.name)
   repeated string skip = 3;
-  // Controls whether policy violations act as a gate for this group.
-  // - true: policy violations are blocking for this policy group
-  // - false: policy violations are non-blocking for this policy group
-  // - unset: inherit organization-level default behavior
+  // Controls whether policy violations act as a gate for this group. Enforcement only tightens.
+  // - true: policy violations are blocking for every policy of this group
+  // - false or unset: inherit the organization and contract enforcement, and the policy `gate` values.
+  //   It does not turn off enforcement set at those levels.
   optional bool gate = 4;
 }
 

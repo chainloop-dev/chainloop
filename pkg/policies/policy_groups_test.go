@@ -793,12 +793,24 @@ func (s *groupsTestSuite) TestApplyGroupGate() {
 			expectedGate: boolPtr(true),
 		},
 		{
-			name: "group gate overrides policy gate",
+			name: "group gate true tightens policy gate false",
 			policyAtt: &v1.PolicyAttachment{
 				Gate: &policyGate,
 			},
 			groupAtt:     &v1.PolicyGroupAttachment{Gate: &groupGate},
 			expectedGate: boolPtr(true),
+		},
+		{
+			name:         "group gate false does not relax policy gate true",
+			policyAtt:    &v1.PolicyAttachment{Gate: boolPtr(true)},
+			groupAtt:     &v1.PolicyGroupAttachment{Gate: boolPtr(false)},
+			expectedGate: boolPtr(true),
+		},
+		{
+			name:         "group gate false leaves unset policy gate unset",
+			policyAtt:    &v1.PolicyAttachment{},
+			groupAtt:     &v1.PolicyGroupAttachment{Gate: boolPtr(false)},
+			expectedGate: nil,
 		},
 	}
 

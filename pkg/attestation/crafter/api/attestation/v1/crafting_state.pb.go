@@ -171,8 +171,12 @@ type Attestation struct {
 	Head *Commit `protobuf:"bytes,9,opt,name=head,proto3" json:"head,omitempty"`
 	// Policies that materials in this attestation were validated against
 	PolicyEvaluations []*PolicyEvaluation `protobuf:"bytes,10,rep,name=policy_evaluations,json=policyEvaluations,proto3" json:"policy_evaluations,omitempty"`
-	// fail the attestation if policy evaluation fails
+	// fail the attestation if policy evaluation fails (organization setting)
 	BlockOnPolicyViolation bool `protobuf:"varint,13,opt,name=block_on_policy_violation,json=blockOnPolicyViolation,proto3" json:"block_on_policy_violation,omitempty"`
+	// the workflow contract enforces all of its policies (spec.policies.gate).
+	// Copied from the contract at init so the renderer and the status output,
+	// which only see the attestation, can tell the enforcement source.
+	ContractBlockOnPolicyViolation bool `protobuf:"varint,21,opt,name=contract_block_on_policy_violation,json=contractBlockOnPolicyViolation,proto3" json:"contract_block_on_policy_violation,omitempty"`
 	// bypass policy check
 	BypassPolicyCheck bool `protobuf:"varint,14,opt,name=bypass_policy_check,json=bypassPolicyCheck,proto3" json:"bypass_policy_check,omitempty"`
 	// Signing options
@@ -295,6 +299,13 @@ func (x *Attestation) GetPolicyEvaluations() []*PolicyEvaluation {
 func (x *Attestation) GetBlockOnPolicyViolation() bool {
 	if x != nil {
 		return x.BlockOnPolicyViolation
+	}
+	return false
+}
+
+func (x *Attestation) GetContractBlockOnPolicyViolation() bool {
+	if x != nil {
+		return x.ContractBlockOnPolicyViolation
 	}
 	return false
 }
@@ -2841,7 +2852,7 @@ var File_attestation_v1_crafting_state_proto protoreflect.FileDescriptor
 
 const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\n" +
-	"#attestation/v1/crafting_state.proto\x12\x0eattestation.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xbd\x1c\n" +
+	"#attestation/v1/crafting_state.proto\x12\x0eattestation.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\x89\x1d\n" +
 	"\vAttestation\x12I\n" +
 	"\x0einitialized_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\rinitializedAt\x12;\n" +
 	"\vfinished_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -2857,7 +2868,8 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x04head\x18\t \x01(\v2\x16.attestation.v1.CommitR\x04head\x12O\n" +
 	"\x12policy_evaluations\x18\n" +
 	" \x03(\v2 .attestation.v1.PolicyEvaluationR\x11policyEvaluations\x129\n" +
-	"\x19block_on_policy_violation\x18\r \x01(\bR\x16blockOnPolicyViolation\x12.\n" +
+	"\x19block_on_policy_violation\x18\r \x01(\bR\x16blockOnPolicyViolation\x12J\n" +
+	"\"contract_block_on_policy_violation\x18\x15 \x01(\bR\x1econtractBlockOnPolicyViolation\x12.\n" +
 	"\x13bypass_policy_check\x18\x0e \x01(\bR\x11bypassPolicyCheck\x12S\n" +
 	"\x0fsigning_options\x18\x0f \x01(\v2*.attestation.v1.Attestation.SigningOptionsR\x0esigningOptions\x12P\n" +
 	"\x12runner_environment\x18\x10 \x01(\v2!.attestation.v1.RunnerEnvironmentR\x11runnerEnvironment\x124\n" +

@@ -789,7 +789,12 @@ type Policies struct {
 	// Policies to be applied to materials
 	Materials []*PolicyAttachment `protobuf:"bytes,1,rep,name=materials,proto3" json:"materials,omitempty"`
 	// Policies to be applied to attestation metadata
-	Attestation   []*PolicyAttachment `protobuf:"bytes,2,rep,name=attestation,proto3" json:"attestation,omitempty"`
+	Attestation []*PolicyAttachment `protobuf:"bytes,2,rep,name=attestation,proto3" json:"attestation,omitempty"`
+	// Enforce every policy of this contract, including the policies of its policy groups.
+	// Enforcement only tightens:
+	// - true: every policy of the contract acts as a gate
+	// - false or unset: the organization default and the attachment `gate` values decide
+	Gate          *bool `protobuf:"varint,3,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -838,6 +843,13 @@ func (x *Policies) GetAttestation() []*PolicyAttachment {
 	return nil
 }
 
+func (x *Policies) GetGate() bool {
+	if x != nil && x.Gate != nil {
+		return *x.Gate
+	}
+	return false
+}
+
 // A policy to be applied to this contract
 type PolicyAttachment struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -862,10 +874,10 @@ type PolicyAttachment struct {
 	With map[string]string `protobuf:"bytes,5,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// List of requirements this policy contributes to satisfy
 	Requirements []string `protobuf:"bytes,6,rep,name=requirements,proto3" json:"requirements,omitempty"`
-	// Controls whether policy violations act as a gate.
+	// Controls whether policy violations act as a gate. Enforcement only tightens.
 	// - true: policy violations are blocking for this policy
-	// - false: policy violations are non-blocking for this policy
-	// - unset: inherit organization-level default behavior
+	// - false or unset: inherit the organization and contract enforcement.
+	//   It does not turn off enforcement set at those levels.
 	Gate          *bool `protobuf:"varint,7,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1568,10 +1580,10 @@ type PolicyGroupAttachment struct {
 	With map[string]string `protobuf:"bytes,2,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// policy names to skip (matched against metadata.name)
 	Skip []string `protobuf:"bytes,3,rep,name=skip,proto3" json:"skip,omitempty"`
-	// Controls whether policy violations act as a gate for this group.
-	// - true: policy violations are blocking for this policy group
-	// - false: policy violations are non-blocking for this policy group
-	// - unset: inherit organization-level default behavior
+	// Controls whether policy violations act as a gate for this group. Enforcement only tightens.
+	// - true: policy violations are blocking for every policy of this group
+	// - false or unset: inherit the organization and contract enforcement, and the policy `gate` values.
+	//   It does not turn off enforcement set at those levels.
 	Gate          *bool `protobuf:"varint,4,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2220,10 +2232,12 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"Annotation\x12#\n" +
 	"\x04name\x18\x01 \x01(\tB\x0f\xbaH\fr\n" +
 	"2\b^[\\w-]+$R\x04name\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"\x98\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"\xba\x01\n" +
 	"\bPolicies\x12C\n" +
 	"\tmaterials\x18\x01 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\tmaterials\x12G\n" +
-	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\"\xaf\x05\n" +
+	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\x12\x17\n" +
+	"\x04gate\x18\x03 \x01(\bH\x00R\x04gate\x88\x01\x01B\a\n" +
+	"\x05_gate\"\xaf\x05\n" +
 	"\x10PolicyAttachment\x12\x1b\n" +
 	"\x03ref\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x03ref\x129\n" +
 	"\bembedded\x18\x02 \x01(\v2\x1b.workflowcontract.v1.PolicyH\x00R\bembedded\x12R\n" +
@@ -2427,6 +2441,7 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 	if File_workflowcontract_v1_crafting_schema_proto != nil {
 		return
 	}
+	file_workflowcontract_v1_crafting_schema_proto_msgTypes[4].OneofWrappers = []any{}
 	file_workflowcontract_v1_crafting_schema_proto_msgTypes[5].OneofWrappers = []any{
 		(*PolicyAttachment_Ref)(nil),
 		(*PolicyAttachment_Embedded)(nil),

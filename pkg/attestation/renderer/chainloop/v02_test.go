@@ -519,6 +519,39 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 	}
 }
 
+func TestPredicatePolicyCheckBlockingStrategy(t *testing.T) {
+	testCases := []struct {
+		name         string
+		org          bool
+		contract     bool
+		wantStrategy PolicyViolationBlockingStrategy
+	}{
+		{name: "advisory when nothing enforces", wantStrategy: PolicyViolationBlockingStrategyAdvisory},
+		{name: "enforced by the organization", org: true, wantStrategy: PolicyViolationBlockingStrategyEnforced},
+		{name: "enforced by the contract", contract: true, wantStrategy: PolicyViolationBlockingStrategyEnforced},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			stateRaw, err := os.ReadFile("testdata/attestation.source.v2.json")
+			require.NoError(t, err)
+
+			state := &api.CraftingState{}
+			require.NoError(t, protojson.Unmarshal(stateRaw, state))
+			state.Attestation.BlockOnPolicyViolation = tc.org
+			state.Attestation.ContractBlockOnPolicyViolation = tc.contract
+
+			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
+			statement, err := renderer.Statement(context.TODO())
+			require.NoError(t, err)
+
+			var predicate ProvenancePredicateV02
+			require.NoError(t, extractPredicate(statement, &predicate))
+			assert.Equal(t, tc.wantStrategy, predicate.PolicyCheckBlockingStrategy)
+		})
+	}
+}
+
 // TestPolicyEvaluationsRefJSON pins the rendered shape: the size is a key of the
 // reference object itself, alongside the descriptor's own fields.
 func TestPolicyEvaluationsRefJSON(t *testing.T) {

@@ -2019,11 +2019,19 @@ func (s *testSuite) TestPolicyAttachmentGate() {
 			expectedGate: true,
 		},
 		{
-			name: "explicit gate false overrides default true",
+			name: "explicit gate false does not relax default true",
 			attachment: &v12.PolicyAttachment{
 				Gate: &falseGate,
 			},
 			defaultGate:  true,
+			expectedGate: true,
+		},
+		{
+			name: "explicit gate false with default false",
+			attachment: &v12.PolicyAttachment{
+				Gate: &falseGate,
+			},
+			defaultGate:  false,
 			expectedGate: false,
 		},
 		{
