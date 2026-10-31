@@ -37,7 +37,6 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/jwt/user"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
-	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	sl "github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/go-kratos/kratos/v2/log"
@@ -701,7 +700,7 @@ func extractUserInfoFromToken(ctx context.Context, svc *AuthService, r *http.Req
 	// Exchange the code for a token
 	oauth2Token, err := svc.authenticator.Exchange(ctx, code)
 	if err != nil {
-		return nil, newOauthResp(http.StatusUnauthorized, errorsx.WithStack(err), false)
+		return nil, newOauthResp(http.StatusUnauthorized, err, false)
 	}
 
 	// It's a valid Oauth2 token
