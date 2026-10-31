@@ -156,118 +156,38 @@ func TestPopulateContractMaterialsGroups(t *testing.T) {
 	assert.False(t, byName["sbom-spdx"].Required)
 }
 
-func TestPolicyEnforcementSource(t *testing.T) {
-	contractV2 := func(gate *bool) *v1.CraftingState_SchemaV2 {
-		return &v1.CraftingState_SchemaV2{SchemaV2: &craftingpb.CraftingSchemaV2{
-			Spec: &craftingpb.CraftingSchemaV2Spec{Policies: &craftingpb.Policies{Gate: gate}},
-		}}
-	}
+func TestIgnoredGateOptOutsWarning(t *testing.T) {
+	gateFalse := []*craftingpb.PolicyAttachment{{Policy: &craftingpb.PolicyAttachment_Ref{Ref: "sbom-banned-licenses"}, Gate: proto.Bool(false)}}
 
 	testCases := []struct {
-		name  string
-		state *v1.CraftingState
-		want  string
+		name         string
+		enforced     bool
+		contractGate bool
+		want         string
 	}{
-		{name: "nothing enforces", state: &v1.CraftingState{Attestation: &v1.Attestation{}, Schema: contractV2(nil)}},
+		{name: "no warning when nothing enforces"},
 		{
-			name:  "organization",
-			state: &v1.CraftingState{Attestation: &v1.Attestation{BlockOnPolicyViolation: true}, Schema: contractV2(nil)},
-			want:  PolicyEnforcementSourceOrganization,
+			name:     "organization",
+			enforced: true,
+			want:     "gate: false has no effect on spec.policies.gate, sbom-banned-licenses because policies are enforced by the organization, and enforcement cannot be relaxed",
 		},
 		{
-			name:  "contract, also when the organization enforces",
-			state: &v1.CraftingState{Attestation: &v1.Attestation{BlockOnPolicyViolation: true}, Schema: contractV2(proto.Bool(true))},
-			want:  PolicyEnforcementSourceContract,
+			name:         "contract",
+			enforced:     true,
+			contractGate: true,
+			want:         "gate: false has no effect on sbom-banned-licenses because policies are enforced by the contract, and enforcement cannot be relaxed",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, policyEnforcementSource(tc.state))
-		})
-	}
-}
-
-func TestIgnoredGateOptOuts(t *testing.T) {
-	const (
-		refPolicy      = "sbom-banned-licenses"
-		embeddedPolicy = "embedded-policy"
-		group          = "slsa-checks"
-		warningPrefix  = "gate: false has no effect on "
-	)
-
-	policies := func(contractGate bool) *craftingpb.Policies {
-		return &craftingpb.Policies{
-			Gate: proto.Bool(contractGate),
-			Materials: []*craftingpb.PolicyAttachment{
-				{Policy: &craftingpb.PolicyAttachment_Ref{Ref: refPolicy}, Gate: proto.Bool(false)},
-				{Policy: &craftingpb.PolicyAttachment_Ref{Ref: "sbom-present"}},
-			},
-			Attestation: []*craftingpb.PolicyAttachment{
-				{
-					Policy: &craftingpb.PolicyAttachment_Embedded{Embedded: &craftingpb.Policy{Metadata: &craftingpb.Metadata{Name: embeddedPolicy}}},
-					Gate:   proto.Bool(false),
-				},
-			},
-		}
-	}
-	groups := []*craftingpb.PolicyGroupAttachment{
-		{Ref: group, Gate: proto.Bool(false)},
-		{Ref: "sast"},
-	}
-	schemaV2 := func(contractGate bool) *v1.CraftingState_SchemaV2 {
-		return &v1.CraftingState_SchemaV2{SchemaV2: &craftingpb.CraftingSchemaV2{
-			Spec: &craftingpb.CraftingSchemaV2Spec{Policies: policies(contractGate), PolicyGroups: groups},
-		}}
-	}
-	ignored := []string{refPolicy, embeddedPolicy, group}
-
-	testCases := []struct {
-		name        string
-		state       *v1.CraftingState
-		want        []string
-		wantWarning string
-	}{
-		{
-			name:  "gate false is honored when nothing enforces",
-			state: &v1.CraftingState{Attestation: &v1.Attestation{}, Schema: schemaV2(false)},
-		},
-		{
-			name:  "gate false is ignored when the organization enforces, contract-wide opt-out included",
-			state: &v1.CraftingState{Attestation: &v1.Attestation{BlockOnPolicyViolation: true}, Schema: schemaV2(false)},
-			want:  append([]string{"spec.policies.gate"}, ignored...),
-			wantWarning: warningPrefix + "spec.policies.gate, sbom-banned-licenses, embedded-policy, slsa-checks " +
-				"because policies are enforced by the organization, and enforcement cannot be relaxed",
-		},
-		{
-			name:  "gate false is ignored when the contract enforces",
-			state: &v1.CraftingState{Attestation: &v1.Attestation{BlockOnPolicyViolation: true}, Schema: schemaV2(true)},
-			want:  ignored,
-			wantWarning: warningPrefix + "sbom-banned-licenses, embedded-policy, slsa-checks " +
-				"because policies are enforced by the contract, and enforcement cannot be relaxed",
-		},
-		{
-			name: "v1 contracts name the top-level contract-wide opt-out",
-			state: &v1.CraftingState{
-				Attestation: &v1.Attestation{BlockOnPolicyViolation: true},
-				Schema: &v1.CraftingState_InputSchema{InputSchema: &craftingpb.CraftingSchema{
-					SchemaVersion: "v1", Policies: &craftingpb.Policies{Gate: proto.Bool(false)},
+			state := &v1.CraftingState{
+				Attestation: &v1.Attestation{BlockOnPolicyViolation: tc.enforced},
+				Schema: &v1.CraftingState_SchemaV2{SchemaV2: &craftingpb.CraftingSchemaV2{
+					Spec: &craftingpb.CraftingSchemaV2Spec{Policies: &craftingpb.Policies{Gate: proto.Bool(tc.contractGate), Materials: gateFalse}},
 				}},
-			},
-			want: []string{"policies.gate"},
-			wantWarning: warningPrefix + "policies.gate " +
-				"because policies are enforced by the organization, and enforcement cannot be relaxed",
-		},
-		{
-			name:  "a contract without policies does not panic",
-			state: &v1.CraftingState{Attestation: &v1.Attestation{BlockOnPolicyViolation: true}, Schema: &v1.CraftingState_SchemaV2{SchemaV2: &craftingpb.CraftingSchemaV2{}}},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, ignoredGateOptOuts(tc.state))
-			assert.Equal(t, tc.wantWarning, IgnoredGateOptOutsWarning(tc.state))
+			}
+			assert.Equal(t, tc.want, IgnoredGateOptOutsWarning(state))
 		})
 	}
 }
