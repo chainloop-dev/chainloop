@@ -124,13 +124,11 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, w io.W
 		gt.AppendRow(table.Row{"Timestamp Authority", status.TimestampAuthority})
 	}
 
-	var blockingColor text.Color
-	var blockingText = action.PolicyViolationBlockingStrategyAdvisory
+	// Only show the strategy when it is enforced. Showing "ADVISORY" is misleading
+	// when individual policies are configured as gates.
 	if status.MustBlockOnPolicyViolations {
-		blockingColor = text.FgHiYellow
-		blockingText = action.PolicyViolationBlockingStrategyEnforced
+		gt.AppendRow(table.Row{"Policy violation strategy", text.FgHiYellow.Sprint(action.PolicyViolationBlockingStrategyEnforced)})
 	}
-	gt.AppendRow(table.Row{"Policy violation strategy", blockingColor.Sprint(blockingText)})
 
 	evs := status.PolicyEvaluations[chainloop.AttPolicyEvaluation]
 	if len(evs) > 0 {
