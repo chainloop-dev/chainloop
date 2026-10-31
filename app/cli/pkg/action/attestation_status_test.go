@@ -21,6 +21,7 @@ import (
 	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestPopulateContractMaterials(t *testing.T) {
@@ -153,4 +154,85 @@ func TestPopulateContractMaterialsGroups(t *testing.T) {
 	assert.False(t, byName["sbom-cyclonedx"].Required)
 	assert.Equal(t, "sbom", byName["sbom-spdx"].Group)
 	assert.False(t, byName["sbom-spdx"].Required)
+}
+
+func TestPolicyEnforcementSources(t *testing.T) {
+	testCases := []struct {
+		name string
+		att  *v1.Attestation
+		want []string
+	}{
+		{name: "nothing enforces", att: &v1.Attestation{}},
+		{name: "organization", att: &v1.Attestation{BlockOnPolicyViolation: true}, want: []string{PolicyEnforcementSourceOrganization}},
+		{name: "contract", att: &v1.Attestation{ContractBlockOnPolicyViolation: true}, want: []string{PolicyEnforcementSourceContract}},
+		{
+			name: "both",
+			att:  &v1.Attestation{BlockOnPolicyViolation: true, ContractBlockOnPolicyViolation: true},
+			want: []string{PolicyEnforcementSourceOrganization, PolicyEnforcementSourceContract},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, policyEnforcementSources(tc.att))
+		})
+	}
+}
+
+func TestIgnoredGateOptOuts(t *testing.T) {
+	const (
+		refPolicy      = "sbom-banned-licenses"
+		embeddedPolicy = "embedded-policy"
+		group          = "slsa-checks"
+	)
+
+	schema := &craftingpb.CraftingSchemaV2{
+		Spec: &craftingpb.CraftingSchemaV2Spec{
+			Policies: &craftingpb.Policies{
+				Materials: []*craftingpb.PolicyAttachment{
+					{Policy: &craftingpb.PolicyAttachment_Ref{Ref: refPolicy}, Gate: proto.Bool(false)},
+					{Policy: &craftingpb.PolicyAttachment_Ref{Ref: "sbom-present"}},
+				},
+				Attestation: []*craftingpb.PolicyAttachment{
+					{
+						Policy: &craftingpb.PolicyAttachment_Embedded{Embedded: &craftingpb.Policy{Metadata: &craftingpb.Metadata{Name: embeddedPolicy}}},
+						Gate:   proto.Bool(false),
+					},
+				},
+			},
+			PolicyGroups: []*craftingpb.PolicyGroupAttachment{
+				{Ref: group, Gate: proto.Bool(false)},
+				{Ref: "sast"},
+			},
+		},
+	}
+	ignored := []string{refPolicy, embeddedPolicy, group}
+
+	testCases := []struct {
+		name string
+		att  *v1.Attestation
+		want []string
+	}{
+		{name: "gate false is honored when nothing enforces", att: &v1.Attestation{}},
+		{
+			name: "gate false is ignored when the organization enforces",
+			att:  &v1.Attestation{BlockOnPolicyViolation: true},
+			want: ignored,
+		},
+		{
+			name: "gate false is ignored when the contract enforces",
+			att:  &v1.Attestation{ContractBlockOnPolicyViolation: true},
+			want: ignored,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			state := &v1.CraftingState{
+				Attestation: tc.att,
+				Schema:      &v1.CraftingState_SchemaV2{SchemaV2: schema},
+			}
+			assert.Equal(t, tc.want, ignoredGateOptOuts(state))
+		})
+	}
 }

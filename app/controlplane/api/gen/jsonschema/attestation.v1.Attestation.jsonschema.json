@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(block_on_policy_violation)$": {
-      "description": "fail the attestation if policy evaluation fails",
+      "description": "fail the attestation if policy evaluation fails (organization setting)",
       "type": "boolean"
     },
     "^(bypass_policy_check)$": {
@@ -14,6 +14,10 @@
     "^(cas_backend)$": {
       "$ref": "attestation.v1.Attestation.CASBackend.jsonschema.json",
       "description": "CAS backend information used during attestation"
+    },
+    "^(contract_block_on_policy_violation)$": {
+      "description": "the workflow contract enforces all of its policies (spec.policies.gate).\n Copied from the contract at init so the renderer and the status output,\n which only see the attestation, can tell the enforcement source.",
+      "type": "boolean"
     },
     "^(env_vars)$": {
       "additionalProperties": {
@@ -103,7 +107,7 @@
       "description": "Authentication information used during attestation"
     },
     "blockOnPolicyViolation": {
-      "description": "fail the attestation if policy evaluation fails",
+      "description": "fail the attestation if policy evaluation fails (organization setting)",
       "type": "boolean"
     },
     "bypassPolicyCheck": {
@@ -113,6 +117,10 @@
     "casBackend": {
       "$ref": "attestation.v1.Attestation.CASBackend.jsonschema.json",
       "description": "CAS backend information used during attestation"
+    },
+    "contractBlockOnPolicyViolation": {
+      "description": "the workflow contract enforces all of its policies (spec.policies.gate).\n Copied from the contract at init so the renderer and the status output,\n which only see the attestation, can tell the enforcement source.",
+      "type": "boolean"
     },
     "envVars": {
       "additionalProperties": {

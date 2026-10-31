@@ -493,6 +493,12 @@ func (state *CraftingState) GetAnnotations() []*v1.Annotation {
 	}
 }
 
+// PoliciesEnforced reports whether every policy of the attestation acts as a
+// gate, because the organization or the workflow contract enforces policies.
+func (a *Attestation) PoliciesEnforced() bool {
+	return a.GetBlockOnPolicyViolation() || a.GetContractBlockOnPolicyViolation()
+}
+
 // GetPolicyGroups returns the policy groups from either v1 or v2 schema
 func (state *CraftingState) GetPolicyGroups() []*v1.PolicyGroupAttachment {
 	switch schema := state.GetSchema().(type) {

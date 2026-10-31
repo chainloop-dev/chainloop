@@ -18,6 +18,7 @@ package action
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	pbc "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -53,8 +54,13 @@ type AttestationStatusResult struct {
 	PolicyEvaluations           map[string][]*PolicyEvaluation  `json:"policy_evaluations,omitempty"`
 	HasPolicyViolations         bool                            `json:"has_policy_violations"`
 	MustBlockOnPolicyViolations bool                            `json:"must_block_on_policy_violations"`
-	TimestampAuthority          string                          `json:"timestamp_authority"`
-	AttestationViewURL          string                          `json:"attestation_view_url"`
+	// Levels that enforce all policies: organization and/or contract
+	PolicyEnforcementSources []string `json:"policy_enforcement_sources,omitempty"`
+	// Contract policies and policy groups with `gate: false` that have no effect
+	// because the organization or the contract enforces policies
+	IgnoredGateOptOuts []string `json:"ignored_gate_opt_outs,omitempty"`
+	TimestampAuthority string   `json:"timestamp_authority"`
+	AttestationViewURL string   `json:"attestation_view_url"`
 	// This might only be set if the attestation is pushed
 	Digest string `json:"digest"`
 	// This is the human readable output of the attestation status
@@ -125,7 +131,9 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 		DryRun:                      c.CraftingState.DryRun,
 		Annotations:                 pbAnnotationsToAction(c.CraftingState.GetAnnotations()),
 		IsPushed:                    action.isPushed,
-		MustBlockOnPolicyViolations: att.GetBlockOnPolicyViolation(),
+		MustBlockOnPolicyViolations: att.PoliciesEnforced(),
+		PolicyEnforcementSources:    policyEnforcementSources(att),
+		IgnoredGateOptOuts:          ignoredGateOptOuts(c.CraftingState.CraftingState),
 		TimestampAuthority:          att.GetSigningOptions().GetTimestampAuthorityUrl(),
 	}
 
@@ -177,6 +185,57 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	}
 
 	return res, nil
+}
+
+const (
+	PolicyEnforcementSourceOrganization = "organization"
+	PolicyEnforcementSourceContract     = "contract"
+)
+
+// policyEnforcementSources returns the levels that enforce all the policies of the attestation
+func policyEnforcementSources(att *v1.Attestation) []string {
+	var sources []string
+	if att.GetBlockOnPolicyViolation() {
+		sources = append(sources, PolicyEnforcementSourceOrganization)
+	}
+	if att.GetContractBlockOnPolicyViolation() {
+		sources = append(sources, PolicyEnforcementSourceContract)
+	}
+
+	return sources
+}
+
+// ignoredGateOptOuts returns the contract policies and policy groups that set
+// `gate: false`, which has no effect when the organization or the contract
+// enforces policies, since enforcement only tightens.
+func ignoredGateOptOuts(state *v1.CraftingState) []string {
+	if !state.GetAttestation().PoliciesEnforced() {
+		return nil
+	}
+
+	var names []string
+	policies := state.GetPolicies()
+	for _, att := range slices.Concat(policies.GetMaterials(), policies.GetAttestation()) {
+		if att.Gate != nil && !att.GetGate() {
+			names = append(names, policyAttachmentName(att))
+		}
+	}
+
+	for _, group := range state.GetPolicyGroups() {
+		if group.Gate != nil && !group.GetGate() {
+			names = append(names, group.GetRef())
+		}
+	}
+
+	return names
+}
+
+func policyAttachmentName(att *pbc.PolicyAttachment) string {
+	if ref := att.GetRef(); ref != "" {
+		return ref
+	}
+
+	return att.GetEmbedded().GetMetadata().GetName()
 }
 
 // getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations and returns if it has violations

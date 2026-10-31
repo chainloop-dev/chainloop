@@ -31,8 +31,14 @@ export interface Attestation {
   head?: Commit;
   /** Policies that materials in this attestation were validated against */
   policyEvaluations: PolicyEvaluation[];
-  /** fail the attestation if policy evaluation fails */
+  /** fail the attestation if policy evaluation fails (organization setting) */
   blockOnPolicyViolation: boolean;
+  /**
+   * the workflow contract enforces all of its policies (spec.policies.gate).
+   * Copied from the contract at init so the renderer and the status output,
+   * which only see the attestation, can tell the enforcement source.
+   */
+  contractBlockOnPolicyViolation: boolean;
   /** bypass policy check */
   bypassPolicyCheck: boolean;
   /** Signing options */
@@ -653,6 +659,7 @@ function createBaseAttestation(): Attestation {
     head: undefined,
     policyEvaluations: [],
     blockOnPolicyViolation: false,
+    contractBlockOnPolicyViolation: false,
     bypassPolicyCheck: false,
     signingOptions: undefined,
     runnerEnvironment: undefined,
@@ -697,6 +704,9 @@ export const Attestation = {
     }
     if (message.blockOnPolicyViolation === true) {
       writer.uint32(104).bool(message.blockOnPolicyViolation);
+    }
+    if (message.contractBlockOnPolicyViolation === true) {
+      writer.uint32(168).bool(message.contractBlockOnPolicyViolation);
     }
     if (message.bypassPolicyCheck === true) {
       writer.uint32(112).bool(message.bypassPolicyCheck);
@@ -815,6 +825,13 @@ export const Attestation = {
 
           message.blockOnPolicyViolation = reader.bool();
           continue;
+        case 21:
+          if (tag !== 168) {
+            break;
+          }
+
+          message.contractBlockOnPolicyViolation = reader.bool();
+          continue;
         case 14:
           if (tag !== 112) {
             break;
@@ -903,6 +920,9 @@ export const Attestation = {
         ? object.policyEvaluations.map((e: any) => PolicyEvaluation.fromJSON(e))
         : [],
       blockOnPolicyViolation: isSet(object.blockOnPolicyViolation) ? Boolean(object.blockOnPolicyViolation) : false,
+      contractBlockOnPolicyViolation: isSet(object.contractBlockOnPolicyViolation)
+        ? Boolean(object.contractBlockOnPolicyViolation)
+        : false,
       bypassPolicyCheck: isSet(object.bypassPolicyCheck) ? Boolean(object.bypassPolicyCheck) : false,
       signingOptions: isSet(object.signingOptions)
         ? Attestation_SigningOptions.fromJSON(object.signingOptions)
@@ -952,6 +972,8 @@ export const Attestation = {
       obj.policyEvaluations = [];
     }
     message.blockOnPolicyViolation !== undefined && (obj.blockOnPolicyViolation = message.blockOnPolicyViolation);
+    message.contractBlockOnPolicyViolation !== undefined &&
+      (obj.contractBlockOnPolicyViolation = message.contractBlockOnPolicyViolation);
     message.bypassPolicyCheck !== undefined && (obj.bypassPolicyCheck = message.bypassPolicyCheck);
     message.signingOptions !== undefined && (obj.signingOptions = message.signingOptions
       ? Attestation_SigningOptions.toJSON(message.signingOptions)
@@ -1011,6 +1033,7 @@ export const Attestation = {
     message.head = (object.head !== undefined && object.head !== null) ? Commit.fromPartial(object.head) : undefined;
     message.policyEvaluations = object.policyEvaluations?.map((e) => PolicyEvaluation.fromPartial(e)) || [];
     message.blockOnPolicyViolation = object.blockOnPolicyViolation ?? false;
+    message.contractBlockOnPolicyViolation = object.contractBlockOnPolicyViolation ?? false;
     message.bypassPolicyCheck = object.bypassPolicyCheck ?? false;
     message.signingOptions = (object.signingOptions !== undefined && object.signingOptions !== null)
       ? Attestation_SigningOptions.fromPartial(object.signingOptions)

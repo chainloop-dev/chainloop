@@ -557,6 +557,8 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 		}
 	}
 
+	craftingState.Attestation.ContractBlockOnPolicyViolation = craftingState.GetPolicies().GetGate()
+
 	return craftingState, nil
 }
 
@@ -838,7 +840,7 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 		c.attClient,
 		c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
-		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+		policies.WithDefaultGate(c.CraftingState.Attestation.PoliciesEnforced()),
 		policies.WithProjectContext(projectName, projectVersion),
 	)
 	// crafted.Content is what a crafter that transformed the artifact scanned and
@@ -863,7 +865,7 @@ func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema
 		c.attClient,
 		c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
-		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+		policies.WithDefaultGate(c.CraftingState.Attestation.PoliciesEnforced()),
 		policies.WithProjectContext(projectName, projectVersion),
 		policies.WithRuntimeInputs(addOptions.runtimeInputs),
 	)
@@ -1119,7 +1121,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 	// evaluate attestation-level policies
 	pv := policies.NewPolicyVerifier(c.CraftingState.GetPolicies(), c.attClient, c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
-		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+		policies.WithDefaultGate(c.CraftingState.Attestation.PoliciesEnforced()),
 		policies.WithEvalPhase(phase),
 		policies.WithProjectContext(projectName, projectVersion),
 	)
@@ -1130,7 +1132,7 @@ func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID
 
 	pgv := policies.NewPolicyGroupVerifier(c.CraftingState.GetPolicyGroups(), c.CraftingState.GetPolicies(), c.attClient, c.Logger,
 		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
-		policies.WithDefaultGate(c.CraftingState.Attestation.GetBlockOnPolicyViolation()),
+		policies.WithDefaultGate(c.CraftingState.Attestation.PoliciesEnforced()),
 		policies.WithEvalPhase(phase),
 		policies.WithProjectContext(projectName, projectVersion),
 	)

@@ -142,8 +142,12 @@ message Attestation {
   // Policies that materials in this attestation were validated against
   repeated PolicyEvaluation policy_evaluations = 10;
 
-  // fail the attestation if policy evaluation fails
+  // fail the attestation if policy evaluation fails (organization setting)
   bool block_on_policy_violation = 13;
+  // the workflow contract enforces all of its policies (spec.policies.gate).
+  // Copied from the contract at init so the renderer and the status output,
+  // which only see the attestation, can tell the enforcement source.
+  bool contract_block_on_policy_violation = 21;
   // bypass policy check
   bool bypass_policy_check = 14;
 

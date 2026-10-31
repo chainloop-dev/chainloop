@@ -479,7 +479,8 @@ func (uc *WorkflowRunUseCase) ValidateAttestationContract(ctx context.Context, r
 		return fmt.Errorf("extracting predicate: %w", err)
 	}
 
-	return uc.validateAgainstContract(ctx, run, predicate)
+	_, err = uc.validateAgainstContract(ctx, run, predicate)
+	return err
 }
 
 // validateAgainstContract rejects an attestation that does not satisfy the
@@ -488,19 +489,20 @@ func (uc *WorkflowRunUseCase) ValidateAttestationContract(ctx context.Context, r
 // The CLI runs the same check before pushing, but it signs the bundle with the
 // same client that decided whether to run it, so a valid signature says nothing
 // about contract compliance. The control plane is the authority here.
-func (uc *WorkflowRunUseCase) validateAgainstContract(ctx context.Context, run *WorkflowRun, predicate chainloop.NormalizablePredicate) error {
+// It returns the contract schema it validated against.
+func (uc *WorkflowRunUseCase) validateAgainstContract(ctx context.Context, run *WorkflowRun, predicate chainloop.NormalizablePredicate) (*schemaapi.CraftingSchema, error) {
 	// Every run created through the attestation init endpoint pins a contract
 	// revision, so a run without one is an integrity problem rather than a
 	// reason to skip the check.
 	if run.ContractVersionID == uuid.Nil {
-		return NewErrValidation(errors.New("workflow run has no contract revision associated"))
+		return nil, NewErrValidation(errors.New("workflow run has no contract revision associated"))
 	}
 
 	contract, err := uc.contractRepo.FindVersionByID(ctx, run.ContractVersionID)
 	if err != nil {
-		return fmt.Errorf("finding contract version: %w", err)
+		return nil, fmt.Errorf("finding contract version: %w", err)
 	} else if contract == nil || contract.Version == nil || contract.Version.Schema == nil {
-		return NewErrNotFound("contract version")
+		return nil, NewErrNotFound("contract version")
 	}
 
 	// Schema is the v1 form of the contract and is populated for v2 contracts
@@ -509,7 +511,7 @@ func (uc *WorkflowRunUseCase) validateAgainstContract(ctx context.Context, run *
 	// would silently wave the attestation through.
 	schema := contract.Version.Schema.Schema
 	if schema == nil {
-		return NewErrValidation(fmt.Errorf("contract revision %d could not be read", run.ContractRevisionUsed))
+		return nil, NewErrValidation(fmt.Errorf("contract revision %d could not be read", run.ContractRevisionUsed))
 	}
 
 	craftedNames := make(map[string]struct{}, len(predicate.GetMaterials()))
@@ -518,10 +520,27 @@ func (uc *WorkflowRunUseCase) validateAgainstContract(ctx context.Context, run *
 	}
 
 	if err := attestationapi.ValidateMaterialsPresence(schema.GetMaterials(), craftedNames); err != nil {
-		return NewErrValidation(fmt.Errorf("attestation does not satisfy contract revision %d: %w", run.ContractRevisionUsed, err))
+		return nil, NewErrValidation(fmt.Errorf("attestation does not satisfy contract revision %d: %w", run.ContractRevisionUsed, err))
 	}
 
-	return nil
+	return schema, nil
+}
+
+// applyContractEnforcement returns the policy evaluation status with the
+// contract enforcement applied. A CLI without support for contract enforcement
+// renders the attestation as advisory, so the control plane marks it enforced
+// to keep the run status true to the contract. The bool reports whether the
+// status changed.
+func applyContractEnforcement(status *chainloop.PolicyEvaluationStatus, contractEnforces bool) (*chainloop.PolicyEvaluationStatus, bool) {
+	if status == nil || !contractEnforces || status.Strategy == chainloop.PolicyViolationBlockingStrategyEnforced {
+		return status, false
+	}
+
+	enforced := *status
+	enforced.Strategy = chainloop.PolicyViolationBlockingStrategyEnforced
+	enforced.HasGates = true
+
+	return &enforced, true
 }
 
 func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bundle []byte, opts ...SaveAttestationOption) (*v1.Hash, error) {
@@ -589,7 +608,8 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		}
 	}
 
-	if err := uc.validateAgainstContract(ctx, run, predicate); err != nil {
+	contractSchema, err := uc.validateAgainstContract(ctx, run, predicate)
+	if err != nil {
 		return nil, err
 	}
 
@@ -605,7 +625,12 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 
 	// Compute and persist the canonical policy status summary so the list
 	// handler can render a status badge without pulling the full attestation.
-	summary := chainloop.DerivePolicyStatusSummary(predicate.GetPolicyEvaluationStatus())
+	policyStatus, applied := applyContractEnforcement(predicate.GetPolicyEvaluationStatus(), contractSchema.GetPolicies().GetGate())
+	if applied {
+		uc.logger.Warnf("workflow run %s: the contract enforces policies but the attestation does not, the CLI might not support contract enforcement", runID)
+	}
+
+	summary := chainloop.DerivePolicyStatusSummary(policyStatus)
 	if err := uc.wfRunRepo.UpdatePolicyStatus(ctx, runID, &summary); err != nil {
 		return nil, fmt.Errorf("updating policy status: %w", err)
 	}
