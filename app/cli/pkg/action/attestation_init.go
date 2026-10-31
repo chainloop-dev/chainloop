@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/token"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -334,7 +335,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 	}
 
 	// gate: false can not relax organization or contract enforcement (R-006)
-	if msg := IgnoredGateOptOutsWarning(action.c.CraftingState.CraftingState); msg != "" {
+	if msg := ignoredGateOptOutsWarning(action.c.CraftingState.CraftingState); msg != "" {
 		action.Logger.Warn().Msg(msg)
 	}
 
@@ -389,6 +390,18 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 // enrichContractMaterials augments a V1 contract schema with the materials
 // declared by its attached policy groups.
+// ignoredGateOptOutsWarning returns a message that names the `gate: false`
+// settings that have no effect, or an empty string when there are none.
+func ignoredGateOptOutsWarning(state *clientAPI.CraftingState) string {
+	ignored := state.IgnoredGateOptOuts()
+	if len(ignored) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf("gate: false has no effect on %s because policies are enforced by the %s, and enforcement cannot be relaxed",
+		strings.Join(ignored, ", "), state.PolicyEnforcementSource())
+}
+
 func enrichContractMaterials(ctx context.Context, schema *v1.CraftingSchema, client pb.AttestationServiceClient, logger *zerolog.Logger) error {
 	merged, err := mergePolicyGroupMaterials(ctx, schema.GetPolicyGroups(), schema.GetMaterials(), client, logger)
 	if err != nil {

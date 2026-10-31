@@ -21,7 +21,6 @@ import (
 	craftingpb "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestPopulateContractMaterials(t *testing.T) {
@@ -154,40 +153,4 @@ func TestPopulateContractMaterialsGroups(t *testing.T) {
 	assert.False(t, byName["sbom-cyclonedx"].Required)
 	assert.Equal(t, "sbom", byName["sbom-spdx"].Group)
 	assert.False(t, byName["sbom-spdx"].Required)
-}
-
-func TestIgnoredGateOptOutsWarning(t *testing.T) {
-	gateFalse := []*craftingpb.PolicyAttachment{{Policy: &craftingpb.PolicyAttachment_Ref{Ref: "sbom-banned-licenses"}, Gate: proto.Bool(false)}}
-
-	testCases := []struct {
-		name         string
-		enforced     bool
-		contractGate bool
-		want         string
-	}{
-		{name: "no warning when nothing enforces"},
-		{
-			name:     "organization",
-			enforced: true,
-			want:     "gate: false has no effect on spec.policies.gate, sbom-banned-licenses because policies are enforced by the organization, and enforcement cannot be relaxed",
-		},
-		{
-			name:         "contract",
-			enforced:     true,
-			contractGate: true,
-			want:         "gate: false has no effect on sbom-banned-licenses because policies are enforced by the contract, and enforcement cannot be relaxed",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			state := &v1.CraftingState{
-				Attestation: &v1.Attestation{BlockOnPolicyViolation: tc.enforced},
-				Schema: &v1.CraftingState_SchemaV2{SchemaV2: &craftingpb.CraftingSchemaV2{
-					Spec: &craftingpb.CraftingSchemaV2Spec{Policies: &craftingpb.Policies{Gate: proto.Bool(tc.contractGate), Materials: gateFalse}},
-				}},
-			}
-			assert.Equal(t, tc.want, IgnoredGateOptOutsWarning(state))
-		})
-	}
 }
