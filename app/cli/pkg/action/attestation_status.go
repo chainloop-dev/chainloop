@@ -53,8 +53,13 @@ type AttestationStatusResult struct {
 	PolicyEvaluations           map[string][]*PolicyEvaluation  `json:"policy_evaluations,omitempty"`
 	HasPolicyViolations         bool                            `json:"has_policy_violations"`
 	MustBlockOnPolicyViolations bool                            `json:"must_block_on_policy_violations"`
-	TimestampAuthority          string                          `json:"timestamp_authority"`
-	AttestationViewURL          string                          `json:"attestation_view_url"`
+	// Level that enforces all policies: organization or contract
+	PolicyEnforcementSource string `json:"policy_enforcement_source,omitempty"`
+	// Contract policies and policy groups with `gate: false` that have no effect
+	// because the organization or the contract enforces policies
+	IgnoredGateOptOuts []string `json:"ignored_gate_opt_outs,omitempty"`
+	TimestampAuthority string   `json:"timestamp_authority"`
+	AttestationViewURL string   `json:"attestation_view_url"`
 	// This might only be set if the attestation is pushed
 	Digest string `json:"digest"`
 	// This is the human readable output of the attestation status
@@ -126,6 +131,8 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 		Annotations:                 pbAnnotationsToAction(c.CraftingState.GetAnnotations()),
 		IsPushed:                    action.isPushed,
 		MustBlockOnPolicyViolations: att.GetBlockOnPolicyViolation(),
+		PolicyEnforcementSource:     c.CraftingState.PolicyEnforcementSource(),
+		IgnoredGateOptOuts:          c.CraftingState.IgnoredGateOptOuts(),
 		TimestampAuthority:          att.GetSigningOptions().GetTimestampAuthorityUrl(),
 	}
 

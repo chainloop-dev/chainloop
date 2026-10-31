@@ -4,7 +4,7 @@
   "additionalProperties": false,
   "patternProperties": {
     "^(block_on_policy_violation)$": {
-      "description": "fail the attestation if policy evaluation fails",
+      "description": "fail the attestation if policy evaluation fails. Set at init when the\n organization or the workflow contract (policies.gate) enforces policies.",
       "type": "boolean"
     },
     "^(bypass_policy_check)$": {
@@ -103,7 +103,7 @@
       "description": "Authentication information used during attestation"
     },
     "blockOnPolicyViolation": {
-      "description": "fail the attestation if policy evaluation fails",
+      "description": "fail the attestation if policy evaluation fails. Set at init when the\n organization or the workflow contract (policies.gate) enforces policies.",
       "type": "boolean"
     },
     "bypassPolicyCheck": {

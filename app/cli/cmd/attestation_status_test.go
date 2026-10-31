@@ -1,4 +1,4 @@
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,11 +15,73 @@
 package cmd
 
 import (
+	"bytes"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+	attestationv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestAttestationStatusPolicyEnforcementRows(t *testing.T) {
+	const (
+		strategyRowLabel = "Policy violation strategy"
+		ignoredRowLabel  = "Ignored gate: false"
+	)
+
+	testCases := []struct {
+		name        string
+		status      *action.AttestationStatusResult
+		wantContain []string
+		wantAbsent  []string
+	}{
+		{
+			name:       "advisory strategy is hidden",
+			status:     &action.AttestationStatusResult{},
+			wantAbsent: []string{strategyRowLabel, action.PolicyViolationBlockingStrategyAdvisory, ignoredRowLabel},
+		},
+		{
+			name: "enforced strategy names its source",
+			status: &action.AttestationStatusResult{
+				MustBlockOnPolicyViolations: true,
+				PolicyEnforcementSource:     attestationv1.PolicyEnforcementSourceOrganization,
+			},
+			wantContain: []string{strategyRowLabel, "ENFORCED (by organization)"},
+			wantAbsent:  []string{ignoredRowLabel},
+		},
+		{
+			name: "ignored gate opt-outs are listed",
+			status: &action.AttestationStatusResult{
+				MustBlockOnPolicyViolations: true,
+				PolicyEnforcementSource:     attestationv1.PolicyEnforcementSourceContract,
+				IgnoredGateOptOuts:          []string{"sbom-banned-licenses", "slsa-checks"},
+			},
+			wantContain: []string{ignoredRowLabel, "sbom-banned-licenses, slsa-checks (enforcement cannot be relaxed)"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			now := time.Now()
+			tc.status.InitializedAt = &now
+			tc.status.WorkflowMeta = &action.AttestationStatusWorkflowMeta{}
+			tc.status.RunnerContext = &action.AttestationResultRunnerContext{}
+
+			var buf bytes.Buffer
+			require.NoError(t, fullStatusTableWithWriter(tc.status, &buf))
+			got := buf.String()
+
+			for _, want := range tc.wantContain {
+				assert.Contains(t, got, want)
+			}
+			for _, absent := range tc.wantAbsent {
+				assert.NotContains(t, got, absent)
+			}
+		})
+	}
+}
 
 func TestVersionStringAttestation(t *testing.T) {
 	testCases := []struct {

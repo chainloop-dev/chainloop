@@ -519,6 +519,45 @@ func TestPredicatePolicyEvaluationsRef(t *testing.T) {
 	}
 }
 
+func TestPredicatePolicyCheckBlockingStrategy(t *testing.T) {
+	// The fixture has one violation on a policy that is not a gate
+	testCases := []struct {
+		name         string
+		enforced     bool
+		bypass       bool
+		wantStrategy PolicyViolationBlockingStrategy
+		wantBlocked  bool
+		wantHasGates bool
+	}{
+		{name: "advisory when nothing enforces", wantStrategy: PolicyViolationBlockingStrategyAdvisory},
+		{name: "enforced by the organization or the contract", enforced: true, wantStrategy: PolicyViolationBlockingStrategyEnforced, wantBlocked: true, wantHasGates: true},
+		{name: "enforcement with bypass", enforced: true, bypass: true, wantStrategy: PolicyViolationBlockingStrategyEnforced, wantHasGates: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			stateRaw, err := os.ReadFile("testdata/attestation.source.v2.json")
+			require.NoError(t, err)
+
+			state := &api.CraftingState{}
+			require.NoError(t, protojson.Unmarshal(stateRaw, state))
+			state.Attestation.BlockOnPolicyViolation = tc.enforced
+			state.Attestation.BypassPolicyCheck = tc.bypass
+
+			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
+			statement, err := renderer.Statement(context.TODO())
+			require.NoError(t, err)
+
+			var predicate ProvenancePredicateV02
+			require.NoError(t, extractPredicate(statement, &predicate))
+			assert.Equal(t, tc.wantStrategy, predicate.PolicyCheckBlockingStrategy)
+			assert.True(t, predicate.PolicyHasViolations)
+			assert.Equal(t, tc.wantBlocked, predicate.PolicyAttBlocked)
+			assert.Equal(t, tc.wantHasGates, predicate.PolicyHasGates)
+		})
+	}
+}
+
 // TestPolicyEvaluationsRefJSON pins the rendered shape: the size is a key of the
 // reference object itself, alongside the descriptor's own fields.
 func TestPolicyEvaluationsRefJSON(t *testing.T) {

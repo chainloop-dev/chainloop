@@ -859,3 +859,112 @@ func TestPitestInvalidReportIsNotEvaluable(t *testing.T) {
 	_, err := pitestMaterial().GetEvaluableContent("testdata/cobertura.xml", nil)
 	require.ErrorContains(t, err, "invalid PIT report file")
 }
+
+func TestPolicyEnforcementSource(t *testing.T) {
+	contractV2 := func(gate *bool) *CraftingState_SchemaV2 {
+		return &CraftingState_SchemaV2{SchemaV2: &schemaapi.CraftingSchemaV2{
+			Spec: &schemaapi.CraftingSchemaV2Spec{Policies: &schemaapi.Policies{Gate: gate}},
+		}}
+	}
+
+	testCases := []struct {
+		name  string
+		state *CraftingState
+		want  string
+	}{
+		{name: "nothing enforces", state: &CraftingState{Attestation: &Attestation{}, Schema: contractV2(nil)}},
+		{
+			name:  "organization",
+			state: &CraftingState{Attestation: &Attestation{BlockOnPolicyViolation: true}, Schema: contractV2(nil)},
+			want:  PolicyEnforcementSourceOrganization,
+		},
+		{
+			name:  "contract, also when the organization enforces",
+			state: &CraftingState{Attestation: &Attestation{BlockOnPolicyViolation: true}, Schema: contractV2(ptrTo(true))},
+			want:  PolicyEnforcementSourceContract,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.state.PolicyEnforcementSource())
+		})
+	}
+}
+
+func TestIgnoredGateOptOuts(t *testing.T) {
+	const (
+		refPolicy      = "sbom-banned-licenses"
+		embeddedPolicy = "embedded-policy"
+		group          = "slsa-checks"
+	)
+
+	policies := func(contractGate bool) *schemaapi.Policies {
+		return &schemaapi.Policies{
+			Gate: ptrTo(contractGate),
+			Materials: []*schemaapi.PolicyAttachment{
+				{Policy: &schemaapi.PolicyAttachment_Ref{Ref: refPolicy}, Gate: ptrTo(false)},
+				{Policy: &schemaapi.PolicyAttachment_Ref{Ref: "sbom-present"}},
+			},
+			Attestation: []*schemaapi.PolicyAttachment{
+				{
+					Policy: &schemaapi.PolicyAttachment_Embedded{Embedded: &schemaapi.Policy{Metadata: &schemaapi.Metadata{Name: embeddedPolicy}}},
+					Gate:   ptrTo(false),
+				},
+			},
+		}
+	}
+	groups := []*schemaapi.PolicyGroupAttachment{
+		{Ref: group, Gate: ptrTo(false)},
+		{Ref: "sast"},
+	}
+	schemaV2 := func(contractGate bool) *CraftingState_SchemaV2 {
+		return &CraftingState_SchemaV2{SchemaV2: &schemaapi.CraftingSchemaV2{
+			Spec: &schemaapi.CraftingSchemaV2Spec{Policies: policies(contractGate), PolicyGroups: groups},
+		}}
+	}
+	ignored := []string{refPolicy, embeddedPolicy, group}
+
+	testCases := []struct {
+		name  string
+		state *CraftingState
+		want  []string
+	}{
+		{
+			name:  "gate false is honored when nothing enforces",
+			state: &CraftingState{Attestation: &Attestation{}, Schema: schemaV2(false)},
+		},
+		{
+			name:  "gate false is ignored when the organization enforces, contract-wide opt-out included",
+			state: &CraftingState{Attestation: &Attestation{BlockOnPolicyViolation: true}, Schema: schemaV2(false)},
+			want:  append([]string{"spec.policies.gate"}, ignored...),
+		},
+		{
+			name:  "gate false is ignored when the contract enforces",
+			state: &CraftingState{Attestation: &Attestation{BlockOnPolicyViolation: true}, Schema: schemaV2(true)},
+			want:  ignored,
+		},
+		{
+			name: "v1 contracts name the top-level contract-wide opt-out",
+			state: &CraftingState{
+				Attestation: &Attestation{BlockOnPolicyViolation: true},
+				Schema: &CraftingState_InputSchema{InputSchema: &schemaapi.CraftingSchema{
+					SchemaVersion: "v1", Policies: &schemaapi.Policies{Gate: ptrTo(false)},
+				}},
+			},
+			want: []string{"policies.gate"},
+		},
+		{
+			name:  "a contract without policies does not panic",
+			state: &CraftingState{Attestation: &Attestation{BlockOnPolicyViolation: true}, Schema: &CraftingState_SchemaV2{SchemaV2: &schemaapi.CraftingSchemaV2{}}},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, tc.state.IgnoredGateOptOuts())
+		})
+	}
+}
+
+func ptrTo[T any](v T) *T { return &v }

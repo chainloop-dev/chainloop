@@ -93,3 +93,19 @@ func DerivePolicyStatusSummary(s *PolicyEvaluationStatus) PolicyStatusSummary {
 
 	return summary
 }
+
+// Enforced returns a copy of the status with the enforced strategy, in which
+// every policy acts as a gate. The bool reports whether the status changed.
+// The control plane uses it when the contract enforces policies, but the CLI
+// that rendered the attestation did not apply the contract setting.
+func (s *PolicyEvaluationStatus) Enforced() (*PolicyEvaluationStatus, bool) {
+	if s == nil || s.Strategy == PolicyViolationBlockingStrategyEnforced {
+		return s, false
+	}
+
+	enforced := *s
+	enforced.Strategy = PolicyViolationBlockingStrategyEnforced
+	enforced.HasGates = true
+
+	return &enforced, true
+}

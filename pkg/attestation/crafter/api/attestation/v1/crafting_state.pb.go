@@ -171,7 +171,8 @@ type Attestation struct {
 	Head *Commit `protobuf:"bytes,9,opt,name=head,proto3" json:"head,omitempty"`
 	// Policies that materials in this attestation were validated against
 	PolicyEvaluations []*PolicyEvaluation `protobuf:"bytes,10,rep,name=policy_evaluations,json=policyEvaluations,proto3" json:"policy_evaluations,omitempty"`
-	// fail the attestation if policy evaluation fails
+	// fail the attestation if policy evaluation fails. Set at init when the
+	// organization or the workflow contract (policies.gate) enforces policies.
 	BlockOnPolicyViolation bool `protobuf:"varint,13,opt,name=block_on_policy_violation,json=blockOnPolicyViolation,proto3" json:"block_on_policy_violation,omitempty"`
 	// bypass policy check
 	BypassPolicyCheck bool `protobuf:"varint,14,opt,name=bypass_policy_check,json=bypassPolicyCheck,proto3" json:"bypass_policy_check,omitempty"`

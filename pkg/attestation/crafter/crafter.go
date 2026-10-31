@@ -557,6 +557,9 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 		}
 	}
 
+	// Enforcement only tightens: the contract can turn it on, but not off
+	craftingState.Attestation.BlockOnPolicyViolation = opts.BlockOnPolicyViolation || craftingState.GetPolicies().GetGate()
+
 	return craftingState, nil
 }
 
