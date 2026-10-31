@@ -164,7 +164,11 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 		}
 	}
 
-	gt.AppendRow(table.Row{"Policies violation strategy", att.PolicyEvaluationStatus.Strategy})
+	// Only show the strategy when it is enforced. Showing "ADVISORY" is misleading
+	// when individual policies are configured as gates.
+	if att.PolicyEvaluationStatus.Strategy == action.PolicyViolationBlockingStrategyEnforced {
+		gt.AppendRow(table.Row{"Policies violation strategy", att.PolicyEvaluationStatus.Strategy})
+	}
 	if att.PolicyEvaluationStatus.Blocked {
 		gt.AppendRow(table.Row{"Run Blocked", att.PolicyEvaluationStatus.Blocked})
 	}
