@@ -18,7 +18,6 @@ package action
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	pbc "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -185,18 +184,6 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	}
 
 	return res, nil
-}
-
-// IgnoredGateOptOutsWarning returns a message that names the `gate: false`
-// settings that have no effect, or an empty string when there are none.
-func IgnoredGateOptOutsWarning(state *v1.CraftingState) string {
-	ignored := state.IgnoredGateOptOuts()
-	if len(ignored) == 0 {
-		return ""
-	}
-
-	return fmt.Sprintf("gate: false has no effect on %s because policies are enforced by the %s, and enforcement cannot be relaxed",
-		strings.Join(ignored, ", "), state.PolicyEnforcementSource())
 }
 
 // getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations and returns if it has violations
