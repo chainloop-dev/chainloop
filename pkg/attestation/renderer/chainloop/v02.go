@@ -290,7 +290,7 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error rendering policy evaluations: %w", err)
 	}
 
-	policiesEnforced := r.att.PoliciesEnforced()
+	policiesEnforced := r.att.GetBlockOnPolicyViolation()
 	policyCheckBlockingStrategy := PolicyViolationBlockingStrategyAdvisory
 	if policiesEnforced {
 		policyCheckBlockingStrategy = PolicyViolationBlockingStrategyEnforced

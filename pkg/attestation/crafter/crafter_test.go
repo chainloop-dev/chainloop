@@ -279,6 +279,7 @@ func (s *crafterSuite) TestInitContractEnforcement() {
 		name     string
 		schemaV1 *schemaapi.CraftingSchema
 		schemaV2 *schemaapi.CraftingSchemaV2
+		org      bool
 		want     bool
 	}{
 		{
@@ -293,6 +294,12 @@ func (s *crafterSuite) TestInitContractEnforcement() {
 		{
 			name:     "v2 contract with gate false",
 			schemaV2: &schemaapi.CraftingSchemaV2{Spec: &schemaapi.CraftingSchemaV2Spec{Policies: &schemaapi.Policies{Gate: proto.Bool(false)}}},
+		},
+		{
+			name:     "contract gate false does not relax organization enforcement",
+			schemaV2: &schemaapi.CraftingSchemaV2{Spec: &schemaapi.CraftingSchemaV2Spec{Policies: &schemaapi.Policies{Gate: proto.Bool(false)}}},
+			org:      true,
+			want:     true,
 		},
 		{
 			name:     "v2 contract enforcing policies",
@@ -311,14 +318,15 @@ func (s *crafterSuite) TestInitContractEnforcement() {
 			runner := crafter.NewRunner(schemaapi.CraftingSchema_Runner_RUNNER_TYPE_UNSPECIFIED, "", &testLogger)
 
 			require.NoError(s.T(), c.Init(context.Background(), &crafter.InitOpts{
-				SchemaV1: tc.schemaV1,
-				SchemaV2: tc.schemaV2,
-				WfInfo:   s.workflowMetadata,
-				DryRun:   true,
-				Runner:   runner,
+				SchemaV1:               tc.schemaV1,
+				SchemaV2:               tc.schemaV2,
+				WfInfo:                 s.workflowMetadata,
+				DryRun:                 true,
+				Runner:                 runner,
+				BlockOnPolicyViolation: tc.org,
 			}))
 
-			s.Equal(tc.want, c.CraftingState.GetAttestation().GetContractBlockOnPolicyViolation())
+			s.Equal(tc.want, c.CraftingState.GetAttestation().GetBlockOnPolicyViolation())
 		})
 	}
 }

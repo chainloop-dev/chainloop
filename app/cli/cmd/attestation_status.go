@@ -127,7 +127,7 @@ func attestationStatusTableOutput(status *action.AttestationStatusResult, w io.W
 	// Only show the strategy when it is enforced. Showing "ADVISORY" is misleading
 	// when individual policies are configured as gates.
 	if status.MustBlockOnPolicyViolations {
-		strategy := fmt.Sprintf("%s (by %s)", action.PolicyViolationBlockingStrategyEnforced, strings.Join(status.PolicyEnforcementSources, ", "))
+		strategy := fmt.Sprintf("%s (by %s)", action.PolicyViolationBlockingStrategyEnforced, status.PolicyEnforcementSource)
 		gt.AppendRow(table.Row{"Policy violation strategy", text.FgHiYellow.Sprint(strategy)})
 	}
 

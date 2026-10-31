@@ -859,23 +859,3 @@ func TestPitestInvalidReportIsNotEvaluable(t *testing.T) {
 	_, err := pitestMaterial().GetEvaluableContent("testdata/cobertura.xml", nil)
 	require.ErrorContains(t, err, "invalid PIT report file")
 }
-
-func TestAttestationPoliciesEnforced(t *testing.T) {
-	testCases := []struct {
-		name     string
-		att      *Attestation
-		expected bool
-	}{
-		{name: "nil attestation", att: nil},
-		{name: "no enforcement", att: &Attestation{}},
-		{name: "organization enforces", att: &Attestation{BlockOnPolicyViolation: true}, expected: true},
-		{name: "contract enforces", att: &Attestation{ContractBlockOnPolicyViolation: true}, expected: true},
-		{name: "both enforce", att: &Attestation{BlockOnPolicyViolation: true, ContractBlockOnPolicyViolation: true}, expected: true},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.expected, tc.att.PoliciesEnforced())
-		})
-	}
-}

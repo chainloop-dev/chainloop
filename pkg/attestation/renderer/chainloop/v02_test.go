@@ -523,17 +523,15 @@ func TestPredicatePolicyCheckBlockingStrategy(t *testing.T) {
 	// The fixture has one violation on a policy that is not a gate
 	testCases := []struct {
 		name         string
-		org          bool
-		contract     bool
+		enforced     bool
 		bypass       bool
 		wantStrategy PolicyViolationBlockingStrategy
 		wantBlocked  bool
 		wantHasGates bool
 	}{
 		{name: "advisory when nothing enforces", wantStrategy: PolicyViolationBlockingStrategyAdvisory},
-		{name: "enforced by the organization", org: true, wantStrategy: PolicyViolationBlockingStrategyEnforced, wantBlocked: true, wantHasGates: true},
-		{name: "enforced by the contract", contract: true, wantStrategy: PolicyViolationBlockingStrategyEnforced, wantBlocked: true, wantHasGates: true},
-		{name: "contract enforcement with bypass", contract: true, bypass: true, wantStrategy: PolicyViolationBlockingStrategyEnforced, wantHasGates: true},
+		{name: "enforced by the organization or the contract", enforced: true, wantStrategy: PolicyViolationBlockingStrategyEnforced, wantBlocked: true, wantHasGates: true},
+		{name: "enforcement with bypass", enforced: true, bypass: true, wantStrategy: PolicyViolationBlockingStrategyEnforced, wantHasGates: true},
 	}
 
 	for _, tc := range testCases {
@@ -543,8 +541,7 @@ func TestPredicatePolicyCheckBlockingStrategy(t *testing.T) {
 
 			state := &api.CraftingState{}
 			require.NoError(t, protojson.Unmarshal(stateRaw, state))
-			state.Attestation.BlockOnPolicyViolation = tc.org
-			state.Attestation.ContractBlockOnPolicyViolation = tc.contract
+			state.Attestation.BlockOnPolicyViolation = tc.enforced
 			state.Attestation.BypassPolicyCheck = tc.bypass
 
 			renderer := NewChainloopRendererV02(state.Attestation, "dev", "sha256:59e14f1a9de709cdd0e91c36b33e54fcca95f7dba1dc7169a7f81986e02108e5", nil, nil)
