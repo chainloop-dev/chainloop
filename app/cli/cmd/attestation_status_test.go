@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+	attestationv1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +46,7 @@ func TestAttestationStatusPolicyEnforcementRows(t *testing.T) {
 			name: "enforced strategy names its source",
 			status: &action.AttestationStatusResult{
 				MustBlockOnPolicyViolations: true,
-				PolicyEnforcementSource:     action.PolicyEnforcementSourceOrganization,
+				PolicyEnforcementSource:     attestationv1.PolicyEnforcementSourceOrganization,
 			},
 			wantContain: []string{strategyRowLabel, "ENFORCED (by organization)"},
 			wantAbsent:  []string{ignoredRowLabel},
@@ -54,7 +55,7 @@ func TestAttestationStatusPolicyEnforcementRows(t *testing.T) {
 			name: "ignored gate opt-outs are listed",
 			status: &action.AttestationStatusResult{
 				MustBlockOnPolicyViolations: true,
-				PolicyEnforcementSource:     action.PolicyEnforcementSourceContract,
+				PolicyEnforcementSource:     attestationv1.PolicyEnforcementSourceContract,
 				IgnoredGateOptOuts:          []string{"sbom-banned-licenses", "slsa-checks"},
 			},
 			wantContain: []string{ignoredRowLabel, "sbom-banned-licenses, slsa-checks (enforcement cannot be relaxed)"},

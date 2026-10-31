@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -491,6 +492,79 @@ func (state *CraftingState) GetAnnotations() []*v1.Annotation {
 	default:
 		return nil
 	}
+}
+
+const (
+	PolicyEnforcementSourceOrganization = "organization"
+	PolicyEnforcementSourceContract     = "contract"
+)
+
+// PolicyEnforcementSource returns the level that enforces all the policies of
+// the attestation, or an empty string when none does. The attestation records
+// one enforcement value for both levels, so the contract setting tells them
+// apart. When both levels enforce, it names the contract.
+func (state *CraftingState) PolicyEnforcementSource() string {
+	switch {
+	case !state.GetAttestation().GetBlockOnPolicyViolation():
+		return ""
+	case state.GetPolicies().GetGate():
+		return PolicyEnforcementSourceContract
+	default:
+		return PolicyEnforcementSourceOrganization
+	}
+}
+
+// IgnoredGateOptOuts returns the contract settings, policies and policy groups
+// that set `gate: false`, which has no effect when the organization or the
+// contract enforces policies, since enforcement only tightens.
+func (state *CraftingState) IgnoredGateOptOuts() []string {
+	if !state.GetAttestation().GetBlockOnPolicyViolation() {
+		return nil
+	}
+
+	var names []string
+	policies := state.GetPolicies()
+	// A contract-wide opt-out with enforcement on means the organization enforces
+	if policies != nil && optsOut(policies.Gate) {
+		names = append(names, state.contractGateField())
+	}
+
+	for _, att := range slices.Concat(policies.GetMaterials(), policies.GetAttestation()) {
+		if optsOut(att.Gate) {
+			names = append(names, policyAttachmentName(att))
+		}
+	}
+
+	for _, group := range state.GetPolicyGroups() {
+		if optsOut(group.Gate) {
+			names = append(names, group.GetRef())
+		}
+	}
+
+	return names
+}
+
+// optsOut reports whether a gate is explicitly set to false
+func optsOut(gate *bool) bool {
+	return gate != nil && !*gate
+}
+
+// contractGateField returns how the contract-wide opt-out is written in the
+// contract, which depends on the contract schema version.
+func (state *CraftingState) contractGateField() string {
+	if state.GetSchemaV2() != nil {
+		return "spec.policies.gate"
+	}
+
+	return "policies.gate"
+}
+
+func policyAttachmentName(att *v1.PolicyAttachment) string {
+	if ref := att.GetRef(); ref != "" {
+		return ref
+	}
+
+	return att.GetEmbedded().GetMetadata().GetName()
 }
 
 // GetPolicyGroups returns the policy groups from either v1 or v2 schema

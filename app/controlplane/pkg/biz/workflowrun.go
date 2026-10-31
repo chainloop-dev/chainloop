@@ -526,23 +526,6 @@ func (uc *WorkflowRunUseCase) validateAgainstContract(ctx context.Context, run *
 	return schema, nil
 }
 
-// applyContractEnforcement returns the policy evaluation status with the
-// contract enforcement applied. A CLI without support for contract enforcement
-// renders the attestation as advisory, so the control plane marks it enforced
-// to keep the run status true to the contract. The bool reports whether the
-// status changed.
-func applyContractEnforcement(status *chainloop.PolicyEvaluationStatus, contractEnforces bool) (*chainloop.PolicyEvaluationStatus, bool) {
-	if status == nil || !contractEnforces || status.Strategy == chainloop.PolicyViolationBlockingStrategyEnforced {
-		return status, false
-	}
-
-	enforced := *status
-	enforced.Strategy = chainloop.PolicyViolationBlockingStrategyEnforced
-	enforced.HasGates = true
-
-	return &enforced, true
-}
-
 func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bundle []byte, opts ...SaveAttestationOption) (*v1.Hash, error) {
 	ctx, span := otelx.Start(ctx, workflowRunTracer, "WorkflowRunUseCase.SaveAttestation")
 	defer span.End()
@@ -625,9 +608,14 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 
 	// Compute and persist the canonical policy status summary so the list
 	// handler can render a status badge without pulling the full attestation.
-	policyStatus, applied := applyContractEnforcement(predicate.GetPolicyEvaluationStatus(), contractSchema.GetPolicies().GetGate())
-	if applied {
-		uc.logger.Warnf("workflow run %s: the contract enforces policies but the attestation does not, the CLI might not support contract enforcement", runID)
+	policyStatus := predicate.GetPolicyEvaluationStatus()
+	// A CLI without support for contract enforcement renders the attestation as
+	// advisory, so mark it enforced to keep the run status true to the contract.
+	if contractSchema.GetPolicies().GetGate() {
+		var changed bool
+		if policyStatus, changed = policyStatus.Enforced(); changed {
+			uc.logger.Warnf("workflow run %s: the contract enforces policies but the attestation does not, the CLI might not support contract enforcement", runID)
+		}
 	}
 
 	summary := chainloop.DerivePolicyStatusSummary(policyStatus)

@@ -18,7 +18,6 @@ package action
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
 
@@ -133,8 +132,8 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 		Annotations:                 pbAnnotationsToAction(c.CraftingState.GetAnnotations()),
 		IsPushed:                    action.isPushed,
 		MustBlockOnPolicyViolations: att.GetBlockOnPolicyViolation(),
-		PolicyEnforcementSource:     policyEnforcementSource(c.CraftingState.CraftingState),
-		IgnoredGateOptOuts:          ignoredGateOptOuts(c.CraftingState.CraftingState),
+		PolicyEnforcementSource:     c.CraftingState.PolicyEnforcementSource(),
+		IgnoredGateOptOuts:          c.CraftingState.IgnoredGateOptOuts(),
 		TimestampAuthority:          att.GetSigningOptions().GetTimestampAuthorityUrl(),
 	}
 
@@ -188,84 +187,16 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 	return res, nil
 }
 
-const (
-	PolicyEnforcementSourceOrganization = "organization"
-	PolicyEnforcementSourceContract     = "contract"
-)
-
-// policyEnforcementSource returns the level that enforces all the policies of
-// the attestation. The attestation records one enforcement flag for both
-// levels, so the contract setting tells them apart. When both levels enforce,
-// it names the contract.
-func policyEnforcementSource(state *v1.CraftingState) string {
-	switch {
-	case !state.GetAttestation().GetBlockOnPolicyViolation():
-		return ""
-	case state.GetPolicies().GetGate():
-		return PolicyEnforcementSourceContract
-	default:
-		return PolicyEnforcementSourceOrganization
-	}
-}
-
-// contractGateField returns how the contract-wide opt-out is written in the
-// contract, which depends on the contract schema version.
-func contractGateField(state *v1.CraftingState) string {
-	if state.GetSchemaV2() != nil {
-		return "spec.policies.gate"
-	}
-
-	return "policies.gate"
-}
-
-// ignoredGateOptOuts returns the contract settings, policies and policy groups
-// that set `gate: false`, which has no effect when the organization or the
-// contract enforces policies, since enforcement only tightens.
-func ignoredGateOptOuts(state *v1.CraftingState) []string {
-	if !state.GetAttestation().GetBlockOnPolicyViolation() {
-		return nil
-	}
-
-	var names []string
-	policies := state.GetPolicies()
-	// A contract-wide opt-out with enforcement on means the organization enforces
-	if policies != nil && policies.Gate != nil && !policies.GetGate() {
-		names = append(names, contractGateField(state))
-	}
-
-	for _, att := range slices.Concat(policies.GetMaterials(), policies.GetAttestation()) {
-		if att.Gate != nil && !att.GetGate() {
-			names = append(names, policyAttachmentName(att))
-		}
-	}
-
-	for _, group := range state.GetPolicyGroups() {
-		if group.Gate != nil && !group.GetGate() {
-			names = append(names, group.GetRef())
-		}
-	}
-
-	return names
-}
-
 // IgnoredGateOptOutsWarning returns a message that names the `gate: false`
 // settings that have no effect, or an empty string when there are none.
 func IgnoredGateOptOutsWarning(state *v1.CraftingState) string {
-	ignored := ignoredGateOptOuts(state)
+	ignored := state.IgnoredGateOptOuts()
 	if len(ignored) == 0 {
 		return ""
 	}
 
 	return fmt.Sprintf("gate: false has no effect on %s because policies are enforced by the %s, and enforcement cannot be relaxed",
-		strings.Join(ignored, ", "), policyEnforcementSource(state))
-}
-
-func policyAttachmentName(att *pbc.PolicyAttachment) string {
-	if ref := att.GetRef(); ref != "" {
-		return ref
-	}
-
-	return att.GetEmbedded().GetMetadata().GetName()
+		strings.Join(ignored, ", "), state.PolicyEnforcementSource())
 }
 
 // getPolicyEvaluations retrieves both material-level and attestation-level policy evaluations and returns if it has violations
