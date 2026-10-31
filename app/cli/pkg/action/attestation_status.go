@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	pbc "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -205,9 +206,12 @@ func policyEnforcementSources(att *v1.Attestation) []string {
 	return sources
 }
 
-// ignoredGateOptOuts returns the contract policies and policy groups that set
-// `gate: false`, which has no effect when the organization or the contract
-// enforces policies, since enforcement only tightens.
+// contractGateField names the contract-wide opt-out in the ignored opt-outs
+const contractGateField = "spec.policies.gate"
+
+// ignoredGateOptOuts returns the contract settings, policies and policy groups
+// that set `gate: false`, which has no effect when the organization or the
+// contract enforces policies, since enforcement only tightens.
 func ignoredGateOptOuts(state *v1.CraftingState) []string {
 	if !state.GetAttestation().PoliciesEnforced() {
 		return nil
@@ -215,6 +219,11 @@ func ignoredGateOptOuts(state *v1.CraftingState) []string {
 
 	var names []string
 	policies := state.GetPolicies()
+	// A contract-wide opt-out can only be overridden by the organization
+	if policies.Gate != nil && !policies.GetGate() && state.GetAttestation().GetBlockOnPolicyViolation() {
+		names = append(names, contractGateField)
+	}
+
 	for _, att := range slices.Concat(policies.GetMaterials(), policies.GetAttestation()) {
 		if att.Gate != nil && !att.GetGate() {
 			names = append(names, policyAttachmentName(att))
@@ -228,6 +237,18 @@ func ignoredGateOptOuts(state *v1.CraftingState) []string {
 	}
 
 	return names
+}
+
+// IgnoredGateOptOutsWarning returns a message that names the `gate: false`
+// settings that have no effect, or an empty string when there are none.
+func IgnoredGateOptOutsWarning(state *v1.CraftingState) string {
+	ignored := ignoredGateOptOuts(state)
+	if len(ignored) == 0 {
+		return ""
+	}
+
+	return fmt.Sprintf("gate: false has no effect on %s because the %s enforces policies, and enforcement cannot be relaxed",
+		strings.Join(ignored, ", "), strings.Join(policyEnforcementSources(state.GetAttestation()), " and the "))
 }
 
 func policyAttachmentName(att *pbc.PolicyAttachment) string {

@@ -189,6 +189,7 @@ func TestIgnoredGateOptOuts(t *testing.T) {
 	schema := &craftingpb.CraftingSchemaV2{
 		Spec: &craftingpb.CraftingSchemaV2Spec{
 			Policies: &craftingpb.Policies{
+				Gate: proto.Bool(false),
 				Materials: []*craftingpb.PolicyAttachment{
 					{Policy: &craftingpb.PolicyAttachment_Ref{Ref: refPolicy}, Gate: proto.Bool(false)},
 					{Policy: &craftingpb.PolicyAttachment_Ref{Ref: "sbom-present"}},
@@ -209,20 +210,25 @@ func TestIgnoredGateOptOuts(t *testing.T) {
 	ignored := []string{refPolicy, embeddedPolicy, group}
 
 	testCases := []struct {
-		name string
-		att  *v1.Attestation
-		want []string
+		name        string
+		att         *v1.Attestation
+		want        []string
+		wantWarning string
 	}{
 		{name: "gate false is honored when nothing enforces", att: &v1.Attestation{}},
 		{
-			name: "gate false is ignored when the organization enforces",
+			name: "gate false is ignored when the organization enforces, contract-wide opt-out included",
 			att:  &v1.Attestation{BlockOnPolicyViolation: true},
-			want: ignored,
+			want: append([]string{contractGateField}, ignored...),
+			wantWarning: "gate: false has no effect on spec.policies.gate, sbom-banned-licenses, embedded-policy, slsa-checks " +
+				"because the organization enforces policies, and enforcement cannot be relaxed",
 		},
 		{
 			name: "gate false is ignored when the contract enforces",
 			att:  &v1.Attestation{ContractBlockOnPolicyViolation: true},
 			want: ignored,
+			wantWarning: "gate: false has no effect on sbom-banned-licenses, embedded-policy, slsa-checks " +
+				"because the contract enforces policies, and enforcement cannot be relaxed",
 		},
 	}
 
@@ -233,6 +239,7 @@ func TestIgnoredGateOptOuts(t *testing.T) {
 				Schema:      &v1.CraftingState_SchemaV2{SchemaV2: schema},
 			}
 			assert.Equal(t, tc.want, ignoredGateOptOuts(state))
+			assert.Equal(t, tc.wantWarning, IgnoredGateOptOutsWarning(state))
 		})
 	}
 }

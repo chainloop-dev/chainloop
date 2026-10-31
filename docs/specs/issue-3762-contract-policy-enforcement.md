@@ -69,7 +69,7 @@ The bypass flag of the push command MUST apply to gates from contract enforcemen
 The attestation status command and the workflow run describe command MUST show the strategy as enforced when the organization or the contract turns on enforcement. They SHOULD name the source: organization, contract, or both. When neither level enforces, they MUST NOT show an advisory strategy, because single policies can still be gates.
 
 ### R-006: Warn about an ignored opt-out
-When a contract has `gate: false` at a level where a higher level turns on enforcement, the system SHOULD warn the user. The warning SHOULD show when the user checks or saves the contract, and in the attestation status command.
+When a contract has `gate: false` at a level where a higher level turns on enforcement, the system SHOULD warn the user. The warning SHOULD show when the attestation starts, in the attestation status command, and when the user checks or saves the contract.
 
 ## Constraints
 

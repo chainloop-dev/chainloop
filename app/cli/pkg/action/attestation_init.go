@@ -333,6 +333,11 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		return "", err
 	}
 
+	// gate: false can not relax organization or contract enforcement (R-006)
+	if msg := IgnoredGateOptOutsWarning(action.c.CraftingState.CraftingState); msg != "" {
+		action.Logger.Warn().Msg(msg)
+	}
+
 	// Load the env variables both the system populated and the user predefined ones
 	if err := action.c.ResolveEnvVars(ctx, attestationID); err != nil {
 		if action.dryRun {
