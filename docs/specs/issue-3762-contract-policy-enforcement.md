@@ -144,7 +144,7 @@ The contract stays valid when it has `gate: false`. The system warns as R-006 sa
 - Source: drafting
 
 ### D-006: Detect older CLI versions
-The documentation names the minimum CLI version for contract enforcement. The control plane marks the workflow run when the organization or the contract enforces policies, but the attestation does not record the expected gates.
+The documentation names the minimum CLI version for contract enforcement. The control plane marks the workflow run when the contract enforces policies, but the attestation does not record the enforced strategy. A supported CLI always records the enforced strategy, so the control plane marks only runs from older CLIs. The control plane does not need the CLI version for this check.
 - Why: an older CLI ignores the contract setting and keeps the opt-out. The control plane cannot fail that CI job, but it can show the gap.
 - Alternatives considered:
   - Documentation only: the gap stays hidden.

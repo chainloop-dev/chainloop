@@ -414,3 +414,46 @@ func TestAppendPolicySection(t *testing.T) {
 		})
 	}
 }
+
+func TestAppendPolicyStrategyRows(t *testing.T) {
+	const strategyRowLabel = "Policies violation strategy"
+
+	tests := []struct {
+		name        string
+		status      *action.PolicyEvaluationStatus
+		wantContain []string
+		wantAbsent  []string
+	}{
+		{
+			name:        "enforced strategy is shown",
+			status:      &action.PolicyEvaluationStatus{Strategy: action.PolicyViolationBlockingStrategyEnforced, Blocked: true},
+			wantContain: []string{strategyRowLabel, action.PolicyViolationBlockingStrategyEnforced, "Run Blocked", "Policy enforcement bypassed"},
+		},
+		{
+			name:       "advisory strategy is hidden",
+			status:     &action.PolicyEvaluationStatus{Strategy: action.PolicyViolationBlockingStrategyAdvisory},
+			wantAbsent: []string{strategyRowLabel, action.PolicyViolationBlockingStrategyAdvisory, "Policy enforcement bypassed"},
+		},
+		{
+			name:        "gated violations show without an enforced strategy",
+			status:      &action.PolicyEvaluationStatus{Strategy: action.PolicyViolationBlockingStrategyAdvisory, HasGatedViolations: true},
+			wantContain: []string{"Run Gated"},
+			wantAbsent:  []string{strategyRowLabel},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			tw := table.NewWriter()
+			appendPolicyStrategyRows(tc.status, tw)
+			got := tw.Render()
+
+			for _, want := range tc.wantContain {
+				assert.Contains(t, got, want)
+			}
+			for _, absent := range tc.wantAbsent {
+				assert.NotContains(t, got, absent)
+			}
+		})
+	}
+}
