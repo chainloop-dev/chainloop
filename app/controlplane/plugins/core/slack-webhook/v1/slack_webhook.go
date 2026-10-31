@@ -27,6 +27,7 @@ import (
 	"text/template"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -154,7 +155,7 @@ func executeWebhook(client *http.Client, webhookURL, msgContent string) error {
 
 	if r.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(r.Body)
-		return fmt.Errorf("non-OK HTTP status while calling the webhook: %d, body: %s", r.StatusCode, string(b))
+		return errorsx.Errorf("non-OK HTTP status while calling the webhook: %d, body: %s", r.StatusCode, string(b))
 	}
 
 	return nil

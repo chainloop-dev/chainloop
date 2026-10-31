@@ -33,6 +33,7 @@ import (
 	"github.com/aws/smithy-go"
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 )
 
 const (
@@ -52,11 +53,11 @@ const defaultRegion = "us-east-1"
 
 func NewBackend(creds *Credentials) (*Backend, error) {
 	if creds == nil {
-		return nil, errors.New("credentials cannot be nil")
+		return nil, errorsx.New("credentials cannot be nil")
 	}
 
 	if err := creds.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid credentials: %w", err)
+		return nil, errorsx.Errorf("invalid credentials: %w", err)
 	}
 
 	// Set a default region if not provided
@@ -68,7 +69,7 @@ func NewBackend(creds *Credentials) (*Backend, error) {
 	// Bucket might contain the not only the bucket name but also the endpoint
 	endpoint, bucket, err := extractLocationAndBucket(creds)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse bucket name: %w", err)
+		return nil, errorsx.Errorf("failed to parse bucket name: %w", err)
 	}
 
 	// Using AWS config directly instead of using config.LoadDefaultConfig
@@ -124,7 +125,7 @@ func extractLocationAndBucket(creds *Credentials) (string, string, error) {
 	// so we override the bucket and set the endpoint if needed
 	parsedLocation, err := url.Parse(creds.Location)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to parse location: %w", err)
+		return "", "", errorsx.Errorf("failed to parse location: %w", err)
 	}
 
 	host := parsedLocation.Host
@@ -139,7 +140,7 @@ func extractLocationAndBucket(creds *Credentials) (string, string, error) {
 		return endpoint, pathSegments[1], nil
 	}
 
-	return "", "", fmt.Errorf("the location doesn't contain a bucket name")
+	return "", "", errorsx.Errorf("the location doesn't contain a bucket name")
 }
 
 // Exists check that the artifact is already present in the repository
@@ -169,7 +170,7 @@ func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResou
 	// variants), and some S3-compatible endpoints such as R2 reject it outright.
 
 	if _, err := uploader.Upload(ctx, input); err != nil {
-		return fmt.Errorf("failed to upload to bucket: %w", err)
+		return errorsx.Errorf("failed to upload to bucket: %w", err)
 	}
 
 	return nil
@@ -196,24 +197,24 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 			return nil, backend.NewErrNotFound("artifact")
 		}
 
-		return nil, fmt.Errorf("failed to read from bucket: %w", err)
+		return nil, errorsx.Errorf("failed to read from bucket: %w", err)
 	}
 
 	// Check integrity of the remote object
 	if resp.ChecksumSHA256 != nil && *resp.ChecksumSHA256 != hexSha256ToBinaryB64(digest) {
-		return nil, fmt.Errorf("failed to validate integrity of object, got=%s, want=%s", *resp.ChecksumSHA256, hexSha256ToBinaryB64(digest))
+		return nil, errorsx.Errorf("failed to validate integrity of object, got=%s, want=%s", *resp.ChecksumSHA256, hexSha256ToBinaryB64(digest))
 	}
 
 	// Check asset author is Chainloop that way we can ignore files uploaded by other tools
 	// note: this is not a security mechanism, an additional check will be put in place for tamper check
 	author, ok := resp.Metadata[annotationNameAuthor]
 	if !ok || author != backend.AuthorAnnotation {
-		return nil, errors.New("asset not uploaded by Chainloop")
+		return nil, errorsx.New("asset not uploaded by Chainloop")
 	}
 
 	fileName, ok := resp.Metadata[annotationNameFilename]
 	if !ok {
-		return nil, fmt.Errorf("couldn't find file metadata")
+		return nil, errorsx.Errorf("couldn't find file metadata")
 	}
 
 	return &pb.CASResource{
@@ -243,7 +244,7 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 		Key:    aws.String(resourceName(digest)),
 	})
 
-	return err
+	return errorsx.WithStack(err)
 }
 
 // CheckWritePermissions performs an actual write to the repository to check that the credentials
@@ -258,7 +259,7 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 
 	// Write to the bucket
 	if _, err := b.client.PutObject(ctx, input); err != nil {
-		return fmt.Errorf("failed to write to bucket: %w", err)
+		return errorsx.Errorf("failed to write to bucket: %w", err)
 	}
 
 	// and read the object back
@@ -268,7 +269,7 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 	})
 
 	if err != nil {
-		return fmt.Errorf("failed to read from bucket: %w", err)
+		return errorsx.Errorf("failed to read from bucket: %w", err)
 	}
 
 	return nil

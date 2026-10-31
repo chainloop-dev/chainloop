@@ -25,6 +25,7 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -92,6 +93,29 @@ var (
 	ErrNotFound     = fmt.Errorf("policy not found")
 	ErrUnauthorized = fmt.Errorf("unauthorized request to policy provider")
 )
+
+// UnexpectedStatusError is returned when the policy provider answers with an
+// HTTP status that the client does not handle. It has its own type so that
+// Sentry does not group it with transport or decode failures.
+type UnexpectedStatusError struct {
+	// StatusCode is the HTTP status code of the response.
+	StatusCode int
+}
+
+func (e *UnexpectedStatusError) Error() string {
+	return fmt.Sprintf("expected status code 200 but got %d", e.StatusCode)
+}
+
+// doRequest sends req to the policy provider. A transport failure records the
+// stack of the caller, so Sentry groups it by the request that failed.
+func doRequest(req *http.Request) (*http.Response, error) {
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errorsx.Errorf("error executing policy request: %w", err)
+	}
+
+	return resp, nil
+}
 
 // ResolveOption configures a policy or policy-group resolution request.
 type ResolveOption func(*resolveOptions)
@@ -186,9 +210,9 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, aut
 	}
 
 	// make the request
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := doRequest(req)
 	if err != nil {
-		return fmt.Errorf("error executing policy request: %w", err)
+		return err
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -197,15 +221,15 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, aut
 			// Ignore endpoint not found as it might not be implemented by the provider
 			return nil
 		case http.StatusUnauthorized, http.StatusForbidden:
-			return fmt.Errorf("%w: %s", ErrUnauthorized, readBodyMsg(resp))
+			return errorsx.Errorf("%w: %s", ErrUnauthorized, readBodyMsg(resp))
 		default:
-			return fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
+			return errorsx.WithStack(&UnexpectedStatusError{StatusCode: resp.StatusCode})
 		}
 	}
 
 	resBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("error reading validation response: %w", err)
+		return errorsx.Errorf("error reading validation response: %w", err)
 	}
 
 	defer resp.Body.Close()
@@ -213,7 +237,7 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, aut
 	// unmarshall response
 	var response ValidateResponse
 	if err := json.Unmarshal(resBytes, &response); err != nil {
-		return fmt.Errorf("error unmarshalling validation response: %w", err)
+		return errorsx.Errorf("error unmarshalling validation response: %w", err)
 	}
 
 	if !response.Valid {
@@ -285,9 +309,9 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 	}
 
 	// make the request
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := doRequest(req)
 	if err != nil {
-		return "", "", fmt.Errorf("error executing policy request: %w", err)
+		return "", "", err
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -295,27 +319,27 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 		case http.StatusNotFound:
 			return "", "", ErrNotFound
 		case http.StatusUnauthorized, http.StatusForbidden:
-			return "", "", fmt.Errorf("%w: %s", ErrUnauthorized, readBodyMsg(resp))
+			return "", "", errorsx.Errorf("%w: %s", ErrUnauthorized, readBodyMsg(resp))
 		default:
-			return "", "", fmt.Errorf("expected status code 200 but got %d", resp.StatusCode)
+			return "", "", errorsx.WithStack(&UnexpectedStatusError{StatusCode: resp.StatusCode})
 		}
 	}
 
 	resBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", "", fmt.Errorf("error reading policy response: %w", err)
+		return "", "", errorsx.Errorf("error reading policy response: %w", err)
 	}
 
 	// unmarshall response
 	var response ProviderResponse
 	if err := json.Unmarshal(resBytes, &response); err != nil {
-		return "", "", fmt.Errorf("error unmarshalling policy response: %w", err)
+		return "", "", errorsx.Errorf("error unmarshalling policy response: %w", err)
 	}
 
 	// if raw message is provided, just interpret it as a base64 encoded string
 	if response.Raw != nil {
 		if err := unmarshalFromRaw(response.Raw, out); err != nil {
-			return "", "", fmt.Errorf("error unmarshalling policy response: %w", err)
+			return "", "", errorsx.Errorf("error unmarshalling policy response: %w", err)
 		}
 	} else if response.Data != nil {
 		// extract the policy payload from the query response
@@ -325,7 +349,7 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 		}
 
 		if err := protojson.Unmarshal(jsonPolicy, out); err != nil {
-			return "", "", fmt.Errorf("error unmarshalling policy response: %w", err)
+			return "", "", errorsx.Errorf("error unmarshalling policy response: %w", err)
 		}
 	}
 

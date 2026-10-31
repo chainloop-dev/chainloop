@@ -27,6 +27,8 @@ import (
 	"strings"
 
 	"encoding/json"
+
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 )
 
 type base struct {
@@ -222,18 +224,17 @@ func teamPermissionsRequest(httpClient *http.Client, host *url.URL, apiKey strin
 
 	// Check the response
 	if res.StatusCode != http.StatusOK {
-		err = fmt.Errorf("bad status: %s", res.Status)
-		return nil, err
+		return nil, newStatusError(res)
 	}
 
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, errorsx.Errorf("reading the response body: %w", err)
 	}
 
 	resp := &teamPermissionsResponse{}
 	if err := json.Unmarshal(resBody, resp); err != nil {
-		return nil, err
+		return nil, errorsx.Errorf("decoding the team permissions response: %w", err)
 	}
 
 	return resp, nil
@@ -286,18 +287,17 @@ func uploadSBOMRequest(httpClient *http.Client, host *url.URL, apiKey string, va
 
 	// Check the response
 	if res.StatusCode != http.StatusOK {
-		err = fmt.Errorf("bad status: %s", res.Status)
-		return nil, err
+		return nil, newStatusError(res)
 	}
 
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, errorsx.Errorf("reading the response body: %w", err)
 	}
 
 	resp := &uploadSBOMResponse{}
 	if err := json.Unmarshal(resBody, resp); err != nil {
-		return nil, err
+		return nil, errorsx.Errorf("decoding the SBOM upload response: %w", err)
 	}
 
 	return resp, nil
@@ -327,6 +327,23 @@ func projectExists(httpClient *http.Client, host *url.URL, apiKey string, projec
 	case http.StatusNotFound:
 		return false, nil
 	default:
-		return false, fmt.Errorf("bad status: %s", res.Status)
+		return false, newStatusError(res)
 	}
+}
+
+// StatusError is returned when Dependency-Track answers with an unexpected
+// HTTP status. It has its own type so that Sentry does not group it with
+// transport or decode failures.
+type StatusError struct {
+	// Status is the HTTP status line of the response, for example "403 Forbidden".
+	Status string
+	// StatusCode is the HTTP status code of the response.
+	StatusCode int
+}
+
+func (e *StatusError) Error() string { return "bad status: " + e.Status }
+
+// newStatusError returns a StatusError for res with the stack of the caller.
+func newStatusError(res *http.Response) error {
+	return errorsx.WithStack(&StatusError{Status: res.Status, StatusCode: res.StatusCode})
 }

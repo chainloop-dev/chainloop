@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,12 +28,27 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	fulcioca "github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
 const CAName = "ejbCA"
+
+// EnrollStatusError is returned when EJBCA answers a certificate enrollment
+// with an unexpected HTTP status. It is a separate type so that error trackers
+// do not group it with transport or decoding failures.
+type EnrollStatusError struct {
+	// Status is the HTTP status line, for example "403 Forbidden".
+	Status string
+	// StatusCode is the HTTP status code.
+	StatusCode int
+}
+
+func (e *EnrollStatusError) Error() string {
+	return fmt.Sprintf("wrong status creating certificate: %v", e.Status)
+}
 
 type EJBCA struct {
 	// Connection settings
@@ -55,7 +70,7 @@ type EJBCA struct {
 
 func New(serverURL, keyPath, certPath, rootCAPath, certProfileName, endEntityProfileName, caName string) (*EJBCA, error) {
 	if serverURL == "" || keyPath == "" || certPath == "" || certProfileName == "" || endEntityProfileName == "" || caName == "" {
-		return nil, fmt.Errorf("ejbca: invalid arguments")
+		return nil, errorsx.New("ejbca: invalid arguments")
 	}
 
 	return &EJBCA{
@@ -102,12 +117,12 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 	}
 	ejbcaReqBytes, err := json.Marshal(ejbcaReq)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal EJBCA Request: %w", err)
+		return nil, errorsx.Errorf("failed to marshal EJBCA Request: %w", err)
 	}
 
 	cert, err := tls.LoadX509KeyPair(e.certPath, e.keyPath)
 	if err != nil {
-		return nil, fmt.Errorf("error loading X509 key pair: %w", err)
+		return nil, errorsx.Errorf("error loading X509 key pair: %w", err)
 	}
 
 	tlsConfig := &tls.Config{
@@ -118,7 +133,7 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 	if e.rootCAPath != "" {
 		caCert, err := os.ReadFile(e.rootCAPath)
 		if err != nil {
-			return nil, fmt.Errorf("error reading root CA: %w", err)
+			return nil, errorsx.Errorf("error reading root CA: %w", err)
 		}
 		caCertPool := x509.NewCertPool()
 		caCertPool.AppendCertsFromPEM(caCert)
@@ -131,7 +146,7 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/ejbca-rest-api/v1/certificate/pkcs10enroll", e.serverURL), bytes.NewReader(ejbcaReqBytes))
 	if err != nil {
-		return nil, fmt.Errorf("unable to create request: %w", err)
+		return nil, errorsx.Errorf("unable to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -139,26 +154,27 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("unable to send request: %w", err)
+		return nil, errorsx.Errorf("unable to send request: %w", err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, fmt.Errorf("wrong status creating certificate: %v", resp.Status)
+		return nil, errorsx.WithStack(&EnrollStatusError{Status: resp.Status, StatusCode: resp.StatusCode})
 	}
 
 	var rsp response
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read response body: %w", err)
+		return nil, errorsx.Errorf("unable to read response body: %w", err)
 	}
 	if err := json.Unmarshal(body, &rsp); err != nil {
-		return nil, fmt.Errorf("unable to parse response body: %w", err)
+		return nil, errorsx.Errorf("unable to parse response body: %w", err)
 	}
 
 	// Decode certificate
 	derCert, err := base64.StdEncoding.DecodeString(rsp.Certificate)
 	if err != nil {
-		return nil, fmt.Errorf("unable to decode response body: %w", err)
+		return nil, errorsx.Errorf("unable to decode response body: %w", err)
 	}
 
 	// Decode chain
@@ -166,16 +182,21 @@ func (e EJBCA) CreateCertificateFromCSR(ctx context.Context, principal identity.
 	for _, c := range rsp.CertificateChain {
 		decodedCert, err := base64.StdEncoding.DecodeString(c)
 		if err != nil {
-			return nil, fmt.Errorf("unable to decode response body: %w", err)
+			return nil, errorsx.Errorf("unable to decode response body: %w", err)
 		}
 		cert, err := x509.ParseCertificate(decodedCert)
 		if err != nil {
-			return nil, fmt.Errorf("unable to parse cert chain: %w", err)
+			return nil, errorsx.Errorf("unable to parse cert chain: %w", err)
 		}
 		chain = append(chain, cert)
 	}
 
-	return fulcioca.CreateCSCFromDER(derCert, chain)
+	csc, err := fulcioca.CreateCSCFromDER(derCert, chain)
+	if err != nil {
+		return nil, errorsx.Errorf("unable to create code signing certificate: %w", err)
+	}
+
+	return csc, nil
 }
 
 func (e EJBCA) GetRootChain(_ context.Context) ([]*x509.Certificate, error) {
@@ -184,9 +205,13 @@ func (e EJBCA) GetRootChain(_ context.Context) ([]*x509.Certificate, error) {
 	if e.rootCAPath != "" {
 		caCert, err := os.ReadFile(e.rootCAPath)
 		if err != nil {
-			return nil, fmt.Errorf("error reading root CA: %w", err)
+			return nil, errorsx.Errorf("error reading root CA: %w", err)
 		}
-		return cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(caCert))
+		certs, err := cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(caCert))
+		if err != nil {
+			return nil, errorsx.Errorf("error loading root CA: %w", err)
+		}
+		return certs, nil
 	}
 	return nil, nil
 }

@@ -26,6 +26,7 @@ import (
 	"net/http"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -108,12 +109,12 @@ func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("invalid webhook URL, status: %s", resp.Status)
+		return nil, errorsx.Errorf("invalid webhook URL, status: %s", resp.Status)
 	}
 
 	var webHookInfo webhookResponse
 	if err := json.NewDecoder(resp.Body).Decode(&webHookInfo); err != nil {
-		return nil, fmt.Errorf("invalid webhook URL: %w", err)
+		return nil, errorsx.Errorf("invalid webhook URL: %w", err)
 	}
 
 	// Configuration State
@@ -236,7 +237,7 @@ func executeWebhook(client *http.Client, webhookURL, usernameOverride string, st
 
 	if r.StatusCode != http.StatusOK {
 		b, _ := io.ReadAll(r.Body)
-		return fmt.Errorf("non-OK HTTP status while calling the webhook: %d, body: %s", r.StatusCode, string(b))
+		return errorsx.Errorf("non-OK HTTP status while calling the webhook: %d, body: %s", r.StatusCode, string(b))
 	}
 
 	return nil

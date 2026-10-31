@@ -35,6 +35,7 @@ import (
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	robotaccount "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 )
 
 const (
@@ -88,7 +89,7 @@ func NewBackend(ctx context.Context, creds *Credentials) (*Backend, error) {
 	// against the pod identity is necessary.
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, awsconfig.WithRegion(creds.Region))
 	if err != nil {
-		return nil, fmt.Errorf("loading aws config: %w", err)
+		return nil, errorsx.Errorf("loading aws config: %w", err)
 	}
 
 	stsClient := sts.NewFromConfig(awsCfg)
@@ -160,7 +161,7 @@ func (b *Backend) Upload(ctx context.Context, r io.Reader, resource *pb.CASResou
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("uploading to access point: %w", err)
+		return errorsx.Errorf("uploading to access point: %w", err)
 	}
 	return nil
 }
@@ -180,23 +181,23 @@ func (b *Backend) Describe(ctx context.Context, digest string) (*pb.CASResource,
 		if errors.As(err, &apiErr) && apiErr.ErrorCode() == "NotFound" {
 			return nil, backend.NewErrNotFound("artifact")
 		}
-		return nil, fmt.Errorf("reading from access point: %w", err)
+		return nil, errorsx.Errorf("reading from access point: %w", err)
 	}
 
 	// Integrity check: when S3 returned a checksum, make sure the digest
 	// the caller asked for matches the server's recorded value.
 	if resp.ChecksumSHA256 != nil && *resp.ChecksumSHA256 != hexSha256ToBinaryB64(digest) {
-		return nil, fmt.Errorf("failed to validate integrity of object, got=%s, want=%s",
+		return nil, errorsx.Errorf("failed to validate integrity of object, got=%s, want=%s",
 			*resp.ChecksumSHA256, hexSha256ToBinaryB64(digest))
 	}
 
 	author, ok := resp.Metadata[annotationNameAuthor]
 	if !ok || author != backend.AuthorAnnotation {
-		return nil, errors.New("asset not uploaded by Chainloop")
+		return nil, errorsx.New("asset not uploaded by Chainloop")
 	}
 	fileName, ok := resp.Metadata[annotationNameFilename]
 	if !ok {
-		return nil, errors.New("couldn't find file metadata")
+		return nil, errorsx.New("couldn't find file metadata")
 	}
 
 	var size int64
@@ -227,7 +228,7 @@ func (b *Backend) Download(ctx context.Context, w io.Writer, digest string) erro
 		Bucket: aws.String(b.creds.AccessPointARN),
 		Key:    aws.String(key),
 	})
-	return err
+	return errorsx.WithStack(err)
 }
 
 // CheckWritePermissions verifies that the calling org can actually mint a
@@ -249,13 +250,13 @@ func (b *Backend) CheckWritePermissions(ctx context.Context) error {
 		Bucket: aws.String(b.creds.AccessPointARN),
 		Key:    aws.String(key),
 	}); err != nil {
-		return fmt.Errorf("writing healthcheck object: %w", err)
+		return errorsx.Errorf("writing healthcheck object: %w", err)
 	}
 	if _, err := b.s3Client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(b.creds.AccessPointARN),
 		Key:    aws.String(key),
 	}); err != nil {
-		return fmt.Errorf("reading healthcheck object: %w", err)
+		return errorsx.Errorf("reading healthcheck object: %w", err)
 	}
 	return nil
 }
@@ -299,9 +300,10 @@ func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credenti
 	// SDK's default credential chain directly.
 	if p.useAmbientForRetrieve {
 		if p.ambientCreds == nil {
-			return aws.Credentials{}, errors.New("s3accesspoint: dev mode requested but no ambient credentials available")
+			return aws.Credentials{}, errorsx.New("s3accesspoint: dev mode requested but no ambient credentials available")
 		}
-		return p.ambientCreds.Retrieve(ctx)
+		creds, err := p.ambientCreds.Retrieve(ctx)
+		return creds, errorsx.WithStack(err)
 	}
 
 	// The session policy intersects with the base role's permissions and
@@ -333,10 +335,10 @@ func (p *sessionCredentialsProvider) Retrieve(ctx context.Context) (aws.Credenti
 
 	out, err := p.stsClient.AssumeRole(ctx, input)
 	if err != nil {
-		return aws.Credentials{}, fmt.Errorf("sts:AssumeRole for org %s: %w", info.OrgID, err)
+		return aws.Credentials{}, errorsx.Errorf("sts:AssumeRole for org %s: %w", info.OrgID, err)
 	}
 	if out.Credentials == nil {
-		return aws.Credentials{}, errors.New("sts:AssumeRole returned no credentials")
+		return aws.Credentials{}, errorsx.New("sts:AssumeRole returned no credentials")
 	}
 
 	return aws.Credentials{

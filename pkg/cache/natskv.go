@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -110,7 +111,7 @@ func isRetryableInitError(err error) bool {
 func (c *natsKVCache[T]) initBucket() error {
 	js, err := jetstream.New(c.conn)
 	if err != nil {
-		return err
+		return errorsx.Errorf("cache: creating jetstream context: %w", err)
 	}
 
 	kv, err := js.CreateOrUpdateKeyValue(context.Background(), jetstream.KeyValueConfig{
@@ -122,7 +123,7 @@ func (c *natsKVCache[T]) initBucket() error {
 		Storage:     jetstream.MemoryStorage,
 	})
 	if err != nil {
-		return err
+		return errorsx.Errorf("cache: creating or updating bucket %s: %w", c.bucket, err)
 	}
 
 	// NATS KV hardcodes DiscardNew; we want DiscardOld so the cache evicts
@@ -148,7 +149,7 @@ func (c *natsKVCache[T]) ensureDiscardOld(js jetstream.JetStream) error {
 
 	stream, err := js.Stream(ctx, streamName)
 	if err != nil {
-		return fmt.Errorf("cache: failed to get backing stream %s: %w", streamName, err)
+		return errorsx.Errorf("cache: failed to get backing stream %s: %w", streamName, err)
 	}
 
 	cfg := stream.CachedInfo().Config
@@ -158,7 +159,7 @@ func (c *natsKVCache[T]) ensureDiscardOld(js jetstream.JetStream) error {
 	cfg.Discard = jetstream.DiscardOld
 
 	if _, err := js.UpdateStream(ctx, cfg); err != nil {
-		return fmt.Errorf("cache: failed to set DiscardOld on stream %s: %w", streamName, err)
+		return errorsx.Errorf("cache: failed to set DiscardOld on stream %s: %w", streamName, err)
 	}
 	return nil
 }

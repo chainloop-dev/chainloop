@@ -147,8 +147,10 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 	}
 
 	var opts []grpc.DialOption
-	unaryInterceptors := []grpc.UnaryClientInterceptor{}
-	streamInterceptors := []grpc.StreamClientInterceptor{}
+	// The stack interceptors come first, so they are outermost: inner
+	// interceptors such as retry see the errors as gRPC returns them.
+	unaryInterceptors := []grpc.UnaryClientInterceptor{StackUnaryClientInterceptor()}
+	streamInterceptors := []grpc.StreamClientInterceptor{StackStreamClientInterceptor()}
 
 	if authToken != "" || optionalArgs.tokenProvider != nil {
 		grpcCreds := newTokenAuth(authToken, optionalArgs.insecure, optionalArgs.orgName)
@@ -165,12 +167,10 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 	unaryInterceptors = append(unaryInterceptors, optionalArgs.unaryInterceptors...)
 	streamInterceptors = append(streamInterceptors, optionalArgs.streamInterceptors...)
 
-	if len(unaryInterceptors) > 0 {
-		opts = append(opts, grpc.WithChainUnaryInterceptor(unaryInterceptors...))
-	}
-	if len(streamInterceptors) > 0 {
-		opts = append(opts, grpc.WithChainStreamInterceptor(streamInterceptors...))
-	}
+	opts = append(opts,
+		grpc.WithChainUnaryInterceptor(unaryInterceptors...),
+		grpc.WithChainStreamInterceptor(streamInterceptors...),
+	)
 
 	// Currently we only support system tls certs
 	var tlsDialOption grpc.DialOption

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,11 +20,10 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
-	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	fulcioca "github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/ca/baseca"
 	"github.com/sigstore/fulcio/pkg/identity"
@@ -50,7 +49,7 @@ func New(certPath, keyPath, keyPass string, verify bool) (*FileCA, error) {
 		// if the CA is a signer, verify the chain
 		chain, signer := baseCA.GetSignerWithChain()
 		if err := fulcioca.VerifyCertChain(chain, signer); err != nil {
-			return nil, err
+			return nil, errorsx.Errorf("fileca: verifying certificate chain: %w", err)
 		}
 	}
 
@@ -68,35 +67,40 @@ func loadKeyPair(certPath, keyPath, keyPass string) (*fulcioca.SignerCerts, erro
 
 	data, err := os.ReadFile(filepath.Clean(certPath))
 	if err != nil {
-		return nil, err
+		return nil, errorsx.Errorf("fileca: reading certificate: %w", err)
 	}
 	certs, err = cryptoutils.LoadCertificatesFromPEM(bytes.NewReader(data))
 	if err != nil {
-		return nil, err
+		return nil, errorsx.Errorf("fileca: loading certificate: %w", err)
 	}
 
 	opaqueKey, err := pemutil.Read(keyPath, pemutil.WithPassword([]byte(keyPass)))
 	if err != nil {
-		return nil, err
+		return nil, errorsx.Errorf("fileca: reading private key: %w", err)
 	}
 
 	var ok bool
 	key, ok = opaqueKey.(crypto.Signer)
 	if !ok {
-		return nil, errors.New(`fileca: loaded private key can't be used to sign`)
+		return nil, errorsx.New(`fileca: loaded private key can't be used to sign`)
 	}
 
 	return &fulcioca.SignerCerts{Certs: certs, Signer: key}, nil
 }
 
 func (f FileCA) CreateCertificateFromCSR(ctx context.Context, principal identity.Principal, csr *x509.CertificateRequest) (*fulcioca.CodeSigningCertificate, error) {
-	return f.ca.CreateCertificate(ctx, principal, csr.PublicKey)
+	cert, err := f.ca.CreateCertificate(ctx, principal, csr.PublicKey)
+	if err != nil {
+		return nil, errorsx.Errorf("fileca: creating certificate: %w", err)
+	}
+
+	return cert, nil
 }
 
 func (f FileCA) GetRootChain(ctx context.Context) ([]*x509.Certificate, error) {
 	tb, err := f.ca.TrustBundle(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to load trust bundle: %w", err)
+		return nil, errorsx.Errorf("failed to load trust bundle: %w", err)
 	}
 	return tb[0], nil
 }
