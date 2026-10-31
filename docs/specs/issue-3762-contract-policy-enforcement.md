@@ -66,7 +66,7 @@ A contract that does not set the contract enforcement MUST behave as the organiz
 The bypass flag of the push command MUST apply to gates from contract enforcement in the same way as it applies to other gates. The control plane MUST record the bypass.
 
 ### R-005: Show the enforcement that applies
-The attestation status command and the workflow run describe command MUST show the strategy as enforced when the organization or the contract turns on enforcement. They SHOULD name the source: organization, contract, or both. When neither level enforces, they MUST NOT show an advisory strategy, because single policies can still be gates.
+The attestation status command and the workflow run describe command MUST show the strategy as enforced when the organization or the contract turns on enforcement. They SHOULD name the source: the contract when the contract turns on enforcement, else the organization (D-007). When neither level enforces, they MUST NOT show an advisory strategy, because single policies can still be gates.
 
 ### R-006: Warn about an ignored opt-out
 When a contract has `gate: false` at a level where a higher level turns on enforcement, the system SHOULD warn the user. The warning SHOULD show when the attestation starts, in the attestation status command, and when the user checks or saves the contract.
@@ -149,6 +149,13 @@ The documentation names the minimum CLI version for contract enforcement. The co
 - Alternatives considered:
   - Documentation only: the gap stays hidden.
 - Source: drafting
+
+### D-007: One enforcement value for both levels
+The attestation records one value for enforcement. The value is on when the organization or the contract turns on enforcement. The status output reads the contract to name the source, so it names the contract when both levels enforce.
+- Why: the renderer, the push command, and the control plane already read this value. No new attestation field is necessary.
+- Alternatives considered:
+  - A separate value for the contract: the status can name both levels, but each reader must combine two values.
+- Source: [review comment](https://github.com/chainloop-dev/chainloop/pull/3763#discussion_r4433259187)
 
 ## Open Questions
 

@@ -55,8 +55,8 @@ type AttestationStatusResult struct {
 	PolicyEvaluations           map[string][]*PolicyEvaluation  `json:"policy_evaluations,omitempty"`
 	HasPolicyViolations         bool                            `json:"has_policy_violations"`
 	MustBlockOnPolicyViolations bool                            `json:"must_block_on_policy_violations"`
-	// Levels that enforce all policies: organization and/or contract
-	PolicyEnforcementSources []string `json:"policy_enforcement_sources,omitempty"`
+	// Level that enforces all policies: organization or contract
+	PolicyEnforcementSource string `json:"policy_enforcement_source,omitempty"`
 	// Contract policies and policy groups with `gate: false` that have no effect
 	// because the organization or the contract enforces policies
 	IgnoredGateOptOuts []string `json:"ignored_gate_opt_outs,omitempty"`
@@ -132,8 +132,8 @@ func (action *AttestationStatus) Run(ctx context.Context, attestationID string) 
 		DryRun:                      c.CraftingState.DryRun,
 		Annotations:                 pbAnnotationsToAction(c.CraftingState.GetAnnotations()),
 		IsPushed:                    action.isPushed,
-		MustBlockOnPolicyViolations: att.PoliciesEnforced(),
-		PolicyEnforcementSources:    policyEnforcementSources(att),
+		MustBlockOnPolicyViolations: att.GetBlockOnPolicyViolation(),
+		PolicyEnforcementSource:     policyEnforcementSource(c.CraftingState.CraftingState),
 		IgnoredGateOptOuts:          ignoredGateOptOuts(c.CraftingState.CraftingState),
 		TimestampAuthority:          att.GetSigningOptions().GetTimestampAuthorityUrl(),
 	}
@@ -193,35 +193,44 @@ const (
 	PolicyEnforcementSourceContract     = "contract"
 )
 
-// policyEnforcementSources returns the levels that enforce all the policies of the attestation
-func policyEnforcementSources(att *v1.Attestation) []string {
-	var sources []string
-	if att.GetBlockOnPolicyViolation() {
-		sources = append(sources, PolicyEnforcementSourceOrganization)
+// policyEnforcementSource returns the level that enforces all the policies of
+// the attestation. The attestation records one enforcement flag for both
+// levels, so the contract setting tells them apart. When both levels enforce,
+// it names the contract.
+func policyEnforcementSource(state *v1.CraftingState) string {
+	switch {
+	case !state.GetAttestation().GetBlockOnPolicyViolation():
+		return ""
+	case state.GetPolicies().GetGate():
+		return PolicyEnforcementSourceContract
+	default:
+		return PolicyEnforcementSourceOrganization
 	}
-	if att.GetContractBlockOnPolicyViolation() {
-		sources = append(sources, PolicyEnforcementSourceContract)
-	}
-
-	return sources
 }
 
-// contractGateField names the contract-wide opt-out in the ignored opt-outs
-const contractGateField = "spec.policies.gate"
+// contractGateField returns how the contract-wide opt-out is written in the
+// contract, which depends on the contract schema version.
+func contractGateField(state *v1.CraftingState) string {
+	if state.GetSchemaV2() != nil {
+		return "spec.policies.gate"
+	}
+
+	return "policies.gate"
+}
 
 // ignoredGateOptOuts returns the contract settings, policies and policy groups
 // that set `gate: false`, which has no effect when the organization or the
 // contract enforces policies, since enforcement only tightens.
 func ignoredGateOptOuts(state *v1.CraftingState) []string {
-	if !state.GetAttestation().PoliciesEnforced() {
+	if !state.GetAttestation().GetBlockOnPolicyViolation() {
 		return nil
 	}
 
 	var names []string
 	policies := state.GetPolicies()
-	// A contract-wide opt-out can only be overridden by the organization
-	if policies.Gate != nil && !policies.GetGate() && state.GetAttestation().GetBlockOnPolicyViolation() {
-		names = append(names, contractGateField)
+	// A contract-wide opt-out with enforcement on means the organization enforces
+	if policies != nil && policies.Gate != nil && !policies.GetGate() {
+		names = append(names, contractGateField(state))
 	}
 
 	for _, att := range slices.Concat(policies.GetMaterials(), policies.GetAttestation()) {
@@ -247,8 +256,8 @@ func IgnoredGateOptOutsWarning(state *v1.CraftingState) string {
 		return ""
 	}
 
-	return fmt.Sprintf("gate: false has no effect on %s because the %s enforces policies, and enforcement cannot be relaxed",
-		strings.Join(ignored, ", "), strings.Join(policyEnforcementSources(state.GetAttestation()), " and the "))
+	return fmt.Sprintf("gate: false has no effect on %s because policies are enforced by the %s, and enforcement cannot be relaxed",
+		strings.Join(ignored, ", "), policyEnforcementSource(state))
 }
 
 func policyAttachmentName(att *pbc.PolicyAttachment) string {

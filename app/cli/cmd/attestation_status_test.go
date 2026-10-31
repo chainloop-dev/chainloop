@@ -42,19 +42,19 @@ func TestAttestationStatusPolicyEnforcementRows(t *testing.T) {
 			wantAbsent: []string{strategyRowLabel, action.PolicyViolationBlockingStrategyAdvisory, ignoredRowLabel},
 		},
 		{
-			name: "enforced strategy names its sources",
+			name: "enforced strategy names its source",
 			status: &action.AttestationStatusResult{
 				MustBlockOnPolicyViolations: true,
-				PolicyEnforcementSources:    []string{action.PolicyEnforcementSourceOrganization, action.PolicyEnforcementSourceContract},
+				PolicyEnforcementSource:     action.PolicyEnforcementSourceOrganization,
 			},
-			wantContain: []string{strategyRowLabel, "ENFORCED (by organization, contract)"},
+			wantContain: []string{strategyRowLabel, "ENFORCED (by organization)"},
 			wantAbsent:  []string{ignoredRowLabel},
 		},
 		{
 			name: "ignored gate opt-outs are listed",
 			status: &action.AttestationStatusResult{
 				MustBlockOnPolicyViolations: true,
-				PolicyEnforcementSources:    []string{action.PolicyEnforcementSourceContract},
+				PolicyEnforcementSource:     action.PolicyEnforcementSourceContract,
 				IgnoredGateOptOuts:          []string{"sbom-banned-licenses", "slsa-checks"},
 			},
 			wantContain: []string{ignoredRowLabel, "sbom-banned-licenses, slsa-checks (enforcement cannot be relaxed)"},
