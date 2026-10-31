@@ -214,6 +214,7 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, aut
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		switch resp.StatusCode {
@@ -231,8 +232,6 @@ func (p *PolicyProvider) ValidateAttachment(att *schemaapi.PolicyAttachment, aut
 	if err != nil {
 		return errorsx.Errorf("error reading validation response: %w", err)
 	}
-
-	defer resp.Body.Close()
 
 	// unmarshall response
 	var response ValidateResponse
@@ -313,6 +312,7 @@ func (p *PolicyProvider) queryProvider(url *url.URL, digest, orgName string, aut
 	if err != nil {
 		return "", "", err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		switch resp.StatusCode {

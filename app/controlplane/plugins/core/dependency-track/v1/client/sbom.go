@@ -224,7 +224,7 @@ func teamPermissionsRequest(httpClient *http.Client, host *url.URL, apiKey strin
 
 	// Check the response
 	if res.StatusCode != http.StatusOK {
-		return nil, newStatusError(res)
+		return nil, errorsx.WithStack(&StatusError{Status: res.Status, StatusCode: res.StatusCode})
 	}
 
 	resBody, err := io.ReadAll(res.Body)
@@ -287,7 +287,7 @@ func uploadSBOMRequest(httpClient *http.Client, host *url.URL, apiKey string, va
 
 	// Check the response
 	if res.StatusCode != http.StatusOK {
-		return nil, newStatusError(res)
+		return nil, errorsx.WithStack(&StatusError{Status: res.Status, StatusCode: res.StatusCode})
 	}
 
 	resBody, err := io.ReadAll(res.Body)
@@ -327,7 +327,7 @@ func projectExists(httpClient *http.Client, host *url.URL, apiKey string, projec
 	case http.StatusNotFound:
 		return false, nil
 	default:
-		return false, newStatusError(res)
+		return false, errorsx.WithStack(&StatusError{Status: res.Status, StatusCode: res.StatusCode})
 	}
 }
 
@@ -342,8 +342,3 @@ type StatusError struct {
 }
 
 func (e *StatusError) Error() string { return "bad status: " + e.Status }
-
-// newStatusError returns a StatusError for res with the stack of the caller.
-func newStatusError(res *http.Response) error {
-	return errorsx.WithStack(&StatusError{Status: res.Status, StatusCode: res.StatusCode})
-}

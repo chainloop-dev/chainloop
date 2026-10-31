@@ -106,3 +106,11 @@ func (t *stackTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	return resp, nil
 }
+
+// CloseIdleConnections forwards to the base transport, so
+// http.Client.CloseIdleConnections still releases pooled connections.
+func (t *stackTransport) CloseIdleConnections() {
+	if c, ok := t.base.(interface{ CloseIdleConnections() }); ok {
+		c.CloseIdleConnections()
+	}
+}

@@ -21,6 +21,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 // StackUnaryClientInterceptor records the stack of the caller on each error of
@@ -33,7 +34,7 @@ func StackUnaryClientInterceptor() grpc.UnaryClientInterceptor {
 }
 
 // StackStreamClientInterceptor records the stack of the caller on each error of
-// a streaming call: on stream creation, SendMsg, RecvMsg and CloseSend.
+// a streaming call: on stream creation, Header, SendMsg, RecvMsg and CloseSend.
 // It does not wrap io.EOF, because callers compare it with ==.
 func StackStreamClientInterceptor() grpc.StreamClientInterceptor {
 	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
@@ -61,6 +62,11 @@ func (s *stackClientStream) RecvMsg(m any) error {
 
 func (s *stackClientStream) CloseSend() error {
 	return streamErr(s.ClientStream.CloseSend())
+}
+
+func (s *stackClientStream) Header() (metadata.MD, error) {
+	md, err := s.ClientStream.Header()
+	return md, streamErr(err)
 }
 
 // streamErr adds a stack to err, except to io.EOF, which ends a stream normally.

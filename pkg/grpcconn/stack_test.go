@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -65,12 +66,13 @@ func TestStackUnaryClientInterceptor(t *testing.T) {
 // fakeClientStream returns the configured errors from its stream methods.
 type fakeClientStream struct {
 	grpc.ClientStream
-	sendErr, recvErr, closeErr error
+	sendErr, recvErr, closeErr, headerErr error
 }
 
-func (s *fakeClientStream) SendMsg(any) error { return s.sendErr }
-func (s *fakeClientStream) RecvMsg(any) error { return s.recvErr }
-func (s *fakeClientStream) CloseSend() error  { return s.closeErr }
+func (s *fakeClientStream) SendMsg(any) error            { return s.sendErr }
+func (s *fakeClientStream) RecvMsg(any) error            { return s.recvErr }
+func (s *fakeClientStream) CloseSend() error             { return s.closeErr }
+func (s *fakeClientStream) Header() (metadata.MD, error) { return nil, s.headerErr }
 
 func TestStackStreamClientInterceptor(t *testing.T) {
 	statusErr := status.Error(codes.Unavailable, "down")
@@ -112,6 +114,16 @@ func TestStackStreamClientInterceptor(t *testing.T) {
 			name:      "CloseSend error gets a stack",
 			stream:    &fakeClientStream{closeErr: statusErr},
 			call:      func(cs grpc.ClientStream) error { return cs.CloseSend() },
+			wantErr:   statusErr,
+			wantStack: true,
+		},
+		{
+			name:   "Header error gets a stack",
+			stream: &fakeClientStream{headerErr: statusErr},
+			call: func(cs grpc.ClientStream) error {
+				_, err := cs.Header()
+				return err
+			},
 			wantErr:   statusErr,
 			wantStack: true,
 		},
