@@ -182,7 +182,7 @@ func ensureActionOpts(cmd *cobra.Command) error {
 			return err
 		}
 
-		currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn, authToken)).Run()
+		currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn, authToken)).Run(cmd.Context())
 		if err == nil && currentContext.CurrentMembership != nil {
 			if err := setLocalOrganization(currentContext.CurrentMembership.Org.Name); err != nil {
 				return fmt.Errorf("writing config file: %w", err)

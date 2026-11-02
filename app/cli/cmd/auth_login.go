@@ -261,7 +261,10 @@ func verifyAuthToken(token string) error {
 	}
 	defer conn.Close()
 
-	_, err = action.NewConfigCurrentContext(newActionOpts(logger, conn, token)).Run()
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	_, err = action.NewConfigCurrentContext(newActionOpts(logger, conn, token)).Run(ctx)
 	return err
 }
 

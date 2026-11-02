@@ -74,9 +74,9 @@ func (u *UserItem) PrintUserProfileWithEmail() string {
 	return result
 }
 
-func (action *ConfigCurrentContext) Run() (*ConfigContextItem, error) {
+func (action *ConfigCurrentContext) Run(ctx context.Context) (*ConfigContextItem, error) {
 	client := pb.NewContextServiceClient(action.cfg.CPConnection)
-	resp, err := client.Current(context.Background(), &pb.ContextServiceCurrentRequest{})
+	resp, err := client.Current(ctx, &pb.ContextServiceCurrentRequest{})
 	if err != nil {
 		return nil, err
 	}
