@@ -170,23 +170,7 @@ func ensureActionOpts(cmd *cobra.Command) error {
 		}
 	}
 
-	var opts = []grpcconn.Option{
-		grpcconn.WithInsecure(apiInsecure()),
-		grpcconn.WithCLIVersion(fullVersion()),
-	}
-
-	if maxRecv := apiMaxRecvMsgSize(); maxRecv > 0 {
-		opts = append(opts, grpcconn.WithMaxRecvMsgSize(maxRecv))
-	}
-
-	if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
-		// Check if the value is a file path, if it is we read the content and encode it to base64, if not we assume it's the content already
-		if _, err := os.Stat(caValue); err == nil {
-			opts = append(opts, grpcconn.WithCAFile(caValue))
-		} else {
-			opts = append(opts, grpcconn.WithCAContent(caValue))
-		}
-	}
+	opts := controlPlaneConnOpts()
 
 	controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
 
@@ -233,6 +217,30 @@ func ensureActionOpts(cmd *cobra.Command) error {
 	}
 
 	return nil
+}
+
+// controlPlaneConnOpts returns the gRPC options for a control plane connection,
+// without the organization
+func controlPlaneConnOpts() []grpcconn.Option {
+	opts := []grpcconn.Option{
+		grpcconn.WithInsecure(apiInsecure()),
+		grpcconn.WithCLIVersion(fullVersion()),
+	}
+
+	if maxRecv := apiMaxRecvMsgSize(); maxRecv > 0 {
+		opts = append(opts, grpcconn.WithMaxRecvMsgSize(maxRecv))
+	}
+
+	if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
+		// Check if the value is a file path, if it is we read the content and encode it to base64, if not we assume it's the content already
+		if _, err := os.Stat(caValue); err == nil {
+			opts = append(opts, grpcconn.WithCAFile(caValue))
+		} else {
+			opts = append(opts, grpcconn.WithCAContent(caValue))
+		}
+	}
+
+	return opts
 }
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {

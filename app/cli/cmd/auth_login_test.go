@@ -27,6 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestAddCodeChallenge(t *testing.T) {
@@ -157,6 +159,63 @@ func TestLoginCallbackToken(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantToken, token)
+		})
+	}
+}
+
+func TestCheckAuthToken(t *testing.T) {
+	// A well-formed JWT, the CLI does not check its signature
+	const wellFormed = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0In0.c2lnbmF0dXJl"
+
+	testCases := []struct {
+		name       string
+		token      string
+		verifyErr  error
+		wantVerify bool
+		wantErr    string
+	}{
+		{
+			name:       "token accepted by the control plane",
+			token:      wellFormed,
+			wantVerify: true,
+		},
+		{
+			name:    "not a JWT",
+			token:   "not-a-token",
+			wantErr: "invalid token",
+		},
+		{
+			name:       "token rejected by the control plane",
+			token:      wellFormed,
+			verifyErr:  status.Error(codes.Unauthenticated, "token is invalid"),
+			wantVerify: true,
+			wantErr:    "invalid token: the control plane rejected it",
+		},
+		{
+			name:       "control plane error",
+			token:      wellFormed,
+			verifyErr:  errors.New("user not found"),
+			wantVerify: true,
+			wantErr:    "verifying the token with the control plane: user not found",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var verified bool
+			err := checkAuthToken(context.Background(), tc.token, func(_ context.Context, token string) error {
+				verified = true
+				assert.Equal(t, tc.token, token)
+				return tc.verifyErr
+			})
+
+			assert.Equal(t, tc.wantVerify, verified)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+
+			assert.NoError(t, err)
 		})
 	}
 }

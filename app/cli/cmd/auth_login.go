@@ -30,10 +30,13 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
+	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type app struct {
@@ -212,20 +215,56 @@ func headlessAuth(loginURL *url.URL) error {
 		return fmt.Errorf("retrieving password from stdin: %w", err)
 	}
 
-	// We just want to check that it is a token, the actual verification will happen when it is sent to the server
-	// To be clear, this is just a best effort sanity check
-	if _, _, err := new(jwt.Parser).ParseUnverified(string(token), &jwt.MapClaims{}); err != nil {
-		return errors.New("invalid token")
+	fmt.Println("")
+	if err := checkAuthToken(context.Background(), string(token), verifyAuthToken); err != nil {
+		return err
 	}
 
 	if err := saveAuthToken(string(token)); err != nil {
 		return fmt.Errorf("storing token in config file: %w", err)
 	}
 
-	fmt.Println("")
 	logger.Info().Msg("login successful!")
 
 	return nil
+}
+
+// verifyTimeout limits the time to wait for the control plane to check a token
+const verifyTimeout = 30 * time.Second
+
+// checkAuthToken makes sure that the token is a JWT and that the control plane accepts it,
+// so that the login only reports success for a token that works
+func checkAuthToken(ctx context.Context, token string, verify func(ctx context.Context, token string) error) error {
+	// A quick local check before the call to the control plane
+	if _, _, err := new(jwt.Parser).ParseUnverified(token, &jwt.MapClaims{}); err != nil {
+		return errors.New("invalid token")
+	}
+
+	if err := verify(ctx, token); err != nil {
+		if status.Code(err) == codes.Unauthenticated {
+			return errors.New("invalid token: the control plane rejected it, it can be expired or come from a different instance")
+		}
+
+		return fmt.Errorf("verifying the token with the control plane: %w", err)
+	}
+
+	return nil
+}
+
+// verifyAuthToken asks the control plane for the session of the token. The call
+// does not need an organization, so it works for a user that is not a member of one
+func verifyAuthToken(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, verifyTimeout)
+	defer cancel()
+
+	conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), token, controlPlaneConnOpts()...)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	_, err = pb.NewContextServiceClient(conn).Current(ctx, &pb.ContextServiceCurrentRequest{})
+	return err
 }
 
 // Save token to config file
@@ -242,6 +281,12 @@ func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	token, err := a.callback.token(r)
 	if err != nil {
+		w.WriteHeader(http.StatusExpectationFailed)
+		fmt.Fprintln(w, "login failed, please check the terminal")
+		return
+	}
+
+	if err = checkAuthToken(r.Context(), token, verifyAuthToken); err != nil {
 		w.WriteHeader(http.StatusExpectationFailed)
 		fmt.Fprintln(w, "login failed, please check the terminal")
 		return
