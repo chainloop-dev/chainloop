@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -177,12 +178,8 @@ func ensureActionOpts(cmd *cobra.Command) error {
 	// If no organization is selected, load it from the server and save it.
 	orgName := effectiveOrganization(cmd)
 	if orgName == "" {
-		conn, err := grpcconn.New(controlplaneURL, authToken, opts...)
-		if err != nil {
-			return err
-		}
-
-		currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn, authToken)).Run(cmd.Context())
+		// A connection error here also fails the connection below, which returns it
+		currentContext, err := fetchCurrentContext(cmd.Context(), authToken)
 		if err == nil && currentContext.CurrentMembership != nil {
 			if err := setLocalOrganization(currentContext.CurrentMembership.Org.Name); err != nil {
 				return fmt.Errorf("writing config file: %w", err)
@@ -241,6 +238,18 @@ func controlPlaneConnOpts() []grpcconn.Option {
 	}
 
 	return opts
+}
+
+// fetchCurrentContext asks the control plane who the token belongs to, on a connection
+// without an organization, so it also works for a user that is not a member of one
+func fetchCurrentContext(ctx context.Context, token string) (*action.ConfigContextItem, error) {
+	conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), token, controlPlaneConnOpts()...)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	return action.NewConfigCurrentContext(newActionOpts(logger, conn, token)).Run(ctx)
 }
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {

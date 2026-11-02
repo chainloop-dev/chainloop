@@ -165,22 +165,19 @@ func TestLoginCallbackToken(t *testing.T) {
 }
 
 func TestCheckAuthToken(t *testing.T) {
-	// The CLI does not parse the token, only the control plane checks it
 	const token = "a-token"
 
 	testCases := []struct {
-		name       string
-		token      string
-		verifyErr  error
-		wantVerify bool
-		wantErr    string
+		name      string
+		token     string
+		verifyErr error
+		wantErr   string
 		// whether the error renders as the CLI authentication message
 		wantAuthErr bool
 	}{
 		{
-			name:       "token accepted by the control plane",
-			token:      token,
-			wantVerify: true,
+			name:  "token accepted by the control plane",
+			token: token,
 		},
 		{
 			name:    "no token",
@@ -191,29 +188,28 @@ func TestCheckAuthToken(t *testing.T) {
 			name:        "token rejected by the control plane",
 			token:       token,
 			verifyErr:   status.Error(codes.Unauthenticated, "token is invalid"),
-			wantVerify:  true,
 			wantErr:     "verifying the token with the control plane",
 			wantAuthErr: true,
 		},
 		{
-			name:       "control plane error",
-			token:      token,
-			verifyErr:  errors.New("user not found"),
-			wantVerify: true,
-			wantErr:    "verifying the token with the control plane: user not found",
+			name:      "control plane error",
+			token:     token,
+			verifyErr: errors.New("user not found"),
+			wantErr:   "verifying the token with the control plane: user not found",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var verified bool
-			err := checkAuthToken(tc.token, func(token string) error {
+			err := checkAuthToken(context.Background(), tc.token, func(_ context.Context, token string) error {
 				verified = true
 				assert.Equal(t, tc.token, token)
 				return tc.verifyErr
 			})
 
-			assert.Equal(t, tc.wantVerify, verified)
+			// Only a token that was entered goes to the control plane
+			assert.Equal(t, tc.token != "", verified)
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
 				_, isAuthErr := action.AuthErrorMessage(err)

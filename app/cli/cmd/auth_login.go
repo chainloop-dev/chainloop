@@ -28,10 +28,8 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
-	"github.com/chainloop-dev/chainloop/pkg/grpcconn"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
@@ -91,7 +89,7 @@ func newAuthLoginCmd() *cobra.Command {
 		Use:   "login",
 		Short: "authenticate the CLI with the Control Plane",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return interactiveAuth(forceHeadlessLogin)
+			return interactiveAuth(cmd.Context(), forceHeadlessLogin)
 		},
 	}
 
@@ -99,7 +97,7 @@ func newAuthLoginCmd() *cobra.Command {
 	return cmd
 }
 
-func interactiveAuth(forceHeadless bool) error {
+func interactiveAuth(ctx context.Context, forceHeadless bool) error {
 	var a app
 
 	listener, callbackURL, err := localListenerAndCallbackURL()
@@ -123,7 +121,7 @@ func interactiveAuth(forceHeadless bool) error {
 	serverLoginURL.RawQuery = q.Encode()
 
 	if forceHeadless || isRemoteSession() {
-		return headlessAuth(serverLoginURL)
+		return headlessAuth(ctx, serverLoginURL)
 	}
 
 	a.callback = &loginCallback{
@@ -141,7 +139,7 @@ func interactiveAuth(forceHeadless bool) error {
 	err = openbrowser(serverLoginURL.String())
 	if err != nil {
 		logger.Debug().Err(err).Msg("falling back to manual login")
-		return headlessAuth(serverLoginURL)
+		return headlessAuth(ctx, serverLoginURL)
 	}
 
 	a.serverChan = make(chan error)
@@ -203,7 +201,7 @@ func toHeadlessLoginURL(loginURL *url.URL) {
 	loginURL.RawQuery = q.Encode()
 }
 
-func headlessAuth(loginURL *url.URL) error {
+func headlessAuth(ctx context.Context, loginURL *url.URL) error {
 	toHeadlessLoginURL(loginURL)
 	fmt.Printf("To authenticate, click on the following link and paste the result back here\n\n  %s\n\n", loginURL.String())
 
@@ -214,7 +212,7 @@ func headlessAuth(loginURL *url.URL) error {
 	}
 
 	fmt.Println("")
-	if err := verifyAndSaveAuthToken(string(token)); err != nil {
+	if err := verifyAndSaveAuthToken(ctx, string(token)); err != nil {
 		return err
 	}
 
@@ -223,10 +221,14 @@ func headlessAuth(loginURL *url.URL) error {
 	return nil
 }
 
+// loginVerifyTimeout bounds the call that checks the login token, so a stalled
+// control plane does not block the login
+const loginVerifyTimeout = 30 * time.Second
+
 // verifyAndSaveAuthToken saves the token to the config file only when the control plane
 // accepts it, so that the login only reports success for a token that works
-func verifyAndSaveAuthToken(token string) error {
-	if err := checkAuthToken(token, verifyAuthToken); err != nil {
+func verifyAndSaveAuthToken(ctx context.Context, token string) error {
+	if err := checkAuthToken(ctx, token, verifyAuthToken); err != nil {
 		return err
 	}
 
@@ -237,34 +239,26 @@ func verifyAndSaveAuthToken(token string) error {
 	return nil
 }
 
-// checkAuthToken makes sure that verify accepts the token. The control plane checks the
-// token, so the CLI does not parse it. A rejected token keeps its gRPC status, so the CLI
-// shows its usual authentication message
-func checkAuthToken(token string, verify func(token string) error) error {
+// checkAuthToken makes sure that verify accepts the token. A rejected token keeps its
+// gRPC status, so the CLI shows its usual authentication message
+func checkAuthToken(ctx context.Context, token string, verify func(ctx context.Context, token string) error) error {
 	if token == "" {
 		return errors.New("no token was entered")
 	}
 
-	if err := verify(token); err != nil {
+	if err := verify(ctx, token); err != nil {
 		return fmt.Errorf("verifying the token with the control plane: %w", err)
 	}
 
 	return nil
 }
 
-// verifyAuthToken asks the control plane for the session of the token. The call
-// does not need an organization, so it works for a user that is not a member of one
-func verifyAuthToken(token string) error {
-	conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), token, controlPlaneConnOpts()...)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+// verifyAuthToken asks the control plane for the session of the token
+func verifyAuthToken(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, loginVerifyTimeout)
 	defer cancel()
 
-	_, err = action.NewConfigCurrentContext(newActionOpts(logger, conn, token)).Run(ctx)
+	_, err := fetchCurrentContext(ctx, token)
 	return err
 }
 
@@ -282,7 +276,7 @@ func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 	token, err := a.callback.token(r)
 	if err == nil {
-		err = verifyAndSaveAuthToken(token)
+		err = verifyAndSaveAuthToken(r.Context(), token)
 	}
 
 	if err != nil {
