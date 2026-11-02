@@ -211,7 +211,7 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 
 	// Load all the selected workflows and their projects in a single round-trip
 	wfs, err := repo.data.DB.Workflow.Query().
-		Where(workflow.IDIn(topIDs...), workflow.OrganizationID(orgID)).
+		Where(workflow.IDIn(topIDs...), workflow.OrganizationID(orgID), workflow.DeletedAtIsNil()).
 		WithProject().
 		All(ctx)
 	if err != nil {
