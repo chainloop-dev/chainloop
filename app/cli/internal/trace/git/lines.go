@@ -203,6 +203,20 @@ func (c *GoGitClient) FileAt(repoRoot, sha, path string) ([]byte, error) {
 	return []byte(content), nil
 }
 
+// FilesAt reads base content for multiple paths, keeping absent paths nil.
+func (c *GoGitClient) FilesAt(repoRoot, sha string, paths []string) (map[string][]byte, error) {
+	contents := make(map[string][]byte, len(paths))
+	for _, path := range paths {
+		content, err := c.FileAt(repoRoot, sha, path)
+		if err != nil {
+			return nil, fmt.Errorf("read %s at %s: %w", path, sha, err)
+		}
+		contents[path] = content
+	}
+
+	return contents, nil
+}
+
 // CommitLines parses `git diff -U0` of the commit against its first parent.
 func (c *ExecClient) CommitLines(repoRoot, sha string) ([]FileLines, error) {
 	base := commitParentOrEmptyTree(repoRoot, sha)
@@ -350,6 +364,72 @@ func (c *ExecClient) FileAt(repoRoot, sha, path string) ([]byte, error) {
 	}
 
 	return out, nil
+}
+
+// FilesAt reads base blobs in one Git process. Newline paths use FileAt
+// because cat-file --batch separates queries by newline.
+func (c *ExecClient) FilesAt(repoRoot, sha string, paths []string) (map[string][]byte, error) {
+	contents := make(map[string][]byte, len(paths))
+	if len(paths) == 0 {
+		return contents, nil
+	}
+	if _, err := gitRawOutput(repoRoot, "rev-parse", "--verify", "--quiet", sha+"^{commit}"); err != nil {
+		return nil, fmt.Errorf("resolve %s: %w", sha, err)
+	}
+
+	var input strings.Builder
+	var batched []string
+	for _, path := range paths {
+		if strings.Contains(path, "\n") {
+			content, err := c.FileAt(repoRoot, sha, path)
+			if err != nil {
+				return nil, fmt.Errorf("read %s at %s: %w", path, sha, err)
+			}
+			contents[path] = content
+			continue
+		}
+		batched = append(batched, path)
+		input.WriteString(sha)
+		input.WriteByte(':')
+		input.WriteString(path)
+		input.WriteByte('\n')
+	}
+	if len(batched) == 0 {
+		return contents, nil
+	}
+
+	cmd := exec.Command("git", "cat-file", "--batch")
+	cmd.Dir = repoRoot
+	cmd.Stdin = strings.NewReader(input.String())
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("read base blobs at %s: %w", sha, err)
+	}
+	for _, path := range batched {
+		header, content, ok := bytes.Cut(out, []byte{'\n'})
+		if !ok {
+			return nil, fmt.Errorf("invalid base blob header for %s at %s", path, sha)
+		}
+		if string(header) == sha+":"+path+" missing" {
+			contents[path] = nil
+			out = content
+			continue
+		}
+		fields := strings.Fields(string(header))
+		if len(fields) != 3 {
+			return nil, fmt.Errorf("invalid base blob header for %s at %s: %q", path, sha, header)
+		}
+		size, err := strconv.Atoi(fields[2])
+		if err != nil || size < 0 || size >= len(content) || content[size] != '\n' {
+			return nil, fmt.Errorf("invalid base blob size for %s at %s: %q", path, sha, fields[2])
+		}
+		if fields[1] == "blob" {
+			contents[path] = content[:size]
+		}
+		out = content[size+1:]
+	}
+
+	return contents, nil
 }
 
 // pathAt reports whether the commit holds path, without reading its content.

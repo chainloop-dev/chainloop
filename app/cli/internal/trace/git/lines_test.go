@@ -145,6 +145,41 @@ func TestCommitLinesAndFileAt(t *testing.T) {
 	}
 }
 
+func TestClients_FilesAt_ReadsBaseContentAndMissingPaths(t *testing.T) {
+	// Given
+	dir := t.TempDir()
+	runIndexGit(t, dir, "init", "-q")
+	runIndexGit(t, dir, "config", "user.email", "test@example.com")
+	runIndexGit(t, dir, "config", "user.name", "Test")
+	binary := []byte{0, '\n', 0xff}
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "binary.dat"), binary, 0o600))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "line\nbreak.txt"), []byte("line break\n"), 0o600))
+	runIndexGit(t, dir, "add", "-A")
+	runIndexGit(t, dir, "commit", "-qm", "base")
+	base := runIndexGit(t, dir, "rev-parse", "HEAD")
+
+	for name, client := range testClients() {
+		t.Run(name, func(t *testing.T) {
+			paths := []string{"binary.dat", "missing file.txt"}
+			_, hasGitBinary := client.(*ExecClient)
+			if hasGitBinary {
+				paths = append(paths, "line\nbreak.txt")
+			}
+
+			// When
+			contents, err := client.FilesAt(dir, base, paths)
+
+			// Then
+			require.NoError(t, err)
+			require.Equal(t, binary, contents["binary.dat"])
+			require.Nil(t, contents["missing file.txt"])
+			if hasGitBinary {
+				require.Equal(t, []byte("line break\n"), contents["line\nbreak.txt"])
+			}
+		})
+	}
+}
+
 func TestCommitLinesRenames(t *testing.T) {
 	dir := t.TempDir()
 	run := func(args ...string) string { return gitOutput(dir, args...) }

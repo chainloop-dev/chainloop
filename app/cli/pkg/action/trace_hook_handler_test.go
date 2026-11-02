@@ -299,6 +299,9 @@ func (f *fakeBranchClient) CommitLines(string, string) ([]tracegit.FileLines, er
 }
 
 func (f *fakeBranchClient) FileAt(string, string, string) ([]byte, error) { return nil, nil }
+func (f *fakeBranchClient) FilesAt(string, string, []string) (map[string][]byte, error) {
+	return nil, nil
+}
 func (f *fakeBranchClient) Renames(string, string, string) (map[string]string, error) {
 	return nil, nil
 }
@@ -316,6 +319,17 @@ func (f *fakeBranchClient) StagedFiles(string) ([]string, error) { return nil, n
 func (f *fakeBranchClient) SnapshotWorktree(string) (map[string]string, error) {
 	return nil, nil
 }
+func (f *fakeBranchClient) SnapshotIndex(string) (map[string]string, error) {
+	return nil, nil
+}
+func (f *fakeBranchClient) IndexFile(string, string) ([]byte, error) {
+	return nil, nil
+}
+
+func (f *fakeBranchClient) IndexBlobs(string, map[string]string) (map[string][]byte, error) {
+	return nil, nil
+}
+
 func (f *fakeBranchClient) IsMergeCommit(_, sha string) (bool, error) {
 	return f.mergeSHAs[sha], f.mergeErr
 }

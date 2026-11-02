@@ -52,15 +52,21 @@ func TestShellPreSignatureRoundTrip(t *testing.T) {
 			}
 
 			require.NoError(t, store.SaveShellPreSignature(tc.key, sig))
+			require.NoError(t, store.SaveShellPreIndexSignature(tc.key, sig))
 
 			loaded, err := store.LoadShellPreSignature(tc.key)
 			require.NoError(t, err)
 			assert.Equal(t, sig, loaded)
+			loadedIndex, err := store.LoadShellPreIndexSignature(tc.key)
+			require.NoError(t, err)
+			assert.Equal(t, sig, loadedIndex)
 
 			store.DeleteShellPreSignature(tc.key)
 
 			_, err = store.LoadShellPreSignature(tc.key)
 			assert.Error(t, err, "signature should be gone after delete")
+			_, err = store.LoadShellPreIndexSignature(tc.key)
+			assert.Error(t, err, "index signature should be gone after delete")
 		})
 	}
 }
@@ -136,4 +142,18 @@ func TestShellPreSignatureRejectsSingleCheckoutFormat(t *testing.T) {
 
 	_, err := store.LoadShellPreSignature(key)
 	assert.Error(t, err)
+}
+
+func TestShellCallKeyTokenRoundTrip(t *testing.T) {
+	// Given
+	key := ShellCallKey{SessionID: shellSessionID, AgentID: "agent-1", ToolUseID: "tool-1"}
+
+	// When
+	token, err := EncodeShellCallKey(key)
+	require.NoError(t, err)
+	decoded, err := DecodeShellCallKey(token)
+
+	// Then
+	require.NoError(t, err)
+	require.Equal(t, key, decoded)
 }
