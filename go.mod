@@ -2,6 +2,10 @@ module github.com/chainloop-dev/chainloop
 
 go 1.27.3
 
+// Disable Multipath TCP by default on listen sockets (on since Go 1.24).
+// Mitigation for CVE-2026-98432, see https://go.dev/issue/82717
+godebug multipathtcp=0
+
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.12-20260825204119-511051f7f437.2
 	buf.build/go/protovalidate v1.4.0
