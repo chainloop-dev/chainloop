@@ -23,6 +23,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -164,8 +165,8 @@ func TestLoginCallbackToken(t *testing.T) {
 }
 
 func TestCheckAuthToken(t *testing.T) {
-	// A well-formed JWT, the CLI does not check its signature
-	const wellFormed = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0In0.c2lnbmF0dXJl"
+	// The CLI does not parse the token, only the control plane checks it
+	const token = "a-token"
 
 	testCases := []struct {
 		name       string
@@ -173,27 +174,30 @@ func TestCheckAuthToken(t *testing.T) {
 		verifyErr  error
 		wantVerify bool
 		wantErr    string
+		// whether the error renders as the CLI authentication message
+		wantAuthErr bool
 	}{
 		{
 			name:       "token accepted by the control plane",
-			token:      wellFormed,
+			token:      token,
 			wantVerify: true,
 		},
 		{
-			name:    "not a JWT",
-			token:   "not-a-token",
-			wantErr: "invalid token",
+			name:    "no token",
+			token:   "",
+			wantErr: "no token was entered",
 		},
 		{
-			name:       "token rejected by the control plane",
-			token:      wellFormed,
-			verifyErr:  status.Error(codes.Unauthenticated, "token is invalid"),
-			wantVerify: true,
-			wantErr:    "invalid token: the control plane rejected it",
+			name:        "token rejected by the control plane",
+			token:       token,
+			verifyErr:   status.Error(codes.Unauthenticated, "token is invalid"),
+			wantVerify:  true,
+			wantErr:     "verifying the token with the control plane",
+			wantAuthErr: true,
 		},
 		{
 			name:       "control plane error",
-			token:      wellFormed,
+			token:      token,
 			verifyErr:  errors.New("user not found"),
 			wantVerify: true,
 			wantErr:    "verifying the token with the control plane: user not found",
@@ -203,7 +207,7 @@ func TestCheckAuthToken(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			var verified bool
-			err := checkAuthToken(context.Background(), tc.token, func(_ context.Context, token string) error {
+			err := checkAuthToken(tc.token, func(token string) error {
 				verified = true
 				assert.Equal(t, tc.token, token)
 				return tc.verifyErr
@@ -212,6 +216,8 @@ func TestCheckAuthToken(t *testing.T) {
 			assert.Equal(t, tc.wantVerify, verified)
 			if tc.wantErr != "" {
 				assert.ErrorContains(t, err, tc.wantErr)
+				_, isAuthErr := action.AuthErrorMessage(err)
+				assert.Equal(t, tc.wantAuthErr, isAuthErr)
 				return
 			}
 
