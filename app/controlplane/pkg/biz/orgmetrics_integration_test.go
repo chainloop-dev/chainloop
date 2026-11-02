@@ -32,6 +32,15 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+// OCI credentials used to create the CAS backend required by workflow runs
+const (
+	ociTestRepo     = "repo"
+	ociTestUsername = "username"
+	ociTestPassword = "pass"
+)
+
+var ociTestKeypair = &credentials.OCIKeypair{Repo: ociTestRepo, Username: ociTestUsername, Password: ociTestPassword}
+
 func TestOrgMetricsUseCase(t *testing.T) {
 	suite.Run(t, new(orgMetricsGetLastWorkflowStatusByRunTestSuite))
 	suite.Run(t, new(orgMetricsTopWorkflowsTestSuite))
@@ -57,7 +66,7 @@ func (s *orgMetricsTopWorkflowsTestSuite) SetupTest() {
 	ctx := context.Background()
 
 	credsWriter := creds.NewReaderWriter(t)
-	credsWriter.On("SaveCredentials", mock.Anything, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"}).Return("stored-OCI-secret", nil)
+	credsWriter.On("SaveCredentials", mock.Anything, mock.Anything, ociTestKeypair).Return("stored-OCI-secret", nil)
 	s.TestingUseCases = testhelpers.NewTestingUseCases(t, testhelpers.WithCredsReaderWriter(credsWriter))
 
 	var err error
@@ -90,7 +99,7 @@ func (s *orgMetricsTopWorkflowsTestSuite) createWorkflowWithRuns(org *biz.Organi
 	contractVersion, err := s.WorkflowContract.Describe(ctx, org.ID, wf.ContractID.String(), 0)
 	require.NoError(t, err)
 
-	casBackend, err := s.CASBackend.CreateOrUpdate(ctx, org.ID, "repo", "username", "pass", backendType, true)
+	casBackend, err := s.CASBackend.CreateOrUpdate(ctx, org.ID, ociTestRepo, ociTestUsername, ociTestPassword, backendType, true)
 	require.NoError(t, err)
 
 	for _, status := range statuses {
@@ -200,7 +209,7 @@ func (s *orgMetricsGetLastWorkflowStatusByRunTestSuite) SetupTest() {
 	assert := assert.New(s.T())
 
 	credsWriter := creds.NewReaderWriter(s.T())
-	credsWriter.On("SaveCredentials", mock.Anything, mock.Anything, &credentials.OCIKeypair{Repo: "repo", Username: "username", Password: "pass"}).Return("stored-OCI-secret", nil)
+	credsWriter.On("SaveCredentials", mock.Anything, mock.Anything, ociTestKeypair).Return("stored-OCI-secret", nil)
 
 	s.TestingUseCases = testhelpers.NewTestingUseCases(s.T(), testhelpers.WithCredsReaderWriter(credsWriter))
 
@@ -237,7 +246,7 @@ func (s *orgMetricsGetLastWorkflowStatusByRunTestSuite) TestGetLastWorkflowStatu
 		assert.NotNil(s.T(), contractVersion)
 
 		// Create a CAS backend
-		casBackend, err := s.TestingUseCases.CASBackend.CreateOrUpdate(ctx, s.org.ID, "repo", "username", "pass", backendType, true)
+		casBackend, err := s.CASBackend.CreateOrUpdate(ctx, s.org.ID, ociTestRepo, ociTestUsername, ociTestPassword, backendType, true)
 		assert.NoError(s.T(), err)
 		assert.NotNil(s.T(), casBackend)
 
