@@ -94,6 +94,14 @@ Before it answers 304, the CAS makes a metadata call to the backend. A deleted o
 - Source: [issue-3549-cas-download-browser-cache D-005](../specs/issue-3549-cas-download-browser-cache.md)
 - Code: verified: `app/artifact-cas/internal/service/download.go`.
 
+### CAS-009: The existence cache lifetime is fixed, with no off switch
+Replaces [issue-3543-cas-existence-cache D-007](../specs/issue-3543-cas-existence-cache.md) and the settings of R-004. An existence entry expires after 24 hours. No setting changes the lifetime or turns the cache off.
+- Why: blobs cannot be deleted through Chainloop, so a fixed 24-hour bound covers the only risk. A setting adds configuration that no operator needs.
+- Rejected: a configurable lifetime and an operator switch that turns the cache off (spec D-007 and R-004).
+- Deciders: migmartri
+- Source: recorded directly, 2026-11-03
+- Code: verified: `pkg/cache/casexistence/casexistence.go` (`ttl` constant), `app/artifact-cas/cmd/wire.go` (the cache is always on).
+
 Not shown: 5 smaller decisions of [issue-3543-cas-existence-cache](../specs/issue-3543-cas-existence-cache.md), 2 of [issue-3549-cas-download-browser-cache](../specs/issue-3549-cas-download-browser-cache.md).
 
 ## Non-Confirmed
