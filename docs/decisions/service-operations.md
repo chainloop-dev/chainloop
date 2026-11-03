@@ -39,7 +39,7 @@ The process metrics endpoint (`/metrics`) and the opt-in profiler of the control
 - Code: verified: `app/artifact-cas/internal/server/httpmetrics.go` (separate metrics server), `app/controlplane/internal/server/profiler.go` (pprof on its own port).
 
 ### OPS-003: TLS covers all protocols on the shared endpoint
-When the operator configures TLS, all protocols on the shared endpoint use it. The ingress must use the encrypted HTTP/2 backend setting of its controller (nginx `GRPCS`, Traefik `https`). A shared endpoint with only a certificate or only a key fails at startup. The legacy gRPC listener keeps its own TLS settings, and a partial configuration keeps it plaintext. The chart sets both from one secret.
+When the operator configures TLS, all protocols on the shared endpoint use it. The ingress of the shared endpoint must use the encrypted HTTP/2 backend setting of its controller (nginx `GRPCS`, Traefik `https`). A shared endpoint with only a certificate or only a key fails at startup. The legacy gRPC listener keeps its own TLS settings, and a partial configuration keeps it plaintext. The chart sets both from one secret.
 - Why: one certificate and one setting for each service.
 - Rejected: plain text and TLS on the same port (a second classification step, and a weaker TLS setting).
 - Deciders: migmartri, matiasinsaurralde

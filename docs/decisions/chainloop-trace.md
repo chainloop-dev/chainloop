@@ -38,7 +38,7 @@ Structure. The index (README.md) has the parts Areas (the area map), Relationshi
 ### TRC-001: The agent decides what the spec is
 An instruction at session start tells the agent to resolve the spec of the session and write it into the spec folder.
 - Why: only the agent knows which input sets the task, and it reaches sources that the transcript never holds.
-- Rejected: extraction from the transcript by the CLI. It needs rules to pick the spec, misses sources that the agent never opened, and needs one extractor for each agent. Extraction on the server after ingestion (the spec is not in the attestation). Both stay as a fallback if the capture rate is poor.
+- Rejected: extraction from the transcript by the CLI. It needs rules to pick the spec, misses sources that the agent never opened, and needs one extractor for each agent. Extraction on the server after ingestion (the spec is not in the attestation). The spec keeps both as a possible fallback if the capture rate is poor. Neither is built.
 - Deciders: jiparis, migmartri
 - Source: [issue-3495-session-spec-capture D-001](../specs/issue-3495-session-spec-capture.md)
 - Code: verified: `app/cli/pkg/action/trace_spec.go`, `app/cli/pkg/action/trace_agent_hook.go`.
@@ -327,7 +327,7 @@ The provider keeps a private copy of the native rollout. The evidence parser rea
 - Source: [issue-3657-codex-trace-provider D-003](../specs/issue-3657-codex-trace-provider.md)
 - Code: verified: `app/cli/internal/trace/codex/copy.go`, `app/cli/internal/trace/codex/parse.go`, `app/cli/internal/trace/codex/pricing.go`.
 
-Not shown: the smaller decisions of each spec.
+Not shown: the smaller or replaced decisions of each spec.
 - 10 of [issue-3495-session-spec-capture](../specs/issue-3495-session-spec-capture.md)
 - 8 of [issue-3515-spec-capture-during-session](../specs/issue-3515-spec-capture-during-session.md)
 - 12 of [issue-3520-pi-trace-provider](../specs/issue-3520-pi-trace-provider.md)

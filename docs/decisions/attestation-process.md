@@ -44,7 +44,7 @@ The attestation commands that contact the control plane read the organization fr
 - Why: with remote state, a command must connect to the correct organization before it can load the state.
 - Deciders: migmartri, javirln
 - Source: [issue-3063-attestation-repo-config D-004](../specs/issue-3063-attestation-repo-config.md)
-- Code: verified: `app/cli/cmd/attestation.go`. `attestation verify` does not read the file, and the spec does not ask it to.
+- Code: verified: the five commands that R-003 lists read the file (`app/cli/cmd/attestation.go`). `attestation verify` does not read it. It calls only the trusted root service, which needs no organization (`app/cli/pkg/action/attestation_verify.go`).
 
 ### ATT-003: One reader of `.chainloop.yml` for attestation and trace
 Attestation commands and Trace read the repository config through one package.
