@@ -55,15 +55,15 @@ The table holds the code hash, the user, the expiry, and the challenge. One cond
 - Source: [issue-3626-login-code-exchange D-004](../specs/issue-3626-login-code-exchange.md)
 - Code: verified: `app/controlplane/pkg/data/loginhandoff.go`, `app/controlplane/internal/service/auth.go`.
 
-### AUT-004: Opt-in per request, with flags on the info endpoint
-The server issues a code only when the request has a challenge. The info endpoint reports whether the exchange is supported and whether the legacy callback is allowed.
+### AUT-004: Opt-in per request for client callbacks, with flags on the info endpoint
+For a client callback, the server issues a code only when the request has a challenge. A download callback (`/download/<digest>`) must send a challenge. The info endpoint reports whether the exchange is supported and whether the legacy callback is allowed. Legacy is allowed unless the operator sets `allow_legacy_login_callback: false`.
 - Why: old CLIs need no change. A new CLI knows what to expect and can detect a downgrade.
 - Rejected: opt-in with no flag (the CLI cannot tell a downgrade from an old server). A version check (fails with forks and development builds).
 - Deciders: migmartri, jiparis
 - Source: [issue-3626-login-code-exchange D-005](../specs/issue-3626-login-code-exchange.md)
 - Code: verified: `app/controlplane/api/controlplane/v1/status.proto`, `app/controlplane/internal/service/status.go`, `app/cli/cmd/auth_login.go`.
 
-### AUT-005: The CLI accepts `?t=` only while the server allows the legacy callback
+### AUT-005: After it sends a challenge, the CLI accepts `?t=` only while the server allows the legacy callback
 When the CLI sent a challenge and gets `?t=`, it accepts the token with a warning while the server reports legacy allowed. It refuses the token when legacy is denied.
 - Why: a login page that does not forward the new parameters yet must not break login. The loopback listener has a random port and a short life, so the fixation risk is low.
 - Rejected: refuse `?t=` from the first CLI release (it breaks login behind such a login page).
@@ -99,4 +99,4 @@ None.
 
 ## Open conflicts
 
-None.
+- AUT-004 and [issue-3626-login-code-exchange D-008](../specs/issue-3626-login-code-exchange.md) disagree about the download login. D-008 keeps it on the legacy callback. The code requires a challenge for a `/download/` callback (`app/controlplane/internal/service/auth.go`). Proposed: write a spec change that records the current download flow.

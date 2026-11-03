@@ -26,18 +26,25 @@ Structure. The index (README.md) has the parts Areas (the area map), Relationshi
 
 ## Language
 
-- **Repository config**: the `.chainloop.yml` file at the repository root that pins `organization` and `projectName` for the repository. _Avoid_: "workflow file", because the file holds no workflow.
+- **Repository config**: the nearest `.chainloop.yml` (or `.chainloop.yaml`), from the current directory up to the repository root. It pins `organization` and `projectName`. _Avoid_: "workflow file", because the attestation commands do not read a workflow from it.
 - **Saved default**: the organization that the CLI keeps in its own configuration for the user. _Avoid_: "default org" without a qualifier, because the repository config can also give an organization.
 
 ## Current decisions
 
 ### ATT-001: Organization order is flag, environment variable, repository config, saved default
-The `--org` flag and its environment variable win. The repository config applies only when neither is set, and it comes before the saved default.
+The `--org` flag and its environment variable win. For `init`, `add`, `push`, `status`, and `reset`, the repository config applies only when neither is set, and it comes before the saved default.
 - Why: the file pins the organization for the repository.
 - Rejected: the saved default before the file (most users have a saved default, so the file would almost never apply).
 - Deciders: migmartri, javirln
 - Source: [issue-3063-attestation-repo-config D-002](../specs/issue-3063-attestation-repo-config.md)
-- Code: verified: `app/cli/cmd/attestation.go`, `app/cli/cmd/root.go`. For a command other than init with no remote state, the organization of the local attestation state also comes before the saved default (`attestation.go`).
+- Code: verified: `app/cli/cmd/attestation.go`, `app/cli/cmd/root.go`. For a command other than init, when the repository config gives no organization, the organization of the local attestation state comes before the saved default (`attestation.go`).
+
+### ATT-002: init, add, push, status, and reset read the organization from the file
+The attestation commands that contact the control plane read the organization from the repository config. They are `init`, `add`, `push`, `status`, and `reset`.
+- Why: with remote state, a command must connect to the correct organization before it can load the state.
+- Deciders: migmartri, javirln
+- Source: [issue-3063-attestation-repo-config D-004](../specs/issue-3063-attestation-repo-config.md)
+- Code: verified: `app/cli/cmd/attestation.go`. `attestation verify` does not read the file, and the spec does not ask it to.
 
 ### ATT-003: One reader of `.chainloop.yml` for attestation and trace
 Attestation commands and Trace read the repository config through one package.
@@ -59,11 +66,7 @@ Not shown: 6 smaller decisions of [issue-3063-attestation-repo-config](../specs/
 
 ## Non-Confirmed
 
-### ATT-002: All attestation commands that contact the control plane read the organization from the file
-- Why: with remote state, a command must connect to the correct organization before it can load the state.
-- Deciders: migmartri, javirln
-- Source: [issue-3063-attestation-repo-config D-004](../specs/issue-3063-attestation-repo-config.md)
-- Code: not confirmed: init, add, push, status, and reset read the file (`app/cli/cmd/attestation.go`). `attestation verify` contacts the control plane (`app/cli/pkg/action/attestation_verify.go`) and does not read the file. The parent ticket is open.
+None.
 
 ## Superseded
 

@@ -32,7 +32,7 @@ Structure. The index (README.md) has the parts Areas (the area map), Relationshi
 ## Current decisions
 
 ### CAS-001: Existence cache in NATS KV when connected, in memory otherwise
-The existence cache uses the shared cache library. It uses NATS KV when the CAS has a NATS connection, and an in-memory LRU when it does not.
+The existence cache uses the shared cache library. It uses NATS KV when the CAS has a NATS connection. It uses an in-memory LRU when it has no connection, or when the NATS bucket cannot be set up at startup. A NATS failure at runtime is a cache miss, not a change to memory.
 - Why: replicas share hits when NATS is there, and the CAS gets no new dependency when it is not.
 - Rejected: memory only (the hit rate drops as replicas grow). NATS required (a hard dependency for a speed gain).
 - Deciders: migmartri, javirln
@@ -71,12 +71,12 @@ The CAS sets cache headers on downloads and answers 304 when the browser has the
 - Code: verified: `app/artifact-cas/internal/service/download.go`.
 
 ### CAS-006: The download token goes in the Authorization header
-The CAS accepts the download token in an `Authorization: Bearer` header, so the download URL stays the same between calls.
+The CAS accepts the download token in an `Authorization: Bearer` header. When a client moves the token from the `?t=` query to this header, the download URL stays the same between calls.
 - Why: the browser cache uses the URL as its key, and the token changes on each call.
 - Rejected: one token for each user and digest (the URL stays the same only for the life of the token).
 - Deciders: jiparis, migmartri
 - Source: [issue-3549-cas-download-browser-cache D-003](../specs/issue-3549-cas-download-browser-cache.md)
-- Code: verified on the CAS side: `pkg/middlewares/http/jwt.go`, CORS allows `Authorization`. The control plane `GetDownloadURL` still puts the token in `?t=` (`app/controlplane/internal/service/casredirect.go`). The client that moves the token to the header is not in this repository.
+- Code: verified on the CAS side: `pkg/middlewares/http/jwt.go`. When `cors.allow_origins` is set, the preflight in `app/artifact-cas/internal/server/cors.go` allows `Authorization`. The control plane `GetDownloadURL` still puts the token in `?t=` (`app/controlplane/internal/service/casredirect.go`). The client that moves the token to the header is not in this repository.
 
 ### CAS-007: The header token wins, with no fallback to the query
 When a request has a token in the header and in the query, the CAS uses only the header. A bad header fails with 401.

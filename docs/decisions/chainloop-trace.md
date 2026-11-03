@@ -26,11 +26,11 @@ Structure. The index (README.md) has the parts Areas (the area map), Relationshi
 
 ## Language
 
-- **Provider**: the Trace integration for one AI coding agent (Claude Code, Cursor, OpenCode, Pi, Codex). _Avoid_: "harness" in code and evidence. The e2e suite uses "harness" for the agent CLI that it runs.
+- **Provider**: the Trace integration for one AI coding agent (Claude Code, Cursor, OpenCode, Pi, Codex). _Avoid_: "harness" in new code and in evidence. The e2e suite and the `trace init` help text and output still use "harness" for the agent.
 - **Spec source**: an input that the session was built from (a ticket, a document, a plan, an image, a skill). It is recorded as a spec entry and its own material. _Avoid_: "attachment", because a source is evidence with a digest, not a file on a message.
-- **Capture**: a file that the agent writes into the spec folder for one source. _Avoid_: "export", because the agent writes the capture, not the CLI.
+- **Capture**: a file that the agent writes into the spec folder for one source. The CLI also captures pasted images (TRC-018). _Avoid_: "export", which was the old name of local mode.
 - **Pointer**: the `chainloop.replaced` object that takes the place of a copy of a spec source in the transcript. _Avoid_: "placeholder", which is the fixed line in a local-file capture.
-- **Local mode**: the storage mode (`traceStorage: LOCAL`) that stores sessions on disk with no control plane. _Avoid_: "offline", because the agent and the model are still online. Also avoid "export mode".
+- **Local mode**: the storage mode (`traceStorage: LOCAL`, or `trace run --local` for one run) that stores sessions on disk with no control plane. _Avoid_: "offline", because the agent and the model are still online. Also avoid "export mode".
 - **Net contribution**: the lines that a session added and that no later commit replaced. _Avoid_: "authored lines", which counts lines that later commits replaced.
 
 ## Current decisions
@@ -38,14 +38,14 @@ Structure. The index (README.md) has the parts Areas (the area map), Relationshi
 ### TRC-001: The agent decides what the spec is
 An instruction at session start tells the agent to resolve the spec of the session and write it into the spec folder.
 - Why: only the agent knows which input sets the task, and it reaches sources that the transcript never holds.
-- Rejected: extraction from the transcript by the CLI. It needs rules to pick the spec, misses sources that the agent never opened, and needs one extractor for each agent. Extraction on the server after ingestion (the spec is not in the attestation).
+- Rejected: extraction from the transcript by the CLI. It needs rules to pick the spec, misses sources that the agent never opened, and needs one extractor for each agent. Extraction on the server after ingestion (the spec is not in the attestation). Both stay as a fallback if the capture rate is poor.
 - Deciders: jiparis, migmartri
 - Source: [issue-3495-session-spec-capture D-001](../specs/issue-3495-session-spec-capture.md)
 - Code: verified: `app/cli/pkg/action/trace_spec.go`, `app/cli/pkg/action/trace_agent_hook.go`.
-- Partly replaced by TRC-009: the CLI makes the skill entries.
+- Partly replaced by TRC-009 and TRC-018: the CLI makes the skill entries and the pasted image entries.
 
 ### TRC-002: A capture is Markdown with a short header
-A capture is a Markdown body under a frontmatter header (kind, uri, role, title, description). With no header or a bad header, the whole file is content. An unknown kind becomes `text`.
+A text capture is a Markdown body under a frontmatter header (kind, uri, role, title, description). The CLI copies a binary file as it is, with no header. With no header or an unterminated header, the whole file is content. The CLI skips a header line with an unknown key. An unknown kind becomes `text`. A file with an empty body or only the placeholder gives no capture.
 - Why: a model writes long Markdown reliably. Long text escaped inside JSON fails completely when one character is wrong. A bad header still keeps the content.
 - Rejected: JSON files.
 - Deciders: jiparis, migmartri
@@ -92,7 +92,7 @@ For a binary file, the agent writes `<name>.meta.yaml` next to it, with the role
 - Code: verified: `app/cli/internal/trace/spec/spec.go`, `app/cli/pkg/action/trace_spec_materials.go`.
 
 ### TRC-008: A used skill is a spec entry of kind `skill`
-Each skill that the session used is an entry of kind `skill` in the spec list of the session.
+Each skill that the session used is an entry of kind `skill` in the spec list of the session, up to 25 skills. A skill with no folder gets no entry. This applies to the providers with skill tracking.
 - Why: a skill is a source of the session, like a ticket or a plan. It gets the same storage, redaction, and annotations.
 - Rejected: a separate `skills_used` list in the session material.
 - Deciders: jiparis, migmartri
@@ -107,7 +107,7 @@ The CLI finds skill use in the transcript and the hook events. The agent does no
 - Code: verified for Claude Code, Codex, and OpenCode: `app/cli/internal/trace/claude/skills.go`, `app/cli/pkg/action/trace_skills.go`. Cursor and Pi have no skill tracking.
 
 ### TRC-010: The whole skill folder is recorded
-The CLI copies the full folder of a used skill, not only the text that the agent loaded.
+The CLI copies the folder of a used skill, not only the text that the agent loaded. It leaves out links out of the folder and version-control folders.
 - Why: a skill can run its own scripts, and a reviewer needs that code. The attestation must not depend on the `ai-agent-config` material.
 - Rejected: the `SKILL.md` text from the transcript (no scripts, and Claude Code deletes the frontmatter).
 - Deciders: jiparis, migmartri
@@ -115,7 +115,7 @@ The CLI copies the full folder of a used skill, not only the text that the agent
 - Code: verified: `app/cli/pkg/action/trace_skills.go`, `app/cli/internal/trace/skill/skill.go`.
 
 ### TRC-011: One reproducible archive for each skill
-Each skill gives one archive with fixed file times, stored as one package material.
+Each skill gives one archive with fixed file times, stored as one package material. The CLI does not upload a package over 5 MB, and shows a warning. The entry and its counts stay.
 - Why: one package digest for each skill, and the same skill version gives the same digest in all sessions.
 - Rejected: one material for each file (it fills the attestation for a skill with many files).
 - Deciders: jiparis, migmartri
@@ -123,7 +123,7 @@ Each skill gives one archive with fixed file times, stored as one package materi
 - Code: verified: `app/cli/internal/trace/skill/skill.go`, `app/cli/pkg/action/trace_skills.go`.
 
 ### TRC-012: Copies of a source become digest pointers in the transcript
-The content stays in the spec material. Each copy in the transcript is replaced in place by a pointer with the digest.
+The content stays in the spec material. The CLI replaces each exact copy that it finds in the transcript, in place, with a pointer with the digest. A copy that does not match stays inline.
 - Why: the transcript gets small and keeps the position of each copy. The content stays in the evidence.
 - Rejected: drop the copies (a reader loses the position). Delete only the second copy of read files (the transcript is still large, and the redaction still scans the bytes).
 - Deciders: migmartri, javirln
@@ -155,7 +155,7 @@ Each kind of copy (file read, file write, pasted image) has its own finder, and 
 - Code: verified: `app/cli/internal/trace/pointer/pointer.go`.
 
 ### TRC-016: Replace a copy only on an exact digest match
-The CLI replaces a copy only when the material is stored and its digest equals the digest of the copy.
+The CLI replaces a copy only when two conditions hold. The source is stored as a material. The digest of the source file on disk equals the digest of the copy. For a file read, the CLI uses the digest of the file at the read path.
 - Why: the transcript is evidence, and a wrong pointer loses content with no way back.
 - Rejected: a best-effort match, for example by size or file name (a wrong match deletes content that is stored nowhere else).
 - Deciders: migmartri, javirln
@@ -171,7 +171,7 @@ The replacement covers each exact copy of a source in the spec list, from file r
 - Code: verified: `app/cli/internal/trace/claude/speccopies.go`, `app/cli/pkg/action/trace_spec_materials.go`.
 
 ### TRC-018: The CLI captures pasted images at push time
-At push time, the CLI makes an image spec entry for each pasted image in the transcript, then replaces its inline copy with a pointer.
+At push time, the CLI makes an image spec entry for each distinct pasted image whose digest is not already a spec source. When the material is stored, the CLI replaces the inline copies with a pointer.
 - Why: the bytes are in the transcript, so the capture depends on neither the agent nor a file on disk.
 - Rejected: replace only the images that the agent captured. Images then stay inline when the agent does not copy them, and the agent can copy only from a file path.
 - Deciders: migmartri, matiasinsaurralde
@@ -219,7 +219,7 @@ A stored session has `statement.json`, rendered by the same Chainloop renderer a
 - Code: verified: `app/cli/pkg/action/trace_local_store.go`.
 
 ### TRC-025: The e2e suite runs the real agent CLI, headless, with a real model
-- Why: only a real run shows whether the agent fires the hooks, shows the message, and follows the instruction.
+- Why: only a real run shows whether the agent fires the hooks and shows the message, and whether the model follows the instruction.
 - Rejected: replay recorded hook events into Trace (cheap and stable, but blind to the agent and the model). Both tiers (the replay tier adds little over the unit tests).
 - Deciders: jiparis, javirln, migmartri
 - Source: [issue-3635-trace-e2e-matrix D-001](../specs/issue-3635-trace-e2e-matrix.md)
@@ -241,7 +241,7 @@ The e2e suite reads the feature tables in the Trace README as its expected resul
 - Code: verified: `app/cli/internal/trace/e2e/workspace.go`, `app/cli/internal/trace/e2e/runner.go`.
 
 ### TRC-029: Agent versions are pinned and bumped by hand
-The suite configuration pins one version for each agent. A maintainer bumps a pin on purpose.
+The suite configuration pins one version for each agent that the suite runs (Claude Code, Cursor, OpenCode 2, Pi, Codex). OpenCode 1.x has no pin and no adapter. A maintainer bumps a pin on purpose.
 - Why: the job has access to secrets and must not run an agent release that nobody selected.
 - Rejected: the latest release on each run (runs code that nobody selected in a job with secrets). Automated bump pull requests (more tooling for the first version).
 - Deciders: jiparis, javirln, migmartri
@@ -249,7 +249,7 @@ The suite configuration pins one version for each agent. A maintainer bumps a pi
 - Code: verified: `app/cli/internal/trace/e2e/config.yaml`. The suite does not install the agent. It warns when the installed version is not the pinned one.
 
 ### TRC-030: Each line range gets an attribution in the existing list
-The ranges stay in the one list of each file entry, and each range gets an attribution, AI or human.
+The ranges stay in the one list of each file entry, and each range gets an attribution, AI or human. When the CLI cannot blame a file at the pushed commit, that file keeps its AI ranges at edit time, with no attribution.
 - Why: one list keeps the evidence small and gives readers one place to look. The new property is additive.
 - Rejected: a new list of AI ranges next to the old one (two lists for the same lines). Two new lists for AI and human (a reader must merge them to show a file).
 - Deciders: jiparis, migmartri
@@ -257,6 +257,7 @@ The ranges stay in the one list of each file entry, and each range gets an attri
 - Code: verified: `pkg/attestation/crafter/materials/aicodingsession/aicodingsession.go`, `app/cli/internal/trace/attribution/enrich.go`.
 
 ### TRC-031: Range positions are in the pushed commit
+Ranges are positions at the pushed commit. When the CLI cannot blame a file at the pushed commit, that file keeps its AI ranges at edit time, with no attribution.
 - Why: the lines that later commits replaced are gone at that commit, so the ranges agree with the net counts. A reader of the pull request sees the same version.
 - Rejected: the last commit of the session (a later commit can move or replace the lines). Ranges for each commit (a reader must combine them).
 - Deciders: jiparis, migmartri
@@ -264,14 +265,14 @@ The ranges stay in the one list of each file entry, and each range gets an attri
 - Code: verified: `app/cli/internal/trace/attribution/enrich.go`.
 
 ### TRC-032: A range with no attribution is an AI range
-Evidence from an older CLI has ranges with no attribution. Readers treat these as AI ranges at edit time.
+Evidence from an older CLI has ranges with no attribution. A file that the CLI cannot blame at the pushed commit also has them. Readers treat these as AI ranges at edit time.
 - Why: platforms that store evidence from older CLIs must read both forms.
 - Deciders: jiparis, migmartri
 - Source: [issue-3639-line-ranges D-004](../specs/issue-3639-line-ranges.md)
 - Code: verified as a documented contract: `pkg/attestation/crafter/materials/aicodingsession/aicodingsession.go`. No reader is in this repository.
 
 ### TRC-033: The reported split is the net contribution
-The AI and human numbers for each file and session are the lines that the session added and that no later commit replaced.
+The AI and human numbers for each file and session are the lines that the session added and that no later commit replaced. When the CLI cannot blame a file at the pushed commit, its numbers are the sum of its commits. A file with edits from before line fingerprints keeps the earlier rule.
 - Why: it gives the expected split, and no line counts twice across commits.
 - Rejected: authored lines for each commit, with no net (a replaced AI line still counts as AI).
 - Deciders: jiparis, migmartri
@@ -279,7 +280,7 @@ The AI and human numbers for each file and session are the lines that the sessio
 - Code: verified: `app/cli/internal/trace/attribution/enrich.go`.
 
 ### TRC-034: A replacement sends the owning session again
-When a later commit replaces lines of a session, the CLI sends the evidence of that session again.
+When a later commit replaces lines of a session, the next push sends the evidence of that session again. This occurs only when the own commits of the session are on the pushed branch, and for 30 days after the session starts (D-012, D-013).
 - Why: the platform already replaces session data with newer evidence, so it needs no new concept.
 - Rejected: separate evidence with no session for human commits (a new concept on the platform). No tracking of commits outside sessions (the human work stays uncounted).
 - Deciders: jiparis, migmartri
@@ -287,7 +288,7 @@ When a later commit replaces lines of a session, the CLI sends the evidence of t
 - Code: verified: `app/cli/pkg/action/trace_replacements.go`, `app/cli/pkg/action/trace_hook_handler.go`.
 
 ### TRC-035: Line owners are rebuilt from blame and the ledger
-The line fingerprints go into the existing AI line ledger. At push time, the CLI rebuilds the owner of each line from git blame, the commit records, and the ledger. It stores no owner data for each line.
+The line fingerprints go into the existing AI line ledger. At push time, the CLI rebuilds the owner of each line from git blame, the commit records, and the ledger. It stores no owner data for each line. The exception is the record of a commit that joined a session: it keeps the fingerprints of the replacing lines.
 - Why: it reuses the existing storage and pushes nothing to the remote. No second store can disagree with it.
 - Rejected: git notes on a dedicated ref (push traffic, ref contention, and git configuration). An owner map for each commit (it duplicates the ledger and needs its own rewrite handling).
 - Deciders: jiparis, migmartri
@@ -295,7 +296,7 @@ The line fingerprints go into the existing AI line ledger. At push time, the CLI
 - Code: verified: `app/cli/internal/trace/state/ailines.go`, `app/cli/internal/trace/git/lines.go`.
 
 ### TRC-036: Two categories, human by default
-A line that the CLI cannot link to an observed agent edit is human.
+A line that the CLI cannot link to an observed agent edit is human. Exception: for a file with edits from before line fingerprints, all deleted lines count as AI.
 - Why: no change to the evidence categories or the platform aggregates.
 - Rejected: a third "unknown" category (more exact, but it changes the schema and every aggregate).
 - Deciders: jiparis, migmartri
@@ -303,7 +304,7 @@ A line that the CLI cannot link to an observed agent edit is human.
 - Code: verified: `app/cli/internal/trace/attribution/enrich.go`.
 
 ### TRC-037: A human commit with no session joins the sessions it changes
-At push time, a commit with no session joins each session whose lines it replaced. Only the replacing hunks count, as human lines.
+At push time, a commit with no session joins each session whose lines it replaced. Only the replacing hunks count, as human lines. This applies only to sessions whose own commits are on the pushed branch, within the 30 days of D-012.
 - Why: the human work gets credit where it changed the code of the session, and the evidence needs no new field.
 - Rejected: a new field for the replaced lines of the session (the human lines are in no session total). Count the whole commit in the session (unrelated human work joins the session).
 - Deciders: jiparis, migmartri
@@ -319,14 +320,27 @@ Native Codex hooks connect Codex to the session lifecycle: session start and end
 - Code: verified: `app/cli/internal/trace/codex/hooks.go`.
 
 ### TRC-039: The Codex provider parses a copy of the rollout
-The provider keeps a private copy of the native rollout, parses only that copy, and estimates cost from embedded prices.
+The provider keeps a private copy of the native rollout. The evidence parser reads only that copy, and estimates cost from embedded prices. During the session, a hook reads the live rollout only to find skill loads.
 - Why: the evidence stays available after Codex moves or deletes its original transcript.
 - Rejected: live transcript parsing (depends on agent storage during assembly). Notification payloads (no conversation and usage details).
 - Deciders: jiparis, migmartri, matiasinsaurralde
 - Source: [issue-3657-codex-trace-provider D-003](../specs/issue-3657-codex-trace-provider.md)
 - Code: verified: `app/cli/internal/trace/codex/copy.go`, `app/cli/internal/trace/codex/parse.go`, `app/cli/internal/trace/codex/pricing.go`.
 
-Not shown: 10 smaller decisions of [issue-3495-session-spec-capture](../specs/issue-3495-session-spec-capture.md), 8 of [issue-3515-spec-capture-during-session](../specs/issue-3515-spec-capture-during-session.md), 12 of [issue-3520-pi-trace-provider](../specs/issue-3520-pi-trace-provider.md), 10 of [issue-3531-spec-source-role](../specs/issue-3531-spec-source-role.md), 12 of [issue-3540-trace-skills-used](../specs/issue-3540-trace-skills-used.md), 10 of [issue-3556-session-image-placeholders](../specs/issue-3556-session-image-placeholders.md), 10 of [issue-3561-up-to-date-local-spec-evidence](../specs/issue-3561-up-to-date-local-spec-evidence.md), 5 of [issue-3569-pasted-image-pointers](../specs/issue-3569-pasted-image-pointers.md), 20 of [issue-3582-trace-evidence-export](../specs/issue-3582-trace-evidence-export.md), 8 of [issue-3635-trace-e2e-matrix](../specs/issue-3635-trace-e2e-matrix.md), 3 of [issue-3639-line-ranges](../specs/issue-3639-line-ranges.md), 8 of [issue-3639-trace-line-attribution](../specs/issue-3639-trace-line-attribution.md), 2 of [issue-3657-codex-trace-provider](../specs/issue-3657-codex-trace-provider.md).
+Not shown: the smaller decisions of each spec.
+- 10 of [issue-3495-session-spec-capture](../specs/issue-3495-session-spec-capture.md)
+- 8 of [issue-3515-spec-capture-during-session](../specs/issue-3515-spec-capture-during-session.md)
+- 12 of [issue-3520-pi-trace-provider](../specs/issue-3520-pi-trace-provider.md)
+- 10 of [issue-3531-spec-source-role](../specs/issue-3531-spec-source-role.md)
+- 12 of [issue-3540-trace-skills-used](../specs/issue-3540-trace-skills-used.md)
+- 10 of [issue-3556-session-image-placeholders](../specs/issue-3556-session-image-placeholders.md)
+- 10 of [issue-3561-up-to-date-local-spec-evidence](../specs/issue-3561-up-to-date-local-spec-evidence.md)
+- 5 of [issue-3569-pasted-image-pointers](../specs/issue-3569-pasted-image-pointers.md)
+- 20 of [issue-3582-trace-evidence-export](../specs/issue-3582-trace-evidence-export.md)
+- 8 of [issue-3635-trace-e2e-matrix](../specs/issue-3635-trace-e2e-matrix.md)
+- 3 of [issue-3639-line-ranges](../specs/issue-3639-line-ranges.md)
+- 8 of [issue-3639-trace-line-attribution](../specs/issue-3639-trace-line-attribution.md)
+- 2 of [issue-3657-codex-trace-provider](../specs/issue-3657-codex-trace-provider.md)
 
 ## Non-Confirmed
 
