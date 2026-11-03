@@ -16,14 +16,19 @@
 package data
 
 import (
+	"bytes"
+	"cmp"
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"time"
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
@@ -146,79 +151,96 @@ func (repo *OrgMetricsRepo) TopWorkflowsByRunsCount(ctx context.Context, orgID u
 	ctx, span := otelx.Start(ctx, orgMetricsRepoTracer, "OrgMetricsRepo.TopWorkflowsByRunsCount")
 	defer span.End()
 
-	var runs []struct {
-		WorkflowID string `json:"workflow_id"`
-		State      string
-		Count      int32
-	}
-
-	// Get workflow runs grouped by state and workflowRunID
-	wfQuery := orgScopedQuery(repo.data.DB, orgID).
-		QueryWorkflows()
-
+	// Filter on the denormalized workflow_runs.organization_id so the
+	// (organization_id, created_at) index drives the scan, instead of reaching
+	// the runs through the workflows table. Runs of deleted workflows are excluded.
+	wfPredicates := []predicate.Workflow{workflow.DeletedAtIsNil()}
 	if projectIDs != nil {
-		wfQuery = wfQuery.Where(workflow.ProjectIDIn(projectIDs...))
+		wfPredicates = append(wfPredicates, workflow.ProjectIDIn(projectIDs...))
 	}
 
-	if err := wfQuery.QueryWorkflowruns().
+	var runs []struct {
+		WorkflowID uuid.UUID `json:"workflow_id"`
+		State      string    `json:"state"`
+		Count      int32     `json:"count"`
+	}
+
+	if err := repo.data.DB.WorkflowRun.Query().
 		Where(
+			workflowrun.OrganizationID(orgID),
 			workflowrun.CreatedAtGTE(tw.From),
 			workflowrun.CreatedAtLTE(tw.To),
+			workflowrun.HasWorkflowWith(wfPredicates...),
 		).
-		GroupBy(workflowrun.WorkflowColumn, workflowrun.FieldState).
+		GroupBy(workflowrun.FieldWorkflowID, workflowrun.FieldState).
 		Aggregate(ent.Count()).
 		Scan(ctx, &runs); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("aggregating workflow runs: %w", err)
 	}
 
-	// Map resultMap to include totals
-	resultMap := make(map[string]*biz.TopWorkflowsByRunsCountItem)
+	totals := make(map[uuid.UUID]*biz.TopWorkflowsByRunsCountItem)
 	for _, r := range runs {
-		var item *biz.TopWorkflowsByRunsCountItem
-		var found bool
-		if item, found = resultMap[r.WorkflowID]; !found {
-			workflowID, err := uuid.Parse(r.WorkflowID)
-			if err != nil {
-				return nil, err
-			}
-
-			wf, err := orgScopedQuery(repo.data.DB, orgID).QueryWorkflows().WithProject().Where(workflow.ID(workflowID)).First(ctx)
-			if err != nil {
-				if ent.IsNotFound(err) {
-					continue
-				}
-
-				return nil, err
-			}
-
-			wfRes, err := entWFToBizWF(ctx, wf)
-			if err != nil {
-				return nil, fmt.Errorf("converting entity: %w", err)
-			}
-
-			item = &biz.TopWorkflowsByRunsCountItem{ByStatus: make(map[string]int32), Workflow: wfRes}
+		item, ok := totals[r.WorkflowID]
+		if !ok {
+			item = &biz.TopWorkflowsByRunsCountItem{ByStatus: make(map[string]int32)}
+			totals[r.WorkflowID] = item
 		}
 
 		item.ByStatus[r.State] = r.Count
 		item.Total += r.Count
-		resultMap[r.WorkflowID] = item
 	}
 
-	result := make([]*biz.TopWorkflowsByRunsCountItem, 0, len(resultMap))
-	for _, r := range resultMap {
-		result = append(result, r)
-	}
-
-	// Sort and limit to numWorkflows
-	sort.SliceStable(result, func(i, j int) bool {
-		return result[i].Total > result[j].Total
+	// Pick the top workflows before loading them, sorted by total runs.
+	// Ties are broken by ID so the result is deterministic.
+	topIDs := slices.Collect(maps.Keys(totals))
+	slices.SortFunc(topIDs, func(a, b uuid.UUID) int {
+		if c := cmp.Compare(totals[b].Total, totals[a].Total); c != 0 {
+			return c
+		}
+		return bytes.Compare(a[:], b[:])
 	})
 
-	if len(result) < numWorkflows {
-		numWorkflows = len(result)
+	if len(topIDs) > numWorkflows {
+		topIDs = topIDs[:numWorkflows]
 	}
 
-	return result[0:numWorkflows], nil
+	result := make([]*biz.TopWorkflowsByRunsCountItem, 0, len(topIDs))
+	if len(topIDs) == 0 {
+		return result, nil
+	}
+
+	// Load all the selected workflows and their projects in a single round-trip
+	wfs, err := repo.data.DB.Workflow.Query().
+		Where(workflow.IDIn(topIDs...), workflow.OrganizationID(orgID), workflow.DeletedAtIsNil()).
+		WithProject().
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("loading workflows: %w", err)
+	}
+
+	wfByID := make(map[uuid.UUID]*ent.Workflow, len(wfs))
+	for _, wf := range wfs {
+		wfByID[wf.ID] = wf
+	}
+
+	for _, id := range topIDs {
+		wf, ok := wfByID[id]
+		if !ok {
+			// deleted between both queries
+			continue
+		}
+
+		wfRes, err := entWFToBizWF(ctx, wf)
+		if err != nil {
+			return nil, fmt.Errorf("converting entity: %w", err)
+		}
+
+		item := totals[id]
+		item.Workflow = wfRes
+		result = append(result, item)
+	}
+
+	return result, nil
 }
 
 func (repo *OrgMetricsRepo) DailyRunsCount(ctx context.Context, orgID, workflowID uuid.UUID, tw *biz.TimeWindow, projectIDs []uuid.UUID) ([]*biz.DayRunsCount, error) {
