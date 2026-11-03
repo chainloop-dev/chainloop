@@ -63,7 +63,7 @@ Each service serves all protocols on its shared endpoint in its own process. It 
 - Code: verified: `app/controlplane/internal/server/http.go`, `app/artifact-cas/internal/server/http.go`.
 - Partly replaced: the spec decision also kept native gRPC and plain HTTP on separate upstream connections. [issue-3628-controlplane-http-dispatch D-001](../specs/issue-3628-controlplane-http-dispatch.md) replaced that part for the control plane. For the CAS, R-010 and D-020 of [issue-3628-single-endpoint](../specs/issue-3628-single-endpoint.md) replaced it.
 
-Not shown: 15 smaller or replaced decisions of [issue-3628-single-endpoint](../specs/issue-3628-single-endpoint.md), 2 of [issue-3628-controlplane-http-dispatch](../specs/issue-3628-controlplane-http-dispatch.md).
+Not shown: 15 smaller or replaced decisions of [issue-3628-single-endpoint](../specs/issue-3628-single-endpoint.md), 1 of [issue-3628-controlplane-http-dispatch](../specs/issue-3628-controlplane-http-dispatch.md).
 
 ## Non-Confirmed
 

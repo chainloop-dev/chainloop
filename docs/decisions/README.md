@@ -74,7 +74,7 @@ Last refresh: 2026-11-01, commit 4e150ca7.
 ## Relationships
 
 - **Attestation Process → Chainloop Trace:** both read `.chainloop.yml` through one reader (ATT-003, attestation-process.md). A change to the file order or keys changes both areas.
-- **Chainloop Trace → Artifact CAS:** Trace uploads each spec source, skill package, and pasted image as its own material. A transcript pointer replaces a copy only when its material is stored (TRC-016, chainloop-trace.md).
+- **Chainloop Trace → Artifact CAS:** On a push, Trace uploads each spec source, skill package, and pasted image as a material. Local mode uses neither. A transcript pointer replaces a copy only when its material is stored (TRC-016, chainloop-trace.md).
 - **Service Operations → Artifact CAS, Authentication:** the shared endpoints carry the CAS ByteStream and download routes and the control plane login endpoints. A change to their dispatch or TLS affects all of them. It does not affect ByteStream traffic on the legacy gRPC listener, which the chart uses by default for the control plane.
 
 ## Repository-wide decisions

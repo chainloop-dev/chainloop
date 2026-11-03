@@ -63,7 +63,7 @@ The client cache, which holds backend credentials, stays in process memory. It n
 - Code: verified: `app/artifact-cas/internal/service/cache.go` (in-process expirable LRU).
 
 ### CAS-005: Downloads use the browser HTTP cache
-The CAS sets cache headers on downloads and answers 304 when the browser has the content. The control plane keeps no copy of the bytes.
+The HTTP download endpoint of the CAS sets cache headers and answers 304 when the browser has the content. ByteStream downloads do not change. The control plane keeps no copy of the bytes.
 - Why: the browser downloads straight from the CAS, so a cache there skips the backend copy and the transfer.
 - Rejected: a server cache in the control plane (the control plane never sees the bytes, and its message size limit is too small).
 - Deciders: jiparis, migmartri
@@ -102,7 +102,7 @@ Replaces [issue-3543-cas-existence-cache D-007](../specs/issue-3543-cas-existenc
 - Source: recorded directly, 2026-11-03
 - Code: verified: `pkg/cache/casexistence/casexistence.go` (`ttl` constant), `app/artifact-cas/cmd/wire.go` (the cache is always on).
 
-Not shown: 5 smaller decisions of [issue-3543-cas-existence-cache](../specs/issue-3543-cas-existence-cache.md), 2 of [issue-3549-cas-download-browser-cache](../specs/issue-3549-cas-download-browser-cache.md).
+Not shown: 5 smaller or replaced decisions of [issue-3543-cas-existence-cache](../specs/issue-3543-cas-existence-cache.md), 2 of [issue-3549-cas-download-browser-cache](../specs/issue-3549-cas-download-browser-cache.md).
 
 ## Non-Confirmed
 

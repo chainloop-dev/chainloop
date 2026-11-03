@@ -72,7 +72,7 @@ When the CLI sent a challenge and gets `?t=`, it accepts the token with a warnin
 - Code: verified: `app/cli/cmd/auth_login.go`.
 
 ### AUT-006: One error to the client for each exchange failure
-Each exchange failure gives the client the same error. The specific reason goes to the server log only.
+Each exchange failure gives the client the same error. The specific reason goes to the server log only. A request that fails field validation (an empty or too long field) gets the validation error before the exchange runs.
 - Why: a uniform client error gives no hint to a person who guesses codes. The server log reason helps operators debug failed logins.
 - Rejected: a uniform error with no server log reason (hard to debug).
 - Deciders: migmartri, jiparis
@@ -80,7 +80,7 @@ Each exchange failure gives the client the same error. The specific reason goes 
 - Code: verified: `app/controlplane/internal/service/auth.go`.
 
 ### AUT-007: The exchange endpoint is gRPC only
-The exchange is an unauthenticated RPC on the auth service, with no HTTP mapping.
+The exchange is an unauthenticated RPC on the auth service, with no JSON/REST mapping. Clients call it over gRPC or gRPC-Web.
 - Why: the CLI uses gRPC and the web UI uses gRPC-Web, so no client needs a plain HTTP route. With no HTTP route, the public surface of the unauthenticated endpoint is smaller, and the web UI makes no cross-origin preflight.
 - Rejected: keep an HTTP mapping for a future non-gRPC client (no such client exists).
 - Deciders: migmartri, matiasinsaurralde
