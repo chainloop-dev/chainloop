@@ -124,6 +124,25 @@ func TestShellPreHeads(t *testing.T) {
 	assert.NotErrorIs(t, err, os.ErrNotExist)
 }
 
+func TestShellPreReflog(t *testing.T) {
+	store := NewGitStore(t.TempDir())
+	key := ShellCallKey{SessionID: shellSessionID, ToolUseID: "toolu_1"}
+
+	_, err := store.LoadShellPreReflog(key)
+	require.ErrorIs(t, err, os.ErrNotExist, "a command without saved sizes has none")
+
+	sizes := map[string]int64{"/repo": 1234}
+	require.NoError(t, store.SaveShellPreSignature(key, WorktreeSignatures{"/repo": {fileA: "h"}}))
+	require.NoError(t, store.SaveShellPreReflog(key, sizes))
+	got, err := store.LoadShellPreReflog(key)
+	require.NoError(t, err)
+	assert.Equal(t, sizes, got)
+
+	store.DeleteShellPreSignature(key)
+	_, err = store.LoadShellPreReflog(key)
+	require.ErrorIs(t, err, os.ErrNotExist, "the sizes go with the signature")
+}
+
 // A CLI upgrade can land between the pre and post hooks of one command. The
 // earlier single-checkout format must then be rejected, not misread.
 func TestShellPreSignatureRejectsSingleCheckoutFormat(t *testing.T) {

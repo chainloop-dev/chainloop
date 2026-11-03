@@ -655,9 +655,13 @@ func (r *lineRepo) shellWrite(sessionID string, run func()) {
 	require.NoError(r.t, err)
 	heads, err := r.store.LoadShellPreHeads(key)
 	require.NoError(r.t, err)
-	base := heads[r.dir]
-	require.NotEmpty(r.t, base, "the pre hook saves the HEAD commit")
-	recordRootChanges(r.store, r.dir, base, sigs[r.dir], sessionID, zerolog.Nop())
+	reflogs, err := r.store.LoadShellPreReflog(key)
+	require.NoError(r.t, err)
+	pre := preCommand{head: heads[r.dir]}
+	pre.reflogSize, pre.hasReflog = reflogs[r.dir]
+	require.NotEmpty(r.t, pre.head, "the pre hook saves the HEAD commit")
+	require.True(r.t, pre.hasReflog, "the pre hook saves the HEAD reflog size")
+	recordRootChanges(r.store, r.dir, pre, sigs[r.dir], sessionID, zerolog.Nop())
 	r.store.DeleteShellPreSignature(key)
 }
 
@@ -691,6 +695,129 @@ func TestLineAttribution_ShellCommandThatCommits(t *testing.T) {
 
 	attr := r.store.LoadAILineAttribution(lineSession)
 	assert.Equal(t, 2, attr.Written["a.go"].Len())
+}
+
+// divergedRepo returns a repository on branch feature, with one human commit,
+// and a main branch that rewrote big.txt and added other.txt since.
+func divergedRepo(t *testing.T) *lineRepo {
+	t.Helper()
+	r := newLineRepo(t)
+
+	r.humanWrite("big.txt", content(numbered("old", 100)))
+	r.commit("chore: big", "big.txt")
+
+	runGit(t, r.dir, "checkout", "-q", "-b", "feature")
+	r.humanWrite("wire_gen.go", "package main\n")
+	r.commit("feat: wire", "wire_gen.go")
+
+	runGit(t, r.dir, "checkout", "-q", "main")
+	r.humanWrite("big.txt", content(numbered("new", 100)))
+	r.humanWrite("other.txt", content(numbered("other", 50)))
+	r.commit("chore: upstream", "big.txt", "other.txt")
+	runGit(t, r.dir, "checkout", "-q", "feature")
+
+	return r
+}
+
+// A shell command that moves HEAD to commits that it did not write records
+// none of their lines (PFM-8131). Only the lines that the command wrote count.
+func TestLineAttribution_ShellHeadMoveRecordsNoUpstreamLines(t *testing.T) {
+	tests := []struct {
+		name string
+		run  func(t *testing.T, r *lineRepo)
+		// wantAdded and wantRemoved are the generated lines of the session.
+		wantAdded, wantRemoved int
+		// wantFiles are the files in the ledger of the session.
+		wantFiles []string
+	}{
+		{
+			name: "rebase, then a regenerated file",
+			run: func(t *testing.T, r *lineRepo) {
+				r.shellWrite(lineSession, func() { runGit(t, r.dir, "rebase", "-q", "main") })
+				r.shellWrite(lineSession, func() { r.humanWrite("wire_gen.go", "package main\n\nfunc a() {}\n") })
+			},
+			wantAdded: 2, wantFiles: []string{"wire_gen.go"},
+		},
+		{
+			name: "rebase and a change in one command",
+			run: func(t *testing.T, r *lineRepo) {
+				r.shellWrite(lineSession, func() {
+					runGit(t, r.dir, "rebase", "-q", "main")
+					r.humanWrite("wire_gen.go", "package main\n\nfunc a() {}\n")
+				})
+			},
+			wantAdded: 2, wantFiles: []string{"wire_gen.go"},
+		},
+		{
+			name: "merge commit",
+			run: func(t *testing.T, r *lineRepo) {
+				r.shellWrite(lineSession, func() { runGit(t, r.dir, "merge", "-q", "--no-edit", "main") })
+			},
+		},
+		{
+			name: "fast-forward",
+			run: func(t *testing.T, r *lineRepo) {
+				runGit(t, r.dir, "checkout", "-q", "-b", "behind", "main~1")
+				r.shellWrite(lineSession, func() { runGit(t, r.dir, "merge", "-q", "--ff-only", "main") })
+			},
+		},
+		{
+			name: "checkout of another branch",
+			run: func(t *testing.T, r *lineRepo) {
+				r.shellWrite(lineSession, func() { runGit(t, r.dir, "checkout", "-q", "main") })
+			},
+		},
+		{
+			name: "hard reset",
+			run: func(t *testing.T, r *lineRepo) {
+				r.shellWrite(lineSession, func() { runGit(t, r.dir, "reset", "-q", "--hard", "main") })
+			},
+		},
+		{
+			name: "a commit of the command, then a rebase",
+			run: func(t *testing.T, r *lineRepo) {
+				r.shellWrite(lineSession, func() {
+					r.humanWrite("a.go", "one\ntwo\n")
+					runGit(t, r.dir, "add", "a.go")
+					runGit(t, r.dir, "commit", "-q", "-m", "feat: a")
+					runGit(t, r.dir, "rebase", "-q", "main")
+				})
+			},
+			wantAdded: 2, wantFiles: []string{"a.go"},
+		},
+		{
+			name: "an amend of a human commit",
+			run: func(t *testing.T, r *lineRepo) {
+				r.shellWrite(lineSession, func() {
+					r.humanWrite("wire_gen.go", "package main\n\nfunc a() {}\n")
+					runGit(t, r.dir, "commit", "-q", "-a", "--amend", "--no-edit")
+				})
+			},
+			wantAdded: 2, wantFiles: []string{"wire_gen.go"},
+		},
+		{
+			name: "rebase without a reflog",
+			run: func(t *testing.T, r *lineRepo) {
+				runGit(t, r.dir, "config", "core.logAllRefUpdates", "false")
+				r.shellWrite(lineSession, func() { runGit(t, r.dir, "rebase", "-q", "main") })
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			r := divergedRepo(t)
+			tc.run(t, r)
+
+			attr := r.store.LoadAILineAttribution(lineSession)
+			assert.Equal(t, tc.wantAdded, attr.GeneratedAdded, "generated lines added")
+			assert.Equal(t, tc.wantRemoved, attr.GeneratedRemoved, "generated lines removed")
+			var files []string
+			for f := range attr.Files {
+				files = append(files, f)
+			}
+			assert.ElementsMatch(t, tc.wantFiles, files)
+		})
+	}
 }
 
 // R-011: the ledger keeps the lines that every agent edit added and removed,

@@ -18,8 +18,90 @@ package attribution
 import (
 	"testing"
 
+	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestOwnCommits(t *testing.T) {
+	entry := func(old, new, msg string) tracegit.ReflogEntry {
+		return tracegit.ReflogEntry{Old: old, New: new, Message: msg}
+	}
+
+	tests := []struct {
+		name    string
+		oldHead string
+		newHead string
+		entries []tracegit.ReflogEntry
+		want    []tracegit.ReflogEntry
+	}{
+		{
+			name:    "no move",
+			oldHead: "a", newHead: "a",
+		},
+		{
+			name:    "a commit",
+			oldHead: "a", newHead: "b",
+			entries: []tracegit.ReflogEntry{entry("a", "b", "commit: feat")},
+			want:    []tracegit.ReflogEntry{entry("a", "b", "commit: feat")},
+		},
+		{
+			name:    "an amend",
+			oldHead: "a", newHead: "b",
+			entries: []tracegit.ReflogEntry{entry("a", "b", "commit (amend): feat")},
+			want:    []tracegit.ReflogEntry{entry("a", "b", "commit (amend): feat")},
+		},
+		{
+			name:    "a rebase writes nothing of the command",
+			oldHead: "a", newHead: "d",
+			entries: []tracegit.ReflogEntry{
+				entry("a", "c", "rebase (start): checkout main"),
+				entry("c", "d", "rebase (pick): feat"),
+				entry("d", "d", "rebase (finish): returning to refs/heads/feature"),
+			},
+		},
+		{
+			name:    "a fast-forward pull, a checkout and a reset",
+			oldHead: "a", newHead: "d",
+			entries: []tracegit.ReflogEntry{
+				entry("a", "b", "pull: Fast-forward"),
+				entry("b", "c", "checkout: moving from feature to main"),
+				entry("c", "d", "reset: moving to d"),
+			},
+		},
+		{
+			name:    "a merge commit is not the command's own",
+			oldHead: "a", newHead: "m",
+			entries: []tracegit.ReflogEntry{entry("a", "m", "commit (merge): Merge branch 'main'")},
+		},
+		{
+			name:    "a commit before and after a rebase",
+			oldHead: "a", newHead: "e",
+			entries: []tracegit.ReflogEntry{
+				entry("a", "b", "commit: one"),
+				entry("b", "c", "rebase (start): checkout main"),
+				entry("c", "d", "rebase (pick): one"),
+				entry("d", "d", "rebase (finish): returning to refs/heads/feature"),
+				entry("d", "e", "commit: two"),
+			},
+			want: []tracegit.ReflogEntry{entry("a", "b", "commit: one"), entry("d", "e", "commit: two")},
+		},
+		{
+			name:    "entries that do not start at the old HEAD",
+			oldHead: "a", newHead: "c",
+			entries: []tracegit.ReflogEntry{entry("x", "c", "commit: feat")},
+		},
+		{
+			name:    "entries that do not end at the new HEAD",
+			oldHead: "a", newHead: "z",
+			entries: []tracegit.ReflogEntry{entry("a", "c", "commit: feat")},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.want, OwnCommits(tc.oldHead, tc.newHead, tc.entries))
+		})
+	}
+}
 
 func TestChangedPaths(t *testing.T) {
 	t.Run("detects created, modified, and deleted paths", func(t *testing.T) {

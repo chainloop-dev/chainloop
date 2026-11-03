@@ -152,6 +152,48 @@ func (s *Store) LoadShellPreSignature(key ShellCallKey) (WorktreeSignatures, err
 func (s *Store) DeleteShellPreSignature(key ShellCallKey) {
 	_ = os.Remove(s.shellPreSignaturePath(key))
 	_ = os.Remove(s.shellPreHeadsPath(key))
+	_ = os.Remove(s.shellPreReflogPath(key))
+}
+
+// shellPreReflogPath returns the path storing the HEAD reflog size of each
+// checkout before a shell command, next to the command's signature.
+func (s *Store) shellPreReflogPath(key ShellCallKey) string {
+	return strings.TrimSuffix(s.shellPreSignaturePath(key), ".json") + ".reflog.json"
+}
+
+// SaveShellPreReflog stores the size of the HEAD reflog of each checkout
+// (checkout root → bytes) before an agent-run shell command. The entries past
+// it are the HEAD moves of the command, which tell the commits it wrote apart
+// from the ones it only moved HEAD to.
+func (s *Store) SaveShellPreReflog(key ShellCallKey, sizes map[string]int64) error {
+	path := s.shellPreReflogPath(key)
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("create snapshot dir: %w", err)
+	}
+
+	data, err := json.Marshal(sizes)
+	if err != nil {
+		return fmt.Errorf("marshal shell reflog sizes: %w", err)
+	}
+
+	return os.WriteFile(path, data, 0600)
+}
+
+// LoadShellPreReflog loads the HEAD reflog sizes saved before a shell command.
+// A command whose pre hook ran on an older CLI has none, and the error then
+// wraps os.ErrNotExist.
+func (s *Store) LoadShellPreReflog(key ShellCallKey) (map[string]int64, error) {
+	data, err := os.ReadFile(s.shellPreReflogPath(key))
+	if err != nil {
+		return nil, err
+	}
+
+	var sizes map[string]int64
+	if err := json.Unmarshal(data, &sizes); err != nil {
+		return nil, fmt.Errorf("parse shell reflog sizes: %w", err)
+	}
+
+	return sizes, nil
 }
 
 // shellPreHeadsPath returns the path storing the HEAD commit of each checkout
