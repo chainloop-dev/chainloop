@@ -65,7 +65,7 @@ For the same organization, digest, and project visibility, discovery MUST return
 
 The user selects the organization as for all other operations: with the `--org` option or its environment variable, or with the default organization of the user. Discovery then works in that organization only. A user who expects a result from another organization selects that organization and runs the command again. The not-found message is the same as today.
 
-The control plane finds the current organization of the request as for every other operation. The organization comes from the organization header of the request or from the default membership of the user. The control plane makes sure that the caller can work in that organization, with the same check as all other operations. It then searches the graph in that organization only. It applies the project visibility that the caller has in that organization, and no visibility from other organizations.
+The control plane finds the current organization of the request as for every other operation. For a user session, the organization comes from the organization header of the request or from the default membership of the user. An API token uses its own organization. An instance-scoped API token uses the organization header. The control plane makes sure that the caller can work in that organization, with the same check as all other operations. It then searches the graph in that organization only. It applies the project visibility that the caller has in that organization, and no visibility from other organizations.
 
 The policy functions and the web UI use the same path. Policies and clients do not change.
 
@@ -90,7 +90,7 @@ No option searches more than one organization. This replaces the first design of
 - Source: [PR #3777 review](https://github.com/chainloop-dev/chainloop/pull/3777#discussion_r4467148631)
 
 ### D-002: The current organization is the one of the request
-Discovery works as every other API operation. The organization comes from the organization header of the request, or from the default membership of the user. The control plane makes sure that it is an organization of the caller, with the check of all other operations. Discovery does not take an organization of its own, and it does not add a check of its own.
+Discovery works as every other API operation. For a user session, the organization comes from the organization header of the request, or from the default membership of the user. An API token uses its own organization, and an instance-scoped API token uses the organization header. The control plane makes sure that it is an organization of the caller, with the check of all other operations. Discovery does not take an organization of its own, and it does not add a check of its own.
 - Why: one rule for all operations. The CLI `--org` option then works for discovery with no special case.
 - Source: [PR #3777 review](https://github.com/chainloop-dev/chainloop/pull/3777#discussion_r4468337274)
 
