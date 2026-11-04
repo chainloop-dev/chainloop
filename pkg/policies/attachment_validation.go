@@ -45,20 +45,33 @@ func ValidateMaterialAttachment(policy *v1.Policy, att *v1.PolicyAttachment, mat
 	specTypes := getPolicyTypes(policy)
 	selector := att.GetSelector()
 
-	if len(specTypes) == 0 && selector.GetName() == "" {
+	if !canMatchAnyMaterial(specTypes, selector) {
 		return fmt.Errorf("%w: policy %q applies to any material type and requires a material selector (selector.name)", ErrAttachmentNeverApplies, policyName)
 	}
 
-	// a prefix selector can match materials added at attestation time
-	if selector.GetName() == "" || selector.GetMatchMode() == v1.PolicyAttachment_MaterialSelector_PREFIX {
+	// Only an exact selector names a single material. Other match modes, such as PREFIX,
+	// can match materials added at attestation time.
+	switch selector.GetMatchMode() {
+	case v1.PolicyAttachment_MaterialSelector_UNSPECIFIED, v1.PolicyAttachment_MaterialSelector_EXACT:
+	default:
+		return nil
+	}
+
+	if selector.GetName() == "" {
 		return nil
 	}
 
 	for _, m := range materials {
-		if m.GetName() == selector.GetName() && !attachmentApplies(specTypes, selector, m.GetName(), m.GetType()) {
+		if !nameMatches(selector.GetName(), selector.GetMatchMode(), m.GetName()) {
+			continue
+		}
+
+		// material names are unique in a contract
+		if !attachmentApplies(specTypes, selector, m.GetName(), m.GetType()) {
 			return fmt.Errorf("%w: policy %q does not support material %q of type %s (supported types: %v)",
 				ErrAttachmentNeverApplies, policyName, m.GetName(), m.GetType(), specTypes)
 		}
+		return nil
 	}
 
 	return nil

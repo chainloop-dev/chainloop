@@ -1032,8 +1032,13 @@ func attachmentApplies(specTypes []v1.CraftingSchema_Material_MaterialType, sele
 		return false
 	}
 
-	// no type nor name to match, we can't guess anything
-	return len(specTypes) > 0 || filteredName != ""
+	return canMatchAnyMaterial(specTypes, selector)
+}
+
+// canMatchAnyMaterial reports whether an attachment has something to match materials on.
+// A policy without types and an attachment without a selector name can't match any material.
+func canMatchAnyMaterial(specTypes []v1.CraftingSchema_Material_MaterialType, selector *v1.PolicyAttachment_MaterialSelector) bool {
+	return len(specTypes) > 0 || selector.GetName() != ""
 }
 
 // nameMatches reports whether a material name satisfies a selector/group-material

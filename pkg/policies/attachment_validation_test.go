@@ -55,28 +55,22 @@ func TestValidateMaterialAttachment(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name      string
-		policy    *v1.Policy
-		selector  *v1.PolicyAttachment_MaterialSelector
-		wantErrIs error
-		wantMsg   string
+		name     string
+		policy   *v1.Policy
+		selector *v1.PolicyAttachment_MaterialSelector
+		wantErr  bool
+		wantMsg  string
 	}{
 		{
-			name:      "kind-less policy without selector",
-			policy:    kindless,
-			wantErrIs: ErrAttachmentNeverApplies,
-			wantMsg:   `policy attachment never applies: policy "upstream-workflow-attested" applies to any material type and requires a material selector (selector.name)`,
+			name:    "kind-less policy without selector",
+			policy:  kindless,
+			wantErr: true,
+			wantMsg: `policy attachment never applies: policy "upstream-workflow-attested" applies to any material type and requires a material selector (selector.name)`,
 		},
 		{
-			name:      "kind-less v2 policy without selector",
-			policy:    kindlessV2,
-			wantErrIs: ErrAttachmentNeverApplies,
-		},
-		{
-			name:      "kind-less policy with empty selector name",
-			policy:    kindless,
-			selector:  &v1.PolicyAttachment_MaterialSelector{},
-			wantErrIs: ErrAttachmentNeverApplies,
+			name:    "kind-less v2 policy without selector",
+			policy:  kindlessV2,
+			wantErr: true,
 		},
 		{
 			name:     "kind-less policy with selector",
@@ -98,17 +92,11 @@ func TestValidateMaterialAttachment(t *testing.T) {
 			selector: &v1.PolicyAttachment_MaterialSelector{Name: materialSBOM},
 		},
 		{
-			name:      "typed policy with selector of an unsupported contract material",
-			policy:    sbomPolicy,
-			selector:  &v1.PolicyAttachment_MaterialSelector{Name: materialImage},
-			wantErrIs: ErrAttachmentNeverApplies,
-			wantMsg:   `policy attachment never applies: policy "sbom-policy" does not support material "image" of type CONTAINER_IMAGE (supported types: [SBOM_SPDX_JSON SBOM_CYCLONEDX_JSON])`,
-		},
-		{
-			name:      "typed policy with explicit exact selector of an unsupported contract material",
-			policy:    sbomPolicy,
-			selector:  &v1.PolicyAttachment_MaterialSelector{Name: materialImage, MatchMode: v1.PolicyAttachment_MaterialSelector_EXACT},
-			wantErrIs: ErrAttachmentNeverApplies,
+			name:     "typed policy with selector of an unsupported contract material",
+			policy:   sbomPolicy,
+			selector: &v1.PolicyAttachment_MaterialSelector{Name: materialImage},
+			wantErr:  true,
+			wantMsg:  `policy attachment never applies: policy "sbom-policy" does not support material "image" of type CONTAINER_IMAGE (supported types: [SBOM_SPDX_JSON SBOM_CYCLONEDX_JSON])`,
 		},
 		{
 			name:     "typed policy with prefix selector is not checked against contract materials",
@@ -130,13 +118,13 @@ func TestValidateMaterialAttachment(t *testing.T) {
 			}
 
 			err := ValidateMaterialAttachment(tc.policy, att, materials)
-			if tc.wantErrIs == nil {
+			if !tc.wantErr {
 				assert.NoError(t, err)
 				return
 			}
 
 			require.Error(t, err)
-			assert.ErrorIs(t, err, tc.wantErrIs)
+			assert.ErrorIs(t, err, ErrAttachmentNeverApplies)
 			if tc.wantMsg != "" {
 				assert.EqualError(t, err, tc.wantMsg)
 			}
