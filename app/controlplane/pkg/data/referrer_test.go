@@ -22,6 +22,8 @@ import (
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
 	"github.com/google/uuid"
@@ -285,5 +287,65 @@ func TestIsReferrerVisible(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.expectedResult, isReferrerVisible(tc.projectsByOrg, tc.allowedOrgs, tc.visibleByOrg))
 		})
+	}
+}
+
+// referrerWithWorkflows returns a referrer attached to one workflow per project, plus a second
+// workflow on each project, spread over the given organizations.
+func referrerWithWorkflows(orgs []uuid.UUID, projectsPerOrg int) (*ent.Referrer, map[uuid.UUID][]uuid.UUID) {
+	root := &ent.Referrer{}
+	want := make(map[uuid.UUID][]uuid.UUID, len(orgs))
+	for _, orgID := range orgs {
+		for range projectsPerOrg {
+			projectID := uuid.New()
+			want[orgID] = append(want[orgID], projectID)
+			// two workflows of the same project: the project must be listed once
+			for range 2 {
+				root.Edges.Workflows = append(root.Edges.Workflows, &ent.Workflow{ID: uuid.New(), OrganizationID: orgID, ProjectID: projectID})
+			}
+		}
+	}
+
+	return root, want
+}
+
+func TestHydrateWorkflowsInfo(t *testing.T) {
+	testCases := []struct {
+		name           string
+		orgs           int
+		projectsPerOrg int
+	}{
+		{name: "no workflows"},
+		{name: "one project in one organization", orgs: 1, projectsPerOrg: 1},
+		{name: "projects in several organizations", orgs: 3, projectsPerOrg: 4},
+		{name: "many projects on one referrer", orgs: 2, projectsPerOrg: 2000},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			orgs := make([]uuid.UUID, 0, tc.orgs)
+			for range tc.orgs {
+				orgs = append(orgs, uuid.New())
+			}
+			root, want := referrerWithWorkflows(orgs, tc.projectsPerOrg)
+
+			out := &biz.StoredReferrer{}
+			got := hydrateWorkflowsInfo(root, out)
+
+			require.Len(t, got, len(want))
+			for orgID, projects := range want {
+				assert.ElementsMatch(t, projects, got[orgID], "the projects of each organization are listed once, in their organization")
+			}
+			assert.Equal(t, orgs, out.OrgIDs)
+			assert.Len(t, out.ProjectIDs, tc.orgs*tc.projectsPerOrg)
+			assert.Len(t, out.WorkflowIDs, 2*tc.orgs*tc.projectsPerOrg)
+		})
+	}
+}
+
+func BenchmarkHydrateWorkflowsInfo(b *testing.B) {
+	root, _ := referrerWithWorkflows([]uuid.UUID{uuid.New()}, 5000)
+	for b.Loop() {
+		hydrateWorkflowsInfo(root, &biz.StoredReferrer{})
 	}
 }

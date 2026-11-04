@@ -543,16 +543,23 @@ func hydrateWorkflowsInfo(root *ent.Referrer, out *biz.StoredReferrer) map[uuid.
 	workflowIDs := make([]uuid.UUID, 0, len(root.Edges.Workflows))
 	projectIDs := make(map[uuid.UUID]bool, 0)
 	orgIDs := make([]uuid.UUID, 0)
-	projectsByOrg := make(map[uuid.UUID][]uuid.UUID, 0)
+	// a set per organization keeps the deduplication linear in the number of workflows
+	projectSetsByOrg := make(map[uuid.UUID]map[uuid.UUID]struct{}, 0)
 	for _, wf := range root.Edges.Workflows {
 		workflowIDs = append(workflowIDs, wf.ID)
-		if _, ok := projectsByOrg[wf.OrganizationID]; !ok {
+		projectSet, ok := projectSetsByOrg[wf.OrganizationID]
+		if !ok {
 			orgIDs = append(orgIDs, wf.OrganizationID)
+			projectSet = make(map[uuid.UUID]struct{})
+			projectSetsByOrg[wf.OrganizationID] = projectSet
 		}
-		if !slices.Contains(projectsByOrg[wf.OrganizationID], wf.ProjectID) {
-			projectsByOrg[wf.OrganizationID] = append(projectsByOrg[wf.OrganizationID], wf.ProjectID)
-		}
+		projectSet[wf.ProjectID] = struct{}{}
 		projectIDs[wf.ProjectID] = true
+	}
+
+	projectsByOrg := make(map[uuid.UUID][]uuid.UUID, len(projectSetsByOrg))
+	for orgID, projectSet := range projectSetsByOrg {
+		projectsByOrg[orgID] = maps.Keys(projectSet)
 	}
 
 	out.ProjectIDs = maps.Keys(projectIDs)
