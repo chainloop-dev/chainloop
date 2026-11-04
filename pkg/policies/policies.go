@@ -1015,27 +1015,25 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 		return false, fmt.Errorf("failed to load policy attachment %q: %w", policyAtt.GetRef(), err)
 	}
 
-	materialType := material.GetMaterialType()
-	filteredName := policyAtt.GetSelector().GetName()
-	specTypes := getPolicyTypes(spec)
+	return attachmentApplies(getPolicyTypes(spec), policyAtt.GetSelector(), material.GetId(), material.GetMaterialType()), nil
+}
 
+// attachmentApplies is the pure applicability rule of shouldApplyPolicy, shared with
+// ValidateMaterialAttachment so that contract validation and evaluation can't drift.
+func attachmentApplies(specTypes []v1.CraftingSchema_Material_MaterialType, selector *v1.PolicyAttachment_MaterialSelector, materialName string, materialType v1.CraftingSchema_Material_MaterialType) bool {
 	// if spec has a type, and it's different to the material type, skip
 	if len(specTypes) > 0 && !slices.Contains(specTypes, materialType) {
-		// types don't match, continue
-		return false, nil
+		return false
 	}
 
-	if filteredName != "" && !nameMatches(filteredName, policyAtt.GetSelector().GetMatchMode(), material.GetId()) {
+	filteredName := selector.GetName()
+	if filteredName != "" && !nameMatches(filteredName, selector.GetMatchMode(), materialName) {
 		// a filter exists and doesn't match
-		return false, nil
+		return false
 	}
 
 	// no type nor name to match, we can't guess anything
-	if len(specTypes) == 0 && filteredName == "" {
-		return false, nil
-	}
-
-	return true, nil
+	return len(specTypes) > 0 || filteredName != ""
 }
 
 // nameMatches reports whether a material name satisfies a selector/group-material

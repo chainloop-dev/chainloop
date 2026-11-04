@@ -333,6 +333,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		return "", err
 	}
 
+	// Warn about material policy attachments that can never be evaluated. Contracts created
+	// before the control plane rejected them, and policies loaded locally, can still have them.
+	for _, err := range action.c.ValidateMaterialPolicyAttachments(ctx) {
+		action.Logger.Warn().Msgf("policy will not be evaluated: %v", err)
+	}
+
 	// Load the env variables both the system populated and the user predefined ones
 	if err := action.c.ResolveEnvVars(ctx, attestationID); err != nil {
 		if action.dryRun {

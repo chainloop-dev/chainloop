@@ -526,7 +526,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context,
 			}
 		}
 		for _, att := range schema.GetPolicies().GetMaterials() {
-			if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames); err != nil {
+			if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, schema.GetMaterials()); err != nil {
 				return NewErrValidation(err)
 			}
 		}
@@ -545,7 +545,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context,
 				}
 			}
 			for _, att := range spec.GetPolicies().GetMaterials() {
-				if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames); err != nil {
+				if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, spec.GetMaterials()); err != nil {
 					return NewErrValidation(err)
 				}
 			}
@@ -623,6 +623,22 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, at
 
 	// return policy or nil, as it might not be available in this context
 	return policy, nil
+}
+
+// findAndValidateMaterialPolicy validates a material policy attachment and, when its
+// policy can be resolved, checks that the attachment can apply to at least one material.
+func (uc *WorkflowContractUseCase) findAndValidateMaterialPolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string, materials []*schemav1.CraftingSchema_Material) error {
+	policy, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames)
+	if err != nil {
+		return err
+	}
+
+	// the policy might not be available in this context (local or batch-local policy)
+	if policy == nil {
+		return nil
+	}
+
+	return loader.ValidateMaterialAttachment(policy, att, materials)
 }
 
 func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(ctx context.Context, att *schemav1.PolicyGroupAttachment, token string, batchPolicyGroupNames []string) (*schemav1.PolicyGroup, error) {
