@@ -686,6 +686,22 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVisibility() {
 		_, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{s.org1UUID, s.org2UUID}, crossOrg, nil)
 		s.Error(err)
 	})
+
+	s.Run("a referrer shared with a visible project of another organization does not", func() {
+		// The same attestation is also attached to a project in org2
+		require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, attDigest, s.workflow2.ID.String()))
+		// The visible list for org1 holds only the org2 project, as a flat list of the
+		// memberships of a user in several organizations does. The org1 project stays hidden.
+		polluted := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow2.ProjectID}}
+		_, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{s.org1UUID}, polluted, nil)
+		s.Error(err)
+
+		// In org2, the same project grants visibility
+		granted := map[biz.OrgID][]biz.ProjectID{s.org2UUID: {s.workflow2.ProjectID}}
+		got, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{s.org2UUID}, granted, nil)
+		s.Require().NoError(err)
+		s.Equal(digest, got.Digest)
+	})
 }
 
 // A user discovers only in the given organization, and only with the project visibility

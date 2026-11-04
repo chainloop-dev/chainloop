@@ -384,10 +384,10 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	}
 
 	// add additional information related to the workflows
-	hydrateWorkflowsInfo(root, res)
+	projectsByOrg := hydrateWorkflowsInfo(root, res)
 
 	// check that, if RBAC is required, the user has visibility on the artifact in at least 1 org/project
-	if visible := isReferrerVisible(res, allowedOrgs, visibleProjectsMap); !visible {
+	if visible := isReferrerVisible(projectsByOrg, allowedOrgs, visibleProjectsMap); !visible {
 		return nil, "", biz.NewErrUnauthorizedStr("referrer not allowed")
 	}
 
@@ -505,17 +505,22 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	return res, nextCursor, nil
 }
 
-func isReferrerVisible(ref *biz.StoredReferrer, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) bool {
-	for _, oid := range ref.OrgIDs {
+// isReferrerVisible reports whether the referrer, attached to the given projects of each organization,
+// is visible in at least one allowed organization. Project visibility is evaluated per organization,
+// like projectVisibilityPredicate: only the referrer's projects of an organization are compared with
+// the visible projects of that same organization, so a project of another organization never makes
+// the referrer visible, even if the visible list holds it.
+func isReferrerVisible(projectsByOrg map[uuid.UUID][]uuid.UUID, allowedOrgs []uuid.UUID, visibleProjectsMap map[uuid.UUID][]uuid.UUID) bool {
+	for oid, referrerProjects := range projectsByOrg {
 		if !slices.Contains(allowedOrgs, oid) {
 			// skip check in organizations where the user doesn't have access
 			continue
 		}
 		if visibleProjects, ok := visibleProjectsMap[oid]; ok {
 			// if entry is present, it means we need to apply RBAC
-			// check if visible projects and referrer projects match
+			// check if visible projects and the referrer projects of this organization match
 			// by checking if any project is visible by the user
-			for _, pid := range ref.ProjectIDs {
+			for _, pid := range referrerProjects {
 				if slices.Contains(visibleProjects, pid) {
 					return true
 				}
@@ -532,23 +537,27 @@ func isReferrerVisible(ref *biz.StoredReferrer, allowedOrgs []uuid.UUID, visible
 // hydrate the referrer with the following information:
 // - workflowIDs: the list of associated workflows
 // - orgIDs: the list of associated organizations
-func hydrateWorkflowsInfo(root *ent.Referrer, out *biz.StoredReferrer) {
+// - projectIDs: the list of associated projects
+// It also returns the associated projects grouped by organization, for the visibility check.
+func hydrateWorkflowsInfo(root *ent.Referrer, out *biz.StoredReferrer) map[uuid.UUID][]uuid.UUID {
 	workflowIDs := make([]uuid.UUID, 0, len(root.Edges.Workflows))
 	projectIDs := make(map[uuid.UUID]bool, 0)
 	orgIDs := make([]uuid.UUID, 0)
-	orgsMap := make(map[uuid.UUID]struct{}, 0)
+	projectsByOrg := make(map[uuid.UUID][]uuid.UUID, 0)
 	for _, wf := range root.Edges.Workflows {
 		workflowIDs = append(workflowIDs, wf.ID)
-		if _, ok := orgsMap[wf.OrganizationID]; !ok {
+		if _, ok := projectsByOrg[wf.OrganizationID]; !ok {
 			orgIDs = append(orgIDs, wf.OrganizationID)
 		}
-		if _, ok := projectIDs[wf.ProjectID]; !ok {
-			projectIDs[wf.ProjectID] = true
+		if !slices.Contains(projectsByOrg[wf.OrganizationID], wf.ProjectID) {
+			projectsByOrg[wf.OrganizationID] = append(projectsByOrg[wf.OrganizationID], wf.ProjectID)
 		}
-		orgsMap[wf.OrganizationID] = struct{}{}
+		projectIDs[wf.ProjectID] = true
 	}
 
 	out.ProjectIDs = maps.Keys(projectIDs)
 	out.WorkflowIDs = workflowIDs
 	out.OrgIDs = orgIDs
+
+	return projectsByOrg
 }

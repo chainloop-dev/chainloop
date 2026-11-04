@@ -226,3 +226,64 @@ func TestReferrerVisibleToOrgs(t *testing.T) {
 		assert.Contains(t, args, any(o), "every allowed organization is bound into the filter")
 	}
 }
+
+// TestIsReferrerVisible checks that project visibility is evaluated per organization: a project
+// that is visible in one organization never makes a referrer visible in another organization.
+func TestIsReferrerVisible(t *testing.T) {
+	orgCurrent, orgOther := uuid.New(), uuid.New()
+	projHidden, projVisible, projOtherOrg := uuid.New(), uuid.New(), uuid.New()
+
+	testCases := []struct {
+		name           string
+		projectsByOrg  map[uuid.UUID][]uuid.UUID
+		allowedOrgs    []uuid.UUID
+		visibleByOrg   map[uuid.UUID][]uuid.UUID
+		expectedResult bool
+	}{
+		{
+			name:           "no RBAC in the allowed organization",
+			projectsByOrg:  map[uuid.UUID][]uuid.UUID{orgCurrent: {projHidden}},
+			allowedOrgs:    []uuid.UUID{orgCurrent},
+			expectedResult: true,
+		},
+		{
+			name:           "visible project in the allowed organization",
+			projectsByOrg:  map[uuid.UUID][]uuid.UUID{orgCurrent: {projHidden, projVisible}},
+			allowedOrgs:    []uuid.UUID{orgCurrent},
+			visibleByOrg:   map[uuid.UUID][]uuid.UUID{orgCurrent: {projVisible}},
+			expectedResult: true,
+		},
+		{
+			name:           "no visible project in the allowed organization",
+			projectsByOrg:  map[uuid.UUID][]uuid.UUID{orgCurrent: {projHidden}},
+			allowedOrgs:    []uuid.UUID{orgCurrent},
+			visibleByOrg:   map[uuid.UUID][]uuid.UUID{orgCurrent: {projVisible}},
+			expectedResult: false,
+		},
+		{
+			// The referrer is in a hidden project of the current organization and in a visible
+			// project of another organization. The visible list of the current organization also
+			// holds the project of the other organization, as a flat list of memberships does.
+			name: "shared referrer: a project of another organization does not grant visibility",
+			projectsByOrg: map[uuid.UUID][]uuid.UUID{
+				orgCurrent: {projHidden},
+				orgOther:   {projOtherOrg},
+			},
+			allowedOrgs:    []uuid.UUID{orgCurrent},
+			visibleByOrg:   map[uuid.UUID][]uuid.UUID{orgCurrent: {projVisible, projOtherOrg}},
+			expectedResult: false,
+		},
+		{
+			name:           "referrer only in an organization that is not allowed",
+			projectsByOrg:  map[uuid.UUID][]uuid.UUID{orgOther: {projOtherOrg}},
+			allowedOrgs:    []uuid.UUID{orgCurrent},
+			expectedResult: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.Equal(t, tc.expectedResult, isReferrerVisible(tc.projectsByOrg, tc.allowedOrgs, tc.visibleByOrg))
+		})
+	}
+}
