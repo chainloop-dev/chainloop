@@ -807,9 +807,10 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 		return nil, err
 	}
 
-	// contract validation
+	// contract validation. The contract is re-sent on every attestation init, so a contract stored
+	// before the material policy applicability check must keep working. The CLI warns about it instead.
 	if req.GetContractBytes() != nil {
-		if err = s.workflowContractUseCase.ValidateContractPolicies(ctx, req.GetContractBytes(), token, nil, nil); err != nil {
+		if err = s.workflowContractUseCase.ValidateContractPolicies(ctx, req.GetContractBytes(), token, nil, nil, biz.WithoutMaterialApplicabilityCheck()); err != nil {
 			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}

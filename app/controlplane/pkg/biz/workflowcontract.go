@@ -503,12 +503,33 @@ func (uc *WorkflowContractUseCase) RevisionWouldChange(ctx context.Context, orgI
 	return !bytes.Equal(latest.Version.Schema.Raw, incoming.Raw), nil
 }
 
+// ValidateContractPoliciesOpt configures ValidateContractPolicies
+type ValidateContractPoliciesOpt func(*validateContractPoliciesOpts)
+
+type validateContractPoliciesOpts struct {
+	skipMaterialApplicability bool
+}
+
+// WithoutMaterialApplicabilityCheck skips the check that rejects material policy attachments
+// that can never apply. Use it where an existing contract is re-sent, for example on attestation
+// init, so that contracts stored before the check keep working. The CLI warns about them instead.
+func WithoutMaterialApplicabilityCheck() ValidateContractPoliciesOpt {
+	return func(o *validateContractPoliciesOpts) {
+		o.skipMaterialApplicability = true
+	}
+}
+
 // ValidateContractPolicies checks that policies and policy groups referenced by the contract
 // exist. batchPolicyNames and batchPolicyGroupNames carry the names of resources being
 // created/updated in the same batch apply: references to those are treated as known instead of
 // being resolved against the registry, since they may not be persisted yet (e.g. during
 // dry-run). Remote references are still validated regardless.
-func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context, rawSchema []byte, token string, batchPolicyNames, batchPolicyGroupNames []string) error {
+func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context, rawSchema []byte, token string, batchPolicyNames, batchPolicyGroupNames []string, opts ...ValidateContractPoliciesOpt) error {
+	var options validateContractPoliciesOpts
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	// Validate that externally provided policies exist
 	c, err := identifyUnMarshalAndValidateRawContract(rawSchema)
 	if err != nil {
@@ -526,7 +547,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context,
 			}
 		}
 		for _, att := range schema.GetPolicies().GetMaterials() {
-			if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, schema.GetMaterials()); err != nil {
+			if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, schema.GetMaterials(), !options.skipMaterialApplicability); err != nil {
 				return NewErrValidation(err)
 			}
 		}
@@ -545,7 +566,7 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context,
 				}
 			}
 			for _, att := range spec.GetPolicies().GetMaterials() {
-				if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, spec.GetMaterials()); err != nil {
+				if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, spec.GetMaterials(), !options.skipMaterialApplicability); err != nil {
 					return NewErrValidation(err)
 				}
 			}
@@ -625,16 +646,16 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, at
 	return policy, nil
 }
 
-// findAndValidateMaterialPolicy validates a material policy attachment and, when its
-// policy can be resolved, checks that the attachment can apply to at least one material.
-func (uc *WorkflowContractUseCase) findAndValidateMaterialPolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string, materials []*schemav1.CraftingSchema_Material) error {
+// findAndValidateMaterialPolicy validates a material policy attachment and, when checkApplicability
+// is set and its policy can be resolved, checks that the attachment can apply to at least one material.
+func (uc *WorkflowContractUseCase) findAndValidateMaterialPolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string, materials []*schemav1.CraftingSchema_Material, checkApplicability bool) error {
 	policy, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames)
 	if err != nil {
 		return err
 	}
 
 	// the policy might not be available in this context (local or batch-local policy)
-	if policy == nil {
+	if policy == nil || !checkApplicability {
 		return nil
 	}
 

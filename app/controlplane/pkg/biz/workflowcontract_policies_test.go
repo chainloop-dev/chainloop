@@ -105,6 +105,7 @@ func TestValidateContractPoliciesMaterialApplicability(t *testing.T) {
 	testCases := []struct {
 		name     string
 		contract []byte
+		opts     []ValidateContractPoliciesOpt
 		wantErr  string
 	}{
 		{
@@ -133,11 +134,22 @@ policies:
 `),
 			wantErr: `policy "kindless" applies to any material type and requires a material selector (selector.name)`,
 		},
+		{
+			name:     "kind-less policy without selector, applicability check skipped",
+			contract: contractWithMaterialPolicy("kindless", ""),
+			opts:     []ValidateContractPoliciesOpt{WithoutMaterialApplicabilityCheck()},
+		},
+		{
+			name:     "missing policy is still rejected when the applicability check is skipped",
+			contract: contractWithMaterialPolicy("not-found", ""),
+			opts:     []ValidateContractPoliciesOpt{WithoutMaterialApplicabilityCheck()},
+			wantErr:  `policy "not-found"`,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := uc.ValidateContractPolicies(context.Background(), tc.contract, "token", nil, nil)
+			err := uc.ValidateContractPolicies(context.Background(), tc.contract, "token", nil, nil, tc.opts...)
 			if tc.wantErr == "" {
 				assert.NoError(t, err)
 				return
