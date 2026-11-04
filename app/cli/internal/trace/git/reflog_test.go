@@ -63,7 +63,7 @@ func reflogCommit(t *testing.T, dir, file, text, msg string) string {
 // with the reftable ref storage (git 2.45 and later).
 func reftableSupported(t *testing.T) bool {
 	t.Helper()
-	cmd := exec.Command("git", "init", "-q", "--ref-format=reftable", t.TempDir())
+	cmd := exec.Command("git", "init", "-q", "--ref-format=reftable", t.TempDir()) //nolint:gosec // a fixed git command on a test temp dir
 
 	return cmd.Run() == nil
 }

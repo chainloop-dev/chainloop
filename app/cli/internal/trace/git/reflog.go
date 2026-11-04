@@ -66,7 +66,7 @@ func headReflog(repoRoot string) (path string, reftable bool, err error) {
 			commonDir = filepath.Join(gitDir, commonDir)
 		}
 	}
-	if fi, err := os.Stat(filepath.Join(commonDir, "reftable")); err == nil && fi.IsDir() {
+	if fi, err := os.Stat(filepath.Join(commonDir, "reftable")); err == nil && fi.IsDir() { //nolint:gosec // the common dir that git wrote for this checkout
 		return "", true, nil
 	}
 
