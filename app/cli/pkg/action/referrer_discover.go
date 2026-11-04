@@ -24,19 +24,6 @@ import (
 
 type ReferrerDiscover struct {
 	cfg *ActionsOpts
-	// currentOrgOnly scopes the discovery to the current organization instead of
-	// every organization the user is a member of.
-	currentOrgOnly bool
-}
-
-// ReferrerDiscoverOpt configures a ReferrerDiscover action.
-type ReferrerDiscoverOpt func(*ReferrerDiscover)
-
-// WithCurrentOrgOnly scopes the discovery to the current organization.
-func WithCurrentOrgOnly(currentOrgOnly bool) ReferrerDiscoverOpt {
-	return func(r *ReferrerDiscover) {
-		r.currentOrgOnly = currentOrgOnly
-	}
 }
 
 type ReferrerItem struct {
@@ -54,32 +41,22 @@ type ReferrerDiscoverResult struct {
 	NextCursor string        `json:"nextCursor,omitempty"`
 }
 
-func NewReferrerDiscoverPrivate(cfg *ActionsOpts, opts ...ReferrerDiscoverOpt) *ReferrerDiscover {
-	r := &ReferrerDiscover{cfg: cfg}
-	for _, opt := range opts {
-		opt(r)
-	}
-
-	return r
+func NewReferrerDiscoverPrivate(cfg *ActionsOpts) *ReferrerDiscover {
+	return &ReferrerDiscover{cfg}
 }
 
 func (action *ReferrerDiscover) Run(ctx context.Context, digest, kind string, p *PaginationOpts) (*ReferrerDiscoverResult, error) {
 	client := pb.NewReferrerServiceClient(action.cfg.CPConnection)
-	resp, err := client.DiscoverPrivate(ctx, action.newRequest(digest, kind, p))
+	resp, err := client.DiscoverPrivate(ctx, &pb.ReferrerServiceDiscoverPrivateRequest{
+		Digest:     digest,
+		Kind:       kind,
+		Pagination: paginationOptsToPb(p),
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return newReferrerDiscoverResult(resp.Result, resp.GetPagination()), nil
-}
-
-func (action *ReferrerDiscover) newRequest(digest, kind string, p *PaginationOpts) *pb.ReferrerServiceDiscoverPrivateRequest {
-	return &pb.ReferrerServiceDiscoverPrivateRequest{
-		Digest:         digest,
-		Kind:           kind,
-		Pagination:     paginationOptsToPb(p),
-		CurrentOrgOnly: action.currentOrgOnly,
-	}
 }
 
 func paginationOptsToPb(p *PaginationOpts) *pb.CursorPaginationRequest {

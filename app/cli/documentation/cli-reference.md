@@ -1408,9 +1408,7 @@ Synopsis
 
 (Preview) inspect pieces of evidence or artifacts stored through Chainloop.
 
-When logged in as a user, the discovery covers every organization you are a member of.
-Set the organization explicitly with --org (or its environment variable) to search only that organization.
-An API token always searches only its own organization.
+The discovery covers only the current organization. Select another organization with --org.
 
 ```
 chainloop discover [flags]

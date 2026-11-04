@@ -4,10 +4,6 @@
   "additionalProperties": false,
   "description": "ReferrerServiceDiscoverPrivateRequest is the request for the DiscoverPrivate method",
   "patternProperties": {
-    "^(current_org_only)$": {
-      "description": "CurrentOrgOnly scopes the discovery to the current organization. By default, a user\n searches every organization they are a member of. An API token always searches only\n its own organization, so the field does not change the result for API tokens.",
-      "type": "boolean"
-    },
     "^(project_name)$": {
       "description": "ProjectName optionally scopes the discovery to a project by name. Can be set on its own\n (project-wide filter) or together with project_version (project + version filter).",
       "type": "string"
@@ -18,10 +14,6 @@
     }
   },
   "properties": {
-    "currentOrgOnly": {
-      "description": "CurrentOrgOnly scopes the discovery to the current organization. By default, a user\n searches every organization they are a member of. An API token always searches only\n its own organization, so the field does not change the result for API tokens.",
-      "type": "boolean"
-    },
     "digest": {
       "description": "Digest is the unique identifier of the referrer to discover",
       "minLength": 1,

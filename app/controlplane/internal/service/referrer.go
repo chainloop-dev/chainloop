@@ -41,8 +41,7 @@ func NewReferrerService(uc *biz.ReferrerUseCase, opts ...NewOpt) *ReferrerServic
 }
 
 func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerServiceDiscoverPrivateRequest) (*pb.ReferrerServiceDiscoverPrivateResponse, error) {
-	currentUser, currentToken, err := requireCurrentUserOrAPIToken(ctx)
-	if err != nil {
+	if _, _, err := requireCurrentUserOrAPIToken(ctx); err != nil {
 		return nil, err
 	}
 
@@ -64,37 +63,15 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 		extraFilters = append(extraFilters, biz.WithProjectScope(req.GetProjectName(), req.GetProjectVersion()))
 	}
 
-	// if we are logged in as user we find the referrer from the user
-	// otherwise for the current organization associated with the API token
-	var referrer *biz.StoredReferrer
-	var nextCursor string
-	if currentUser != nil {
-		// Optionally narrow the user's cross-organization discovery to the current organization.
-		if req.GetCurrentOrgOnly() {
-			orgUUID, parseErr := uuid.Parse(currentOrg.ID)
-			if parseErr != nil {
-				return nil, fmt.Errorf("invalid org UUID: %w", parseErr)
-			}
-			extraFilters = append(extraFilters, biz.WithOrgScope(orgUUID))
-		}
-
-		referrer, nextCursor, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID, paginationOpts, extraFilters...)
-	} else if currentToken != nil {
-		var orgUUID uuid.UUID
-		orgUUID, err = uuid.Parse(currentOrg.ID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid org UUID: %w", err)
-		}
-
-		// Apply RBAC visibility for api tokens (only for the current organization)
-		orgsProjectsMap := make(map[uuid.UUID][]uuid.UUID)
-		visibleProjects := s.visibleProjects(ctx)
-		if visibleProjects != nil {
-			orgsProjectsMap[orgUUID] = visibleProjects
-		}
-
-		referrer, nextCursor, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, orgsProjectsMap, paginationOpts, extraFilters...)
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid org UUID: %w", err)
 	}
+
+	// Discovery is always limited to the current organization, with the project visibility
+	// of the caller, the same way for users and API tokens
+	referrer, nextCursor, err := s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID},
+		s.rbacScopesForOrg(ctx, orgUUID).ProjectIDsByOrg(), paginationOpts, extraFilters...)
 	if err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
@@ -102,6 +79,9 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 	return &pb.ReferrerServiceDiscoverPrivateResponse{
 		Result:     bizReferrerToPb(referrer),
 		Pagination: bizCursorToPb(nextCursor),
+		// Tell the client that the search covered only the current organization,
+		// so that it can reject the cross-organization results of older control planes
+		CurrentOrgScoped: true,
 	}, nil
 }
 

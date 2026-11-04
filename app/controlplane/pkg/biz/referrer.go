@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
 	"sort"
 	"time"
 
@@ -39,23 +38,21 @@ import (
 var referrerTracer = otelx.Tracer("chainloop-controlplane", "biz/referrer")
 
 type ReferrerUseCase struct {
-	repo              ReferrerRepo
-	membershipUseCase *MembershipUseCase
-	workflowRepo      WorkflowRepo
-	logger            *log.Helper
+	repo         ReferrerRepo
+	workflowRepo WorkflowRepo
+	logger       *log.Helper
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCase *MembershipUseCase, l log.Logger) (*ReferrerUseCase, error) {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, l log.Logger) (*ReferrerUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 	logger := servicelogger.ScopedHelper(l, "biz/referrer")
 
 	return &ReferrerUseCase{
-		repo:              repo,
-		membershipUseCase: membershipUseCase,
-		workflowRepo:      wfRepo,
-		logger:            logger,
+		repo:         repo,
+		workflowRepo: wfRepo,
+		logger:       logger,
 	}, nil
 }
 
@@ -105,9 +102,6 @@ type GetFromRootFilters struct {
 	// Both must be set together (a version name is unique only within a project).
 	ProjectName    *string
 	ProjectVersion *string
-	// OrgID narrows the discovery to a single organization. It only restricts the
-	// organizations allowed by the caller; it never grants access to another one.
-	OrgID *uuid.UUID
 }
 
 type GetFromRootFilter func(*GetFromRootFilters)
@@ -124,14 +118,6 @@ func WithProjectScope(projectName, projectVersion string) func(*GetFromRootFilte
 	return func(o *GetFromRootFilters) {
 		o.ProjectName = &projectName
 		o.ProjectVersion = &projectVersion
-	}
-}
-
-// WithOrgScope narrows the discovery to the given organization. A referrer is found
-// only if the organization is also one of the organizations allowed for the caller.
-func WithOrgScope(orgID uuid.UUID) func(*GetFromRootFilters) {
-	return func(o *GetFromRootFilters) {
-		o.OrgID = &orgID
 	}
 }
 
@@ -172,29 +158,9 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 	return nil
 }
 
-// GetFromRootUser returns the referrer identified by the provided content digest, including its first-level references.
+// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references.
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it.
-// It only returns referrers that belong to organizations the user is member of.
-func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {
-	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRootUser")
-	defer span.End()
-
-	userUUID, err := uuid.Parse(userID)
-	if err != nil {
-		return nil, "", NewErrInvalidUUID(err)
-	}
-
-	userOrgs, scopes, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
-	if err != nil {
-		return nil, "", err
-	}
-
-	// We pass the list of organizationsIDs from where to look for the referrer:
-	// the organizations the user is a member of. Referrers are always project-scoped, so only the
-	// project dimension of the RBAC scopes is relevant here.
-	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, scopes.ProjectIDsByOrg(), p, extraFilters...)
-}
-
+// It only returns referrers that belong to the given organizations, with the given project visibility.
 func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {
 	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRoot")
 	defer span.End()
@@ -207,19 +173,6 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 		filters = append(filters, WithVisibleProjectIDs(projectIDs))
 	}
 	filters = append(filters, extraFilters...)
-
-	opts := &GetFromRootFilters{}
-	for _, f := range filters {
-		f(opts)
-	}
-
-	// An organization scope intersects with the allowed organizations, it never widens them.
-	if opts.OrgID != nil {
-		if !slices.Contains(orgIDs, *opts.OrgID) {
-			return nil, "", NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
-		}
-		orgIDs = []uuid.UUID{*opts.OrgID}
-	}
 
 	ref, nextCursor, err := s.repo.GetFromRoot(ctx, digest, orgIDs, p, filters...)
 	if err != nil {

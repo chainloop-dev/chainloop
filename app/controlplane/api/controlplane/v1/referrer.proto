@@ -56,10 +56,6 @@ message ReferrerServiceDiscoverPrivateRequest {
   // ProjectVersion optionally scopes the discovery to a project version (by name, e.g. v1.2.0).
   // Requires project_name, since a version name is unique only within a project.
   string project_version = 5;
-  // CurrentOrgOnly scopes the discovery to the current organization. By default, a user
-  // searches every organization they are a member of. An API token always searches only
-  // its own organization, so the field does not change the result for API tokens.
-  bool current_org_only = 6;
 
   // project_version requires project_name (a version name is unique only within a project);
   // project_name on its own is allowed.
@@ -83,6 +79,10 @@ message ReferrerServiceDiscoverPrivateResponse {
   ReferrerItem result = 1;
   // Pagination information for the references list
   CursorPaginationResponse pagination = 2;
+  // CurrentOrgScoped is true when the control plane limited the discovery to the current
+  // organization. Older control planes do not set it. With a user session they searched
+  // every organization of the user, so clients must not trust their results.
+  bool current_org_scoped = 3;
 
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {

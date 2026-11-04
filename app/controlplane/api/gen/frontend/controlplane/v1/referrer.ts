@@ -28,12 +28,6 @@ export interface ReferrerServiceDiscoverPrivateRequest {
    * Requires project_name, since a version name is unique only within a project.
    */
   projectVersion: string;
-  /**
-   * CurrentOrgOnly scopes the discovery to the current organization. By default, a user
-   * searches every organization they are a member of. An API token always searches only
-   * its own organization, so the field does not change the result for API tokens.
-   */
-  currentOrgOnly: boolean;
 }
 
 /** ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method */
@@ -42,6 +36,12 @@ export interface ReferrerServiceDiscoverPrivateResponse {
   result?: ReferrerItem;
   /** Pagination information for the references list */
   pagination?: CursorPaginationResponse;
+  /**
+   * CurrentOrgScoped is true when the control plane limited the discovery to the current
+   * organization. Older control planes do not set it. With a user session they searched
+   * every organization of the user, so clients must not trust their results.
+   */
+  currentOrgScoped: boolean;
 }
 
 /** ReferrerItem represents a referrer object in the system */
@@ -73,7 +73,7 @@ export interface ReferrerItem_AnnotationsEntry {
 }
 
 function createBaseReferrerServiceDiscoverPrivateRequest(): ReferrerServiceDiscoverPrivateRequest {
-  return { digest: "", kind: "", pagination: undefined, projectName: "", projectVersion: "", currentOrgOnly: false };
+  return { digest: "", kind: "", pagination: undefined, projectName: "", projectVersion: "" };
 }
 
 export const ReferrerServiceDiscoverPrivateRequest = {
@@ -92,9 +92,6 @@ export const ReferrerServiceDiscoverPrivateRequest = {
     }
     if (message.projectVersion !== "") {
       writer.uint32(42).string(message.projectVersion);
-    }
-    if (message.currentOrgOnly === true) {
-      writer.uint32(48).bool(message.currentOrgOnly);
     }
     return writer;
   },
@@ -141,13 +138,6 @@ export const ReferrerServiceDiscoverPrivateRequest = {
 
           message.projectVersion = reader.string();
           continue;
-        case 6:
-          if (tag !== 48) {
-            break;
-          }
-
-          message.currentOrgOnly = reader.bool();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -164,7 +154,6 @@ export const ReferrerServiceDiscoverPrivateRequest = {
       pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
-      currentOrgOnly: isSet(object.currentOrgOnly) ? Boolean(object.currentOrgOnly) : false,
     };
   },
 
@@ -176,7 +165,6 @@ export const ReferrerServiceDiscoverPrivateRequest = {
       (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
-    message.currentOrgOnly !== undefined && (obj.currentOrgOnly = message.currentOrgOnly);
     return obj;
   },
 
@@ -197,13 +185,12 @@ export const ReferrerServiceDiscoverPrivateRequest = {
       : undefined;
     message.projectName = object.projectName ?? "";
     message.projectVersion = object.projectVersion ?? "";
-    message.currentOrgOnly = object.currentOrgOnly ?? false;
     return message;
   },
 };
 
 function createBaseReferrerServiceDiscoverPrivateResponse(): ReferrerServiceDiscoverPrivateResponse {
-  return { result: undefined, pagination: undefined };
+  return { result: undefined, pagination: undefined, currentOrgScoped: false };
 }
 
 export const ReferrerServiceDiscoverPrivateResponse = {
@@ -213,6 +200,9 @@ export const ReferrerServiceDiscoverPrivateResponse = {
     }
     if (message.pagination !== undefined) {
       CursorPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.currentOrgScoped === true) {
+      writer.uint32(24).bool(message.currentOrgScoped);
     }
     return writer;
   },
@@ -238,6 +228,13 @@ export const ReferrerServiceDiscoverPrivateResponse = {
 
           message.pagination = CursorPaginationResponse.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.currentOrgScoped = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -251,6 +248,7 @@ export const ReferrerServiceDiscoverPrivateResponse = {
     return {
       result: isSet(object.result) ? ReferrerItem.fromJSON(object.result) : undefined,
       pagination: isSet(object.pagination) ? CursorPaginationResponse.fromJSON(object.pagination) : undefined,
+      currentOrgScoped: isSet(object.currentOrgScoped) ? Boolean(object.currentOrgScoped) : false,
     };
   },
 
@@ -259,6 +257,7 @@ export const ReferrerServiceDiscoverPrivateResponse = {
     message.result !== undefined && (obj.result = message.result ? ReferrerItem.toJSON(message.result) : undefined);
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? CursorPaginationResponse.toJSON(message.pagination) : undefined);
+    message.currentOrgScoped !== undefined && (obj.currentOrgScoped = message.currentOrgScoped);
     return obj;
   },
 
@@ -278,6 +277,7 @@ export const ReferrerServiceDiscoverPrivateResponse = {
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? CursorPaginationResponse.fromPartial(object.pagination)
       : undefined;
+    message.currentOrgScoped = object.currentOrgScoped ?? false;
     return message;
   },
 };
