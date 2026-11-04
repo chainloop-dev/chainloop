@@ -29,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter"
 	clientAPI "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/sandboxidentity"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/rs/zerolog"
@@ -236,6 +237,12 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 		uiDashboardURL                       string
 	)
 
+	// The identity token of a Chainloop sandbox goes to the control plane, which verifies it
+	var sandboxIdentityToken string
+	if r, ok := discoveredRunner.(crafter.IdentityRunner); ok {
+		sandboxIdentityToken = r.IdentityToken()
+	}
+
 	// Init in the control plane if needed including the runner context
 	if !action.dryRun {
 		runResp, err := client.Init(
@@ -251,6 +258,7 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 				UseLatestVersion:       opts.UseLatestVersion,
 				RequireExistingVersion: opts.RequireExistingVersion,
 				MarkAsLatest:           opts.MarkAsLatest,
+				SandboxIdentity:        sandboxIdentityToken,
 			},
 		)
 		if err != nil {
@@ -277,6 +285,10 @@ func (action *AttestationInit) Run(ctx context.Context, opts *AttestationInitRun
 
 		action.Logger.Debug().Str("workflow-run-id", workflowRun.GetId()).Msg("attestation initialized in the control plane")
 		attestationID = workflowRun.GetId()
+
+		if sandboxIdentityToken != "" {
+			action.applySandboxIdentity(ctx, discoveredRunner, sandboxIdentityToken, result.GetSandboxIdentity(), workflowRun.GetWorkflow())
+		}
 	}
 
 	// Get CAS credentials for PR metadata upload
@@ -502,6 +514,53 @@ func groupMaterialToCraftingSchemaMaterial(gm *v1.PolicyGroup_Material, group *v
 		Name:     gm.Name,
 		Optional: gm.Optional,
 	}, nil
+}
+
+// applySandboxIdentity authenticates the runner when its identity token verified in the control
+// plane, and verifies against the trusted root of the control plane (R-004, R-005). A token that
+// does not verify is the same as no token, so the attestation goes on with a runner that is not
+// authenticated and has no platform data. The CLI logs the reason (D-011).
+func (action *AttestationInit) applySandboxIdentity(ctx context.Context, runner crafter.SupportedRunner, raw string, cpResult *pb.AttestationServiceInitResponse_SandboxIdentityResult, wf *pb.WorkflowItem) {
+	identityRunner, ok := runner.(crafter.IdentityRunner)
+	if !ok {
+		return
+	}
+
+	// A control plane that does not know the identity returns no result
+	if !cpResult.GetVerified() {
+		reason := cpResult.GetReason()
+		if reason == "" {
+			reason = "the control plane did not verify it"
+		}
+
+		action.Logger.Warn().Str("reason", reason).Msg("the sandbox identity did not verify, the runner is not authenticated")
+		return
+	}
+
+	id, err := action.verifySandboxIdentity(ctx, raw, wf)
+	if err != nil {
+		action.Logger.Warn().Err(err).Msg("the sandbox identity did not verify, the runner is not authenticated")
+		return
+	}
+
+	identityRunner.SetVerifiedIdentity(id)
+	action.Logger.Debug().Str("sandbox-run", id.Claims.SandboxRun).Msg("sandbox identity verified")
+}
+
+// verifySandboxIdentity verifies the identity token against the trusted root of the control plane,
+// for the workflow of the attestation.
+func (action *AttestationInit) verifySandboxIdentity(ctx context.Context, raw string, wf *pb.WorkflowItem) (*sandboxidentity.Identity, error) {
+	trResp, err := pb.NewSigningServiceClient(action.CPConnection).GetTrustedRoot(ctx, &pb.GetTrustedRootRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("getting the trusted root: %w", err)
+	}
+
+	tr, err := trustedRootPbToVerifier(trResp)
+	if err != nil {
+		return nil, fmt.Errorf("loading the trusted root: %w", err)
+	}
+
+	return sandboxidentity.Verify(raw, tr, &sandboxidentity.Expected{ProjectID: wf.GetProjectId(), WorkflowID: wf.GetId()})
 }
 
 func extractAuthInfo(authToken string) (*clientAPI.Attestation_Auth, error) {

@@ -16,8 +16,12 @@
 package runners
 
 import (
+	"context"
+	"strings"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/sandboxidentity"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -80,6 +84,20 @@ func (s *chainloopSandboxSuite) TestWorkflowFilePath() {
 
 func (s *chainloopSandboxSuite) TestIsAuthenticated() {
 	s.False(s.runner.IsAuthenticated())
+
+	s.runner.SetVerifiedIdentity(&sandboxidentity.Identity{Claims: &sandboxidentity.Claims{}})
+	s.True(s.runner.IsAuthenticated())
+
+	s.runner.SetVerifiedIdentity(nil)
+	s.False(s.runner.IsAuthenticated())
+}
+
+func (s *chainloopSandboxSuite) TestIdentityToken() {
+	s.T().Setenv(sandboxidentity.EnvVar, "")
+	s.Empty(s.runner.IdentityToken())
+
+	s.T().Setenv(sandboxidentity.EnvVar, "a.b.c")
+	s.Equal("a.b.c", s.runner.IdentityToken())
 }
 
 func (s *chainloopSandboxSuite) TestEnvironment() {
@@ -88,6 +106,52 @@ func (s *chainloopSandboxSuite) TestEnvironment() {
 
 func (s *chainloopSandboxSuite) TestRunnerName() {
 	s.Equal("CHAINLOOP_SANDBOX", s.runner.ID().String())
+}
+
+func (s *chainloopSandboxSuite) TestVerifyCommitSignature() {
+	const (
+		commit      = "ea3a974660a030f0314aa1505a64792bf2633b33"
+		otherCommit = "0d7bb4b1e7b3f5d3e5c5f0f37a2c9a1f7f8b9c10"
+	)
+
+	verified := &commitverification.CommitVerification{
+		Attempted:          true,
+		Status:             commitverification.VerificationStatusVerified,
+		Reason:             "Commit signed and verified",
+		Platform:           "gitlab",
+		KeyID:              "1",
+		SignatureAlgorithm: "PGP",
+	}
+
+	withData := &sandboxidentity.Identity{Claims: &sandboxidentity.Claims{Data: &sandboxidentity.Data{
+		CommitVerification: &sandboxidentity.CommitVerification{Commit: commit, Verification: verified},
+	}}}
+
+	testCases := []struct {
+		name     string
+		identity *sandboxidentity.Identity
+		commit   string
+		want     *commitverification.CommitVerification
+	}{
+		{name: "no verified identity", commit: commit},
+		{name: "the verification of the attested commit", identity: withData, commit: commit, want: verified},
+		{name: "a commit hash in upper case", identity: withData, commit: strings.ToUpper(commit), want: verified},
+		{name: "the verification of another commit", identity: withData, commit: otherCommit},
+		{name: "an abbreviated commit hash", identity: withData, commit: commit[:7]},
+		{name: "no commit to verify", identity: withData, commit: ""},
+		{name: "an identity without data", identity: &sandboxidentity.Identity{Claims: &sandboxidentity.Claims{}}, commit: commit},
+	}
+
+	for _, tc := range testCases {
+		s.T().Run(tc.name, func(t *testing.T) {
+			// A value set by hand, as the unsigned hand-off did, records no data (R-005)
+			t.Setenv("CHAINLOOP_SANDBOX_COMMIT_VERIFICATION", `{"commit":"`+commit+`","verification":{"attempted":true,"status":"verified"}}`)
+
+			runner := NewChainloopSandbox()
+			runner.SetVerifiedIdentity(tc.identity)
+			s.Equal(tc.want, runner.VerifyCommitSignature(context.Background(), tc.commit))
+		})
+	}
 }
 
 func (s *chainloopSandboxSuite) SetupTest() {
