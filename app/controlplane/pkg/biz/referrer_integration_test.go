@@ -687,3 +687,61 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVisibility() {
 		s.Error(err)
 	})
 }
+
+// An organization scope narrows a user's cross-organization discovery to a single
+// organization, and never widens it to one the user is not a member of.
+func (s *referrerIntegrationTestSuite) TestGetFromRootUserOrgScope() {
+	ctx := context.Background()
+	envelope, envBytes := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	attDigest, _, err := v1.SHA256(bytes.NewReader(envBytes))
+	require.NoError(s.T(), err)
+	// The attestation lives in org1 only
+	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, attDigest, s.workflow1.ID.String()))
+	digest := attDigest.String()
+
+	testCases := []struct {
+		name      string
+		userID    string
+		filters   []biz.GetFromRootFilter
+		wantFound bool
+	}{
+		{
+			name:      "no scope searches every organization of the user",
+			userID:    s.user.ID,
+			wantFound: true,
+		},
+		{
+			name:      "scoped to the organization that holds the referrer",
+			userID:    s.user.ID,
+			filters:   []biz.GetFromRootFilter{biz.WithOrgScope(s.org1UUID)},
+			wantFound: true,
+		},
+		{
+			name:      "scoped to another organization of the user",
+			userID:    s.user.ID,
+			filters:   []biz.GetFromRootFilter{biz.WithOrgScope(s.org2UUID)},
+			wantFound: false,
+		},
+		{
+			name:      "scoped to an organization the user is not a member of",
+			userID:    s.user2.ID,
+			filters:   []biz.GetFromRootFilter{biz.WithOrgScope(s.org1UUID)},
+			wantFound: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			got, _, err := s.Referrer.GetFromRootUser(ctx, digest, "", tc.userID, nil, tc.filters...)
+			if !tc.wantFound {
+				s.True(biz.IsNotFound(err), "expected not found, got %v", err)
+				s.Nil(got)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Equal(digest, got.Digest)
+			s.Equal([]uuid.UUID{s.org1UUID}, got.OrgIDs)
+		})
+	}
+}

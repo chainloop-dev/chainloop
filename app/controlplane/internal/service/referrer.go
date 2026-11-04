@@ -69,6 +69,15 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 	var referrer *biz.StoredReferrer
 	var nextCursor string
 	if currentUser != nil {
+		// Optionally narrow the user's cross-organization discovery to the current organization.
+		if req.GetCurrentOrgOnly() {
+			orgUUID, parseErr := uuid.Parse(currentOrg.ID)
+			if parseErr != nil {
+				return nil, fmt.Errorf("invalid org UUID: %w", parseErr)
+			}
+			extraFilters = append(extraFilters, biz.WithOrgScope(orgUUID))
+		}
+
 		referrer, nextCursor, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID, paginationOpts, extraFilters...)
 	} else if currentToken != nil {
 		var orgUUID uuid.UUID

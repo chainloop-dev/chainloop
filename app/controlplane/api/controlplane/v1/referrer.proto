@@ -56,6 +56,10 @@ message ReferrerServiceDiscoverPrivateRequest {
   // ProjectVersion optionally scopes the discovery to a project version (by name, e.g. v1.2.0).
   // Requires project_name, since a version name is unique only within a project.
   string project_version = 5;
+  // CurrentOrgOnly scopes the discovery to the current organization. By default, a user
+  // searches every organization they are a member of. An API token always searches only
+  // its own organization, so the field does not change the result for API tokens.
+  bool current_org_only = 6;
 
   // project_version requires project_name (a version name is unique only within a project);
   // project_name on its own is allowed.

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"time"
 
@@ -104,6 +105,9 @@ type GetFromRootFilters struct {
 	// Both must be set together (a version name is unique only within a project).
 	ProjectName    *string
 	ProjectVersion *string
+	// OrgID narrows the discovery to a single organization. It only restricts the
+	// organizations allowed by the caller; it never grants access to another one.
+	OrgID *uuid.UUID
 }
 
 type GetFromRootFilter func(*GetFromRootFilters)
@@ -120,6 +124,14 @@ func WithProjectScope(projectName, projectVersion string) func(*GetFromRootFilte
 	return func(o *GetFromRootFilters) {
 		o.ProjectName = &projectName
 		o.ProjectVersion = &projectVersion
+	}
+}
+
+// WithOrgScope narrows the discovery to the given organization. A referrer is found
+// only if the organization is also one of the organizations allowed for the caller.
+func WithOrgScope(orgID uuid.UUID) func(*GetFromRootFilters) {
+	return func(o *GetFromRootFilters) {
+		o.OrgID = &orgID
 	}
 }
 
@@ -195,6 +207,19 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 		filters = append(filters, WithVisibleProjectIDs(projectIDs))
 	}
 	filters = append(filters, extraFilters...)
+
+	opts := &GetFromRootFilters{}
+	for _, f := range filters {
+		f(opts)
+	}
+
+	// An organization scope intersects with the allowed organizations, it never widens them.
+	if opts.OrgID != nil {
+		if !slices.Contains(orgIDs, *opts.OrgID) {
+			return nil, "", NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
+		}
+		orgIDs = []uuid.UUID{*opts.OrgID}
+	}
 
 	ref, nextCursor, err := s.repo.GetFromRoot(ctx, digest, orgIDs, p, filters...)
 	if err != nil {

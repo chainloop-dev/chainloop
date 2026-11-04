@@ -1404,6 +1404,14 @@ Options inherited from parent commands
 
 (Preview) inspect pieces of evidence or artifacts stored through Chainloop
 
+Synopsis
+
+(Preview) inspect pieces of evidence or artifacts stored through Chainloop.
+
+When logged in as a user, the discovery covers every organization you are a member of.
+Set the organization explicitly with --org (or its environment variable) to search only that organization.
+An API token always searches only its own organization.
+
 ```
 chainloop discover [flags]
 ```

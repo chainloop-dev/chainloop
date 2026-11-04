@@ -28,6 +28,12 @@ export interface ReferrerServiceDiscoverPrivateRequest {
    * Requires project_name, since a version name is unique only within a project.
    */
   projectVersion: string;
+  /**
+   * CurrentOrgOnly scopes the discovery to the current organization. By default, a user
+   * searches every organization they are a member of. An API token always searches only
+   * its own organization, so the field does not change the result for API tokens.
+   */
+  currentOrgOnly: boolean;
 }
 
 /** ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method */
@@ -67,7 +73,7 @@ export interface ReferrerItem_AnnotationsEntry {
 }
 
 function createBaseReferrerServiceDiscoverPrivateRequest(): ReferrerServiceDiscoverPrivateRequest {
-  return { digest: "", kind: "", pagination: undefined, projectName: "", projectVersion: "" };
+  return { digest: "", kind: "", pagination: undefined, projectName: "", projectVersion: "", currentOrgOnly: false };
 }
 
 export const ReferrerServiceDiscoverPrivateRequest = {
@@ -86,6 +92,9 @@ export const ReferrerServiceDiscoverPrivateRequest = {
     }
     if (message.projectVersion !== "") {
       writer.uint32(42).string(message.projectVersion);
+    }
+    if (message.currentOrgOnly === true) {
+      writer.uint32(48).bool(message.currentOrgOnly);
     }
     return writer;
   },
@@ -132,6 +141,13 @@ export const ReferrerServiceDiscoverPrivateRequest = {
 
           message.projectVersion = reader.string();
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.currentOrgOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -148,6 +164,7 @@ export const ReferrerServiceDiscoverPrivateRequest = {
       pagination: isSet(object.pagination) ? CursorPaginationRequest.fromJSON(object.pagination) : undefined,
       projectName: isSet(object.projectName) ? String(object.projectName) : "",
       projectVersion: isSet(object.projectVersion) ? String(object.projectVersion) : "",
+      currentOrgOnly: isSet(object.currentOrgOnly) ? Boolean(object.currentOrgOnly) : false,
     };
   },
 
@@ -159,6 +176,7 @@ export const ReferrerServiceDiscoverPrivateRequest = {
       (obj.pagination = message.pagination ? CursorPaginationRequest.toJSON(message.pagination) : undefined);
     message.projectName !== undefined && (obj.projectName = message.projectName);
     message.projectVersion !== undefined && (obj.projectVersion = message.projectVersion);
+    message.currentOrgOnly !== undefined && (obj.currentOrgOnly = message.currentOrgOnly);
     return obj;
   },
 
@@ -179,6 +197,7 @@ export const ReferrerServiceDiscoverPrivateRequest = {
       : undefined;
     message.projectName = object.projectName ?? "";
     message.projectVersion = object.projectVersion ?? "";
+    message.currentOrgOnly = object.currentOrgOnly ?? false;
     return message;
   },
 };
