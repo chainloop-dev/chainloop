@@ -512,7 +512,7 @@ type validateContractPoliciesOpts struct {
 
 // WithoutMaterialApplicabilityCheck skips the check that rejects material policy attachments
 // that can never apply. Use it where an existing contract is re-sent, for example on attestation
-// init, so that contracts stored before the check keep working. The CLI warns about them instead.
+// init, where the contract can't be fixed. The check runs when the contract is created or updated.
 func WithoutMaterialApplicabilityCheck() ValidateContractPoliciesOpt {
 	return func(o *validateContractPoliciesOpts) {
 		o.skipMaterialApplicability = true

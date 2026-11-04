@@ -16,21 +16,16 @@
 package policies
 
 import (
-	"context"
 	"testing"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 const (
-	materialSBOM        = "sbom"
-	materialImage       = "image"
-	materialCustom      = "custom-material"
-	refSBOMSyft         = "file://testdata/sbom_syft.yaml"
-	refSBOMSyftNotTyped = "file://testdata/sbom_syft_not_typed.yaml"
+	materialSBOM  = "sbom"
+	materialImage = "image"
 )
 
 func TestValidateMaterialAttachment(t *testing.T) {
@@ -144,60 +139,6 @@ func TestValidateMaterialAttachment(t *testing.T) {
 			assert.ErrorIs(t, err, tc.wantErrIs)
 			if tc.wantMsg != "" {
 				assert.EqualError(t, err, tc.wantMsg)
-			}
-		})
-	}
-}
-
-func TestPolicyVerifierValidateMaterialAttachments(t *testing.T) {
-	logger := zerolog.Nop()
-	materials := []*v1.CraftingSchema_Material{
-		{Name: materialCustom, Type: v1.CraftingSchema_Material_ARTIFACT},
-	}
-
-	testCases := []struct {
-		name        string
-		attachments []*v1.PolicyAttachment
-		wantErrs    int
-	}{
-		{
-			name: "valid attachments",
-			attachments: []*v1.PolicyAttachment{
-				{Policy: &v1.PolicyAttachment_Ref{Ref: refSBOMSyft}},
-				{
-					Policy:   &v1.PolicyAttachment_Ref{Ref: refSBOMSyftNotTyped},
-					Selector: &v1.PolicyAttachment_MaterialSelector{Name: materialCustom},
-				},
-			},
-		},
-		{
-			name: "kind-less policy without selector",
-			attachments: []*v1.PolicyAttachment{
-				{Policy: &v1.PolicyAttachment_Ref{Ref: refSBOMSyft}},
-				{Policy: &v1.PolicyAttachment_Ref{Ref: refSBOMSyftNotTyped}},
-			},
-			wantErrs: 1,
-		},
-		{
-			name: "several attachments that never apply",
-			attachments: []*v1.PolicyAttachment{
-				{Policy: &v1.PolicyAttachment_Ref{Ref: refSBOMSyftNotTyped}},
-				{
-					Policy:   &v1.PolicyAttachment_Ref{Ref: refSBOMSyft},
-					Selector: &v1.PolicyAttachment_MaterialSelector{Name: materialCustom},
-				},
-			},
-			wantErrs: 2,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			pv := NewPolicyVerifier(&v1.Policies{Materials: tc.attachments}, nil, &logger)
-			errs := pv.ValidateMaterialAttachments(context.TODO(), materials)
-			assert.Len(t, errs, tc.wantErrs)
-			for _, err := range errs {
-				assert.ErrorIs(t, err, ErrAttachmentNeverApplies)
 			}
 		})
 	}

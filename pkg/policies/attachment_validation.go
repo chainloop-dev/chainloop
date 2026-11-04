@@ -16,7 +16,6 @@
 package policies
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
@@ -63,25 +62,4 @@ func ValidateMaterialAttachment(policy *v1.Policy, att *v1.PolicyAttachment, mat
 	}
 
 	return nil
-}
-
-// ValidateMaterialAttachments loads the policy of each material attachment and
-// returns one error for each attachment that can never apply to a material.
-// See ValidateMaterialAttachment. Attachments whose policy can't be loaded are
-// skipped, since the load error is reported when the policy is evaluated.
-func (pv *PolicyVerifier) ValidateMaterialAttachments(ctx context.Context, materials []*v1.CraftingSchema_Material) []error {
-	var errs []error
-	for _, att := range pv.policies.GetMaterials() {
-		spec, _, err := pv.loadPolicySpec(ctx, att)
-		if err != nil {
-			pv.logger.Debug().Err(err).Str("policy", att.GetRef()).Msg("skipping attachment validation: failed to load policy")
-			continue
-		}
-
-		if err := ValidateMaterialAttachment(spec, att, materials); err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	return errs
 }

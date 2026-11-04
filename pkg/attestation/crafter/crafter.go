@@ -1111,17 +1111,6 @@ func policyEvalMatches(a, b *api.PolicyEvaluation) bool {
 	return proto.Equal(a.GetPolicyReference(), b.GetPolicyReference()) && maps.Equal(a.GetWith(), b.GetWith())
 }
 
-// ValidateMaterialPolicyAttachments returns one error for each material policy
-// attachment of the contract that can never apply to a material, for example a
-// policy without material types attached without a material selector.
-func (c *Crafter) ValidateMaterialPolicyAttachments(ctx context.Context) []error {
-	pv := policies.NewPolicyVerifier(c.CraftingState.GetPolicies(), c.attClient, c.Logger,
-		policies.WithAllowedHostnames(c.CraftingState.Attestation.PoliciesAllowedHostnames...),
-	)
-
-	return pv.ValidateMaterialAttachments(ctx, c.CraftingState.GetMaterials())
-}
-
 // EvaluateAttestationPolicies evaluates the attestation-level policies and stores them in the attestation state.
 // The phase parameter controls which policies are evaluated based on their attestation_phases spec field.
 func (c *Crafter) EvaluateAttestationPolicies(ctx context.Context, attestationID string, statement *intoto.Statement, phase policies.EvalPhase) error {
