@@ -612,8 +612,8 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 	// A CLI without support for contract enforcement renders the attestation as
 	// advisory, so mark it enforced to keep the run status true to the contract.
 	if contractSchema.GetPolicies().GetGate() {
-		var changed bool
-		if policyStatus, changed = policyStatus.Enforced(); changed {
+		if enforced, changed := policyStatus.Enforced(); changed {
+			policyStatus = enforced
 			uc.logger.Warnf("workflow run %s: the contract enforces policies but the attestation does not, the CLI might not support contract enforcement", runID)
 		}
 	}

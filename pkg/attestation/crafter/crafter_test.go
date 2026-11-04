@@ -274,6 +274,7 @@ func (s *crafterSuite) TestInitPRMode() {
 
 func (s *crafterSuite) TestInitContractEnforcement() {
 	enforcedPolicies := &schemaapi.Policies{Gate: proto.Bool(true)}
+	optOutV2 := &schemaapi.CraftingSchemaV2{Spec: &schemaapi.CraftingSchemaV2Spec{Policies: &schemaapi.Policies{Gate: proto.Bool(false)}}}
 
 	testCases := []struct {
 		name     string
@@ -293,11 +294,11 @@ func (s *crafterSuite) TestInitContractEnforcement() {
 		},
 		{
 			name:     "v2 contract with gate false",
-			schemaV2: &schemaapi.CraftingSchemaV2{Spec: &schemaapi.CraftingSchemaV2Spec{Policies: &schemaapi.Policies{Gate: proto.Bool(false)}}},
+			schemaV2: optOutV2,
 		},
 		{
 			name:     "contract gate false does not relax organization enforcement",
-			schemaV2: &schemaapi.CraftingSchemaV2{Spec: &schemaapi.CraftingSchemaV2Spec{Policies: &schemaapi.Policies{Gate: proto.Bool(false)}}},
+			schemaV2: optOutV2,
 			org:      true,
 			want:     true,
 		},
