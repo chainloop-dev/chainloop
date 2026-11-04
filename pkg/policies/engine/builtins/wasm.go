@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -57,7 +57,7 @@ func CreateDiscoverHostFunctions(conn *grpc.ClientConn) []extism.HostFunction {
 		}
 
 		// Serialize response to JSON
-		jsonData, err := json.Marshal(resp.Result)
+		jsonData, err := json.Marshal(resp)
 		if err != nil {
 			// Return 0 to signal error
 			stack[0] = 0

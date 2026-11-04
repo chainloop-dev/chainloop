@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,25 +22,74 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	// discoverPageSize is the number of references requested per page, the maximum that the API accepts
+	discoverPageSize = 100
+	// discoverMaxPages caps the number of requests of one discover call
+	discoverMaxPages = 10
+)
+
+// DiscoverResult is the referrer with the references of all the pages read.
+// It serializes to the same shape as a ReferrerItem, plus the truncated field.
+type DiscoverResult struct {
+	*v1.ReferrerItem
+	// Truncated is true when the page cap stopped the read before the last page of references
+	Truncated bool `json:"truncated"`
+}
+
 // DiscoverService wraps the gRPC discover functionality to be shared across engines
 type DiscoverService struct {
-	conn *grpc.ClientConn
+	client v1.ReferrerServiceClient
 }
 
 // NewDiscoverService creates a new discover service
 func NewDiscoverService(conn *grpc.ClientConn) *DiscoverService {
-	return &DiscoverService{conn: conn}
+	if conn == nil {
+		return &DiscoverService{}
+	}
+
+	return &DiscoverService{client: v1.NewReferrerServiceClient(conn)}
 }
 
-// Discover calls the DiscoverPrivate gRPC endpoint to get artifact graph data
-func (s *DiscoverService) Discover(ctx context.Context, digest, kind string) (*v1.ReferrerServiceDiscoverPrivateResponse, error) {
-	if s.conn == nil {
+// Discover calls the DiscoverPrivate gRPC endpoint to get artifact graph data.
+// It follows the pagination cursor and merges the references of all pages,
+// up to discoverMaxPages requests.
+func (s *DiscoverService) Discover(ctx context.Context, digest, kind string) (*DiscoverResult, error) {
+	if s.client == nil {
 		return nil, nil
 	}
 
-	client := v1.NewReferrerServiceClient(s.conn)
-	return client.DiscoverPrivate(ctx, &v1.ReferrerServiceDiscoverPrivateRequest{
-		Digest: digest,
-		Kind:   kind,
-	})
+	readPage := func(cursor string) (*v1.ReferrerServiceDiscoverPrivateResponse, error) {
+		return s.client.DiscoverPrivate(ctx, &v1.ReferrerServiceDiscoverPrivateRequest{
+			Digest:     digest,
+			Kind:       kind,
+			Pagination: &v1.CursorPaginationRequest{Cursor: cursor, Limit: discoverPageSize},
+		})
+	}
+
+	resp, err := readPage("")
+	if err != nil {
+		return nil, err
+	}
+
+	result := &DiscoverResult{ReferrerItem: resp.GetResult()}
+	for pages := 1; result.ReferrerItem != nil; pages++ {
+		cursor := resp.GetPagination().GetNextCursor()
+		if cursor == "" {
+			break
+		}
+
+		if pages == discoverMaxPages {
+			result.Truncated = true
+			break
+		}
+
+		if resp, err = readPage(cursor); err != nil {
+			return nil, err
+		}
+
+		result.References = append(result.References, resp.GetResult().GetReferences()...)
+	}
+
+	return result, nil
 }

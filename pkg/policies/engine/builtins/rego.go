@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,9 @@ const discoverBuiltinName = "chainloop.discover"
 //
 //	chainloop.discover(digest, kind)
 //
+// The result holds the references of all the pages of the API, up to a cap.
+// When the cap stops the read, the result has "truncated": true.
+//
 // For instance, to get the references for an CONTAINER_IMAGE material, and fail if any of them is an attestation with policy violations:
 // ```
 //
@@ -55,7 +58,7 @@ func RegisterDiscoverBuiltin(conn *grpc.ClientConn) error {
 				types.Named("digest", types.S).Description("digest of the artifact to discover"),
 				types.Named("kind", types.S).Description("optional filter by kind to disambiguate"),
 			),
-			types.Named("response", types.A).Description("response object as in the `chainloop discover` CLI output"),
+			types.Named("response", types.A).Description("response object as in the `chainloop discover` CLI output, with the references of all pages and a truncated field"),
 		),
 		Nondeterministic: true,
 	}, getDiscoverRegoImpl(conn))
@@ -93,7 +96,7 @@ func getDiscoverRegoImpl(conn *grpc.ClientConn) topdown.BuiltinFunc {
 		}
 
 		// call the iterator with the output value
-		return iter(ast.NewTerm(ast.MustInterfaceToValue(resp.Result)))
+		return iter(ast.NewTerm(ast.MustInterfaceToValue(resp)))
 	}
 }
 
