@@ -657,8 +657,10 @@ func (r *lineRepo) shellWrite(sessionID string, run func()) {
 	require.NoError(r.t, err)
 	reflogs, err := r.store.LoadShellPreReflog(key)
 	require.NoError(r.t, err)
-	pre := preCommand{head: heads[r.dir]}
+	var pre preCommand
+	pre.head, pre.hasHead = heads[r.dir]
 	pre.reflogSize, pre.hasReflog = reflogs[r.dir]
+	require.True(r.t, pre.hasHead, "the pre hook saves the HEAD")
 	require.True(r.t, pre.hasReflog, "the pre hook saves the HEAD reflog size")
 	recordRootChanges(r.store, r.dir, pre, sigs[r.dir], sessionID, zerolog.Nop())
 	r.store.DeleteShellPreSignature(key)
@@ -694,6 +696,34 @@ func TestLineAttribution_ShellCommandThatCommits(t *testing.T) {
 
 	attr := r.store.LoadAILineAttribution(lineSession)
 	assert.Equal(t, 2, attr.Written["a.go"].Len())
+}
+
+// A pre hook whose HEAD commits were lost (the heads file is missing or
+// unreadable) but whose reflog size was saved does not see a HEAD move when
+// HEAD did not move: a file that the command restored to HEAD is still
+// recorded as AI-touched with zero lines.
+func TestLineAttribution_ShellLostHeadsIsNotAHeadMove(t *testing.T) {
+	r := newLineRepo(t)
+	r.humanWrite("a.go", "one\n")
+	r.commit("feat: a", "a.go")
+	r.humanWrite("a.go", "one\ntwo\n")
+
+	key := state.ShellCallKey{SessionID: lineSession, ToolUseID: "toolu"}
+	captureWorktreeSnapshot(r.store, r.dir, key, zerolog.Nop())
+	runGit(t, r.dir, "checkout", "--", "a.go")
+
+	sigs, err := r.store.LoadShellPreSignature(key)
+	require.NoError(t, err)
+	reflogs, err := r.store.LoadShellPreReflog(key)
+	require.NoError(t, err)
+	pre := preCommand{}
+	pre.reflogSize, pre.hasReflog = reflogs[r.dir]
+	require.True(t, pre.hasReflog)
+	recordRootChanges(r.store, r.dir, pre, sigs[r.dir], lineSession, zerolog.Nop())
+
+	attr := r.store.LoadAILineAttribution(lineSession)
+	assert.Contains(t, attr.Files, "a.go")
+	assert.Equal(t, 0, attr.GeneratedAdded)
 }
 
 // wireGenFile is a file that a code generator rewrites.

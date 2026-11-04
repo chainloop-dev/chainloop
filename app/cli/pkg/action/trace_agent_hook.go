@@ -457,6 +457,9 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 		sigs[root] = sig
 
 		// A checkout with no commit yet has no HEAD; its files count as new.
+		// It is saved with an empty HEAD, so that the post hook can tell it
+		// apart from a HEAD that was not saved.
+		heads[root] = ""
 		if sha, _, err := client.CommitHeadInfo(root); err == nil {
 			heads[root] = sha
 		}
@@ -915,7 +918,8 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 	}
 
 	for root, rootBefore := range before {
-		pre := preCommand{head: heads[root]}
+		var pre preCommand
+		pre.head, pre.hasHead = heads[root]
 		pre.reflogSize, pre.hasReflog = reflogs[root]
 
 		rootStore := store
@@ -936,10 +940,12 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 // preCommand is the state of one checkout that the pre hook saved before a
 // shell command.
 type preCommand struct {
-	// head is the HEAD commit. It is empty when the pre hook saved none: a
-	// checkout with no commit yet (hasReflog is then true), or a pre hook
-	// from an older CLI.
+	// head is the HEAD commit. It is empty for a checkout with no commit
+	// yet, and when the pre hook saved none.
 	head string
+	// hasHead is false when the pre hook saved no HEAD for the checkout: a
+	// pre hook from an older CLI, or a heads file that cannot be read.
+	hasHead bool
 	// reflogSize is the size of the HEAD reflog. hasReflog is false when the
 	// pre hook saved none.
 	reflogSize int64
@@ -974,13 +980,13 @@ func recordRootChanges(store *state.Store, repoRoot string, pre preCommand, befo
 		return
 	}
 
-	// A pre hook from an older CLI saved neither a HEAD nor a reflog size: the
-	// HEAD after the command stands in, as before. A pre hook that saved a
-	// reflog size and no HEAD saw a checkout with no commit yet, so a HEAD
-	// now is a move, and the first commit can be the command's own.
+	// When the pre hook saved no HEAD, the HEAD after the command stands in,
+	// as before. A pre hook that saved an empty HEAD and a reflog size saw a
+	// checkout with no commit yet, so a HEAD now is a move, and the first
+	// commit can be the command's own.
 	head, moved := "HEAD", false
 	var own []tracegit.ReflogEntry
-	if pre.head != "" || pre.hasReflog {
+	if pre.head != "" || (pre.hasHead && pre.hasReflog) {
 		if pre.head != "" {
 			head = pre.head
 		}
