@@ -33,7 +33,8 @@ const (
 // It serializes to the same shape as a ReferrerItem, plus the truncated field.
 type DiscoverResult struct {
 	*v1.ReferrerItem
-	// Truncated is true when the page cap stopped the read before the last page of references
+	// Truncated is true when the read stopped before the last page of references: either the
+	// page cap was reached, or the control plane repeated its next cursor (it ignores the cursor)
 	Truncated bool `json:"truncated"`
 }
 

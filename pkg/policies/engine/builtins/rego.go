@@ -32,7 +32,8 @@ const discoverBuiltinName = "chainloop.discover"
 //	chainloop.discover(digest, kind)
 //
 // The result holds the references of all the pages of the API, up to a cap.
-// When the cap stops the read, the result has "truncated": true.
+// When the read stops before the last page, the result has "truncated": true. This happens
+// when the cap is reached, or when the control plane repeats its next cursor.
 //
 // For instance, to get the references for an CONTAINER_IMAGE material, and fail if any of them is an attestation with policy violations:
 // ```
