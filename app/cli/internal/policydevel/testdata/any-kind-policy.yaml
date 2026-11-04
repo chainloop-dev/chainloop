@@ -1,0 +1,16 @@
+apiVersion: workflowcontract.chainloop.dev/v1
+kind: Policy
+metadata:
+  name: any-kind
+  description: Policy without kind, it applies to any material type
+spec:
+  policies:
+    - embedded: |
+        package any_kind
+
+        import rego.v1
+
+        violations contains msg if {
+            input.fail
+            msg := "material asked to fail"
+        }

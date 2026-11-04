@@ -233,6 +233,82 @@ func TestEvaluateSimplifiedPolicies(t *testing.T) {
 	})
 }
 
+// `policy develop eval` selects the policy by material name, as a contract does.
+func TestEvaluateMaterialSelection(t *testing.T) {
+	const (
+		anyKindPolicy = "testdata/any-kind-policy.yaml"
+		evidenceKind  = "EVIDENCE"
+	)
+
+	tempDir := t.TempDir()
+	logger := zerolog.New(os.Stderr)
+
+	passing := filepath.Join(tempDir, "pass.json")
+	require.NoError(t, os.WriteFile(passing, []byte(`{}`), 0600))
+	failing := filepath.Join(tempDir, "fail.json")
+	require.NoError(t, os.WriteFile(failing, []byte(`{"fail": true}`), 0600))
+
+	testCases := []struct {
+		name           string
+		policyPath     string
+		kind           string
+		materialPath   string
+		wantViolations []string
+		wantErr        string
+	}{
+		{
+			name:         "kind-less spec with explicit kind",
+			policyPath:   anyKindPolicy,
+			kind:         evidenceKind,
+			materialPath: passing,
+		},
+		{
+			name:           "kind-less spec reports violations",
+			policyPath:     anyKindPolicy,
+			kind:           evidenceKind,
+			materialPath:   failing,
+			wantViolations: []string{"material asked to fail"},
+		},
+		{
+			name:         "kind-less spec with auto-detected kind",
+			policyPath:   anyKindPolicy,
+			materialPath: "testdata/test-sbom.json",
+		},
+		{
+			name:           "spec with a matching kind",
+			policyPath:     "testdata/sbom-min-components-policy.yaml",
+			kind:           "SBOM_CYCLONEDX_JSON",
+			materialPath:   "testdata/test-sbom.json",
+			wantViolations: []string{"SBOM must have at least 2 components"},
+		},
+		{
+			name:         "spec with a different kind is not applied",
+			policyPath:   "testdata/sbom-min-components-policy.yaml",
+			kind:         evidenceKind,
+			materialPath: passing,
+			wantErr:      "no execution branch matched",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := Evaluate(&EvalOptions{
+				PolicyPath:   tc.policyPath,
+				MaterialKind: tc.kind,
+				MaterialPath: tc.materialPath,
+			}, logger)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.False(t, result.Result.Skipped)
+			assert.ElementsMatch(t, tc.wantViolations, result.Result.Violations)
+		})
+	}
+}
+
 // fixtureGitHubPAT is assembled from fragments so that this file does not itself
 // carry a credential-shaped literal for secret scanners to flag.
 const fixtureGitHubPAT = "ghp_erOZlZv0B1e3amrQ" + "ugdwZ8Ro2W4kDql9WPTf"
