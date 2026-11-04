@@ -183,7 +183,7 @@ type reflogLine struct {
 // when newer entries are added. An unborn HEAD with no reflog yet has no
 // entries.
 func gitReflogLines(repoRoot string, n int) ([]reflogLine, error) {
-	cmd := exec.Command("git", "reflog", "show", "-n", strconv.Itoa(n), "--date=unix", "--format=%H%x09%gd%x09%gs", "HEAD", "--")
+	cmd := exec.Command("git", "reflog", "show", "-n", strconv.Itoa(n), "--date=unix", "--format=%H%x09%gd%x09%gs", "HEAD", "--") //nolint:gosec // a fixed git command; n is a number
 	cmd.Dir = repoRoot
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

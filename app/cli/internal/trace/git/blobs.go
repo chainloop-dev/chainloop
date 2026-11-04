@@ -17,12 +17,17 @@ package git
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
 	"strconv"
 	"strings"
 )
+
+// ErrUnbatchableName reports a name that a BlobReader cannot ask git for,
+// because it holds a newline: read it in another way.
+var ErrUnbatchableName = errors.New("name holds a newline")
 
 // BlobReader reads files at commits through one long-running
 // "git cat-file --batch" process, so that many reads cost one process, not
@@ -58,13 +63,13 @@ func NewBlobReader(repoRoot string) (*BlobReader, error) {
 
 // FileAt returns the content of path, repo-relative with forward slashes, at
 // rev. It returns nil when rev does not resolve or does not hold path as a
-// file.
+// file, and ErrUnbatchableName when rev or path holds a newline.
 func (r *BlobReader) FileAt(rev, path string) ([]byte, error) {
 	if r.err != nil {
 		return nil, r.err
 	}
 	if strings.ContainsAny(rev+path, "\n") {
-		return nil, fmt.Errorf("cannot read %q at %q: name holds a newline", path, rev)
+		return nil, fmt.Errorf("read %q at %q: %w", path, rev, ErrUnbatchableName)
 	}
 
 	content, err := r.read(rev + ":" + path)

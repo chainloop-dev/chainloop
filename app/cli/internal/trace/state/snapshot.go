@@ -157,7 +157,7 @@ func (s *Store) DeleteShellPreSignature(key ShellCallKey) {
 	_ = os.Remove(s.shellPreReflogPath(key))
 }
 
-// shellPreReflogPath returns the path storing the HEAD reflog size of each
+// shellPreReflogPath returns the path storing the HEAD reflog position of each
 // checkout before a shell command, next to the command's signature.
 func (s *Store) shellPreReflogPath(key ShellCallKey) string {
 	return strings.TrimSuffix(s.shellPreSignaturePath(key), ".json") + ".reflog.json"

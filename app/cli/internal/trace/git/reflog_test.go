@@ -90,7 +90,7 @@ func TestHeadReflogSince(t *testing.T) {
 			require.NoError(t, err)
 			assert.Zero(t, start)
 
-			first := reflogCommit(t, dir, "a.txt", "a\n", "first")
+			first := reflogCommit(t, dir, fileA, "a\n", "first")
 			size, err := HeadReflogPos(dir)
 			require.NoError(t, err)
 			require.NotZero(t, size)
@@ -102,7 +102,7 @@ func TestHeadReflogSince(t *testing.T) {
 			assert.Equal(t, "commit (initial): first", entries[0].Message)
 			assert.True(t, IsZeroOID(entries[0].Old), "the first commit replaces no commit: %q", entries[0].Old)
 
-			second := reflogCommit(t, dir, "a.txt", "b\n", "second")
+			second := reflogCommit(t, dir, fileA, "b\n", "second")
 			reflogGit(t, dir, "checkout", "-q", "-b", "other", first)
 
 			entries, err = HeadReflogSince(dir, size)
@@ -160,7 +160,7 @@ func TestHeadReflogSince_LinkedWorktree(t *testing.T) {
 
 func TestCommitPaths(t *testing.T) {
 	dir := reflogRepo(t)
-	first := reflogCommit(t, dir, "a.txt", "a\n", "first")
+	first := reflogCommit(t, dir, fileA, "a\n", "first")
 	reflogCommit(t, dir, "b.txt", "b\n", "second")
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "sub"), 0o755))
 	third := reflogCommit(t, dir, filepath.Join("sub", "c d.txt"), "c\n", "third")
@@ -171,7 +171,7 @@ func TestCommitPaths(t *testing.T) {
 		want     map[string]bool
 	}{
 		{name: "a range of commits", from: first, to: third, want: map[string]bool{"b.txt": true, "sub/c d.txt": true}},
-		{name: "the first commit of a branch", from: strings.Repeat("0", len(first)), to: first, want: map[string]bool{"a.txt": true}},
+		{name: "the first commit of a branch", from: strings.Repeat("0", len(first)), to: first, want: map[string]bool{fileA: true}},
 		{name: "no change", from: third, to: third, want: map[string]bool{}},
 	}
 	for _, tc := range tests {
@@ -188,7 +188,7 @@ func TestCommitPaths(t *testing.T) {
 
 func TestBlobReader(t *testing.T) {
 	dir := reflogRepo(t)
-	first := reflogCommit(t, dir, "a.txt", "one\ntwo\n", "first")
+	first := reflogCommit(t, dir, fileA, "one\ntwo\n", "first")
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "sub"), 0o755))
 	second := reflogCommit(t, dir, filepath.Join("sub", "b c.txt"), "", "second")
 
@@ -201,12 +201,12 @@ func TestBlobReader(t *testing.T) {
 		rev, path string
 		want      []byte
 	}{
-		{name: "a file", rev: first, path: "a.txt", want: []byte("one\ntwo\n")},
+		{name: "a file", rev: first, path: fileA, want: []byte("one\ntwo\n")},
 		{name: "an empty file with a space in its path", rev: second, path: "sub/b c.txt", want: []byte{}},
 		{name: "a path the commit does not hold", rev: first, path: "sub/b c.txt"},
 		{name: "a directory", rev: second, path: "sub"},
-		{name: "a commit that does not resolve", rev: strings.Repeat("0", len(first)), path: "a.txt"},
-		{name: "a symbolic revision", rev: "HEAD", path: "a.txt", want: []byte("one\ntwo\n")},
+		{name: "a commit that does not resolve", rev: strings.Repeat("0", len(first)), path: fileA},
+		{name: "a symbolic revision", rev: "HEAD", path: fileA, want: []byte("one\ntwo\n")},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -217,15 +217,15 @@ func TestBlobReader(t *testing.T) {
 	}
 
 	_, err = r.FileAt(first, "a\nb")
-	assert.Error(t, err)
-	got, err := r.FileAt(first, "a.txt")
+	assert.ErrorIs(t, err, ErrUnbatchableName)
+	got, err := r.FileAt(first, fileA)
 	require.NoError(t, err, "a rejected name does not break later reads")
 	assert.Equal(t, []byte("one\ntwo\n"), got)
 }
 
 func testLinkedWorktreeReflog(t *testing.T, dir string) {
 	t.Helper()
-	reflogCommit(t, dir, "a.txt", "a\n", "first")
+	reflogCommit(t, dir, fileA, "a\n", "first")
 
 	wt := filepath.Join(t.TempDir(), "wt")
 	reflogGit(t, dir, "worktree", "add", "-q", "-b", "wt", wt)

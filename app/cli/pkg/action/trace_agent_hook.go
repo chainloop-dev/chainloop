@@ -1004,14 +1004,17 @@ func recordRootChanges(store *state.Store, repoRoot string, pre preCommand, befo
 	} else {
 		defer func() { _ = blobs.Close() }()
 	}
+	// A read that the batch reader cannot serve, such as a path with a
+	// newline or a git process that stopped, falls back to a read of its own:
+	// a file wrongly read as absent would count all its lines as new.
 	fileAt := func(rev, relPath string) []byte {
-		var content []byte
-		var err error
+		path := filepath.ToSlash(relPath)
 		if blobs != nil {
-			content, err = blobs.FileAt(rev, filepath.ToSlash(relPath))
-		} else {
-			content, err = client.FileAt(repoRoot, rev, filepath.ToSlash(relPath))
+			if content, err := blobs.FileAt(rev, path); err == nil {
+				return content
+			}
 		}
+		content, err := client.FileAt(repoRoot, rev, path)
 		if err != nil {
 			return nil
 		}
