@@ -17,11 +17,14 @@ package git
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -39,25 +42,55 @@ type ReflogEntry struct {
 	Message string
 }
 
-// headReflogPath returns the HEAD reflog of the checkout at repoRoot. A linked
-// worktree has its own HEAD, and its own reflog in its private git dir.
-func headReflogPath(repoRoot string) (string, error) {
-	gitDir, _, err := FindGitDirAndRootFrom(repoRoot)
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(gitDir, "logs", "HEAD"), nil
+// IsZeroOID reports whether oid is the all-zero object ID that a reflog
+// entry holds for "no commit", as the old side of the first commit.
+func IsZeroOID(oid string) bool {
+	return oid != "" && strings.Trim(oid, "0") == ""
 }
 
-// HeadReflogSize returns the size in bytes of the HEAD reflog of the checkout
-// at repoRoot, zero when it has none yet. Taken before a command, it marks
-// where the entries that the command writes start. It only stats the file, so
-// it is cheap enough for a hook that runs before every shell command.
+// headReflog locates the HEAD reflog of the checkout at repoRoot. A linked
+// worktree has its own HEAD, and its own reflog. With the files ref storage
+// the reflog is the file logs/HEAD in the checkout's git dir. With the
+// reftable ref storage (extensions.refStorage) it lives in binary tables that
+// only git reads, and reftable is true.
+func headReflog(repoRoot string) (path string, reftable bool, err error) {
+	gitDir, _, err := FindGitDirAndRootFrom(repoRoot)
+	if err != nil {
+		return "", false, err
+	}
+
+	commonDir := gitDir
+	if data, err := os.ReadFile(filepath.Join(gitDir, "commondir")); err == nil {
+		commonDir = strings.TrimSpace(string(data))
+		if !filepath.IsAbs(commonDir) {
+			commonDir = filepath.Join(gitDir, commonDir)
+		}
+	}
+	if fi, err := os.Stat(filepath.Join(commonDir, "reftable")); err == nil && fi.IsDir() {
+		return "", true, nil
+	}
+
+	return filepath.Join(gitDir, "logs", "HEAD"), false, nil
+}
+
+// HeadReflogSize returns the position of the end of the HEAD reflog of the
+// checkout at repoRoot, zero when it has none yet. Taken before a command, it
+// marks where the entries that the command writes start. With the files ref
+// storage it is the size of the reflog in bytes: a stat, cheap enough for a
+// hook that runs before every shell command. With reftable it is the number of
+// entries, which git has to count.
 func HeadReflogSize(repoRoot string) (int64, error) {
-	path, err := headReflogPath(repoRoot)
+	path, reftable, err := headReflog(repoRoot)
 	if err != nil {
 		return 0, err
+	}
+	if reftable {
+		entries, err := gitHeadReflog(repoRoot)
+		if err != nil {
+			return 0, err
+		}
+
+		return int64(len(entries)), nil
 	}
 
 	fi, err := os.Stat(path)
@@ -71,13 +104,16 @@ func HeadReflogSize(repoRoot string) (int64, error) {
 	return fi.Size(), nil
 }
 
-// HeadReflogSince returns the HEAD reflog entries written after offset, a size
-// that HeadReflogSize returned earlier, oldest first. It returns
+// HeadReflogSince returns the HEAD reflog entries written after offset, a
+// position that HeadReflogSize returned earlier, oldest first. It returns
 // ErrReflogRewritten when the reflog is now shorter than offset.
 func HeadReflogSince(repoRoot string, offset int64) ([]ReflogEntry, error) {
-	path, err := headReflogPath(repoRoot)
+	path, reftable, err := headReflog(repoRoot)
 	if err != nil {
 		return nil, err
+	}
+	if reftable {
+		return gitHeadReflogSince(repoRoot, offset)
 	}
 
 	f, err := os.Open(path)
@@ -119,6 +155,61 @@ func HeadReflogSince(repoRoot string, offset int64) ([]ReflogEntry, error) {
 	}
 
 	return entries, nil
+}
+
+// gitHeadReflog returns the HEAD reflog entries through git, newest first, for
+// a ref storage that only git reads. git prints the commit that each entry
+// moved HEAD to, not the one it left. The old side of an entry is then the new
+// side of the entry before it, or the zero ID for the first one. An unborn
+// HEAD with no reflog yet has no entries.
+func gitHeadReflog(repoRoot string) ([]ReflogEntry, error) {
+	cmd := exec.Command("git", "reflog", "show", "--format=%H%x09%gs", "HEAD", "--")
+	cmd.Dir = repoRoot
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		if hasHead := exec.Command("git", "-C", repoRoot, "rev-parse", "--verify", "-q", "HEAD").Run() == nil; !hasHead {
+			return nil, nil
+		}
+
+		return nil, fmt.Errorf("git reflog HEAD: %w: %s", err, strings.TrimSpace(stderr.String()))
+	}
+
+	var entries []ReflogEntry
+	for line := range strings.Lines(string(out)) {
+		newOID, msg, ok := strings.Cut(strings.TrimSuffix(line, "\n"), "\t")
+		if !ok {
+			return nil, fmt.Errorf("parse git reflog line %q", line)
+		}
+		entries = append(entries, ReflogEntry{New: newOID, Message: msg})
+	}
+	for i := range entries {
+		if i+1 < len(entries) {
+			entries[i].Old = entries[i+1].New
+		} else {
+			entries[i].Old = strings.Repeat("0", len(entries[i].New))
+		}
+	}
+
+	return entries, nil
+}
+
+// gitHeadReflogSince is HeadReflogSince for a ref storage that only git reads,
+// where offset is a number of entries.
+func gitHeadReflogSince(repoRoot string, offset int64) ([]ReflogEntry, error) {
+	all, err := gitHeadReflog(repoRoot)
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(all)) < offset {
+		return nil, ErrReflogRewritten
+	}
+
+	added := all[:int64(len(all))-offset]
+	slices.Reverse(added)
+
+	return added, nil
 }
 
 // parseReflogLine parses one reflog line:

@@ -937,7 +937,8 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 // shell command.
 type preCommand struct {
 	// head is the HEAD commit. It is empty when the pre hook saved none: a
-	// checkout with no commit yet, or a pre hook from an older CLI.
+	// checkout with no commit yet (hasReflog is then true), or a pre hook
+	// from an older CLI.
 	head string
 	// reflogSize is the size of the HEAD reflog. hasReflog is false when the
 	// pre hook saved none.
@@ -973,10 +974,16 @@ func recordRootChanges(store *state.Store, repoRoot string, pre preCommand, befo
 		return
 	}
 
+	// A pre hook from an older CLI saved neither a HEAD nor a reflog size: the
+	// HEAD after the command stands in, as before. A pre hook that saved a
+	// reflog size and no HEAD saw a checkout with no commit yet, so a HEAD
+	// now is a move, and the first commit can be the command's own.
 	head, moved := "HEAD", false
 	var own []tracegit.ReflogEntry
-	if pre.head != "" {
-		head = pre.head
+	if pre.head != "" || pre.hasReflog {
+		if pre.head != "" {
+			head = pre.head
+		}
 		if sha, _, err := client.CommitHeadInfo(repoRoot); err == nil && sha != pre.head {
 			head, moved = sha, true
 			own = commandCommits(repoRoot, pre, sha, log)

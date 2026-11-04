@@ -33,12 +33,23 @@ var ownCommitPrefixes = []string{"commit: ", "commit (amend): ", "commit (initia
 // the command wrote. Every other move, such as a rebase, a pull, a merge, a
 // checkout or a reset, points HEAD at content that the command did not write.
 //
-// It returns nil when entries do not lead from oldHead to newHead: the reflog
-// then does not tell the whole story of the command, and none of its moves can
-// be trusted.
+// An empty oldHead is a checkout with no commit before the command, which the
+// reflog shows as the zero ID.
+//
+// It returns nil when entries do not lead from oldHead to newHead, each entry
+// starting where the one before it ended: the reflog then does not tell the
+// whole story of the command, and none of its moves can be trusted.
 func OwnCommits(oldHead, newHead string, entries []tracegit.ReflogEntry) []tracegit.ReflogEntry {
-	if len(entries) == 0 || entries[0].Old != oldHead || entries[len(entries)-1].New != newHead {
+	if len(entries) == 0 || entries[len(entries)-1].New != newHead {
 		return nil
+	}
+	if first := entries[0].Old; first != oldHead && (oldHead != "" || !tracegit.IsZeroOID(first)) {
+		return nil
+	}
+	for i := 1; i < len(entries); i++ {
+		if entries[i].Old != entries[i-1].New {
+			return nil
+		}
 	}
 
 	var own []tracegit.ReflogEntry

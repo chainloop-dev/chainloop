@@ -659,7 +659,6 @@ func (r *lineRepo) shellWrite(sessionID string, run func()) {
 	require.NoError(r.t, err)
 	pre := preCommand{head: heads[r.dir]}
 	pre.reflogSize, pre.hasReflog = reflogs[r.dir]
-	require.NotEmpty(r.t, pre.head, "the pre hook saves the HEAD commit")
 	require.True(r.t, pre.hasReflog, "the pre hook saves the HEAD reflog size")
 	recordRootChanges(r.store, r.dir, pre, sigs[r.dir], sessionID, zerolog.Nop())
 	r.store.DeleteShellPreSignature(key)
@@ -697,6 +696,9 @@ func TestLineAttribution_ShellCommandThatCommits(t *testing.T) {
 	assert.Equal(t, 2, attr.Written["a.go"].Len())
 }
 
+// wireGenFile is a file that a code generator rewrites.
+const wireGenFile = "wire_gen.go"
+
 // divergedRepo returns a repository on branch feature, with one human commit,
 // and a main branch that rewrote big.txt and added other.txt since.
 func divergedRepo(t *testing.T) *lineRepo {
@@ -707,8 +709,8 @@ func divergedRepo(t *testing.T) *lineRepo {
 	r.commit("chore: big", "big.txt")
 
 	runGit(t, r.dir, "checkout", "-q", "-b", "feature")
-	r.humanWrite("wire_gen.go", "package main\n")
-	r.commit("feat: wire", "wire_gen.go")
+	r.humanWrite(wireGenFile, "package main\n")
+	r.commit("feat: wire", wireGenFile)
 
 	runGit(t, r.dir, "checkout", "-q", "main")
 	r.humanWrite("big.txt", content(numbered("new", 100)))
@@ -734,19 +736,19 @@ func TestLineAttribution_ShellHeadMoveRecordsNoUpstreamLines(t *testing.T) {
 			name: "rebase, then a regenerated file",
 			run: func(t *testing.T, r *lineRepo) {
 				r.shellWrite(lineSession, func() { runGit(t, r.dir, "rebase", "-q", "main") })
-				r.shellWrite(lineSession, func() { r.humanWrite("wire_gen.go", "package main\n\nfunc a() {}\n") })
+				r.shellWrite(lineSession, func() { r.humanWrite(wireGenFile, "package main\n\nfunc a() {}\n") })
 			},
-			wantAdded: 2, wantFiles: []string{"wire_gen.go"},
+			wantAdded: 2, wantFiles: []string{wireGenFile},
 		},
 		{
 			name: "rebase and a change in one command",
 			run: func(t *testing.T, r *lineRepo) {
 				r.shellWrite(lineSession, func() {
 					runGit(t, r.dir, "rebase", "-q", "main")
-					r.humanWrite("wire_gen.go", "package main\n\nfunc a() {}\n")
+					r.humanWrite(wireGenFile, "package main\n\nfunc a() {}\n")
 				})
 			},
-			wantAdded: 2, wantFiles: []string{"wire_gen.go"},
+			wantAdded: 2, wantFiles: []string{wireGenFile},
 		},
 		{
 			name: "merge commit",
@@ -789,11 +791,11 @@ func TestLineAttribution_ShellHeadMoveRecordsNoUpstreamLines(t *testing.T) {
 			name: "an amend of a human commit",
 			run: func(t *testing.T, r *lineRepo) {
 				r.shellWrite(lineSession, func() {
-					r.humanWrite("wire_gen.go", "package main\n\nfunc a() {}\n")
+					r.humanWrite(wireGenFile, "package main\n\nfunc a() {}\n")
 					runGit(t, r.dir, "commit", "-q", "-a", "--amend", "--no-edit")
 				})
 			},
-			wantAdded: 2, wantFiles: []string{"wire_gen.go"},
+			wantAdded: 2, wantFiles: []string{wireGenFile},
 		},
 		{
 			name: "rebase without a reflog",
@@ -801,6 +803,19 @@ func TestLineAttribution_ShellHeadMoveRecordsNoUpstreamLines(t *testing.T) {
 				runGit(t, r.dir, "config", "core.logAllRefUpdates", "false")
 				r.shellWrite(lineSession, func() { runGit(t, r.dir, "rebase", "-q", "main") })
 			},
+		},
+		{
+			name: "the first commit of a checkout with no commit",
+			run: func(t *testing.T, r *lineRepo) {
+				runGit(t, r.dir, "checkout", "-q", "--orphan", "fresh")
+				runGit(t, r.dir, "rm", "-rfq", ".")
+				r.shellWrite(lineSession, func() {
+					r.humanWrite("a.go", "one\ntwo\n")
+					runGit(t, r.dir, "add", "a.go")
+					runGit(t, r.dir, "commit", "-q", "-m", "feat: a")
+				})
+			},
+			wantAdded: 2, wantFiles: []string{"a.go"},
 		},
 	}
 	for _, tc := range tests {
@@ -811,7 +826,7 @@ func TestLineAttribution_ShellHeadMoveRecordsNoUpstreamLines(t *testing.T) {
 			attr := r.store.LoadAILineAttribution(lineSession)
 			assert.Equal(t, tc.wantAdded, attr.GeneratedAdded, "generated lines added")
 			assert.Equal(t, tc.wantRemoved, attr.GeneratedRemoved, "generated lines removed")
-			var files []string
+			files := make([]string, 0, len(attr.Files))
 			for f := range attr.Files {
 				files = append(files, f)
 			}

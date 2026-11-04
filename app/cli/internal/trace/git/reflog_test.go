@@ -26,13 +26,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func reflogRepo(t *testing.T) string {
+func reflogRepo(t *testing.T, initArgs ...string) string {
 	t.Helper()
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git binary not found")
 	}
 	dir := t.TempDir()
-	reflogGit(t, dir, "init", "-q", "-b", "main")
+	reflogGit(t, dir, append([]string{"init", "-q", "-b", "main"}, initArgs...)...)
 	reflogGit(t, dir, "config", "user.email", "test@example.com")
 	reflogGit(t, dir, "config", "user.name", "Test")
 	reflogGit(t, dir, "config", "commit.gpgsign", "false")
@@ -59,45 +59,91 @@ func reflogCommit(t *testing.T, dir, file, text, msg string) string {
 	return reflogGit(t, dir, "rev-parse", "HEAD")
 }
 
+// reftableSupported reports whether the git binary can create a repository
+// with the reftable ref storage (git 2.45 and later).
+func reftableSupported(t *testing.T) bool {
+	t.Helper()
+	cmd := exec.Command("git", "init", "-q", "--ref-format=reftable", t.TempDir())
+
+	return cmd.Run() == nil
+}
+
 func TestHeadReflogSince(t *testing.T) {
-	dir := reflogRepo(t)
+	tests := []struct {
+		name     string
+		initArgs []string
+		reftable bool
+	}{
+		{name: "files ref storage"},
+		{name: "reftable ref storage", initArgs: []string{"--ref-format=reftable"}, reftable: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.reftable && !reftableSupported(t) {
+				t.Skip("git does not support reftable")
+			}
+			dir := reflogRepo(t, tc.initArgs...)
 
-	// No commit yet: there is no reflog, and its size is zero.
-	size, err := HeadReflogSize(dir)
-	require.NoError(t, err)
-	assert.Zero(t, size)
+			// No commit yet: the reflog is empty.
+			start, err := HeadReflogSize(dir)
+			require.NoError(t, err)
+			assert.Zero(t, start)
 
-	first := reflogCommit(t, dir, "a.txt", "a\n", "first")
-	size, err = HeadReflogSize(dir)
-	require.NoError(t, err)
-	require.Positive(t, size)
+			first := reflogCommit(t, dir, "a.txt", "a\n", "first")
+			size, err := HeadReflogSize(dir)
+			require.NoError(t, err)
+			require.Positive(t, size)
 
-	second := reflogCommit(t, dir, "a.txt", "b\n", "second")
-	reflogGit(t, dir, "checkout", "-q", "-b", "other", first)
+			entries, err := HeadReflogSince(dir, start)
+			require.NoError(t, err)
+			require.Len(t, entries, 1)
+			assert.Equal(t, first, entries[0].New)
+			assert.Equal(t, "commit (initial): first", entries[0].Message)
+			assert.True(t, IsZeroOID(entries[0].Old), "the first commit replaces no commit: %q", entries[0].Old)
 
-	entries, err := HeadReflogSince(dir, size)
-	require.NoError(t, err)
-	require.Len(t, entries, 2, "only the entries written after the size was taken")
-	assert.Equal(t, ReflogEntry{Old: first, New: second, Message: "commit: second"}, entries[0])
-	assert.Equal(t, second, entries[1].Old)
-	assert.Equal(t, first, entries[1].New)
-	assert.True(t, strings.HasPrefix(entries[1].Message, "checkout: moving from main to other"), entries[1].Message)
+			second := reflogCommit(t, dir, "a.txt", "b\n", "second")
+			reflogGit(t, dir, "checkout", "-q", "-b", "other", first)
 
-	// Nothing written since the current size.
-	now, err := HeadReflogSize(dir)
-	require.NoError(t, err)
-	entries, err = HeadReflogSince(dir, now)
-	require.NoError(t, err)
-	assert.Empty(t, entries)
+			entries, err = HeadReflogSince(dir, size)
+			require.NoError(t, err)
+			require.Len(t, entries, 2, "only the entries written after the size was taken")
+			assert.Equal(t, ReflogEntry{Old: first, New: second, Message: "commit: second"}, entries[0])
+			assert.Equal(t, second, entries[1].Old)
+			assert.Equal(t, first, entries[1].New)
+			assert.True(t, strings.HasPrefix(entries[1].Message, "checkout: moving from main to other"), entries[1].Message)
 
-	// A reflog that is now shorter than the offset was rewritten.
-	_, err = HeadReflogSince(dir, now+1)
-	assert.ErrorIs(t, err, ErrReflogRewritten)
+			// Nothing written since the current size.
+			now, err := HeadReflogSize(dir)
+			require.NoError(t, err)
+			entries, err = HeadReflogSince(dir, now)
+			require.NoError(t, err)
+			assert.Empty(t, entries)
+
+			// A reflog that is now shorter than the offset was rewritten.
+			_, err = HeadReflogSince(dir, now+1)
+			assert.ErrorIs(t, err, ErrReflogRewritten)
+		})
+	}
 }
 
 // A linked worktree has its own HEAD reflog.
 func TestHeadReflogSince_LinkedWorktree(t *testing.T) {
-	dir := reflogRepo(t)
+	for _, reftable := range []bool{false, true} {
+		t.Run(map[bool]string{false: "files", true: "reftable"}[reftable], func(t *testing.T) {
+			var initArgs []string
+			if reftable {
+				if !reftableSupported(t) {
+					t.Skip("git does not support reftable")
+				}
+				initArgs = []string{"--ref-format=reftable"}
+			}
+			testLinkedWorktreeReflog(t, reflogRepo(t, initArgs...))
+		})
+	}
+}
+
+func testLinkedWorktreeReflog(t *testing.T, dir string) {
+	t.Helper()
 	reflogCommit(t, dir, "a.txt", "a\n", "first")
 
 	wt := filepath.Join(t.TempDir(), "wt")

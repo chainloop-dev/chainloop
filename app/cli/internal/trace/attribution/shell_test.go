@@ -23,9 +23,10 @@ import (
 )
 
 func TestOwnCommits(t *testing.T) {
-	entry := func(old, new, msg string) tracegit.ReflogEntry {
-		return tracegit.ReflogEntry{Old: old, New: new, Message: msg}
+	entry := func(oldOID, newOID, msg string) tracegit.ReflogEntry {
+		return tracegit.ReflogEntry{Old: oldOID, New: newOID, Message: msg}
 	}
+	zero := "0000000000000000000000000000000000000000"
 
 	tests := []struct {
 		name    string
@@ -94,6 +95,25 @@ func TestOwnCommits(t *testing.T) {
 			name:    "entries that do not end at the new HEAD",
 			oldHead: "a", newHead: "z",
 			entries: []tracegit.ReflogEntry{entry("a", "c", "commit: feat")},
+		},
+		{
+			name:    "entries with a gap between them",
+			oldHead: "a", newHead: "d",
+			entries: []tracegit.ReflogEntry{
+				entry("a", "b", "commit: one"),
+				entry("c", "d", "commit: two"),
+			},
+		},
+		{
+			name:    "the first commit of a checkout with no commit",
+			oldHead: "", newHead: "b",
+			entries: []tracegit.ReflogEntry{entry(zero, "b", "commit (initial): first")},
+			want:    []tracegit.ReflogEntry{entry(zero, "b", "commit (initial): first")},
+		},
+		{
+			name:    "no old HEAD and a first entry that replaces a commit",
+			oldHead: "", newHead: "b",
+			entries: []tracegit.ReflogEntry{entry("a", "b", "commit: feat")},
 		},
 	}
 	for _, tc := range tests {
