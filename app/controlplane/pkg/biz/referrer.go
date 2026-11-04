@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"time"
 
@@ -38,21 +39,23 @@ import (
 var referrerTracer = otelx.Tracer("chainloop-controlplane", "biz/referrer")
 
 type ReferrerUseCase struct {
-	repo         ReferrerRepo
-	workflowRepo WorkflowRepo
-	logger       *log.Helper
+	repo              ReferrerRepo
+	membershipUseCase *MembershipUseCase
+	workflowRepo      WorkflowRepo
+	logger            *log.Helper
 }
 
-func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, l log.Logger) (*ReferrerUseCase, error) {
+func NewReferrerUseCase(repo ReferrerRepo, wfRepo WorkflowRepo, membershipUseCase *MembershipUseCase, l log.Logger) (*ReferrerUseCase, error) {
 	if l == nil {
 		l = log.NewStdLogger(io.Discard)
 	}
 	logger := servicelogger.ScopedHelper(l, "biz/referrer")
 
 	return &ReferrerUseCase{
-		repo:         repo,
-		workflowRepo: wfRepo,
-		logger:       logger,
+		repo:              repo,
+		membershipUseCase: membershipUseCase,
+		workflowRepo:      wfRepo,
+		logger:            logger,
 	}, nil
 }
 
@@ -158,6 +161,38 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 	return nil
 }
 
+// GetFromRootUser returns the referrer identified by the provided content digest, including its first-level references.
+// The discovery is limited to the given organization, which the user must be a member of, with the project
+// visibility that the user has in that organization.
+func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string, orgID uuid.UUID, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {
+	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRootUser")
+	defer span.End()
+
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		return nil, "", NewErrInvalidUUID(err)
+	}
+
+	userOrgs, scopes, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if !slices.Contains(userOrgs, orgID) {
+		return nil, "", newReferrerNotFoundErr(digest)
+	}
+
+	// Only the project visibility of the user in this organization applies. A referrer lists its
+	// projects of all organizations, so a visible project in another organization must not count.
+	// Referrers are always project-scoped, so only the project dimension of the RBAC scopes is relevant.
+	var projectIDs map[OrgID][]ProjectID
+	if scope, ok := scopes[orgID]; ok {
+		projectIDs = map[OrgID][]ProjectID{orgID: scope.ProjectIDs}
+	}
+
+	return s.GetFromRoot(ctx, digest, rootKind, []uuid.UUID{orgID}, projectIDs, p, extraFilters...)
+}
+
 // GetFromRoot returns the referrer identified by the provided content digest, including its first-level references.
 // For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it.
 // It only returns referrers that belong to the given organizations, with the given project visibility.
@@ -182,10 +217,14 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 
 		return nil, "", fmt.Errorf("getting referrer from root: %w", err)
 	} else if ref == nil {
-		return nil, "", NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
+		return nil, "", newReferrerNotFoundErr(digest)
 	}
 
 	return ref, nextCursor, nil
+}
+
+func newReferrerNotFoundErr(digest string) error {
+	return NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
 }
 
 const (

@@ -330,9 +330,9 @@ const file_controlplane_v1_referrer_proto_rawDesc = "" +
 	"\x10AnnotationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:B\x92A?\n" +
-	"=*\fReferrerItem2-It represents a referrer object in the systemJ\x04\b\x06\x10\aR\x06public2\x90\x03\n" +
-	"\x0fReferrerService\x12\xa9\x02\n" +
-	"\x0fDiscoverPrivate\x126.controlplane.v1.ReferrerServiceDiscoverPrivateRequest\x1a7.controlplane.v1.ReferrerServiceDiscoverPrivateResponse\"\xa4\x01\x92A\x86\x01\x12\x19Discover private referrer\x1aWReturns the referrer item for a given digest in the organizations of the logged-in user:\x10application/json\x82\xd3\xe4\x93\x02\x14\x12\x12/discover/{digest}\x1aQ\x92AN\n" +
+	"=*\fReferrerItem2-It represents a referrer object in the systemJ\x04\b\x06\x10\aR\x06public2\x80\x03\n" +
+	"\x0fReferrerService\x12\x99\x02\n" +
+	"\x0fDiscoverPrivate\x126.controlplane.v1.ReferrerServiceDiscoverPrivateRequest\x1a7.controlplane.v1.ReferrerServiceDiscoverPrivateResponse\"\x94\x01\x92Aw\x12\x19Discover private referrer\x1aHReturns the referrer item for a given digest in the current organization:\x10application/json\x82\xd3\xe4\x93\x02\x14\x12\x12/discover/{digest}\x1aQ\x92AN\n" +
 	"\x0fReferrerService\x12;Referrer service for discovering referred content by digestBLZJgithub.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1;v1b\x06proto3"
 
 var (

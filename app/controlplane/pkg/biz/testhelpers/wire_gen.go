@@ -149,7 +149,7 @@ func WireTestData(contextContext context.Context, testDatabase *TestDatabase, t 
 		return nil, nil, err
 	}
 	referrerRepo := data.NewReferrerRepo(dataData, workflowRepo, logger)
-	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, logger)
+	referrerUseCase, err := biz.NewReferrerUseCase(referrerRepo, workflowRepo, membershipUseCase, logger)
 	if err != nil {
 		cleanup()
 		return nil, nil, err

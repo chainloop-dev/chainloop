@@ -41,7 +41,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ReferrerServiceClient interface {
-	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
+	// DiscoverPrivate returns the referrer item for a given digest in the current organization
 	DiscoverPrivate(ctx context.Context, in *ReferrerServiceDiscoverPrivateRequest, opts ...grpc.CallOption) (*ReferrerServiceDiscoverPrivateResponse, error)
 }
 
@@ -66,7 +66,7 @@ func (c *referrerServiceClient) DiscoverPrivate(ctx context.Context, in *Referre
 // All implementations must embed UnimplementedReferrerServiceServer
 // for forward compatibility
 type ReferrerServiceServer interface {
-	// DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
+	// DiscoverPrivate returns the referrer item for a given digest in the current organization
 	DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error)
 	mustEmbedUnimplementedReferrerServiceServer()
 }

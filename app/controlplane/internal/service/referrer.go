@@ -41,7 +41,8 @@ func NewReferrerService(uc *biz.ReferrerUseCase, opts ...NewOpt) *ReferrerServic
 }
 
 func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerServiceDiscoverPrivateRequest) (*pb.ReferrerServiceDiscoverPrivateResponse, error) {
-	if _, _, err := requireCurrentUserOrAPIToken(ctx); err != nil {
+	currentUser, _, err := requireCurrentUserOrAPIToken(ctx)
+	if err != nil {
 		return nil, err
 	}
 
@@ -68,10 +69,17 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 		return nil, fmt.Errorf("invalid org UUID: %w", err)
 	}
 
-	// Discovery is always limited to the current organization, with the project visibility
-	// of the caller, the same way for users and API tokens
-	referrer, nextCursor, err := s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID},
-		s.rbacScopesForOrg(ctx, orgUUID).ProjectIDsByOrg(), paginationOpts, extraFilters...)
+	// Discovery is always limited to the current organization, with the project visibility of
+	// the caller in that organization. A user's visibility comes from the memberships of the user
+	// in that organization only. An API token reaches only projects of its own organization.
+	var referrer *biz.StoredReferrer
+	var nextCursor string
+	if currentUser != nil {
+		referrer, nextCursor, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID, orgUUID, paginationOpts, extraFilters...)
+	} else {
+		referrer, nextCursor, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID},
+			s.rbacScopesForOrg(ctx, orgUUID).ProjectIDsByOrg(), paginationOpts, extraFilters...)
+	}
 	if err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
