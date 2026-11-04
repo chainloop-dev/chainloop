@@ -259,8 +259,8 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 			_ = os.Remove(path)
 			continue
 		}
-		// A session that a commit joined is live too: the next push of that
-		// commit counts its replacing lines for the session.
+		// An attested commit does not protect its sessions: the push that
+		// attested it already used their state.
 		if rec.Tracked {
 			continue
 		}
@@ -320,8 +320,7 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 func (s *Store) staleSessionIDs(unattested map[string]struct{}) (map[string]struct{}, error) {
 	records, err := s.LoadAllSessionRecords()
 	if err != nil {
-		// Without the records no age is known: keep everything this cycle.
-		return nil, nil
+		return nil, fmt.Errorf("load session records: %w", err)
 	}
 	startedAt := make(map[string]time.Time, len(records))
 	for _, rec := range records {
