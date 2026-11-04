@@ -61,12 +61,10 @@ func RegisterDiscoverBuiltin(conn *grpc.ClientConn) error {
 			types.Named("response", types.A).Description("response object as in the `chainloop discover` CLI output, with the references of all pages and a truncated field"),
 		),
 		Nondeterministic: true,
-	}, getDiscoverRegoImpl(conn))
+	}, getDiscoverRegoImpl(NewDiscoverService(conn)))
 }
 
-func getDiscoverRegoImpl(conn *grpc.ClientConn) topdown.BuiltinFunc {
-	discoverSvc := NewDiscoverService(conn)
-
+func getDiscoverRegoImpl(discoverSvc *DiscoverService) topdown.BuiltinFunc {
 	return func(bctx topdown.BuiltinContext, operands []*ast.Term, iter func(*ast.Term) error) error {
 		if len(operands) < 1 {
 			return errors.New("need at least one operand")
@@ -93,6 +91,11 @@ func getDiscoverRegoImpl(conn *grpc.ClientConn) topdown.BuiltinFunc {
 		resp, err := discoverSvc.Discover(bctx.Context, string(digest), string(kind))
 		if err != nil {
 			return fmt.Errorf("failed to call discover endpoint: %w", err)
+		}
+
+		// no connection to the control plane
+		if resp == nil {
+			return iter(ast.NullTerm())
 		}
 
 		// call the iterator with the output value
