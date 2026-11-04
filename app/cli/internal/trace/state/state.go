@@ -215,9 +215,16 @@ func (s *Store) RemoveSpecRedactions(sessionID string) error {
 //
 //  1. Walk commits/, drop any record whose SHA isn't in liveSHAs (post-rebase
 //     orphan or commit on a deleted branch).
-//  2. Walk ai-lines/ and sessions/, drop any entry whose session ID is no
-//     longer referenced by a surviving CommitRecord, or which is older than
-//     staleSessionRetention and has nothing left to attest.
+//  2. Walk ai-lines/ and sessions/, drop any entry older than
+//     staleSessionRetention that has nothing left to attest.
+//
+// Step 2 does not drop a session only because no surviving CommitRecord
+// references it. That is also the state of a session that is still running
+// and has not committed yet, and of a session whose commits were rewritten
+// where the hooks of this trace directory did not run (another worktree,
+// another clone, hooks disabled). Dropping its ledger there makes the next push
+// attribute all its lines to a human (issue 3778). The retention bounds the
+// growth instead.
 //
 // An empty liveSHAs is treated as a pathological signal (no local branches
 // readable, or the caller fed us garbage) and the GC short-circuits — wiping
@@ -234,7 +241,6 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 		return fmt.Errorf("read commits dir: %w", err)
 	}
 
-	liveSessions := make(map[string]struct{})
 	// Sessions with a surviving commit that has not been attested yet. Their
 	// state must survive the age check — the next push still needs it.
 	unattestedSessions := make(map[string]struct{})
@@ -255,42 +261,22 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 		}
 		// A session that a commit joined is live too: the next push of that
 		// commit counts its replacing lines for the session.
+		if rec.Tracked {
+			continue
+		}
 		for _, sid := range rec.AllSessionIDs() {
-			liveSessions[sanitizeID(sid)] = struct{}{}
-			if !rec.Tracked {
-				unattestedSessions[sanitizeID(sid)] = struct{}{}
-			}
+			unattestedSessions[sanitizeID(sid)] = struct{}{}
 		}
 	}
 
-	stale := s.staleSessionIDs(unattestedSessions)
+	stale, err := s.staleSessionIDs(unattestedSessions)
+	if err != nil {
+		return err
+	}
 
-	for _, child := range []struct {
-		sub string
-		ext string
-	}{
-		{traceDirAILines, aiLinesExt},
-		{traceDirSessions, sessionRecordExt},
-	} {
-		dir := filepath.Join(s.traceDirPath(), child.sub)
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				continue
-			}
-
-			return fmt.Errorf("read %s dir: %w", child.sub, err)
-		}
-		for _, entry := range entries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), child.ext) {
-				continue
-			}
-			id := strings.TrimSuffix(entry.Name(), child.ext)
-			_, alive := liveSessions[id]
-			if _, expired := stale[id]; !alive || expired {
-				_ = os.Remove(filepath.Join(dir, entry.Name()))
-			}
-		}
+	for id := range stale {
+		_ = os.Remove(s.aiLinesPath(id))
+		_ = os.Remove(s.sessionRecordPath(id))
 	}
 
 	// The redacted spec copies of a session go with its records. The session
@@ -314,10 +300,12 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 	return s.gcSkillCopies()
 }
 
-// staleSessionIDs returns the sanitized IDs of session records older than
-// staleSessionRetention whose work has all been attested. Records with an
-// unparseable or missing StartedAt are never reported stale, so a bad
-// timestamp cannot cause data loss.
+// staleSessionIDs returns the sanitized IDs of the sessions in sessions/ and
+// ai-lines/ that are older than staleSessionRetention and that no surviving
+// unattested commit references. The age of a session is the StartedAt of its
+// record. A session with no record, or with an unparseable or missing
+// StartedAt, ages by the newest modification time of its files instead, so it
+// cannot stay forever, and recent data is never reported stale.
 //
 // Liveness is deliberately not consulted: session-end does not always run, so
 // a leaked record stays Active forever and would never expire.
@@ -329,29 +317,68 @@ func (s *Store) GCOrphans(liveSHAs map[string]bool) error {
 // file and pull the commit into its evidence, and by then its transcript is
 // usually gone — raw/ is wiped on every push — so the attestation it wins
 // yields nothing anyway. Under-crediting beats crediting the wrong session.
-func (s *Store) staleSessionIDs(unattested map[string]struct{}) map[string]struct{} {
+func (s *Store) staleSessionIDs(unattested map[string]struct{}) (map[string]struct{}, error) {
 	records, err := s.LoadAllSessionRecords()
 	if err != nil {
-		return nil
+		// Without the records no age is known: keep everything this cycle.
+		return nil, nil
+	}
+	startedAt := make(map[string]time.Time, len(records))
+	for _, rec := range records {
+		if t, err := time.Parse(time.RFC3339, rec.StartedAt); err == nil {
+			startedAt[sanitizeID(rec.SessionID)] = t
+		}
+	}
+
+	// The newest modification time of the files of each session.
+	modified := make(map[string]time.Time)
+	for _, child := range []struct {
+		sub string
+		ext string
+	}{
+		{traceDirAILines, aiLinesExt},
+		{traceDirSessions, sessionRecordExt},
+	} {
+		dir := filepath.Join(s.traceDirPath(), child.sub)
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+
+			return nil, fmt.Errorf("read %s dir: %w", child.sub, err)
+		}
+		for _, entry := range entries {
+			if entry.IsDir() || !strings.HasSuffix(entry.Name(), child.ext) {
+				continue
+			}
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			id := strings.TrimSuffix(entry.Name(), child.ext)
+			if info.ModTime().After(modified[id]) {
+				modified[id] = info.ModTime()
+			}
+		}
 	}
 
 	cutoff := time.Now().UTC().Add(-staleSessionRetention)
 	stale := make(map[string]struct{})
-	for _, rec := range records {
-		id := sanitizeID(rec.SessionID)
+	for id, mtime := range modified {
 		if _, ok := unattested[id]; ok {
 			continue
 		}
-		startedAt, err := time.Parse(time.RFC3339, rec.StartedAt)
-		if err != nil {
-			continue
+		age, ok := startedAt[id]
+		if !ok {
+			age = mtime
 		}
-		if startedAt.Before(cutoff) {
+		if age.Before(cutoff) {
 			stale[id] = struct{}{}
 		}
 	}
 
-	return stale
+	return stale, nil
 }
 
 // RemoveTraceDir removes the trace state but preserves local-sessions/, the

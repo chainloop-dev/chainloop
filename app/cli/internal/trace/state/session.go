@@ -71,20 +71,23 @@ func (s *Store) SaveSessionRecord(rec *SessionRecord) error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(dir, sanitizeID(rec.SessionID)+".json"), data, 0600)
+	return os.WriteFile(s.sessionRecordPath(rec.SessionID), data, 0600)
+}
+
+// sessionRecordPath returns the path of the record of a session.
+func (s *Store) sessionRecordPath(sessionID string) string {
+	return filepath.Join(s.traceDirPath(), traceDirSessions, sanitizeID(sessionID)+sessionRecordExt)
 }
 
 // SessionRecordExists checks whether a session record file exists for the given session ID.
 func (s *Store) SessionRecordExists(sessionID string) bool {
-	path := filepath.Join(s.traceDirPath(), traceDirSessions, sanitizeID(sessionID)+".json")
-	_, err := os.Stat(path)
+	_, err := os.Stat(s.sessionRecordPath(sessionID))
 	return err == nil
 }
 
 // LoadSessionRecord reads the SessionRecord for sessionID. Returns nil, nil when not found.
 func (s *Store) LoadSessionRecord(sessionID string) (*SessionRecord, error) {
-	path := filepath.Join(s.traceDirPath(), traceDirSessions, sanitizeID(sessionID)+".json")
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(s.sessionRecordPath(sessionID))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
