@@ -111,8 +111,8 @@ func TestDiscoverReadsAllPages(t *testing.T) {
 		{name: "error on a later page", total: 2*discoverPageSize + 50, failAt: 2, wantRequests: 2, wantErr: true},
 		// a control plane without pagination returns everything in one response
 		{name: "control plane without pagination", total: maxRefs + 500, noPagination: true, wantRequests: 1, wantRefs: maxRefs + 500},
-		// a control plane that ignores the cursor repeats the first page: keep it once and stop
-		{name: "control plane ignores the cursor", total: 2*discoverPageSize + 50, ignoreCursor: true, wantRequests: 2, wantRefs: discoverPageSize},
+		// a control plane that ignores the cursor repeats the first page: keep it once, stop and report truncated
+		{name: "control plane ignores the cursor", total: 2*discoverPageSize + 50, ignoreCursor: true, wantRequests: 2, wantRefs: discoverPageSize, wantTruncated: true},
 	}
 
 	for _, tc := range testCases {

@@ -58,7 +58,7 @@ func NewDiscoverService(conn *grpc.ClientConn) *DiscoverService {
 // A control plane without pagination support ignores the pagination request and
 // returns all the references in one response with no next cursor, so the read
 // ends after the first page. A next cursor that does not advance also ends the
-// read, so the same page is never merged twice.
+// read, so the same page is never merged twice, and marks the result as truncated.
 func (s *DiscoverService) Discover(ctx context.Context, digest, kind string) (*DiscoverResult, error) {
 	if s.client == nil {
 		return nil, nil
@@ -93,8 +93,10 @@ func (s *DiscoverService) Discover(ctx context.Context, digest, kind string) (*D
 			return nil, err
 		}
 
-		// a server that ignores the cursor returns the same page and the same next cursor again
+		// a server that ignores the cursor returns the same page and the same next cursor again,
+		// so the rest of the references cannot be read
 		if resp.GetPagination().GetNextCursor() == cursor {
+			result.Truncated = true
 			break
 		}
 
