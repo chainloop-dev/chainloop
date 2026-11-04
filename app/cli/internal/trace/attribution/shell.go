@@ -15,7 +15,55 @@
 
 package attribution
 
-import "sort"
+import (
+	"sort"
+	"strings"
+
+	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
+)
+
+// ownCommitPrefixes are the reflog messages of a commit that git wrote from
+// the index: "git commit", also with --amend, and the first commit of a
+// branch. A merge commit ("commit (merge)") is left out because its content
+// comes from the merged branch.
+var ownCommitPrefixes = []string{"commit: ", "commit (amend): ", "commit (initial): "}
+
+// OwnCommits returns the HEAD moves of a shell command that are commits the
+// command wrote itself, oldest first. entries are the HEAD reflog entries that
+// the command wrote. Every other move, such as a rebase, a pull, a merge, a
+// checkout or a reset, points HEAD at content that the command did not write.
+//
+// An empty oldHead is a checkout with no commit before the command, which the
+// reflog shows as the zero ID.
+//
+// It returns nil when entries do not lead from oldHead to newHead, each entry
+// starting where the one before it ended: the reflog then does not tell the
+// whole story of the command, and none of its moves can be trusted.
+func OwnCommits(oldHead, newHead string, entries []tracegit.ReflogEntry) []tracegit.ReflogEntry {
+	if len(entries) == 0 || entries[len(entries)-1].New != newHead {
+		return nil
+	}
+	if first := entries[0].Old; first != oldHead && (oldHead != "" || !tracegit.IsZeroOID(first)) {
+		return nil
+	}
+	for i := 1; i < len(entries); i++ {
+		if entries[i].Old != entries[i-1].New {
+			return nil
+		}
+	}
+
+	var own []tracegit.ReflogEntry
+	for _, e := range entries {
+		for _, prefix := range ownCommitPrefixes {
+			if strings.HasPrefix(e.Message, prefix) {
+				own = append(own, e)
+				break
+			}
+		}
+	}
+
+	return own
+}
 
 // ChangedPaths diffs two working-tree signatures (repo-relative path → content
 // hash) captured before and after a shell command, returning the paths the
