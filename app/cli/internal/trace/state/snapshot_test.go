@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -129,18 +130,22 @@ func TestShellPreReflog(t *testing.T) {
 	key := ShellCallKey{SessionID: shellSessionID, ToolUseID: "toolu_1"}
 
 	_, err := store.LoadShellPreReflog(key)
-	require.ErrorIs(t, err, os.ErrNotExist, "a command without saved sizes has none")
+	require.ErrorIs(t, err, os.ErrNotExist, "a command without saved positions has none")
 
-	sizes := map[string]int64{"/repo": 1234}
+	positions := map[string]tracegit.ReflogPos{
+		"/repo":     {Offset: 1234},
+		"/reftable": {Top: "abc\tHEAD@{1700000000}\tcommit: feat"},
+		"/unborn":   {},
+	}
 	require.NoError(t, store.SaveShellPreSignature(key, WorktreeSignatures{"/repo": {fileA: "h"}}))
-	require.NoError(t, store.SaveShellPreReflog(key, sizes))
+	require.NoError(t, store.SaveShellPreReflog(key, positions))
 	got, err := store.LoadShellPreReflog(key)
 	require.NoError(t, err)
-	assert.Equal(t, sizes, got)
+	assert.Equal(t, positions, got)
 
 	store.DeleteShellPreSignature(key)
 	_, err = store.LoadShellPreReflog(key)
-	require.ErrorIs(t, err, os.ErrNotExist, "the sizes go with the signature")
+	require.ErrorIs(t, err, os.ErrNotExist, "the positions go with the signature")
 }
 
 // A CLI upgrade can land between the pre and post hooks of one command. The

@@ -447,7 +447,7 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 	client := tracegit.NewGitClient()
 	sigs := make(state.WorktreeSignatures)
 	heads := make(map[string]string)
-	reflogs := make(map[string]int64)
+	reflogs := make(map[string]tracegit.ReflogPos)
 	for _, root := range shellSnapshotRoots(store, repoRoot, key.SessionID) {
 		sig, err := client.SnapshotWorktree(root)
 		if err != nil {
@@ -463,10 +463,10 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 		if sha, _, err := client.CommitHeadInfo(root); err == nil {
 			heads[root] = sha
 		}
-		if size, err := tracegit.HeadReflogSize(root); err == nil {
-			reflogs[root] = size
+		if pos, err := tracegit.HeadReflogPos(root); err == nil {
+			reflogs[root] = pos
 		} else {
-			log.Debug().Err(err).Str("root", root).Msg("pre-command: HEAD reflog size failed")
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: HEAD reflog position failed")
 		}
 	}
 
@@ -481,7 +481,7 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 		log.Debug().Err(err).Msg("pre-command: save HEAD commits failed")
 	}
 	if err := store.SaveShellPreReflog(key, reflogs); err != nil {
-		log.Debug().Err(err).Msg("pre-command: save HEAD reflog sizes failed")
+		log.Debug().Err(err).Msg("pre-command: save HEAD reflog positions failed")
 	}
 }
 
@@ -906,7 +906,7 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 		return
 	}
 	defer store.DeleteShellPreSignature(key)
-	// A pre hook from an older CLI saved no HEAD and no reflog size. That
+	// A pre hook from an older CLI saved no HEAD and no reflog position. That
 	// case, and a file that cannot be read, fall back to the current HEAD.
 	heads, err := store.LoadShellPreHeads(key)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -914,13 +914,13 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 	}
 	reflogs, err := store.LoadShellPreReflog(key)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		log.Debug().Err(err).Msg("post-command: cannot read pre-command HEAD reflog sizes")
+		log.Debug().Err(err).Msg("post-command: cannot read pre-command HEAD reflog positions")
 	}
 
 	for root, rootBefore := range before {
 		var pre preCommand
 		pre.head, pre.hasHead = heads[root]
-		pre.reflogSize, pre.hasReflog = reflogs[root]
+		pre.reflogPos, pre.hasReflog = reflogs[root]
 
 		rootStore := store
 		if !sameDir(root, repoRoot) {
@@ -946,10 +946,10 @@ type preCommand struct {
 	// hasHead is false when the pre hook saved no HEAD for the checkout: a
 	// pre hook from an older CLI, or a heads file that cannot be read.
 	hasHead bool
-	// reflogSize is the size of the HEAD reflog. hasReflog is false when the
+	// reflogPos is the end of the HEAD reflog. hasReflog is false when the
 	// pre hook saved none.
-	reflogSize int64
-	hasReflog  bool
+	reflogPos tracegit.ReflogPos
+	hasReflog bool
 }
 
 // recordRootChanges diffs the signature of one checkout captured before a
@@ -981,7 +981,7 @@ func recordRootChanges(store *state.Store, repoRoot string, pre preCommand, befo
 	}
 
 	// When the pre hook saved no HEAD, the HEAD after the command stands in,
-	// as before. A pre hook that saved an empty HEAD and a reflog size saw a
+	// as before. A pre hook that saved an empty HEAD and a reflog position saw a
 	// checkout with no commit yet, so a HEAD now is a move, and the first
 	// commit can be the command's own.
 	head, moved := "HEAD", false
@@ -996,13 +996,37 @@ func recordRootChanges(store *state.Store, repoRoot string, pre preCommand, befo
 		}
 	}
 
+	// One git process serves every read of a file at a commit. Without one,
+	// each read starts its own processes.
+	blobs, err := tracegit.NewBlobReader(repoRoot)
+	if err != nil {
+		log.Debug().Err(err).Str("root", repoRoot).Msg("post-command: no batch reader; reading files one by one")
+	} else {
+		defer func() { _ = blobs.Close() }()
+	}
 	fileAt := func(rev, relPath string) []byte {
-		content, err := client.FileAt(repoRoot, rev, filepath.ToSlash(relPath))
+		var content []byte
+		var err error
+		if blobs != nil {
+			content, err = blobs.FileAt(rev, filepath.ToSlash(relPath))
+		} else {
+			content, err = client.FileAt(repoRoot, rev, filepath.ToSlash(relPath))
+		}
 		if err != nil {
 			return nil
 		}
 
 		return content
+	}
+
+	// The paths that each own commit changed, so that a file is read only at
+	// the commits that touched it. nil when git cannot tell: every file is
+	// then read at that commit, and the diff finds the ones it did not touch.
+	ownPaths := make([]map[string]bool, len(own))
+	for i, c := range own {
+		if paths, err := tracegit.CommitPaths(repoRoot, c.Old, c.New); err == nil {
+			ownPaths[i] = paths
+		}
 	}
 
 	open := store.LoadAILineAttribution(sessionID).Open
@@ -1021,7 +1045,10 @@ func recordRootChanges(store *state.Store, repoRoot string, pre preCommand, befo
 			return nil
 		}
 
-		for _, c := range own {
+		for i, c := range own {
+			if ownPaths[i] != nil && !ownPaths[i][filepath.ToSlash(relPath)] {
+				continue
+			}
 			if edit := attribution.ComputeEdit(fileAt(c.Old, relPath), fileAt(c.New, relPath)); edit.Changed {
 				if err := write(edit); err != nil {
 					return err
@@ -1065,13 +1092,13 @@ func recordRootChanges(store *state.Store, repoRoot string, pre preCommand, befo
 
 // commandCommits returns the commits that a shell command wrote itself, from
 // the HEAD reflog entries that it added. It returns nil when the pre hook saved
-// no reflog size or the reflog cannot be read.
+// no reflog position or the reflog cannot be read.
 func commandCommits(repoRoot string, pre preCommand, newHead string, log zerolog.Logger) []tracegit.ReflogEntry {
 	if !pre.hasReflog {
 		return nil
 	}
 
-	entries, err := tracegit.HeadReflogSince(repoRoot, pre.reflogSize)
+	entries, err := tracegit.HeadReflogSince(repoRoot, pre.reflogPos)
 	if err != nil {
 		log.Debug().Err(err).Str("root", repoRoot).Msg("post-command: cannot read the HEAD reflog; no commit of the command counts")
 		return nil

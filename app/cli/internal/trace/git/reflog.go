@@ -25,12 +25,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 )
 
-// ErrReflogRewritten reports that the HEAD reflog is shorter than an offset
+// ErrReflogRewritten reports that the HEAD reflog no longer holds a position
 // read from it earlier: something expired or rewrote it in between, so the
-// offset no longer marks where the new entries start.
+// position no longer marks where the new entries start.
 var ErrReflogRewritten = errors.New("HEAD reflog was rewritten")
 
 // ReflogEntry is one move of HEAD, as the reflog records it.
@@ -40,6 +41,17 @@ type ReflogEntry struct {
 	// Message says what moved HEAD, for example "commit: <subject>" or
 	// "rebase (finish): returning to refs/heads/main".
 	Message string
+}
+
+// ReflogPos marks the end of the HEAD reflog at one moment. Taken before a
+// command, it marks where the entries that the command writes start.
+type ReflogPos struct {
+	// Offset is the size in bytes of the reflog file, with the files ref
+	// storage.
+	Offset int64 `json:"offset,omitempty"`
+	// Top is the newest entry, as git prints it, with the reftable ref
+	// storage. It is empty when the reflog has no entry.
+	Top string `json:"top,omitempty"`
 }
 
 // IsZeroOID reports whether oid is the all-zero object ID that a reflog
@@ -73,52 +85,50 @@ func headReflog(repoRoot string) (path string, reftable bool, err error) {
 	return filepath.Join(gitDir, "logs", "HEAD"), false, nil
 }
 
-// HeadReflogSize returns the position of the end of the HEAD reflog of the
-// checkout at repoRoot, zero when it has none yet. Taken before a command, it
-// marks where the entries that the command writes start. With the files ref
-// storage it is the size of the reflog in bytes: a stat, cheap enough for a
-// hook that runs before every shell command. With reftable it is the number of
-// entries, which git has to count.
-func HeadReflogSize(repoRoot string) (int64, error) {
+// HeadReflogPos returns the position of the end of the HEAD reflog of the
+// checkout at repoRoot. It is cheap enough for a hook that runs before every
+// shell command, whatever the length of the reflog: a stat with the files ref
+// storage, and one entry read through git with reftable.
+func HeadReflogPos(repoRoot string) (ReflogPos, error) {
 	path, reftable, err := headReflog(repoRoot)
 	if err != nil {
-		return 0, err
+		return ReflogPos{}, err
 	}
 	if reftable {
-		entries, err := gitHeadReflog(repoRoot)
-		if err != nil {
-			return 0, err
+		lines, err := gitReflogLines(repoRoot, 1)
+		if err != nil || len(lines) == 0 {
+			return ReflogPos{}, err
 		}
 
-		return int64(len(entries)), nil
+		return ReflogPos{Top: lines[0].line}, nil
 	}
 
 	fi, err := os.Stat(path)
 	if errors.Is(err, os.ErrNotExist) {
-		return 0, nil
+		return ReflogPos{}, nil
 	}
 	if err != nil {
-		return 0, fmt.Errorf("stat HEAD reflog: %w", err)
+		return ReflogPos{}, fmt.Errorf("stat HEAD reflog: %w", err)
 	}
 
-	return fi.Size(), nil
+	return ReflogPos{Offset: fi.Size()}, nil
 }
 
-// HeadReflogSince returns the HEAD reflog entries written after offset, a
-// position that HeadReflogSize returned earlier, oldest first. It returns
-// ErrReflogRewritten when the reflog is now shorter than offset.
-func HeadReflogSince(repoRoot string, offset int64) ([]ReflogEntry, error) {
+// HeadReflogSince returns the HEAD reflog entries written after pos, a
+// position that HeadReflogPos returned earlier, oldest first. It returns
+// ErrReflogRewritten when the reflog no longer holds pos.
+func HeadReflogSince(repoRoot string, pos ReflogPos) ([]ReflogEntry, error) {
 	path, reftable, err := headReflog(repoRoot)
 	if err != nil {
 		return nil, err
 	}
 	if reftable {
-		return gitHeadReflogSince(repoRoot, offset)
+		return gitHeadReflogSince(repoRoot, pos.Top)
 	}
 
 	f, err := os.Open(path)
 	if errors.Is(err, os.ErrNotExist) {
-		if offset > 0 {
+		if pos.Offset > 0 {
 			return nil, ErrReflogRewritten
 		}
 
@@ -133,10 +143,10 @@ func HeadReflogSince(repoRoot string, offset int64) ([]ReflogEntry, error) {
 	if err != nil {
 		return nil, fmt.Errorf("stat HEAD reflog: %w", err)
 	}
-	if fi.Size() < offset {
+	if fi.Size() < pos.Offset {
 		return nil, ErrReflogRewritten
 	}
-	if _, err := f.Seek(offset, io.SeekStart); err != nil {
+	if _, err := f.Seek(pos.Offset, io.SeekStart); err != nil {
 		return nil, fmt.Errorf("seek HEAD reflog: %w", err)
 	}
 
@@ -157,13 +167,23 @@ func HeadReflogSince(repoRoot string, offset int64) ([]ReflogEntry, error) {
 	return entries, nil
 }
 
-// gitHeadReflog returns the HEAD reflog entries through git, newest first, for
-// a ref storage that only git reads. git prints the commit that each entry
-// moved HEAD to, not the one it left. The old side of an entry is then the new
-// side of the entry before it, or the zero ID for the first one. An unborn
-// HEAD with no reflog yet has no entries.
-func gitHeadReflog(repoRoot string) ([]ReflogEntry, error) {
-	cmd := exec.Command("git", "reflog", "show", "--format=%H%x09%gs", "HEAD", "--")
+// reflogLine is one HEAD reflog entry as git prints it.
+type reflogLine struct {
+	// line is the whole entry: the commit, the selector with the time of the
+	// entry, and the message. It identifies the entry as a ReflogPos.Top.
+	line string
+	// newOID is the commit that the entry moved HEAD to.
+	newOID  string
+	message string
+}
+
+// gitReflogLines returns the newest n entries of the HEAD reflog through git,
+// newest first, for a ref storage that only git reads. The selector holds the
+// time of the entry, not its index, so the line of an entry stays the same
+// when newer entries are added. An unborn HEAD with no reflog yet has no
+// entries.
+func gitReflogLines(repoRoot string, n int) ([]reflogLine, error) {
+	cmd := exec.Command("git", "reflog", "show", "-n", strconv.Itoa(n), "--date=unix", "--format=%H%x09%gd%x09%gs", "HEAD", "--")
 	cmd.Dir = repoRoot
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -176,40 +196,85 @@ func gitHeadReflog(repoRoot string) ([]ReflogEntry, error) {
 		return nil, fmt.Errorf("git reflog HEAD: %w: %s", err, strings.TrimSpace(stderr.String()))
 	}
 
-	var entries []ReflogEntry
+	var lines []reflogLine
 	for line := range strings.Lines(string(out)) {
-		newOID, msg, ok := strings.Cut(strings.TrimSuffix(line, "\n"), "\t")
-		if !ok {
+		line = strings.TrimSuffix(line, "\n")
+		fields := strings.SplitN(line, "\t", 3)
+		if len(fields) != 3 {
 			return nil, fmt.Errorf("parse git reflog line %q", line)
 		}
-		entries = append(entries, ReflogEntry{New: newOID, Message: msg})
+		lines = append(lines, reflogLine{line: line, newOID: fields[0], message: fields[2]})
 	}
-	for i := range entries {
-		if i+1 < len(entries) {
-			entries[i].Old = entries[i+1].New
-		} else {
-			entries[i].Old = strings.Repeat("0", len(entries[i].New))
+
+	return lines, nil
+}
+
+// gitHeadReflogSince is HeadReflogSince for a ref storage that only git reads.
+// top is the newest entry before the command, empty when there was none. It
+// reads the reflog newest first, twice as many entries each time, until it
+// finds top: a command that wrote few entries costs one read, whatever the
+// length of the reflog.
+//
+// git prints the commit that each entry moved HEAD to, not the one it left.
+// The old side of an entry is the new side of the entry before it, or the zero
+// ID for the first entry of the reflog.
+func gitHeadReflogSince(repoRoot, top string) ([]ReflogEntry, error) {
+	for n := 16; ; n *= 2 {
+		lines, err := gitReflogLines(repoRoot, n)
+		if err != nil {
+			return nil, err
+		}
+
+		end := -1
+		if top != "" {
+			end = slices.IndexFunc(lines, func(l reflogLine) bool { return l.line == top })
+		}
+		if end < 0 {
+			if len(lines) == n {
+				continue // more entries to read
+			}
+			if top != "" {
+				return nil, ErrReflogRewritten
+			}
+			end = len(lines)
+		}
+
+		added := make([]ReflogEntry, 0, end)
+		for i := end - 1; i >= 0; i-- {
+			old := strings.Repeat("0", len(lines[i].newOID))
+			if i+1 < len(lines) {
+				old = lines[i+1].newOID
+			}
+			added = append(added, ReflogEntry{Old: old, New: lines[i].newOID, Message: lines[i].message})
+		}
+
+		return added, nil
+	}
+}
+
+// CommitPaths returns the repo-relative paths, with forward slashes, that
+// differ between the commits from and to. A zero from is the first commit of
+// a branch, and every path of to then counts.
+func CommitPaths(repoRoot, from, to string) (map[string]bool, error) {
+	args := []string{"diff-tree", "-r", "--no-renames", "--no-commit-id", "--name-only", "-z"}
+	if IsZeroOID(from) {
+		args = append(args, "--root", to)
+	} else {
+		args = append(args, from, to)
+	}
+	out, err := gitRawOutput(repoRoot, args...)
+	if err != nil {
+		return nil, fmt.Errorf("git diff-tree %s %s: %w", from, to, err)
+	}
+
+	paths := make(map[string]bool)
+	for p := range strings.SplitSeq(string(out), "\x00") {
+		if p != "" {
+			paths[p] = true
 		}
 	}
 
-	return entries, nil
-}
-
-// gitHeadReflogSince is HeadReflogSince for a ref storage that only git reads,
-// where offset is a number of entries.
-func gitHeadReflogSince(repoRoot string, offset int64) ([]ReflogEntry, error) {
-	all, err := gitHeadReflog(repoRoot)
-	if err != nil {
-		return nil, err
-	}
-	if int64(len(all)) < offset {
-		return nil, ErrReflogRewritten
-	}
-
-	added := all[:int64(len(all))-offset]
-	slices.Reverse(added)
-
-	return added, nil
+	return paths, nil
 }
 
 // parseReflogLine parses one reflog line:

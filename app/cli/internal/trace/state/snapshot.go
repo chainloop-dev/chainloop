@@ -24,6 +24,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 )
 
 // FileSnapshotKey identifies the edit whose pre-edit content was captured.
@@ -161,39 +163,39 @@ func (s *Store) shellPreReflogPath(key ShellCallKey) string {
 	return strings.TrimSuffix(s.shellPreSignaturePath(key), ".json") + ".reflog.json"
 }
 
-// SaveShellPreReflog stores the size of the HEAD reflog of each checkout
-// (checkout root → bytes) before an agent-run shell command. The entries past
-// it are the HEAD moves of the command, which tell the commits it wrote apart
-// from the ones it only moved HEAD to.
-func (s *Store) SaveShellPreReflog(key ShellCallKey, sizes map[string]int64) error {
+// SaveShellPreReflog stores the end of the HEAD reflog of each checkout
+// (checkout root → position) before an agent-run shell command. The entries
+// past it are the HEAD moves of the command, which tell the commits it wrote
+// apart from the ones it only moved HEAD to.
+func (s *Store) SaveShellPreReflog(key ShellCallKey, positions map[string]tracegit.ReflogPos) error {
 	path := s.shellPreReflogPath(key)
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("create snapshot dir: %w", err)
 	}
 
-	data, err := json.Marshal(sizes)
+	data, err := json.Marshal(positions)
 	if err != nil {
-		return fmt.Errorf("marshal shell reflog sizes: %w", err)
+		return fmt.Errorf("marshal shell reflog positions: %w", err)
 	}
 
 	return os.WriteFile(path, data, 0600)
 }
 
-// LoadShellPreReflog loads the HEAD reflog sizes saved before a shell command.
-// A command whose pre hook ran on an older CLI has none, and the error then
-// wraps os.ErrNotExist.
-func (s *Store) LoadShellPreReflog(key ShellCallKey) (map[string]int64, error) {
+// LoadShellPreReflog loads the HEAD reflog positions saved before a shell
+// command. A command whose pre hook ran on an older CLI has none, and the
+// error then wraps os.ErrNotExist.
+func (s *Store) LoadShellPreReflog(key ShellCallKey) (map[string]tracegit.ReflogPos, error) {
 	data, err := os.ReadFile(s.shellPreReflogPath(key))
 	if err != nil {
 		return nil, err
 	}
 
-	var sizes map[string]int64
-	if err := json.Unmarshal(data, &sizes); err != nil {
-		return nil, fmt.Errorf("parse shell reflog sizes: %w", err)
+	var positions map[string]tracegit.ReflogPos
+	if err := json.Unmarshal(data, &positions); err != nil {
+		return nil, fmt.Errorf("parse shell reflog positions: %w", err)
 	}
 
-	return sizes, nil
+	return positions, nil
 }
 
 // shellPreHeadsPath returns the path storing the HEAD commit of each checkout

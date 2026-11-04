@@ -659,9 +659,9 @@ func (r *lineRepo) shellWrite(sessionID string, run func()) {
 	require.NoError(r.t, err)
 	var pre preCommand
 	pre.head, pre.hasHead = heads[r.dir]
-	pre.reflogSize, pre.hasReflog = reflogs[r.dir]
+	pre.reflogPos, pre.hasReflog = reflogs[r.dir]
 	require.True(r.t, pre.hasHead, "the pre hook saves the HEAD")
-	require.True(r.t, pre.hasReflog, "the pre hook saves the HEAD reflog size")
+	require.True(r.t, pre.hasReflog, "the pre hook saves the HEAD reflog position")
 	recordRootChanges(r.store, r.dir, pre, sigs[r.dir], sessionID, zerolog.Nop())
 	r.store.DeleteShellPreSignature(key)
 }
@@ -698,8 +698,31 @@ func TestLineAttribution_ShellCommandThatCommits(t *testing.T) {
 	assert.Equal(t, 2, attr.Written["a.go"].Len())
 }
 
+// Each commit of a command counts only for the files that it changed, and a
+// file that a later commit changes again counts at each of its commits.
+func TestLineAttribution_ShellCommandWithSeveralCommits(t *testing.T) {
+	r := newLineRepo(t)
+
+	r.shellWrite(lineSession, func() {
+		r.humanWrite("a.go", "one\ntwo\n")
+		runGit(t, r.dir, "add", "a.go")
+		runGit(t, r.dir, "commit", "-m", "feat: a")
+		r.humanWrite("b.go", "one\n")
+		runGit(t, r.dir, "add", "b.go")
+		runGit(t, r.dir, "commit", "-m", "feat: b")
+		r.humanWrite("a.go", "one\ntwo\nthree\n")
+		runGit(t, r.dir, "add", "a.go")
+		runGit(t, r.dir, "commit", "-m", "feat: a again")
+	})
+
+	attr := r.store.LoadAILineAttribution(lineSession)
+	assert.Equal(t, 3, attr.Written["a.go"].Len())
+	assert.Equal(t, 1, attr.Written["b.go"].Len())
+	assert.Equal(t, 4, attr.GeneratedAdded)
+}
+
 // A pre hook whose HEAD commits were lost (the heads file is missing or
-// unreadable) but whose reflog size was saved does not see a HEAD move when
+// unreadable) but whose reflog position was saved does not see a HEAD move when
 // HEAD did not move: a file that the command restored to HEAD is still
 // recorded as AI-touched with zero lines.
 func TestLineAttribution_ShellLostHeadsIsNotAHeadMove(t *testing.T) {
@@ -717,7 +740,7 @@ func TestLineAttribution_ShellLostHeadsIsNotAHeadMove(t *testing.T) {
 	reflogs, err := r.store.LoadShellPreReflog(key)
 	require.NoError(t, err)
 	pre := preCommand{}
-	pre.reflogSize, pre.hasReflog = reflogs[r.dir]
+	pre.reflogPos, pre.hasReflog = reflogs[r.dir]
 	require.True(t, pre.hasReflog)
 	recordRootChanges(r.store, r.dir, pre, sigs[r.dir], lineSession, zerolog.Nop())
 
