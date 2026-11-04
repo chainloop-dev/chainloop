@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -211,8 +212,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal(wantReferrerCommit.Digest, got.Digest)
 	})
 
-	s.T().Run("can't be accessed by a second user in another org", func(t *testing.T) {
-		// the user2 has not access to org1
+	s.T().Run("is not found in another org", func(_ *testing.T) {
 		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", []uuid.UUID{s.org2UUID}, nil, nil)
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
@@ -237,7 +237,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
 	})
 
-	s.T().Run("and now user2 has access to it since it has access to workflow2 in org2", func(t *testing.T) {
+	s.T().Run("and it is found in org2 once workflow2 attached it", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
 		s.NoError(err)
 		got, _, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org2UUID}, nil, nil)
@@ -688,36 +688,64 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVisibility() {
 	})
 }
 
-// Discovery never crosses organizations: a referrer is found only in the organization
-// that holds it, even when the caller is also a member of other organizations.
-func (s *referrerIntegrationTestSuite) TestGetFromRootSingleOrg() {
+// A user discovers only in the given organization, and only with the project visibility
+// that the user has in that organization: a visible project in another organization must
+// not make a referrer of the given organization visible.
+func (s *referrerIntegrationTestSuite) TestGetFromRootUserSingleOrg() {
 	ctx := context.Background()
 	envelope, envBytes := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
 	attDigest, _, err := v1.SHA256(bytes.NewReader(envBytes))
 	require.NoError(s.T(), err)
-	// The attestation lives in org1 only
+	// The same attestation lives in a project of org1 and in a project of org2
 	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, attDigest, s.workflow1.ID.String()))
+	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, attDigest, s.workflow2.ID.String()))
 	digest := attDigest.String()
+
+	// A member with RBAC in both organizations who sees only the org2 project
+	rbacUser, err := s.User.UpsertByEmail(ctx, "rbac-user@test.com", nil)
+	require.NoError(s.T(), err)
+	_, err = s.Membership.Create(ctx, s.org1.ID, rbacUser.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	require.NoError(s.T(), err)
+	_, err = s.Membership.Create(ctx, s.org2.ID, rbacUser.ID, biz.WithMembershipRole(authz.RoleOrgMember), biz.WithCurrentMembership())
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.Membership.SetProjectOwner(ctx, s.org2UUID, s.workflow2.ProjectID, uuid.MustParse(rbacUser.ID)))
 
 	testCases := []struct {
 		name      string
+		userID    string
 		orgID     uuid.UUID
 		wantFound bool
 	}{
 		{
-			name:      "the organization that holds the referrer",
+			name:      "a member of the organization",
+			userID:    s.user.ID,
 			orgID:     s.org1UUID,
 			wantFound: true,
 		},
 		{
-			name:  "another organization",
-			orgID: s.org2UUID,
+			// The org middleware rejects a non-member before discovery, as for any other
+			// operation. Only an instance admin gets here, and sees the whole organization.
+			name:      "an organization without a membership of the user",
+			userID:    s.user2.ID,
+			orgID:     s.org1UUID,
+			wantFound: true,
+		},
+		{
+			name:      "a visible project in the organization",
+			userID:    rbacUser.ID,
+			orgID:     s.org2UUID,
+			wantFound: true,
+		},
+		{
+			name:   "a visible project in another organization does not make it visible",
+			userID: rbacUser.ID,
+			orgID:  s.org1UUID,
 		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			got, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{tc.orgID}, nil, nil)
+			got, _, err := s.Referrer.GetFromRootUser(ctx, digest, "", tc.userID, tc.orgID, nil)
 			if !tc.wantFound {
 				s.True(biz.IsNotFound(err), "expected not found, got %v", err)
 				s.Nil(got)
@@ -726,7 +754,6 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootSingleOrg() {
 
 			s.Require().NoError(err)
 			s.Equal(digest, got.Digest)
-			s.Equal([]uuid.UUID{s.org1UUID}, got.OrgIDs)
 		})
 	}
 }

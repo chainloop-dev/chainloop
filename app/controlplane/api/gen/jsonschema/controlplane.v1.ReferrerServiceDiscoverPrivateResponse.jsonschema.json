@@ -3,17 +3,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "description": "ReferrerServiceDiscoverPrivateResponse is the response for the DiscoverPrivate method",
-  "patternProperties": {
-    "^(current_org_scoped)$": {
-      "description": "CurrentOrgScoped is true when the control plane limited the discovery to the current\n organization. Older control planes do not set it. With a user session they searched\n every organization of the user, so clients must not trust their results.",
-      "type": "boolean"
-    }
-  },
   "properties": {
-    "currentOrgScoped": {
-      "description": "CurrentOrgScoped is true when the control plane limited the discovery to the current\n organization. Older control planes do not set it. With a user session they searched\n every organization of the user, so clients must not trust their results.",
-      "type": "boolean"
-    },
     "pagination": {
       "$ref": "controlplane.v1.CursorPaginationResponse.jsonschema.json",
       "description": "Pagination information for the references list"

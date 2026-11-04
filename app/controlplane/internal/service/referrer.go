@@ -70,8 +70,7 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 	}
 
 	// Discovery is always limited to the current organization, with the project visibility of
-	// the caller in that organization. A user's visibility comes from the memberships of the user
-	// in that organization only. An API token reaches only projects of its own organization.
+	// the caller in it (see GetFromRootUser for users)
 	var referrer *biz.StoredReferrer
 	var nextCursor string
 	if currentUser != nil {
@@ -87,9 +86,6 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 	return &pb.ReferrerServiceDiscoverPrivateResponse{
 		Result:     bizReferrerToPb(referrer),
 		Pagination: bizCursorToPb(nextCursor),
-		// Tell the client that the search covered only the current organization,
-		// so that it can reject the cross-organization results of older control planes
-		CurrentOrgScoped: true,
 	}, nil
 }
 

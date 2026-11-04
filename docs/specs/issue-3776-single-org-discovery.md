@@ -25,7 +25,7 @@ When your code goes against this spec, say so in your PR. Supersede the entry wh
 
 ## Summary
 
-Referrer discovery finds an artifact or a piece of evidence by its digest. It also returns the items that link to it in the Chainloop graph. Today, discovery with a user session searches every organization that the user is a member of. All other control plane operations, and discovery with an API token, work in one organization only. This spec makes discovery work only in the current organization, for all credentials. This applies to all clients: the discover API, the `chainloop discover` command, the policy functions, and the web UI. The control plane reports the organization that it searched. The CLI and the policy engine, with a user session, reject a response without that report. Thus an older control plane cannot give a client results from other organizations without an error.
+Referrer discovery finds an artifact or a piece of evidence by its digest. It also returns the items that link to it in the Chainloop graph. Today, discovery with a user session searches every organization that the user is a member of. All other control plane operations, and discovery with an API token, work in one organization only. This spec makes discovery work only in the current organization, for all credentials. The change is in the control plane only. It applies to all clients: the discover API, the `chainloop discover` command, the policy functions, and the web UI.
 
 ## Problem
 
@@ -37,8 +37,8 @@ Referrer discovery finds an artifact or a piece of evidence by its digest. It al
 
 - Goal: discovery returns only the data of the current organization, for every credential and every client.
 - Goal: a policy that calls discovery gets the same result with a user session and with an API token.
-- Goal: a new client never gets results from other organizations from an older control plane without an error.
 - Non-goal: a way to search more than one organization. No client needs it, and it would bring back the problem. See D-001.
+- Non-goal: change a client. The new behavior comes from the control plane only. See D-003.
 - Non-goal: change project visibility in an organization, or the pagination limits of discovery. They stay as they are.
 - Non-goal: change public discovery of shared referrers. It does not use the organizations of the user.
 
@@ -48,22 +48,15 @@ Referrer discovery finds an artifact or a piece of evidence by its digest. It al
 With a user session, discovery MUST return only the referrers of the current organization. It MUST return only their references in that organization. A digest that is in other organizations of the user, but not in the current one, MUST give a not-found error.
 - Done when: a user is a member of organizations A and B, and only a run in A attested a digest. With A as the current organization, discovery finds it. With B as the current organization, discovery returns not found.
 
-### R-002: The control plane reports the searched organization
-Each successful discovery response MUST tell the client that the control plane limited the search to the current organization.
-
-### R-003: The CLI and the policy engine fail closed
-With a user session, the CLI and the policy engine MUST return an error for a discovery response without the report of R-002. The error MUST tell the user to upgrade the control plane. With an API token, they MUST NOT return an error for this reason.
-- Done when: a control plane does not report the scope. With a user session, the CLI and the policy engine return the upgrade error. With an API token against the same control plane, they return the result.
-
 ### R-004: Policy function behavior
 The `chainloop.discover` policy function and the discover function of WebAssembly policies MUST return only the data of the current organization. Their inputs and their output format MUST not change.
 
 ### R-005: Same result for users and API tokens
-For the same organization, digest, and project visibility, discovery MUST return the same result with a user session and with an API token.
+For the same organization, digest, and project visibility, discovery MUST return the same result with a user session and with an API token. A visible project of the user in another organization MUST NOT make a referrer of the current organization visible.
 
 ## Constraints
 
-- Compatibility with clients: the request format does not change. A response gets one new item of data, and old clients ignore it.
+- Compatibility with clients: the request and the response formats do not change.
 - An old client against a new control plane gets results from the current organization only. This is the intended behavior. It is not an error.
 - Project visibility in the organization and the pagination limits stay in place on every path.
 - Public repository: no internal links, and no customer or user information.
@@ -72,25 +65,18 @@ For the same organization, digest, and project visibility, discovery MUST return
 
 The user selects the organization as for all other operations: with the `--org` option or its environment variable, or with the default organization of the user. Discovery then works in that organization only. A user who expects a result from another organization selects that organization and runs the command again. The not-found message is the same as today.
 
-The control plane finds the current organization of the request. For a user session, it makes sure that the user is a member of that organization, as for all other operations. It searches the graph in that organization only, with the project visibility of the caller. Then it adds a report to the response: the search covered only the current organization.
+The control plane finds the current organization of the request as for every other operation. The organization comes from the organization header of the request or from the default membership of the user. The control plane makes sure that the caller can work in that organization, with the same check as all other operations. It then searches the graph in that organization only. It applies the project visibility that the caller has in that organization, and no visibility from other organizations.
 
-With a user session, the CLI and the policy engine check for that report in each response. When it is missing, the control plane is older than this change and searched all organizations of the user. They discard the result and return an error that asks for an upgrade. With an API token they do not check, because an older control plane already limited that search to one organization.
-
-The policy functions use the same path. Policies do not change. The web UI ships with its control plane, so it does not need the check. It shows the graph of the current organization only.
+The policy functions and the web UI use the same path. Policies and clients do not change.
 
 ```mermaid
 sequenceDiagram
     participant C as Client (CLI, policy engine, web UI)
     participant CP as Control plane
-    C->>CP: Discover digest (current organization selected)
-    CP->>CP: Find the current organization and check the membership
-    CP->>CP: Search the graph in that organization, with project visibility
-    CP-->>C: Result, with "limited to current organization"
-    alt User session and the report is missing (older control plane)
-        C-->>C: Discard the result, return "upgrade the control plane"
-    else Report present, or API token
-        C-->>C: Return the result
-    end
+    C->>CP: Discover digest (organization header or default membership)
+    CP->>CP: Find the current organization and check the access, as for all operations
+    CP->>CP: Search the graph in that organization, with the project visibility in it
+    CP-->>C: Result of the current organization only
 ```
 
 ## Decision Record
@@ -104,24 +90,16 @@ No option searches more than one organization. This replaces the first design of
 - Source: [PR #3777 review](https://github.com/chainloop-dev/chainloop/pull/3777#discussion_r4467148631)
 
 ### D-002: The current organization is the one of the request
-Discovery uses the organization that the control plane selects for every other operation of the request. It does not take an organization of its own.
+Discovery works as every other API operation. The organization comes from the organization header of the request, or from the default membership of the user. The control plane makes sure that it is an organization of the caller, with the check of all other operations. Discovery does not take an organization of its own, and it does not add a check of its own.
 - Why: one rule for all operations. The CLI `--org` option then works for discovery with no special case.
-- Source: drafting
+- Source: [PR #3777 review](https://github.com/chainloop-dev/chainloop/pull/3777#discussion_r4468337274)
 
-### D-003: The control plane reports the scope, and the client fails closed
-The response says that the search covered only the current organization. A client that expects the limit and does not get the report returns an error.
-- Why: an older control plane ignores data it does not know. It returns results of all organizations without an error. Only a report from the control plane lets the client detect this.
+### D-003: No client change
+The change is new behavior of the control plane only. The response does not report the scope, and the CLI and the policy engine do not check it. An older control plane keeps its behavior until the operator upgrades it. This drops R-002 (the control plane reports the searched organization) and R-003 (the CLI and the policy engine fail closed). It also drops D-004 (only user-session clients check the report).
+- Why: the behavior belongs to the control plane, as for every other operation. A client check adds a new failure against older control planes for a behavior that the upgrade fixes.
 - Alternatives considered:
-  - Accept the old behavior until the operator upgrades the control plane: a policy can pass or fail for the wrong reason without a sign.
-  - Filter the results in the client: the response does not carry the organization of every item. The filter would also duplicate the access rules of the control plane.
-- Source: [PR #3777 review](https://github.com/chainloop-dev/chainloop/pull/3777#discussion_r4466205569)
-
-### D-004: Only user-session clients check the report
-A client with an API token does not reject a response without the report.
-- Why: an older control plane already limits API-token discovery to one organization. A check there would break CI pipelines against older control planes. It would also break policy evaluation there, for no gain.
-- Alternatives considered:
-  - Check every response: simpler, but a new CLI or policy engine stops working with every older control plane.
-- Source: drafting
+  - The control plane reports the scope, and a client with a user session fails closed without the report: it adds a client change. It also adds a new error for a temporary state.
+- Source: [PR #3777 review](https://github.com/chainloop-dev/chainloop/pull/3777#discussion_r4468342762)
 
 ### D-005: One policy function
 `chainloop.discover` keeps its name and becomes single-organization through the control plane. The implementation PR first added a separate current-organization function. The PR deletes it before release.
@@ -129,11 +107,6 @@ A client with an API token does not reject a response without the report.
 - Alternatives considered:
   - Keep the second function as an alias: it adds a name that does nothing different.
 - Source: drafting
-
-### D-006: Spec and implementation in the same PR
-The spec ships in the implementation PR, and the PR changes to match it.
-- Why: the reviewers asked for the spec on the implementation PR, and the change is small.
-- Source: [PR #3777 review](https://github.com/chainloop-dev/chainloop/pull/3777#discussion_r4467148631)
 
 ## Open Questions
 
@@ -144,5 +117,5 @@ No open questions.
 | Risk | Mitigation |
 |------|------------|
 | A user or a script relies on discovery across organizations with a user session, and gets not found after the upgrade. | Release note. The user selects the other organization with `--org`. |
-| A new CLI with a user session against an older control plane cannot use discovery. | The error tells the user to upgrade the control plane. API-token pipelines are not affected (D-004). |
+| An older control plane keeps searching all organizations of a user until the operator upgrades it. | Release note. The upgrade of the control plane gives the new behavior to all clients. |
 | The web UI graph no longer shows items that are only in other organizations of the user. | This is the intended behavior. The UI already works in one organization in all other views. |

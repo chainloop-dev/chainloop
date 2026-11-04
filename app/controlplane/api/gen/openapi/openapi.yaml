@@ -298,7 +298,6 @@ components:
           created_at: '2000-01-23T04:56:07.000+00:00'
           annotations:
             key: annotations
-        current_org_scoped: true
         pagination:
           next_cursor: next_cursor
       properties:
@@ -306,17 +305,6 @@ components:
           $ref: '#/components/schemas/v1ReferrerItem'
         pagination:
           $ref: '#/components/schemas/v1CursorPaginationResponse'
-        current_org_scoped:
-          description: >-
-            CurrentOrgScoped is true when the control plane limited the
-            discovery to the current
-
-            organization. Older control planes do not set it. With a user
-            session they searched
-
-            every organization of the user, so clients must not trust their
-            results.
-          type: boolean
       title: ReferrerServiceDiscoverPrivateResponse
       type: object
   securitySchemes:

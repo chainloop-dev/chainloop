@@ -79,10 +79,6 @@ message ReferrerServiceDiscoverPrivateResponse {
   ReferrerItem result = 1;
   // Pagination information for the references list
   CursorPaginationResponse pagination = 2;
-  // CurrentOrgScoped is true when the control plane limited the discovery to the current
-  // organization. Older control planes do not set it. With a user session they searched
-  // every organization of the user, so clients must not trust their results.
-  bool current_org_scoped = 3;
 
   option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
     json_schema: {

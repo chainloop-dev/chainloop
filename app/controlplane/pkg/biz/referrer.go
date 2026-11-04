@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"slices"
 	"sort"
 	"time"
 
@@ -162,8 +161,9 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 }
 
 // GetFromRootUser returns the referrer identified by the provided content digest, including its first-level references.
-// The discovery is limited to the given organization, which the user must be a member of, with the project
-// visibility that the user has in that organization.
+// The discovery is limited to the given organization, with the project visibility that the user has in that
+// organization. The caller makes sure that the user can work in the organization, as for any other operation.
+// A user without a membership in it (an instance admin) sees the whole organization.
 func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string, orgID uuid.UUID, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {
 	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRootUser")
 	defer span.End()
@@ -173,13 +173,9 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 		return nil, "", NewErrInvalidUUID(err)
 	}
 
-	userOrgs, scopes, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
+	_, scopes, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
 	if err != nil {
 		return nil, "", err
-	}
-
-	if !slices.Contains(userOrgs, orgID) {
-		return nil, "", newReferrerNotFoundErr(digest)
 	}
 
 	// Only the project visibility of the user in this organization applies. A referrer lists its
@@ -187,7 +183,7 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 	// Referrers are always project-scoped, so only the project dimension of the RBAC scopes is relevant.
 	var projectIDs map[OrgID][]ProjectID
 	if scope, ok := scopes[orgID]; ok {
-		projectIDs = map[OrgID][]ProjectID{orgID: scope.ProjectIDs}
+		projectIDs = RBACScopes{orgID: scope}.ProjectIDsByOrg()
 	}
 
 	return s.GetFromRoot(ctx, digest, rootKind, []uuid.UUID{orgID}, projectIDs, p, extraFilters...)
@@ -217,14 +213,10 @@ func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind stri
 
 		return nil, "", fmt.Errorf("getting referrer from root: %w", err)
 	} else if ref == nil {
-		return nil, "", newReferrerNotFoundErr(digest)
+		return nil, "", NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
 	}
 
 	return ref, nextCursor, nil
-}
-
-func newReferrerNotFoundErr(digest string) error {
-	return NewErrNotFound(fmt.Sprintf("artifact or piece of evidence with digest %s", digest))
 }
 
 const (

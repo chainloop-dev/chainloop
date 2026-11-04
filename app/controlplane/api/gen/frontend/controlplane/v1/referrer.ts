@@ -36,12 +36,6 @@ export interface ReferrerServiceDiscoverPrivateResponse {
   result?: ReferrerItem;
   /** Pagination information for the references list */
   pagination?: CursorPaginationResponse;
-  /**
-   * CurrentOrgScoped is true when the control plane limited the discovery to the current
-   * organization. Older control planes do not set it. With a user session they searched
-   * every organization of the user, so clients must not trust their results.
-   */
-  currentOrgScoped: boolean;
 }
 
 /** ReferrerItem represents a referrer object in the system */
@@ -190,7 +184,7 @@ export const ReferrerServiceDiscoverPrivateRequest = {
 };
 
 function createBaseReferrerServiceDiscoverPrivateResponse(): ReferrerServiceDiscoverPrivateResponse {
-  return { result: undefined, pagination: undefined, currentOrgScoped: false };
+  return { result: undefined, pagination: undefined };
 }
 
 export const ReferrerServiceDiscoverPrivateResponse = {
@@ -200,9 +194,6 @@ export const ReferrerServiceDiscoverPrivateResponse = {
     }
     if (message.pagination !== undefined) {
       CursorPaginationResponse.encode(message.pagination, writer.uint32(18).fork()).ldelim();
-    }
-    if (message.currentOrgScoped === true) {
-      writer.uint32(24).bool(message.currentOrgScoped);
     }
     return writer;
   },
@@ -228,13 +219,6 @@ export const ReferrerServiceDiscoverPrivateResponse = {
 
           message.pagination = CursorPaginationResponse.decode(reader, reader.uint32());
           continue;
-        case 3:
-          if (tag !== 24) {
-            break;
-          }
-
-          message.currentOrgScoped = reader.bool();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -248,7 +232,6 @@ export const ReferrerServiceDiscoverPrivateResponse = {
     return {
       result: isSet(object.result) ? ReferrerItem.fromJSON(object.result) : undefined,
       pagination: isSet(object.pagination) ? CursorPaginationResponse.fromJSON(object.pagination) : undefined,
-      currentOrgScoped: isSet(object.currentOrgScoped) ? Boolean(object.currentOrgScoped) : false,
     };
   },
 
@@ -257,7 +240,6 @@ export const ReferrerServiceDiscoverPrivateResponse = {
     message.result !== undefined && (obj.result = message.result ? ReferrerItem.toJSON(message.result) : undefined);
     message.pagination !== undefined &&
       (obj.pagination = message.pagination ? CursorPaginationResponse.toJSON(message.pagination) : undefined);
-    message.currentOrgScoped !== undefined && (obj.currentOrgScoped = message.currentOrgScoped);
     return obj;
   },
 
@@ -277,7 +259,6 @@ export const ReferrerServiceDiscoverPrivateResponse = {
     message.pagination = (object.pagination !== undefined && object.pagination !== null)
       ? CursorPaginationResponse.fromPartial(object.pagination)
       : undefined;
-    message.currentOrgScoped = object.currentOrgScoped ?? false;
     return message;
   },
 };

@@ -131,13 +131,9 @@ type ReferrerServiceDiscoverPrivateResponse struct {
 	// Result is the discovered referrer item
 	Result *ReferrerItem `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
 	// Pagination information for the references list
-	Pagination *CursorPaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
-	// CurrentOrgScoped is true when the control plane limited the discovery to the current
-	// organization. Older control planes do not set it. With a user session they searched
-	// every organization of the user, so clients must not trust their results.
-	CurrentOrgScoped bool `protobuf:"varint,3,opt,name=current_org_scoped,json=currentOrgScoped,proto3" json:"current_org_scoped,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	Pagination    *CursorPaginationResponse `protobuf:"bytes,2,opt,name=pagination,proto3" json:"pagination,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ReferrerServiceDiscoverPrivateResponse) Reset() {
@@ -182,13 +178,6 @@ func (x *ReferrerServiceDiscoverPrivateResponse) GetPagination() *CursorPaginati
 		return x.Pagination
 	}
 	return nil
-}
-
-func (x *ReferrerServiceDiscoverPrivateResponse) GetCurrentOrgScoped() bool {
-	if x != nil {
-		return x.CurrentOrgScoped
-	}
-	return false
 }
 
 // ReferrerItem represents a referrer object in the system
@@ -305,13 +294,12 @@ const file_controlplane_v1_referrer_proto_rawDesc = "" +
 	"\fproject_name\x18\x04 \x01(\tR\vprojectName\x12'\n" +
 	"\x0fproject_version\x18\x05 \x01(\tR\x0eprojectVersion:\xfb\x01\x92AQ\n" +
 	"O*%ReferrerServiceDiscoverPrivateRequest2&Request to discover a private referrer\xbaH\xa3\x01\x1a\xa0\x01\n" +
-	".discover_project_version_requires_project_name\x124project_name must be set when project_version is set\x1a8!(this.project_version != '' && this.project_name == '')\"\xb0\x02\n" +
+	".discover_project_version_requires_project_name\x124project_name must be set when project_version is set\x1a8!(this.project_version != '' && this.project_name == '')\"\x82\x02\n" +
 	"&ReferrerServiceDiscoverPrivateResponse\x125\n" +
 	"\x06result\x18\x01 \x01(\v2\x1d.controlplane.v1.ReferrerItemR\x06result\x12I\n" +
 	"\n" +
 	"pagination\x18\x02 \x01(\v2).controlplane.v1.CursorPaginationResponseR\n" +
-	"pagination\x12,\n" +
-	"\x12current_org_scoped\x18\x03 \x01(\bR\x10currentOrgScoped:V\x92AS\n" +
+	"pagination:V\x92AS\n" +
 	"Q*&ReferrerServiceDiscoverPrivateResponse2'Response for the DiscoverPrivate method\"\xc2\x04\n" +
 	"\fReferrerItem\x12\x16\n" +
 	"\x06digest\x18\x01 \x01(\tR\x06digest\x12\x12\n" +
