@@ -31,7 +31,7 @@ func newOrganizationDescribeCmd() *cobra.Command {
 		Aliases: []string{"current-context"},
 		Short:   "Describe the current organization",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			res, err := action.NewConfigCurrentContext(ActionOpts).Run()
+			res, err := action.NewConfigCurrentContext(ActionOpts).Run(cmd.Context())
 			if err != nil {
 				return err
 			}

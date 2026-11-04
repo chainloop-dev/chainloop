@@ -30,7 +30,6 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
-	jwt "github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
@@ -90,7 +89,7 @@ func newAuthLoginCmd() *cobra.Command {
 		Use:   "login",
 		Short: "authenticate the CLI with the Control Plane",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return interactiveAuth(forceHeadlessLogin)
+			return interactiveAuth(cmd.Context(), forceHeadlessLogin)
 		},
 	}
 
@@ -98,7 +97,7 @@ func newAuthLoginCmd() *cobra.Command {
 	return cmd
 }
 
-func interactiveAuth(forceHeadless bool) error {
+func interactiveAuth(ctx context.Context, forceHeadless bool) error {
 	var a app
 
 	listener, callbackURL, err := localListenerAndCallbackURL()
@@ -122,7 +121,7 @@ func interactiveAuth(forceHeadless bool) error {
 	serverLoginURL.RawQuery = q.Encode()
 
 	if forceHeadless || isRemoteSession() {
-		return headlessAuth(serverLoginURL)
+		return headlessAuth(ctx, serverLoginURL)
 	}
 
 	a.callback = &loginCallback{
@@ -140,7 +139,7 @@ func interactiveAuth(forceHeadless bool) error {
 	err = openbrowser(serverLoginURL.String())
 	if err != nil {
 		logger.Debug().Err(err).Msg("falling back to manual login")
-		return headlessAuth(serverLoginURL)
+		return headlessAuth(ctx, serverLoginURL)
 	}
 
 	a.serverChan = make(chan error)
@@ -202,7 +201,7 @@ func toHeadlessLoginURL(loginURL *url.URL) {
 	loginURL.RawQuery = q.Encode()
 }
 
-func headlessAuth(loginURL *url.URL) error {
+func headlessAuth(ctx context.Context, loginURL *url.URL) error {
 	toHeadlessLoginURL(loginURL)
 	fmt.Printf("To authenticate, click on the following link and paste the result back here\n\n  %s\n\n", loginURL.String())
 
@@ -212,20 +211,55 @@ func headlessAuth(loginURL *url.URL) error {
 		return fmt.Errorf("retrieving password from stdin: %w", err)
 	}
 
-	// We just want to check that it is a token, the actual verification will happen when it is sent to the server
-	// To be clear, this is just a best effort sanity check
-	if _, _, err := new(jwt.Parser).ParseUnverified(string(token), &jwt.MapClaims{}); err != nil {
-		return errors.New("invalid token")
-	}
-
-	if err := saveAuthToken(string(token)); err != nil {
-		return fmt.Errorf("storing token in config file: %w", err)
-	}
-
 	fmt.Println("")
+	if err := verifyAndSaveAuthToken(ctx, string(token)); err != nil {
+		return err
+	}
+
 	logger.Info().Msg("login successful!")
 
 	return nil
+}
+
+// loginVerifyTimeout bounds the call that checks the login token, so a stalled
+// control plane does not block the login
+const loginVerifyTimeout = 30 * time.Second
+
+// verifyAndSaveAuthToken saves the token to the config file only when the control plane
+// accepts it, so that the login only reports success for a token that works
+func verifyAndSaveAuthToken(ctx context.Context, token string) error {
+	if err := checkAuthToken(ctx, token, verifyAuthToken); err != nil {
+		return err
+	}
+
+	if err := saveAuthToken(token); err != nil {
+		return fmt.Errorf("storing token in config file: %w", err)
+	}
+
+	return nil
+}
+
+// checkAuthToken makes sure that verify accepts the token. A rejected token keeps its
+// gRPC status, so the CLI shows its usual authentication message
+func checkAuthToken(ctx context.Context, token string, verify func(ctx context.Context, token string) error) error {
+	if token == "" {
+		return errors.New("no token was entered")
+	}
+
+	if err := verify(ctx, token); err != nil {
+		return fmt.Errorf("verifying the token with the control plane: %w", err)
+	}
+
+	return nil
+}
+
+// verifyAuthToken asks the control plane for the session of the token
+func verifyAuthToken(ctx context.Context, token string) error {
+	ctx, cancel := context.WithTimeout(ctx, loginVerifyTimeout)
+	defer cancel()
+
+	_, err := fetchCurrentContext(ctx, token)
+	return err
 }
 
 // Save token to config file
@@ -241,14 +275,13 @@ func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	token, err := a.callback.token(r)
+	if err == nil {
+		err = verifyAndSaveAuthToken(r.Context(), token)
+	}
+
 	if err != nil {
 		w.WriteHeader(http.StatusExpectationFailed)
 		fmt.Fprintln(w, "login failed, please check the terminal")
-		return
-	}
-
-	if err = saveAuthToken(token); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -259,6 +292,7 @@ func (a *app) handleCallback(w http.ResponseWriter, r *http.Request) {
 func openbrowser(url string) error {
 	var cmd *exec.Cmd
 
+	//nolint:gosec // no shell is involved, the login URL from the control plane is a single argument
 	switch runtime.GOOS {
 	case "linux":
 		cmd = exec.Command("xdg-open", url)
