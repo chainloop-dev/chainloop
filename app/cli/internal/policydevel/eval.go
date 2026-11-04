@@ -69,19 +69,16 @@ type EvalSummaryDebugInfo struct {
 }
 
 func Evaluate(opts *EvalOptions, logger zerolog.Logger) (*EvalSummary, error) {
-	// 1. Create crafting schema
-	policies, err := createPolicies(opts.PolicyPath, opts.Inputs)
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. Craft material with annotations
+	// 1. Craft material with annotations
 	crafted, err := craftMaterial(opts.MaterialPath, opts.MaterialKind, &logger)
 	if err != nil {
 		return nil, err
 	}
 	material := crafted.Material
 	mergeAnnotations(material, opts.Annotations, &logger)
+
+	// 2. Attach the policy to the crafted material
+	policies := createPolicies(opts.PolicyPath, opts.Inputs, material.GetId())
 
 	// 3. Verify material against policy. A crafter that transformed the artifact
 	// before storing it hands back what it stored, and that is what the policy
@@ -131,7 +128,11 @@ func mergeAnnotations(material *v12.Attestation_Material, annotations map[string
 	}
 }
 
-func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, error) {
+// createPolicies attaches the policy to the material named materialName, the same
+// way a contract attaches it with selector.name. Without the selector, a policy
+// whose spec has no kind would never apply, since it has no type to match the
+// material against. A spec with a kind still only applies to materials of that kind.
+func createPolicies(policyPath string, inputs map[string]string, materialName string) *v1.Policies {
 	// Check if the policy path already has a scheme (chainloop://, http://, https://, file://)
 	ref := policyPath
 	scheme, _ := policies.RefParts(policyPath)
@@ -143,12 +144,12 @@ func createPolicies(policyPath string, inputs map[string]string) (*v1.Policies, 
 	return &v1.Policies{
 		Materials: []*v1.PolicyAttachment{
 			{
-				Policy: &v1.PolicyAttachment_Ref{Ref: ref},
-				With:   inputs,
+				Policy:   &v1.PolicyAttachment_Ref{Ref: ref},
+				Selector: &v1.PolicyAttachment_MaterialSelector{Name: materialName},
+				With:     inputs,
 			},
 		},
-		Attestation: nil,
-	}, nil
+	}
 }
 
 func verifyMaterial(pol *v1.Policies, material *v12.Attestation_Material, materialPath string, content []byte, debug bool, allowedHostnames []string, attestationClient controlplanev1.AttestationServiceClient, grpcConn *grpc.ClientConn, projectName, projectVersion string, logger *zerolog.Logger) (*EvalSummary, error) {
