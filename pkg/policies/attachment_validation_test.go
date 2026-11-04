@@ -25,6 +25,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	materialSBOM        = "sbom"
+	materialImage       = "image"
+	materialCustom      = "custom-material"
+	refSBOMSyft         = "file://testdata/sbom_syft.yaml"
+	refSBOMSyftNotTyped = "file://testdata/sbom_syft_not_typed.yaml"
+)
+
 func TestValidateMaterialAttachment(t *testing.T) {
 	kindless := &v1.Policy{
 		Metadata: &v1.Metadata{Name: "upstream-workflow-attested"},
@@ -47,8 +55,8 @@ func TestValidateMaterialAttachment(t *testing.T) {
 	}
 
 	materials := []*v1.CraftingSchema_Material{
-		{Name: "sbom", Type: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON},
-		{Name: "image", Type: v1.CraftingSchema_Material_CONTAINER_IMAGE},
+		{Name: materialSBOM, Type: v1.CraftingSchema_Material_SBOM_CYCLONEDX_JSON},
+		{Name: materialImage, Type: v1.CraftingSchema_Material_CONTAINER_IMAGE},
 	}
 
 	testCases := []struct {
@@ -78,7 +86,7 @@ func TestValidateMaterialAttachment(t *testing.T) {
 		{
 			name:     "kind-less policy with selector",
 			policy:   kindless,
-			selector: &v1.PolicyAttachment_MaterialSelector{Name: "image"},
+			selector: &v1.PolicyAttachment_MaterialSelector{Name: materialImage},
 		},
 		{
 			name:     "kind-less policy with selector of a material not in the contract",
@@ -92,25 +100,25 @@ func TestValidateMaterialAttachment(t *testing.T) {
 		{
 			name:     "typed policy with selector of a supported material",
 			policy:   sbomPolicy,
-			selector: &v1.PolicyAttachment_MaterialSelector{Name: "sbom"},
+			selector: &v1.PolicyAttachment_MaterialSelector{Name: materialSBOM},
 		},
 		{
 			name:      "typed policy with selector of an unsupported contract material",
 			policy:    sbomPolicy,
-			selector:  &v1.PolicyAttachment_MaterialSelector{Name: "image"},
+			selector:  &v1.PolicyAttachment_MaterialSelector{Name: materialImage},
 			wantErrIs: ErrAttachmentNeverApplies,
 			wantMsg:   `policy attachment never applies: policy "sbom-policy" does not support material "image" of type CONTAINER_IMAGE (supported types: [SBOM_SPDX_JSON SBOM_CYCLONEDX_JSON])`,
 		},
 		{
 			name:      "typed policy with explicit exact selector of an unsupported contract material",
 			policy:    sbomPolicy,
-			selector:  &v1.PolicyAttachment_MaterialSelector{Name: "image", MatchMode: v1.PolicyAttachment_MaterialSelector_EXACT},
+			selector:  &v1.PolicyAttachment_MaterialSelector{Name: materialImage, MatchMode: v1.PolicyAttachment_MaterialSelector_EXACT},
 			wantErrIs: ErrAttachmentNeverApplies,
 		},
 		{
 			name:     "typed policy with prefix selector is not checked against contract materials",
 			policy:   sbomPolicy,
-			selector: &v1.PolicyAttachment_MaterialSelector{Name: "image", MatchMode: v1.PolicyAttachment_MaterialSelector_PREFIX},
+			selector: &v1.PolicyAttachment_MaterialSelector{Name: materialImage, MatchMode: v1.PolicyAttachment_MaterialSelector_PREFIX},
 		},
 		{
 			name:     "typed policy with selector of a material not in the contract",
@@ -144,7 +152,7 @@ func TestValidateMaterialAttachment(t *testing.T) {
 func TestPolicyVerifierValidateMaterialAttachments(t *testing.T) {
 	logger := zerolog.Nop()
 	materials := []*v1.CraftingSchema_Material{
-		{Name: "custom-material", Type: v1.CraftingSchema_Material_ARTIFACT},
+		{Name: materialCustom, Type: v1.CraftingSchema_Material_ARTIFACT},
 	}
 
 	testCases := []struct {
@@ -155,28 +163,28 @@ func TestPolicyVerifierValidateMaterialAttachments(t *testing.T) {
 		{
 			name: "valid attachments",
 			attachments: []*v1.PolicyAttachment{
-				{Policy: &v1.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"}},
+				{Policy: &v1.PolicyAttachment_Ref{Ref: refSBOMSyft}},
 				{
-					Policy:   &v1.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft_not_typed.yaml"},
-					Selector: &v1.PolicyAttachment_MaterialSelector{Name: "custom-material"},
+					Policy:   &v1.PolicyAttachment_Ref{Ref: refSBOMSyftNotTyped},
+					Selector: &v1.PolicyAttachment_MaterialSelector{Name: materialCustom},
 				},
 			},
 		},
 		{
 			name: "kind-less policy without selector",
 			attachments: []*v1.PolicyAttachment{
-				{Policy: &v1.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"}},
-				{Policy: &v1.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft_not_typed.yaml"}},
+				{Policy: &v1.PolicyAttachment_Ref{Ref: refSBOMSyft}},
+				{Policy: &v1.PolicyAttachment_Ref{Ref: refSBOMSyftNotTyped}},
 			},
 			wantErrs: 1,
 		},
 		{
 			name: "several attachments that never apply",
 			attachments: []*v1.PolicyAttachment{
-				{Policy: &v1.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft_not_typed.yaml"}},
+				{Policy: &v1.PolicyAttachment_Ref{Ref: refSBOMSyftNotTyped}},
 				{
-					Policy:   &v1.PolicyAttachment_Ref{Ref: "file://testdata/sbom_syft.yaml"},
-					Selector: &v1.PolicyAttachment_MaterialSelector{Name: "custom-material"},
+					Policy:   &v1.PolicyAttachment_Ref{Ref: refSBOMSyft},
+					Selector: &v1.PolicyAttachment_MaterialSelector{Name: materialCustom},
 				},
 			},
 			wantErrs: 2,
