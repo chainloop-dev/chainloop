@@ -507,8 +507,9 @@ func (uc *WorkflowContractUseCase) RevisionWouldChange(ctx context.Context, orgI
 // exist. batchPolicyNames and batchPolicyGroupNames carry the names of resources being
 // created/updated in the same batch apply: references to those are treated as known instead of
 // being resolved against the registry, since they may not be persisted yet (e.g. during
-// dry-run). Remote references are still validated regardless.
-func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context, rawSchema []byte, token string, batchPolicyNames, batchPolicyGroupNames []string) error {
+// dry-run). Remote references are still validated regardless. batchPolicies optionally carries the
+// specs of those policies by name, so their inputs and material applicability are validated too.
+func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context, rawSchema []byte, token string, batchPolicyNames, batchPolicyGroupNames []string, batchPolicies map[string]*schemav1.Policy) error {
 	// Validate that externally provided policies exist
 	c, err := identifyUnMarshalAndValidateRawContract(rawSchema)
 	if err != nil {
@@ -521,12 +522,12 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context,
 		// DEPRECATED: v1 schema is deprecated, use v2 Contract format instead
 		schema := c.Schema
 		for _, att := range schema.GetPolicies().GetAttestation() {
-			if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames); err != nil {
+			if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames, batchPolicies); err != nil {
 				return NewErrValidation(err)
 			}
 		}
 		for _, att := range schema.GetPolicies().GetMaterials() {
-			if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, schema.GetMaterials()); err != nil {
+			if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, batchPolicies, schema.GetMaterials()); err != nil {
 				return NewErrValidation(err)
 			}
 		}
@@ -540,12 +541,12 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context,
 		spec := c.Schemav2.GetSpec()
 		if spec.GetPolicies() != nil {
 			for _, att := range spec.GetPolicies().GetAttestation() {
-				if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames); err != nil {
+				if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames, batchPolicies); err != nil {
 					return NewErrValidation(err)
 				}
 			}
 			for _, att := range spec.GetPolicies().GetMaterials() {
-				if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, spec.GetMaterials()); err != nil {
+				if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, batchPolicies, spec.GetMaterials()); err != nil {
 					return NewErrValidation(err)
 				}
 			}
@@ -578,7 +579,7 @@ func (uc *WorkflowContractUseCase) ValidatePolicyAttachment(ctx context.Context,
 	return nil
 }
 
-func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string) (*schemav1.Policy, error) {
+func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string, batchPolicies map[string]*schemav1.Policy) (*schemav1.Policy, error) {
 	var policy *schemav1.Policy
 
 	if att.GetEmbedded() != nil {
@@ -593,21 +594,24 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, at
 		// treat references to them as known instead of resolving against the registry. Only
 		// bare references (no provider/org) can name a batch-local policy; references that
 		// explicitly target a remote provider or org are always validated.
-		if pr.Provider == "" && pr.OrgName == "" && slices.Contains(batchPolicyNames, pr.Name) {
-			return nil, nil
-		}
-		// Validate attachment
-		if err := uc.ValidatePolicyAttachment(ctx, pr.Provider, att, token); err != nil {
-			return nil, err
-		}
+		if pr.Provider == "" && pr.OrgName == "" && (slices.Contains(batchPolicyNames, pr.Name) || batchPolicies[pr.Name] != nil) {
+			// Use the batch spec when the caller sent it, so the same checks as a real apply
+			// run. Without it the policy is only known and nothing else can be validated.
+			policy = batchPolicies[pr.Name]
+		} else {
+			// Validate attachment
+			if err := uc.ValidatePolicyAttachment(ctx, pr.Provider, att, token); err != nil {
+				return nil, err
+			}
 
-		// The control plane is a non-CLI caller, so resolve the true latest revision
-		// and skip CLI-version compatibility gating.
-		remotePolicy, err := uc.GetPolicy(ctx, pr.Provider, pr.Name, pr.OrgName, "", token, policies.WithIgnoreCLICompatibility())
-		if err != nil {
-			return nil, err
+			// The control plane is a non-CLI caller, so resolve the true latest revision
+			// and skip CLI-version compatibility gating.
+			remotePolicy, err := uc.GetPolicy(ctx, pr.Provider, pr.Name, pr.OrgName, "", token, policies.WithIgnoreCLICompatibility())
+			if err != nil {
+				return nil, err
+			}
+			policy = remotePolicy.Policy
 		}
-		policy = remotePolicy.Policy
 	}
 
 	if policy != nil {
@@ -627,8 +631,8 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, at
 
 // findAndValidateMaterialPolicy validates a material policy attachment and, when its
 // policy can be resolved, checks that the attachment can apply to at least one material.
-func (uc *WorkflowContractUseCase) findAndValidateMaterialPolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string, materials []*schemav1.CraftingSchema_Material) error {
-	policy, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames)
+func (uc *WorkflowContractUseCase) findAndValidateMaterialPolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string, batchPolicies map[string]*schemav1.Policy, materials []*schemav1.CraftingSchema_Material) error {
+	policy, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames, batchPolicies)
 	if err != nil {
 		return err
 	}
@@ -702,7 +706,7 @@ func (uc *WorkflowContractUseCase) validateSkipList(ctx context.Context, group *
 	for _, groupMaterial := range policies.GetMaterials() {
 		for _, policyAtt := range groupMaterial.GetPolicies() {
 			// Group member policies come from an already-resolved remote group, never batch-local.
-			policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token, nil)
+			policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token, nil, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get policy name during skip list validation: %w", err)
 			}
@@ -712,7 +716,7 @@ func (uc *WorkflowContractUseCase) validateSkipList(ctx context.Context, group *
 
 	// Collect attestation policy names
 	for _, policyAtt := range policies.GetAttestation() {
-		policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token, nil)
+		policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token, nil, nil)
 		if err != nil {
 			return fmt.Errorf("failed to get policy name during skip list validation: %w", err)
 		}

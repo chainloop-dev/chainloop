@@ -3,6 +3,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "patternProperties": {
+    "^(batch_policies)$": {
+      "description": "Raw representation (json or yaml) of the policies created/updated in the same batch apply.\n When present, the specs of batch-local references are used to validate their inputs and\n whether the attachment can apply to a material, as a real apply does.",
+      "items": {
+        "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+        "type": "string"
+      },
+      "type": "array"
+    },
     "^(batch_policy_group_names)$": {
       "description": "Same as batch_policy_names, for policy groups created/updated in the same batch.",
       "items": {
@@ -28,6 +36,14 @@
     }
   },
   "properties": {
+    "batchPolicies": {
+      "description": "Raw representation (json or yaml) of the policies created/updated in the same batch apply.\n When present, the specs of batch-local references are used to validate their inputs and\n whether the attachment can apply to a material, as a real apply does.",
+      "items": {
+        "pattern": "^[A-Za-z0-9+/]*={0,2}$",
+        "type": "string"
+      },
+      "type": "array"
+    },
     "batchPolicyGroupNames": {
       "description": "Same as batch_policy_names, for policy groups created/updated in the same batch.",
       "items": {

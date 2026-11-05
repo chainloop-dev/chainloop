@@ -24,11 +24,14 @@ import (
 	"path"
 	"testing"
 
+	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	cpolicies "github.com/chainloop-dev/chainloop/app/controlplane/pkg/policies"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const batchKindless = "batch-kindless"
 
 // remote policies served by the fake policy provider, by name
 var providerPolicies = map[string]string{
@@ -137,7 +140,55 @@ policies:
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := uc.ValidateContractPolicies(context.Background(), tc.contract, "token", nil, nil)
+			err := uc.ValidateContractPolicies(context.Background(), tc.contract, "token", nil, nil, nil)
+			if tc.wantErr == "" {
+				assert.NoError(t, err)
+				return
+			}
+
+			require.Error(t, err)
+			assert.True(t, IsErrValidation(err))
+			assert.ErrorContains(t, err, tc.wantErr)
+		})
+	}
+}
+
+func TestValidateContractPoliciesBatchLocalApplicability(t *testing.T) {
+	uc := NewWorkflowContractUseCase(nil, newFakePolicyProvider(t), nil, log.DefaultLogger)
+
+	kindless := &schemav1.Policy{
+		Metadata: &schemav1.Metadata{Name: batchKindless},
+		Spec: &schemav1.PolicySpec{
+			Policies: []*schemav1.PolicySpecV2{{Source: &schemav1.PolicySpecV2_Embedded{Embedded: "package main"}}},
+		},
+	}
+
+	testCases := []struct {
+		name     string
+		contract []byte
+		specs    map[string]*schemav1.Policy
+		wantErr  string
+	}{
+		{
+			name:     "batch-local kind-less policy without selector",
+			contract: contractWithMaterialPolicy(batchKindless, ""),
+			specs:    map[string]*schemav1.Policy{batchKindless: kindless},
+			wantErr:  `policy "batch-kindless" applies to any material type and requires a material selector (selector.name)`,
+		},
+		{
+			name:     "batch-local kind-less policy with selector",
+			contract: contractWithMaterialPolicy(batchKindless, "selector: {name: my-image}"),
+			specs:    map[string]*schemav1.Policy{batchKindless: kindless},
+		},
+		{
+			name:     "batch-local policy without a spec is only known",
+			contract: contractWithMaterialPolicy(batchKindless, ""),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := uc.ValidateContractPolicies(context.Background(), tc.contract, "token", []string{batchKindless}, nil, tc.specs)
 			if tc.wantErr == "" {
 				assert.NoError(t, err)
 				return
