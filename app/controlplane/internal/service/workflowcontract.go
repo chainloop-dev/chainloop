@@ -146,7 +146,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	if len(req.RawContract) != 0 {
-		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil); err != nil {
+		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil, nil); err != nil {
 			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
@@ -214,7 +214,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	// Validate the contract policies if the raw contract is provided
 	if len(req.RawContract) != 0 {
-		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil); err != nil {
+		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil, nil); err != nil {
 			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
@@ -259,12 +259,17 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 	// the resources may not be persisted yet. A real apply persists batch resources before the
 	// contract, so it must always validate fully and never trust the client-supplied batch lists.
 	var batchPolicyNames, batchPolicyGroupNames []string
+	var batchPolicies map[string]*schemav1.Policy
 	if dryRun {
 		batchPolicyNames = req.GetBatchPolicyNames()
 		batchPolicyGroupNames = req.GetBatchPolicyGroupNames()
+
+		if batchPolicies, err = parseBatchPolicies(req.GetBatchPolicies()); err != nil {
+			return nil, err
+		}
 	}
 
-	if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawSchema, token, batchPolicyNames, batchPolicyGroupNames); err != nil {
+	if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawSchema, token, batchPolicyNames, batchPolicyGroupNames, batchPolicies); err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
@@ -524,6 +529,34 @@ func validateAndExtractMetadata(rawContract []byte, explicitName, explicitDesc s
 		description = &desc
 	}
 	return name, description, nil
+}
+
+// parseBatchPolicies parses the raw policies sent with a batch apply, indexed by policy name
+func parseBatchPolicies(raws [][]byte) (map[string]*schemav1.Policy, error) {
+	if len(raws) == 0 {
+		return nil, nil
+	}
+
+	parsed := make(map[string]*schemav1.Policy, len(raws))
+	for _, raw := range raws {
+		format, err := unmarshal.IdentifyFormat(raw)
+		if err != nil {
+			return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid batch policy: %s", err))
+		}
+
+		policy := &schemav1.Policy{}
+		if err := unmarshal.FromRaw(raw, format, policy, true); err != nil {
+			return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid batch policy: %s", err))
+		}
+
+		if policy.GetMetadata().GetName() == "" {
+			return nil, errors.BadRequest("invalid", "invalid batch policy: missing metadata name")
+		}
+
+		parsed[policy.GetMetadata().GetName()] = policy
+	}
+
+	return parsed, nil
 }
 
 // extractMetadata attempts to extract the name from metadata.name in v2 contracts

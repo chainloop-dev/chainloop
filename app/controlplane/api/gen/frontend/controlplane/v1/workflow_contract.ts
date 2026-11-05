@@ -79,6 +79,13 @@ export interface WorkflowContractServiceApplyRequest {
   batchPolicyNames: string[];
   /** Same as batch_policy_names, for policy groups created/updated in the same batch. */
   batchPolicyGroupNames: string[];
+  /**
+   * Raw representation (json or yaml) of the policies created/updated in the same batch apply.
+   * Only used on dry runs, ignored on a real apply (which persists batch resources first).
+   * When present, the specs of batch-local references are used to validate their inputs and
+   * whether the attachment can apply to a material, as a real apply does.
+   */
+  batchPolicies: Uint8Array[];
 }
 
 export interface WorkflowContractServiceApplyResponse {
@@ -1009,7 +1016,13 @@ export const WorkflowContractServiceDeleteResponse = {
 };
 
 function createBaseWorkflowContractServiceApplyRequest(): WorkflowContractServiceApplyRequest {
-  return { rawSchema: new Uint8Array(0), dryRun: false, batchPolicyNames: [], batchPolicyGroupNames: [] };
+  return {
+    rawSchema: new Uint8Array(0),
+    dryRun: false,
+    batchPolicyNames: [],
+    batchPolicyGroupNames: [],
+    batchPolicies: [],
+  };
 }
 
 export const WorkflowContractServiceApplyRequest = {
@@ -1025,6 +1038,9 @@ export const WorkflowContractServiceApplyRequest = {
     }
     for (const v of message.batchPolicyGroupNames) {
       writer.uint32(34).string(v!);
+    }
+    for (const v of message.batchPolicies) {
+      writer.uint32(42).bytes(v!);
     }
     return writer;
   },
@@ -1064,6 +1080,13 @@ export const WorkflowContractServiceApplyRequest = {
 
           message.batchPolicyGroupNames.push(reader.string());
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.batchPolicies.push(reader.bytes());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1083,6 +1106,9 @@ export const WorkflowContractServiceApplyRequest = {
       batchPolicyGroupNames: Array.isArray(object?.batchPolicyGroupNames)
         ? object.batchPolicyGroupNames.map((e: any) => String(e))
         : [],
+      batchPolicies: Array.isArray(object?.batchPolicies)
+        ? object.batchPolicies.map((e: any) => bytesFromBase64(e))
+        : [],
     };
   },
 
@@ -1101,6 +1127,11 @@ export const WorkflowContractServiceApplyRequest = {
     } else {
       obj.batchPolicyGroupNames = [];
     }
+    if (message.batchPolicies) {
+      obj.batchPolicies = message.batchPolicies.map((e) => base64FromBytes(e !== undefined ? e : new Uint8Array(0)));
+    } else {
+      obj.batchPolicies = [];
+    }
     return obj;
   },
 
@@ -1118,6 +1149,7 @@ export const WorkflowContractServiceApplyRequest = {
     message.dryRun = object.dryRun ?? false;
     message.batchPolicyNames = object.batchPolicyNames?.map((e) => e) || [];
     message.batchPolicyGroupNames = object.batchPolicyGroupNames?.map((e) => e) || [];
+    message.batchPolicies = object.batchPolicies?.map((e) => e) || [];
     return message;
   },
 };

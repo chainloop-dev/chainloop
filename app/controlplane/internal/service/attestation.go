@@ -809,7 +809,7 @@ func (s *AttestationService) FindOrCreateWorkflow(ctx context.Context, req *cpAP
 
 	// contract validation
 	if req.GetContractBytes() != nil {
-		if err = s.workflowContractUseCase.ValidateContractPolicies(ctx, req.GetContractBytes(), token, nil, nil); err != nil {
+		if err = s.workflowContractUseCase.ValidateContractPolicies(ctx, req.GetContractBytes(), token, nil, nil, nil); err != nil {
 			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
