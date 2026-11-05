@@ -22,7 +22,7 @@ const _ = http.SupportPackageIsVersion1
 const OperationReferrerServiceDiscoverPrivate = "/controlplane.v1.ReferrerService/DiscoverPrivate"
 
 type ReferrerServiceHTTPServer interface {
-	// DiscoverPrivate DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user
+	// DiscoverPrivate DiscoverPrivate returns the referrer item for a given digest in the current organization
 	DiscoverPrivate(context.Context, *ReferrerServiceDiscoverPrivateRequest) (*ReferrerServiceDiscoverPrivateResponse, error)
 }
 

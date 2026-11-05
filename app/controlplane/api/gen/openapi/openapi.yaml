@@ -24,9 +24,7 @@ externalDocs:
 paths:
   /discover/{digest}:
     get:
-      description: >-
-        Returns the referrer item for a given digest in the organizations of the
-        logged-in user
+      description: Returns the referrer item for a given digest in the current organization
       operationId: ReferrerService_DiscoverPrivate
       parameters:
         - description: Digest is the unique identifier of the referrer to discover

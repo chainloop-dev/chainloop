@@ -31,7 +31,10 @@ func newReferrerDiscoverCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "discover",
 		Short: "(Preview) inspect pieces of evidence or artifacts stored through Chainloop",
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Long: `(Preview) inspect pieces of evidence or artifacts stored through Chainloop.
+
+The discovery covers only the current organization. Select another organization with --org.`,
+		RunE: func(_ *cobra.Command, _ []string) error {
 			pagination := &action.PaginationOpts{
 				Limit:      paginationOpts.Limit,
 				NextCursor: paginationOpts.NextCursor,

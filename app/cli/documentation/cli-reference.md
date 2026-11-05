@@ -1404,6 +1404,12 @@ Options inherited from parent commands
 
 (Preview) inspect pieces of evidence or artifacts stored through Chainloop
 
+Synopsis
+
+(Preview) inspect pieces of evidence or artifacts stored through Chainloop.
+
+The discovery covers only the current organization. Select another organization with --org.
+
 ```
 chainloop discover [flags]
 ```
