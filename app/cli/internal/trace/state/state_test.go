@@ -783,6 +783,95 @@ func TestGCOrphans_StaleSessions(t *testing.T) {
 	})
 }
 
+// A session that no live commit references is not proof that its work is
+// gone: it can still be running with uncommitted edits, or its commits can
+// have been rewritten where this trace directory's hooks did not run. Its
+// state stays for the retention period, like any other session (issue 3778).
+func TestGCOrphans_SessionsWithoutLiveCommits(t *testing.T) {
+	recent := time.Now().UTC().Add(-1 * time.Hour)
+	old := time.Now().UTC().Add(-31 * 24 * time.Hour)
+
+	testCases := []struct {
+		name string
+		// withRecord saves a session record started at startedAt.
+		withRecord bool
+		startedAt  string
+		// fileAge is the modification time of the session's files.
+		fileAge time.Time
+		// commit, when set, is a commit record of the session that is not
+		// reachable any more (a rebase outside this trace directory).
+		orphanCommit bool
+		wantKept     bool
+	}{
+		{
+			name:       "running session with uncommitted edits survives another session's push",
+			withRecord: true, startedAt: recent.Format(time.RFC3339), fileAge: recent,
+			wantKept: true,
+		},
+		{
+			name:       "session whose commits were rewritten elsewhere keeps its ledger",
+			withRecord: true, startedAt: recent.Format(time.RFC3339), fileAge: recent,
+			orphanCommit: true, wantKept: true,
+		},
+		{
+			name:       "session without live commits is dropped after the retention",
+			withRecord: true, startedAt: old.Format(time.RFC3339), fileAge: old,
+			orphanCommit: true, wantKept: false,
+		},
+		{
+			name:    "ledger without a session record ages by its modification time",
+			fileAge: recent, wantKept: true,
+		},
+		{
+			name:    "old ledger without a session record is dropped",
+			fileAge: old, wantKept: false,
+		},
+		{
+			name:       "unparseable StartedAt ages by modification time",
+			withRecord: true, startedAt: "not-a-timestamp", fileAge: old,
+			wantKept: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			store := NewGitStore(t.TempDir())
+			require.NoError(t, store.InitTraceDir())
+
+			// Another session has a live, attested commit, so the GC has
+			// something reachable and does not short-circuit.
+			require.NoError(t, store.SaveCommitRecord(&CommitRecord{
+				SHA: "sha-other", SessionIDs: []string{"sess-other"}, Timestamp: recent.Format(time.RFC3339), Tracked: true,
+			}))
+
+			const sid = "sess-target"
+			if tc.withRecord {
+				require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: sid, Active: true, StartedAt: tc.startedAt}))
+				require.NoError(t, os.Chtimes(store.sessionRecordPath(sid), tc.fileAge, tc.fileAge))
+			}
+			if tc.orphanCommit {
+				require.NoError(t, store.SaveCommitRecord(&CommitRecord{
+					SHA: "sha-rewritten", SessionIDs: []string{sid}, Timestamp: tc.startedAt, Tracked: true,
+				}))
+			}
+			require.NoError(t, store.RecordLineRanges(sid, fileA, []aicodingsession.LineRange{{Start: 1, End: 5}}))
+			require.NoError(t, os.Chtimes(store.aiLinesPath(sid), tc.fileAge, tc.fileAge))
+
+			require.NoError(t, store.GCOrphans(map[string]bool{"sha-other": true}))
+
+			assert.Equal(t, tc.wantKept, len(store.LoadAILineAttribution(sid).Files) > 0, "ledger kept")
+			if tc.withRecord {
+				assert.Equal(t, tc.wantKept, store.SessionRecordExists(sid), "session record kept")
+			}
+
+			commits, err := store.LoadAllCommitRecords()
+			require.NoError(t, err)
+			require.Len(t, commits, 1, "an unreachable commit record is still dropped")
+			assert.Equal(t, "sha-other", commits[0].SHA)
+		})
+	}
+}
+
 // TestSpecRedactions covers where the redacted copies of a session's spec
 // files live: inside the trace state, one directory per session, kept across
 // pushes and dropped only for the session that ends.
@@ -880,8 +969,10 @@ func TestGCOrphansDropsSpecRedactions(t *testing.T) {
 
 	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "sha-live", SessionIDs: []string{"sess-live"}, Timestamp: "2026-03-28T00:00:00Z"}))
 	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "sha-orphan", SessionIDs: []string{"sess-orphan"}, Timestamp: "2026-03-28T00:00:00Z"}))
+	// The orphan session is past the retention, so the GC drops its record.
+	startedAt := map[string]time.Time{"sess-live": time.Now().UTC(), "sess-orphan": time.Now().UTC().Add(-31 * 24 * time.Hour)}
 	for _, id := range []string{"sess-live", "sess-orphan"} {
-		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: id, Active: true, StartedAt: time.Now().UTC().Format(time.RFC3339)}))
+		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: id, Active: true, StartedAt: startedAt[id].Format(time.RFC3339)}))
 		require.NoError(t, os.MkdirAll(store.SpecRedactionDir(id), 0o700))
 		require.NoError(t, os.WriteFile(filepath.Join(store.SpecRedactionDir(id), "copy"), []byte("x"), 0o600))
 	}

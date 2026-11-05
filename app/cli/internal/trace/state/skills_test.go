@@ -69,8 +69,10 @@ func TestGCOrphansDropsSkillCopies(t *testing.T) {
 
 	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "sha-skills-live", SessionIDs: []string{live}, Timestamp: committed}))
 	require.NoError(t, store.SaveCommitRecord(&CommitRecord{SHA: "sha-skills-orphan", SessionIDs: []string{orphan}, Timestamp: committed}))
+	// The orphan session is past the retention, so the GC drops its record.
+	startedAt := map[string]time.Time{live: time.Now().UTC(), orphan: time.Now().UTC().Add(-31 * 24 * time.Hour)}
 	for _, id := range []string{live, orphan} {
-		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: id, Active: true, StartedAt: time.Now().UTC().Format(time.RFC3339)}))
+		require.NoError(t, store.SaveSessionRecord(&SessionRecord{SessionID: id, Active: true, StartedAt: startedAt[id].Format(time.RFC3339)}))
 		copyDir := store.SkillCopyDir(id, "/skills/x")
 		require.NoError(t, os.MkdirAll(copyDir, 0o700))
 		require.NoError(t, os.WriteFile(filepath.Join(copyDir, "info.json"), []byte("{}"), 0o600))
