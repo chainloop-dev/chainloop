@@ -17,10 +17,10 @@ package natsconn
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/nats-io/nats.go"
 )
@@ -78,7 +78,7 @@ func New(cfg *Config, logger log.Logger) (*ReloadableConnection, func(), error) 
 
 	nc, err := nats.Connect(cfg.URI, opts...)
 	if err != nil {
-		return nil, noop, fmt.Errorf("connecting to NATS: %w", err)
+		return nil, noop, errorsx.Errorf("connecting to NATS: %w", err)
 	}
 
 	rc.Conn = nc

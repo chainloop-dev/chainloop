@@ -30,6 +30,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/smithy-go"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/google/uuid"
 
@@ -57,7 +58,7 @@ type NewManagerOpts struct {
 
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	if opts.Region == "" || opts.AccessKey == "" || opts.SecretKey == "" {
-		return nil, errors.New("region, accessKey and the secretKey are required")
+		return nil, errorsx.New("region, accessKey and the secretKey are required")
 	}
 
 	l := opts.Logger
@@ -92,7 +93,7 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 	// Store the credentials as json key pairs
 	c, err := json.Marshal(creds)
 	if err != nil {
-		return "", fmt.Errorf("marshaling credentials to be stored: %w", err)
+		return "", errorsx.Errorf("marshaling credentials to be stored: %w", err)
 	}
 
 	if o.SecretName != "" {
@@ -117,7 +118,7 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("saving secret in AWS: %w", err)
+		return "", errorsx.Errorf("saving secret in AWS: %w", err)
 	}
 
 	return secretName, nil
@@ -135,11 +136,11 @@ func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds an
 			case (&types.ResourceNotFoundException{}).ErrorCode():
 				return fmt.Errorf("%w: path=%s", credentials.ErrNotFound, secretID)
 			default:
-				return fmt.Errorf("getting AWS Secret Value: %w", err)
+				return errorsx.Errorf("getting AWS Secret Value: %w", err)
 			}
 		}
 
-		return fmt.Errorf("getting AWS Secret Value: %w", err)
+		return errorsx.Errorf("getting AWS Secret Value: %w", err)
 	}
 
 	return json.Unmarshal([]byte(*resp.SecretString), creds)
@@ -150,5 +151,5 @@ func (m *Manager) DeleteCredentials(ctx context.Context, secretID string) error 
 		SecretId: aws.String(secretID),
 	})
 
-	return err
+	return errorsx.WithStack(err)
 }

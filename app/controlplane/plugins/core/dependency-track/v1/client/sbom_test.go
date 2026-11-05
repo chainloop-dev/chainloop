@@ -19,10 +19,13 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const hostname = "http://example.com"
@@ -133,5 +136,54 @@ func TestDoCheck(t *testing.T) {
 		} else {
 			assert.Nil(t, err)
 		}
+	}
+}
+
+func TestBadStatusIsTypedWithStack(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer server.Close()
+
+	host, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name string
+		call func() error
+	}{
+		{
+			name: "team permissions",
+			call: func() error {
+				_, err := teamPermissionsRequest(server.Client(), host, "key")
+				return err
+			},
+		},
+		{
+			name: "upload SBOM",
+			call: func() error {
+				_, err := uploadSBOMRequest(server.Client(), host, "key", map[string]io.Reader{})
+				return err
+			},
+		},
+		{
+			name: "project exists",
+			call: func() error {
+				_, err := projectExists(server.Client(), host, "key", "id")
+				return err
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.call()
+
+			var statusErr *StatusError
+			require.ErrorAs(t, err, &statusErr)
+			assert.Equal(t, http.StatusForbidden, statusErr.StatusCode)
+			assert.EqualError(t, err, "bad status: 403 Forbidden")
+			assert.True(t, errorsx.HasStack(err))
+		})
 	}
 }

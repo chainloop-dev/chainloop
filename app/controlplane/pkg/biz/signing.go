@@ -23,13 +23,13 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"net/url"
 	"os"
 
 	conf "github.com/chainloop-dev/chainloop/app/controlplane/internal/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/ca"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -188,24 +188,24 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, cs
 	var publicKey crypto.PublicKey
 
 	if len(csrRaw) == 0 {
-		return nil, errors.New("csr cannot be empty")
+		return nil, errorsx.New("csr cannot be empty")
 	}
 
 	// Parse CSR
 	csr, err := cryptoutils.ParseCSR(csrRaw)
 	if err != nil {
-		return nil, fmt.Errorf("parsing csr: %w", err)
+		return nil, errorsx.Errorf("parsing csr: %w", err)
 	}
 
 	// Parse public key and check for weak key parameters
 	publicKey = csr.PublicKey
 	if err := cryptoutils.ValidatePubKey(publicKey); err != nil {
-		return nil, fmt.Errorf("invalid public key: %w", err)
+		return nil, errorsx.Errorf("invalid public key: %w", err)
 	}
 
 	// Check the CSR signature is valid
 	if err := csr.CheckSignature(); err != nil {
-		return nil, fmt.Errorf("invalid signature: %w", err)
+		return nil, errorsx.Errorf("invalid signature: %w", err)
 	}
 
 	// Create certificate from CA provider (no Signed Certificate Timestamps for now)
@@ -221,13 +221,13 @@ func (s *SigningUseCase) CreateSigningCert(ctx context.Context, orgID string, cs
 	// Generated certificate
 	finalPEM, err := csc.CertPEM()
 	if err != nil {
-		return nil, fmt.Errorf("marshaling certificate to PEM: %w", err)
+		return nil, errorsx.Errorf("marshaling certificate to PEM: %w", err)
 	}
 
 	// Certificate chain
 	finalChainPEM, err := csc.ChainPEM()
 	if err != nil {
-		return nil, fmt.Errorf("marshaling chain to PEM: %w", err)
+		return nil, errorsx.Errorf("marshaling chain to PEM: %w", err)
 	}
 
 	return append([]string{finalPEM}, finalChainPEM...), nil
@@ -254,7 +254,7 @@ func (s *SigningUseCase) GetTrustedRoot(ctx context.Context) (*TrustedRoot, erro
 		for _, cert := range chain {
 			pemCert, err := cryptoutils.MarshalCertificateToPEM(cert)
 			if err != nil {
-				return nil, fmt.Errorf("marshaling certificate to PEM: %w", err)
+				return nil, errorsx.Errorf("marshaling certificate to PEM: %w", err)
 			}
 			trustedRoot.Keys[keyID] = append(trustedRoot.Keys[keyID], string(pemCert))
 		}
@@ -270,7 +270,7 @@ func (s *SigningUseCase) GetTrustedRoot(ctx context.Context) (*TrustedRoot, erro
 			for _, cert := range authority.CertChain {
 				pemCert, err := cryptoutils.MarshalCertificateToPEM(cert)
 				if err != nil {
-					return nil, fmt.Errorf("marshaling certificate to PEM: %w", err)
+					return nil, errorsx.Errorf("marshaling certificate to PEM: %w", err)
 				}
 				trustedRoot.TimestampAuthorities[authorityKeyID] = append(trustedRoot.TimestampAuthorities[authorityKeyID], string(pemCert))
 			}

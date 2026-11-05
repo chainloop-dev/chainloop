@@ -18,7 +18,6 @@ package gcp
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -30,6 +29,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/docker/distribution/uuid"
 	"github.com/go-kratos/kratos/v2/log"
@@ -59,7 +59,7 @@ type NewManagerOpts struct {
 
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	if opts.ProjectID == "" || opts.ServiceAccountKey == "" {
-		return nil, errors.New("projectID and serviceAccountKey are required")
+		return nil, errorsx.New("projectID and serviceAccountKey are required")
 	}
 
 	l := opts.Logger
@@ -72,7 +72,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 
 	cli, err := secretmanager.NewClient(context.TODO(), option.WithCredentialsFile(opts.ServiceAccountKey))
 	if err != nil {
-		return nil, fmt.Errorf("error while creating the client: %w", err)
+		return nil, errorsx.Errorf("error while creating the client: %w", err)
 	}
 
 	logger.Infow("msg", "created GCP connection", "projectID", opts.ProjectID, "role", opts.Role, "prefix", opts.SecretPrefix)
@@ -90,7 +90,7 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 	// store creds in key-value pair
 	c, err := json.Marshal(creds)
 	if err != nil {
-		return "", fmt.Errorf("marshaling credentials to be stored: %w", err)
+		return "", errorsx.Errorf("marshaling credentials to be stored: %w", err)
 	}
 
 	o := credentials.ApplySaveOptions(opts...)
@@ -124,18 +124,18 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 			return secretID, nil
 		}
 		if !isNotFoundErr(addErr) {
-			return "", fmt.Errorf("adding secret version in GCP: %w", addErr)
+			return "", errorsx.Errorf("adding secret version in GCP: %w", addErr)
 		}
 		// Secret container doesn't exist yet — create it and fall through to AddSecretVersion below.
 		if _, err = m.client.CreateSecret(ctx, secretReq); err != nil {
-			return "", fmt.Errorf("creating secret in GCP: %w", err)
+			return "", errorsx.Errorf("creating secret in GCP: %w", err)
 		}
 		m.logger.Infow("msg", "created new secret", "secretID", secretID)
 	} else {
 		// New secret: create the container and use the canonical name from the API response.
 		secret, createErr := m.client.CreateSecret(ctx, secretReq)
 		if createErr != nil {
-			return "", fmt.Errorf("creating secret in GCP: %w", createErr)
+			return "", errorsx.Errorf("creating secret in GCP: %w", createErr)
 		}
 		parent = secret.Name
 		m.logger.Infow("msg", "created new secret", "secretID", secretID)
@@ -147,7 +147,7 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 		Payload: &secretmanagerpb.SecretPayload{Data: c},
 	})
 	if err != nil {
-		return "", fmt.Errorf("creating secret version in GCP: %w", err)
+		return "", errorsx.Errorf("creating secret version in GCP: %w", err)
 	}
 	m.logger.Infow("msg", "added new secret version", "secretID", secretID, "versionID", v.Name)
 
@@ -181,5 +181,5 @@ func (m *Manager) DeleteCredentials(ctx context.Context, secretID string) error 
 	}
 	m.logger.Infow("msg", "deleting secret", "secretID", secretID)
 
-	return m.client.DeleteSecret(ctx, &deleteRequest)
+	return errorsx.WithStack(m.client.DeleteSecret(ctx, &deleteRequest))
 }

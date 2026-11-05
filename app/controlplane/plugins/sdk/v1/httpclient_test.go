@@ -20,6 +20,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -48,6 +49,7 @@ func TestNewHTTPClientPublicTargetsOnly(t *testing.T) {
 			resp, err := client.Get(server.URL)
 			if tc.wantBlocked {
 				require.ErrorIs(t, err, ErrBlockedTarget)
+				assert.True(t, errorsx.HasStack(err), "a failed request must record a stack")
 				return
 			}
 
@@ -76,7 +78,9 @@ func TestNewHTTPClientProxyUse(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			client := NewHTTPClient(HTTPClientOptions{PublicTargetsOnly: tc.publicTargetsOnly})
 
-			transport, ok := client.Transport.(*http.Transport)
+			st, ok := client.Transport.(*stackTransport)
+			require.True(t, ok)
+			transport, ok := st.base.(*http.Transport)
 			require.True(t, ok)
 
 			if tc.wantProxy {

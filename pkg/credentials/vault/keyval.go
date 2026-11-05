@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/docker/distribution/uuid"
 	"github.com/go-kratos/kratos/v2/log"
@@ -60,7 +61,7 @@ const healthCheckNonExisting = "chainloop-non-existing"
 // SecretPrefix is used to namespace secrets in the KVv2 engine during write operations.
 func NewManager(opts *NewManagerOpts) (*Manager, error) {
 	if opts.AuthToken == "" || opts.Address == "" {
-		return nil, errors.New("auth token and instance address are required")
+		return nil, errorsx.New("auth token and instance address are required")
 	}
 
 	config := vault.DefaultConfig()
@@ -69,7 +70,7 @@ func NewManager(opts *NewManagerOpts) (*Manager, error) {
 
 	client, err := vault.NewClient(config)
 	if err != nil {
-		return nil, err
+		return nil, errorsx.Errorf("creating Vault client: %w", err)
 	}
 
 	client.SetToken(opts.AuthToken)
@@ -108,11 +109,11 @@ func validateWriterClient(kv *vault.KVv2, pathPrefix string) error {
 	ctx := context.Background()
 	keyPath := strings.Join([]string{pathPrefix, healthCheckSecret}, "/")
 	if _, err := kv.Put(ctx, keyPath, nil); err != nil {
-		return err
+		return errorsx.Errorf("writing health check secret: %w", err)
 	}
 
 	if err := kv.DeleteMetadata(ctx, keyPath); err != nil {
-		return fmt.Errorf("deleting health check secret: %w", err)
+		return errorsx.Errorf("deleting health check secret: %w", err)
 	}
 
 	return nil
@@ -130,7 +131,7 @@ func validateReaderClient(kv *vault.KVv2, pathPrefix string) error {
 			return nil
 		}
 
-		return err
+		return errorsx.Errorf("reading health check secret: %w", err)
 	}
 
 	return nil
@@ -139,7 +140,7 @@ func validateReaderClient(kv *vault.KVv2, pathPrefix string) error {
 func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, opts ...credentials.SaveOption) (string, error) {
 	credsM, err := structToMap(creds)
 	if err != nil {
-		return "", fmt.Errorf("converting struct to map: %w", err)
+		return "", errorsx.Errorf("converting struct to map: %w", err)
 	}
 
 	o := credentials.ApplySaveOptions(opts...)
@@ -151,7 +152,7 @@ func (m *Manager) SaveCredentials(ctx context.Context, orgID string, creds any, 
 
 	_, err = m.client.Put(ctx, secretName, credsM)
 	if err != nil {
-		return "", fmt.Errorf("storing secret in Vault: %w", err)
+		return "", errorsx.Errorf("storing secret in Vault: %w", err)
 	}
 
 	return secretName, nil
@@ -166,11 +167,11 @@ func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds an
 			return fmt.Errorf("%w: path=%s", credentials.ErrNotFound, secretID)
 		}
 
-		return fmt.Errorf("reading secret from Vault: %w", err)
+		return errorsx.Errorf("reading secret from Vault: %w", err)
 	}
 
 	if err := mapToStruct(s.Data, creds); err != nil {
-		return fmt.Errorf("converting secret to struct: %w", err)
+		return errorsx.Errorf("converting secret to struct: %w", err)
 	}
 
 	return nil
@@ -178,7 +179,7 @@ func (m *Manager) ReadCredentials(ctx context.Context, secretID string, creds an
 
 func (m *Manager) DeleteCredentials(ctx context.Context, secretID string) error {
 	m.logger.Infow("msg", "deleting credentials", "path", secretID)
-	return m.client.DeleteMetadata(ctx, secretID)
+	return errorsx.WithStack(m.client.DeleteMetadata(ctx, secretID))
 }
 
 // convert from struct to map[string]interface{}

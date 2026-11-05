@@ -32,6 +32,7 @@ import (
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/unmarshal"
 	"github.com/chainloop-dev/chainloop/pkg/cache"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -171,20 +172,32 @@ func fetchRemote(client *http.Client, ref string) ([]byte, error) {
 		if errors.As(err, &urlErr) {
 			err = urlErr.Err
 		}
-		return nil, fmt.Errorf("requesting remote policy: %w", err)
+		return nil, errorsx.Errorf("requesting remote policy: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("requesting remote policy: server returned HTTP %d", resp.StatusCode)
+		return nil, errorsx.Errorf("requesting remote policy: %w", &RemoteStatusError{StatusCode: resp.StatusCode})
 	}
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("reading remote policy: %w", err)
+		return nil, errorsx.Errorf("reading remote policy: %w", err)
 	}
 
 	return raw, nil
+}
+
+// RemoteStatusError is returned when the server of a remote policy or policy
+// group answers with a status other than 2xx. It has its own type so that
+// Sentry does not group it with transport failures.
+type RemoteStatusError struct {
+	// StatusCode is the HTTP status code of the response.
+	StatusCode int
+}
+
+func (e *RemoteStatusError) Error() string {
+	return fmt.Sprintf("server returned HTTP %d", e.StatusCode)
 }
 
 // ChainloopLoader loads policies referenced with chainloop://provider/name URLs
