@@ -19,6 +19,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
@@ -98,6 +99,8 @@ func checkpointActiveShellAttribution(store *state.Store, repoRoot string, stage
 		changed, deleted := attribution.ChangedPaths(indexBefore, afterIndex)
 		stagedPaths := make([]string, 0, len(changed)+len(deleted))
 		stagedHashes := make(map[string]string)
+		beforeHashes := make(map[string]string)
+		basePaths := make([]string, 0, len(changed)+len(deleted))
 		for _, relPath := range append(changed, deleted...) {
 			if _, ok := staged[relPath]; !ok {
 				continue
@@ -106,16 +109,40 @@ func checkpointActiveShellAttribution(store *state.Store, repoRoot string, stage
 			if hash, exists := afterIndex[relPath]; exists {
 				stagedHashes[relPath] = hash
 			}
+			if hash, exists := indexBefore[relPath]; exists {
+				beforeHashes[relPath] = hash
+			} else {
+				basePaths = append(basePaths, relPath)
+			}
 		}
 		stagedContent, err := client.IndexBlobs(repoRoot, stagedHashes)
 		if err != nil {
 			return fmt.Errorf("read staged blobs: %w", err)
 		}
+		beforeContents, indexErr := client.IndexBlobs(repoRoot, beforeHashes)
 		base := beforeHeads[root]
 		if base == "" {
 			base = "HEAD"
 		}
-		beforeContents, _ := client.FilesAt(repoRoot, base, stagedPaths)
+		baseContents, baseErr := client.FilesAt(repoRoot, base, basePaths)
+		if errors.Join(indexErr, baseErr) != nil {
+			beforeContents = make(map[string][]byte, len(stagedPaths))
+			for _, relPath := range stagedPaths {
+				var content []byte
+				var err error
+				if hash, exists := beforeHashes[relPath]; exists {
+					contents, readErr := client.IndexBlobs(repoRoot, map[string]string{relPath: hash})
+					content, err = contents[relPath], readErr
+				} else {
+					content, err = client.FileAt(repoRoot, base, relPath)
+				}
+				if err == nil {
+					beforeContents[relPath] = content
+				}
+			}
+		} else {
+			maps.Copy(beforeContents, baseContents)
+		}
 		checkpointed := false
 		for _, relPath := range stagedPaths {
 			beforeContent := beforeContents[relPath]
