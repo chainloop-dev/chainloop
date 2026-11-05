@@ -31,7 +31,10 @@ export interface Attestation {
   head?: Commit;
   /** Policies that materials in this attestation were validated against */
   policyEvaluations: PolicyEvaluation[];
-  /** fail the attestation if policy evaluation fails */
+  /**
+   * fail the attestation if policy evaluation fails. Set at init when the
+   * organization or the workflow contract (policies.gate) enforces policies.
+   */
   blockOnPolicyViolation: boolean;
   /** bypass policy check */
   bypassPolicyCheck: boolean;

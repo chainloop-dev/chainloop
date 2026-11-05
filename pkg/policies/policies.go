@@ -556,16 +556,10 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}, nil
 }
 
+// policyAttachmentGate resolves whether a policy acts as a gate. Enforcement
+// only tightens: an explicit `gate: false` cannot relax an enforced default.
 func policyAttachmentGate(attachment *v1.PolicyAttachment, defaultGate bool) bool {
-	if attachment == nil {
-		return defaultGate
-	}
-
-	if attachment.Gate != nil {
-		return attachment.GetGate()
-	}
-
-	return defaultGate
+	return defaultGate || attachment.GetGate()
 }
 
 // ComputeArguments takes a list of arguments, and matches it against the expected inputs. It also applies a set of interpolations if needed.

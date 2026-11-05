@@ -646,6 +646,13 @@ export interface Policies {
   materials: PolicyAttachment[];
   /** Policies to be applied to attestation metadata */
   attestation: PolicyAttachment[];
+  /**
+   * Enforce every policy of this contract, including the policies of its policy groups.
+   * Enforcement only tightens:
+   * - true: every policy of the contract acts as a gate
+   * - false or unset: the organization default and the attachment `gate` values decide
+   */
+  gate?: boolean | undefined;
 }
 
 /** A policy to be applied to this contract */
@@ -679,10 +686,10 @@ export interface PolicyAttachment {
   /** List of requirements this policy contributes to satisfy */
   requirements: string[];
   /**
-   * Controls whether policy violations act as a gate.
+   * Controls whether policy violations act as a gate. Enforcement only tightens.
    * - true: policy violations are blocking for this policy
-   * - false: policy violations are non-blocking for this policy
-   * - unset: inherit organization-level default behavior
+   * - false or unset: inherit the organization and contract enforcement.
+   *   It does not turn off enforcement set at those levels.
    */
   gate?: boolean | undefined;
 }
@@ -879,10 +886,10 @@ export interface PolicyGroupAttachment {
   /** policy names to skip (matched against metadata.name) */
   skip: string[];
   /**
-   * Controls whether policy violations act as a gate for this group.
-   * - true: policy violations are blocking for this policy group
-   * - false: policy violations are non-blocking for this policy group
-   * - unset: inherit organization-level default behavior
+   * Controls whether policy violations act as a gate for this group. Enforcement only tightens.
+   * - true: policy violations are blocking for every policy of this group
+   * - false or unset: inherit the organization and contract enforcement, and the policy `gate` values.
+   *   It does not turn off enforcement set at those levels.
    */
   gate?: boolean | undefined;
 }
@@ -1615,7 +1622,7 @@ export const Annotation = {
 };
 
 function createBasePolicies(): Policies {
-  return { materials: [], attestation: [] };
+  return { materials: [], attestation: [], gate: undefined };
 }
 
 export const Policies = {
@@ -1625,6 +1632,9 @@ export const Policies = {
     }
     for (const v of message.attestation) {
       PolicyAttachment.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.gate !== undefined) {
+      writer.uint32(24).bool(message.gate);
     }
     return writer;
   },
@@ -1650,6 +1660,13 @@ export const Policies = {
 
           message.attestation.push(PolicyAttachment.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.gate = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1665,6 +1682,7 @@ export const Policies = {
       attestation: Array.isArray(object?.attestation)
         ? object.attestation.map((e: any) => PolicyAttachment.fromJSON(e))
         : [],
+      gate: isSet(object.gate) ? Boolean(object.gate) : undefined,
     };
   },
 
@@ -1680,6 +1698,7 @@ export const Policies = {
     } else {
       obj.attestation = [];
     }
+    message.gate !== undefined && (obj.gate = message.gate);
     return obj;
   },
 
@@ -1691,6 +1710,7 @@ export const Policies = {
     const message = createBasePolicies();
     message.materials = object.materials?.map((e) => PolicyAttachment.fromPartial(e)) || [];
     message.attestation = object.attestation?.map((e) => PolicyAttachment.fromPartial(e)) || [];
+    message.gate = object.gate ?? undefined;
     return message;
   },
 };
