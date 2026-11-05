@@ -22,6 +22,62 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const batchPolName = "batch-pol"
+
+func TestParseBatchPolicies(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		raws      [][]byte
+		wantNames []string
+		wantErr   bool
+	}{
+		{name: "no policies"},
+		{
+			name: "valid kind-less policy",
+			raws: [][]byte{[]byte(`apiVersion: chainloop.dev/v1
+kind: Policy
+metadata:
+  name: batch-pol
+spec:
+  policies:
+    - embedded: |
+        package main
+`)},
+			wantNames: []string{batchPolName},
+		},
+		{
+			name:    "only a metadata name is not a valid policy",
+			raws:    [][]byte{[]byte("metadata:\n  name: batch-pol\n")},
+			wantErr: true,
+		},
+		{
+			name:    "missing metadata name",
+			raws:    [][]byte{[]byte("apiVersion: chainloop.dev/v1\nkind: Policy\nspec:\n  policies:\n    - embedded: package main\n")},
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := parseBatchPolicies(tc.raws)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Len(t, got, len(tc.wantNames))
+			for _, n := range tc.wantNames {
+				assert.Contains(t, got, n)
+			}
+		})
+	}
+}
+
 func TestExtractMetadata(t *testing.T) {
 	t.Parallel()
 

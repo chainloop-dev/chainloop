@@ -581,6 +581,7 @@ type WorkflowContractServiceApplyRequest struct {
 	// Same as batch_policy_names, for policy groups created/updated in the same batch.
 	BatchPolicyGroupNames []string `protobuf:"bytes,4,rep,name=batch_policy_group_names,json=batchPolicyGroupNames,proto3" json:"batch_policy_group_names,omitempty"`
 	// Raw representation (json or yaml) of the policies created/updated in the same batch apply.
+	// Only used on dry runs, ignored on a real apply (which persists batch resources first).
 	// When present, the specs of batch-local references are used to validate their inputs and
 	// whether the attachment can apply to a material, as a real apply does.
 	BatchPolicies [][]byte `protobuf:"bytes,5,rep,name=batch_policies,json=batchPolicies,proto3" json:"batch_policies,omitempty"`

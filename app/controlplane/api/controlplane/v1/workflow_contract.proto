@@ -128,6 +128,7 @@ message WorkflowContractServiceApplyRequest {
   // Same as batch_policy_names, for policy groups created/updated in the same batch.
   repeated string batch_policy_group_names = 4;
   // Raw representation (json or yaml) of the policies created/updated in the same batch apply.
+  // Only used on dry runs, ignored on a real apply (which persists batch resources first).
   // When present, the specs of batch-local references are used to validate their inputs and
   // whether the attachment can apply to a material, as a real apply does.
   repeated bytes batch_policies = 5;

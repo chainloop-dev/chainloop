@@ -531,7 +531,6 @@ func validateAndExtractMetadata(rawContract []byte, explicitName, explicitDesc s
 	return name, description, nil
 }
 
-// extractMetadata attempts to extract the name from metadata.name in v2 contracts
 // parseBatchPolicies parses the raw policies sent with a batch apply, indexed by policy name
 func parseBatchPolicies(raws [][]byte) (map[string]*schemav1.Policy, error) {
 	if len(raws) == 0 {
@@ -546,7 +545,7 @@ func parseBatchPolicies(raws [][]byte) (map[string]*schemav1.Policy, error) {
 		}
 
 		policy := &schemav1.Policy{}
-		if err := unmarshal.FromRaw(raw, format, policy, false); err != nil {
+		if err := unmarshal.FromRaw(raw, format, policy, true); err != nil {
 			return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid batch policy: %s", err))
 		}
 
@@ -560,6 +559,7 @@ func parseBatchPolicies(raws [][]byte) (map[string]*schemav1.Policy, error) {
 	return parsed, nil
 }
 
+// extractMetadata attempts to extract the name from metadata.name in v2 contracts
 func extractMetadata(rawContract []byte) (*schemav1.Metadata, error) {
 	if len(rawContract) == 0 {
 		return nil, nil

@@ -81,6 +81,7 @@ export interface WorkflowContractServiceApplyRequest {
   batchPolicyGroupNames: string[];
   /**
    * Raw representation (json or yaml) of the policies created/updated in the same batch apply.
+   * Only used on dry runs, ignored on a real apply (which persists batch resources first).
    * When present, the specs of batch-local references are used to validate their inputs and
    * whether the attachment can apply to a material, as a real apply does.
    */
