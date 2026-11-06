@@ -152,7 +152,7 @@ func TestReadSessionSkills(t *testing.T) {
 	t.Run("a skill that no hook copied is copied at push time, with a warning", func(t *testing.T) {
 		store := state.NewGitStore(filepath.Join(t.TempDir(), ".git"))
 		dir := makeSkill(t, map[string]string{skill.DefinitionFile: skillDoc})
-		provider := &skillProvider{uses: []trace.SkillUse{{Name: steSkillName, Dir: dir, ByUser: 1}}}
+		provider := &skillProvider{uses: []trace.SkillUse{{Name: steSkillName, Dir: dir, FirstUsedAt: skillTenOClock, ByUser: 1}}}
 
 		skills, warnings := readSessionSkills(provider, store, &trace.ParseOpts{SessionID: skillSessionID}, t.TempDir(), zerolog.Nop())
 		require.Len(t, skills, 1)
@@ -165,7 +165,7 @@ func TestReadSessionSkills(t *testing.T) {
 		provider := &skillProvider{uses: []trace.SkillUse{
 			{Name: "gone", Dir: filepath.Join(t.TempDir(), "gone"), ByModel: 1},
 			{Name: "unknown-dir", ByModel: 1},
-			{Name: steSkillName, Dir: dir, ByModel: 1},
+			{Name: steSkillName, Dir: dir, FirstUsedAt: skillTenOClock, ByModel: 1},
 		}}
 		captureSkillLoads(&skillProvider{loads: []string{dir}}, store, &trace.HookInput{SessionID: skillSessionID}, zerolog.Nop())
 
@@ -196,6 +196,30 @@ func TestReadSessionSkills(t *testing.T) {
 		require.Len(t, skills, maxSkillEntries)
 		assert.Equal(t, "skill-a", skills[0].use.Name)
 		assert.Contains(t, warnings, "2 skill entries beyond the first 25 were dropped")
+	})
+
+	t.Run("a skill with no time of use gets a warning", func(t *testing.T) {
+		store := state.NewGitStore(filepath.Join(t.TempDir(), ".git"))
+		dir := makeSkill(t, map[string]string{skill.DefinitionFile: skillDoc})
+		captureSkillLoads(&skillProvider{loads: []string{dir}}, store, &trace.HookInput{SessionID: skillSessionID}, zerolog.Nop())
+
+		cases := []struct {
+			name     string
+			at       string
+			warnings []string
+		}{
+			{name: "known time", at: skillTenOClock},
+			{name: "unknown time", warnings: []string{`the time of the first use of skill "asd-ste100" is unknown; the push time is recorded`}},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				provider := &skillProvider{uses: []trace.SkillUse{{Name: steSkillName, Dir: dir, FirstUsedAt: tc.at, ByModel: 1}}}
+
+				skills, warnings := readSessionSkills(provider, store, &trace.ParseOpts{SessionID: skillSessionID}, t.TempDir(), zerolog.Nop())
+				require.Len(t, skills, 1)
+				assert.Equal(t, tc.warnings, warnings)
+			})
+		}
 	})
 
 	t.Run("a session data failure costs the skills only", func(t *testing.T) {

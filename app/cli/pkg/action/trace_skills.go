@@ -159,6 +159,11 @@ func readSessionSkills(provider trace.Provider, store *state.Store, opts *trace.
 			warnings = append(warnings, fmt.Sprintf("skill %q changed after its first use; the evidence holds the skill as it was at the first use", use.Name))
 		}
 
+		if use.FirstUsedAt == "" {
+			// The entry gets the push time, which is later than the use.
+			warnings = append(warnings, fmt.Sprintf("the time of the first use of skill %q is unknown; the push time is recorded", use.Name))
+		}
+
 		if info.SkippedLinks > 0 {
 			warnings = append(warnings, fmt.Sprintf("skill %q: %d links out of the skill folder, or to a folder, were left out", use.Name, info.SkippedLinks))
 		}
