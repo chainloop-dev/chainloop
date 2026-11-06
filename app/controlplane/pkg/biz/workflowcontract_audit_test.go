@@ -28,62 +28,73 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// stubWorkflowContractRepo returns the contract before and after an update.
-// Only FindByNameInOrg and Update are exercised; any other call panics on the
-// nil embedded interface.
+// stubWorkflowContractRepo returns the contract that the use case reads before the update,
+// and the result of the update. Only FindByNameInOrg and Update are exercised; any other
+// call panics on the nil embedded interface.
 type stubWorkflowContractRepo struct {
 	WorkflowContractRepo
-	before, after *WorkflowContract
+	preRead *WorkflowContract
+	result  *WorkflowContractWithVersion
 }
 
 func (s *stubWorkflowContractRepo) FindByNameInOrg(_ context.Context, _ uuid.UUID, _ string) (*WorkflowContract, error) {
-	return s.before, nil
+	return s.preRead, nil
 }
 
 func (s *stubWorkflowContractRepo) Update(_ context.Context, _ uuid.UUID, _ string, _ *ContractUpdateOpts) (*WorkflowContractWithVersion, error) {
-	return &WorkflowContractWithVersion{
-		Contract: s.after,
-		Version:  &WorkflowContractVersion{ID: uuid.New(), Revision: s.after.LatestRevision},
-	}, nil
+	return s.result, nil
 }
 
 // Spec issue-3644 R-008: each conversion writes an audit event with the old and the new level.
+// The old level is the one that the repository saw under the contract lock, not the one read
+// before the update, which a concurrent conversion can make stale.
 func TestWorkflowContractUpdateDispatchesScopeChanged(t *testing.T) {
 	project := &ScopedEntity{Type: string(ContractScopeProject), ID: uuid.New(), Name: "my-project"}
+	otherProject := &ScopedEntity{Type: string(ContractScopeProject), ID: uuid.New(), Name: "other-project"}
 	orgScope := &events.WorkflowContractScope{Type: events.WorkflowContractScopeOrganization}
 	projectScope := &events.WorkflowContractScope{Type: events.WorkflowContractScopeProject, ProjectID: &project.ID, ProjectName: project.Name}
+	otherProjectScope := &events.WorkflowContractScope{Type: events.WorkflowContractScopeProject, ProjectID: &otherProject.ID, ProjectName: otherProject.Name}
 
 	testCases := []struct {
-		name          string
-		before, after *ScopedEntity
-		scope         *ContractScopeChange
+		name string
+		// preRead is the level that the use case reads before the update
+		preRead *ScopedEntity
+		// changed, previous and after are what the repository reports
+		changed         bool
+		previous, after *ScopedEntity
 		// nil means no scope event is dispatched
 		wantOld, wantNew *events.WorkflowContractScope
 	}{
 		{
 			name:    "organization to project",
+			changed: true,
 			after:   project,
-			scope:   &ContractScopeChange{ProjectID: &project.ID},
 			wantOld: orgScope,
 			wantNew: projectScope,
 		},
 		{
-			name:    "project to organization",
-			before:  project,
-			scope:   &ContractScopeChange{},
-			wantOld: projectScope,
-			wantNew: orgScope,
+			name:     "project to organization",
+			preRead:  project,
+			changed:  true,
+			previous: project,
+			wantOld:  projectScope,
+			wantNew:  orgScope,
 		},
 		{
-			name:   "same level",
-			before: project,
-			after:  project,
-			scope:  &ContractScopeChange{ProjectID: &project.ID},
+			name:    "the repository did not change the level",
+			preRead: project,
+			after:   project,
 		},
 		{
-			name:   "no level in the request",
-			before: project,
-			after:  project,
+			name:     "the old level is the one the repository saw, not the stale pre-read",
+			changed:  true,
+			previous: otherProject,
+			wantOld:  otherProjectScope,
+			wantNew:  orgScope,
+		},
+		{
+			name:  "no event when a concurrent conversion already set the level",
+			after: project,
 		},
 	}
 
@@ -92,12 +103,17 @@ func TestWorkflowContractUpdateDispatchesScopeChanged(t *testing.T) {
 			auditorUC, publisher := newRecordingAuditor()
 			contractID := uuid.New()
 			repo := &stubWorkflowContractRepo{
-				before: &WorkflowContract{ID: contractID, Name: "my-contract", LatestRevision: 1, ScopedEntity: cloneScope(tc.before)},
-				after:  &WorkflowContract{ID: contractID, Name: "my-contract", LatestRevision: 1, ScopedEntity: cloneScope(tc.after)},
+				preRead: &WorkflowContract{ID: contractID, Name: "my-contract", LatestRevision: 1, ScopedEntity: tc.preRead},
+				result: &WorkflowContractWithVersion{
+					Contract:             &WorkflowContract{ID: contractID, Name: "my-contract", LatestRevision: 1, ScopedEntity: tc.after},
+					Version:              &WorkflowContractVersion{ID: uuid.New(), Revision: 1},
+					ScopeChanged:         tc.changed,
+					PreviousScopedEntity: tc.previous,
+				},
 			}
 			uc := NewWorkflowContractUseCase(repo, nil, auditorUC, log.NewStdLogger(io.Discard))
 
-			_, err := uc.Update(ctxWithAPITokenActor(context.Background()), uuid.NewString(), "my-contract", &WorkflowContractUpdateOpts{Scope: tc.scope})
+			_, err := uc.Update(ctxWithAPITokenActor(context.Background()), uuid.NewString(), "my-contract", &WorkflowContractUpdateOpts{Scope: &ContractScopeChange{}})
 			require.NoError(t, err)
 
 			var scopeEvents []json.RawMessage
@@ -123,14 +139,4 @@ func TestWorkflowContractUpdateDispatchesScopeChanged(t *testing.T) {
 			assert.Equal(t, tc.wantNew, info.NewScope)
 		})
 	}
-}
-
-// cloneScope returns a copy, as the repository returns a new object on each call.
-func cloneScope(s *ScopedEntity) *ScopedEntity {
-	if s == nil {
-		return nil
-	}
-
-	c := *s
-	return &c
 }

@@ -31,7 +31,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 		Short: "Update an existing contract",
 		Long: `Update an existing contract.
 
-Use --project to move an organization-level contract to a project, or --org to move a
+Use --project to move an organization-level contract to a project, or --org-level to move a
 project-level contract to the organization. Only organization administrators and
 organization-level API tokens can move a contract.`,
 		Example: `  # Update the contract content
@@ -41,7 +41,7 @@ organization-level API tokens can move a contract.`,
   chainloop workflow contract update --name my-contract --project my-project
 
   # Move a project-level contract to the organization
-  chainloop workflow contract update --name my-contract --org`,
+  chainloop workflow contract update --name my-contract --org-level`,
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			// Validate and extract the contract name
 			var err error
@@ -72,8 +72,8 @@ organization-level API tokens can move a contract.`,
 	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
 	cmd.Flags().StringVar(&description, "description", "", "description of the contract")
 	cmd.Flags().StringVar(&scope.ProjectName, "project", "", "move the contract to this project, the contract must be at the organization level")
-	cmd.Flags().BoolVar(&scope.Organization, "org", false, "move the contract to the organization level")
-	cmd.MarkFlagsMutuallyExclusive("project", "org")
+	cmd.Flags().BoolVar(&scope.Organization, "org-level", false, "move the contract to the organization level")
+	cmd.MarkFlagsMutuallyExclusive("project", "org-level")
 
 	return cmd
 }

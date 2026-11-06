@@ -172,22 +172,27 @@ func (s *workflowContractIntegrationTestSuite) TestUpdateScope() {
 		wantProjectID *uuid.UUID
 		wantRevision  int
 		wantWorkflows int
+		// the repository reports a change of level, with the level before it
+		wantScopeChanged bool
 	}{
 		{
-			name:          "organization to project (R-001)",
-			setup:         func() *biz.WorkflowContract { return newContract("org-to-project", nil) },
-			scope:         toProject(s.p1),
-			wantProjectID: &s.p1.ID,
-			wantRevision:  1,
+			name:             "organization to project (R-001)",
+			wantScopeChanged: true,
+			setup:            func() *biz.WorkflowContract { return newContract("org-to-project", nil) },
+			scope:            toProject(s.p1),
+			wantProjectID:    &s.p1.ID,
+			wantRevision:     1,
 		},
 		{
-			name:         "project to organization (R-002)",
-			setup:        func() *biz.WorkflowContract { return newContract("project-to-org", &s.p1.ID) },
-			scope:        toOrg,
-			wantRevision: 1,
+			name:             "project to organization (R-002)",
+			wantScopeChanged: true,
+			setup:            func() *biz.WorkflowContract { return newContract("project-to-org", &s.p1.ID) },
+			scope:            toOrg,
+			wantRevision:     1,
 		},
 		{
-			name: "organization to project keeps the workflows of that project (R-003)",
+			name:             "organization to project keeps the workflows of that project (R-003)",
+			wantScopeChanged: true,
 			setup: func() *biz.WorkflowContract {
 				c := newContract("org-to-project-with-workflows", nil)
 				attachWorkflow(c, s.p1.Name, "wf-in-p1")
@@ -199,7 +204,8 @@ func (s *workflowContractIntegrationTestSuite) TestUpdateScope() {
 			wantWorkflows: 1,
 		},
 		{
-			name: "project to organization keeps the workflows (R-003)",
+			name:             "project to organization keeps the workflows (R-003)",
+			wantScopeChanged: true,
 			setup: func() *biz.WorkflowContract {
 				c := newContract("project-to-org-with-workflows", &s.p1.ID)
 				attachWorkflow(c, s.p1.Name, "wf-in-p1-2")
@@ -240,12 +246,13 @@ func (s *workflowContractIntegrationTestSuite) TestUpdateScope() {
 			wantRevision: 1,
 		},
 		{
-			name:          "a new body in the same request creates a revision (R-007)",
-			setup:         func() *biz.WorkflowContract { return newContract("scope-and-body", nil) },
-			scope:         toProject(s.p1),
-			rawSchema:     []byte(`schemaVersion: v1`),
-			wantProjectID: &s.p1.ID,
-			wantRevision:  2,
+			name:             "a new body in the same request creates a revision (R-007)",
+			wantScopeChanged: true,
+			setup:            func() *biz.WorkflowContract { return newContract("scope-and-body", nil) },
+			scope:            toProject(s.p1),
+			rawSchema:        []byte(`schemaVersion: v1`),
+			wantProjectID:    &s.p1.ID,
+			wantRevision:     2,
 		},
 		{
 			name:          "no scope keeps the scope (R-009)",
@@ -278,6 +285,11 @@ func (s *workflowContractIntegrationTestSuite) TestUpdateScope() {
 				return
 			}
 			s.Require().NoError(err)
+
+			s.Equal(tc.wantScopeChanged, got.ScopeChanged)
+			if tc.wantScopeChanged {
+				s.Equal(contract.ScopedEntity, got.PreviousScopedEntity)
+			}
 
 			s.Equal(contract.ID, got.Contract.ID)
 			s.Equal(contract.Name, got.Contract.Name)

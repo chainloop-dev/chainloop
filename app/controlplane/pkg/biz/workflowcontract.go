@@ -99,6 +99,11 @@ type WorkflowContractWithVersion struct {
 	Contract *WorkflowContract
 	Version  *WorkflowContractVersion
 	Changed  bool
+	// ScopeChanged reports whether the update changed the level of the contract
+	ScopeChanged bool
+	// PreviousScopedEntity is the level of the contract before an update that changed it,
+	// read under the contract lock. Nil means the organization level.
+	PreviousScopedEntity *ScopedEntity
 }
 
 type WorkflowContractRepo interface {
@@ -473,12 +478,13 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 
 	uc.auditorUC.Dispatch(ctx, eventPayload, &orgUUID)
 
-	// A conversion between the organization level and a project level gets its own event
-	if !sameContractScope(wfContractPreUpdate, c.Contract) {
+	// A conversion between the organization level and a project level gets its own event.
+	// The old level comes from the repository, which read it under the contract lock.
+	if c.ScopeChanged {
 		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractScopeChanged{
 			WorkflowContractBase: eventPayload.WorkflowContractBase,
-			OldScope:             contractScopeForEvent(wfContractPreUpdate),
-			NewScope:             contractScopeForEvent(c.Contract),
+			OldScope:             contractScopeForEvent(c.PreviousScopedEntity),
+			NewScope:             contractScopeForEvent(c.Contract.ScopedEntity),
 		}, &orgUUID)
 	}
 
@@ -487,25 +493,17 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	return c, nil
 }
 
-// sameContractScope reports whether both contracts are at the same level.
-func sameContractScope(a, b *WorkflowContract) bool {
-	if a.IsProjectScoped() != b.IsProjectScoped() {
-		return false
-	}
-
-	return !a.IsProjectScoped() || a.ScopedEntity.ID == b.ScopedEntity.ID
-}
-
-// contractScopeForEvent returns the level of the contract, as the audit events show it.
-func contractScopeForEvent(c *WorkflowContract) *events.WorkflowContractScope {
-	if !c.IsProjectScoped() {
+// contractScopeForEvent returns a level of a contract, as the audit events show it.
+// A nil scoped entity is the organization level.
+func contractScopeForEvent(s *ScopedEntity) *events.WorkflowContractScope {
+	if s == nil || s.Type != string(ContractScopeProject) {
 		return &events.WorkflowContractScope{Type: events.WorkflowContractScopeOrganization}
 	}
 
 	return &events.WorkflowContractScope{
 		Type:        events.WorkflowContractScopeProject,
-		ProjectID:   &c.ScopedEntity.ID,
-		ProjectName: c.ScopedEntity.Name,
+		ProjectID:   &s.ID,
+		ProjectName: s.Name,
 	}
 }
 
