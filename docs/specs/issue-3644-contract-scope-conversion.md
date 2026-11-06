@@ -62,6 +62,10 @@ The system MUST allow a conversion, in both directions, only for a caller that c
 When workflows of other projects use an organization-level contract, the system MUST reject its conversion to project X. The error MUST name each workflow outside project X, with its project.
 - Done when: no workflow can end up linked to a contract of a different project through a conversion.
 
+### R-010: Reject a contract of a different project on each workflow change
+The system MUST reject a project-level contract of a different project when a user creates a workflow. It MUST also reject it when a user changes the contract of a workflow. This check MUST hold also when a conversion runs at the same time.
+- Done when: a member of project Y cannot attach a contract of project X to a workflow of project Y. This applies to the workflow create command and to the workflow update command.
+
 ### R-006: Reject a project-to-project move
 When the caller asks to convert a project-level contract to a different project, the system MUST reject the request. A request for the current level of the contract MUST succeed and change nothing. For example, a request for the organization when the contract is already at organization level.
 
@@ -121,7 +125,9 @@ sequenceDiagram
 
 **After a conversion.**
 
-- Organization to project: members of the project can manage the contract as a normal project-level contract. Only workflows of that project can use it, as for every project-level contract.
+- Organization to project: members of the project can manage the contract as a normal project-level contract. Only workflows of that project can use it, as for every project-level contract (R-010).
+
+**Workflow changes.** Today the workflow create command rejects a contract of a different project, but the workflow update command does not. This spec adds the same check to the update path (R-010). Both paths and the conversion lock the contract and check its level in one database transaction. Thus a conversion and a workflow change on the same contract run one after the other, and neither uses an old level.
 - Project to organization: all projects of the organization can use the contract. Only organization admins can manage it, and project members cannot manage it any more.
 
 ## Decision Record
@@ -169,6 +175,20 @@ The level is a property of the contract, not of its content.
   - Always create a revision: the revision history would show copies of the same body.
 - Source: drafting
 
+### D-007: Fix the workflow update check in this spec
+The workflow update command gets the project check that the workflow create command already has (R-010).
+- Why: the guarantee of R-005 depends on this check. Without it, a user can attach a contract of a different project to a workflow, with or without a conversion.
+- Alternatives considered:
+  - A separate bug ticket: the gap exists today without a conversion, but this spec cannot keep its guarantee without the fix.
+- Source: [PR #3789 review](https://github.com/chainloop-dev/chainloop/pull/3789#discussion_r4490911175)
+
+### D-008: Workflow changes and conversions lock the contract
+A conversion and each workflow change that sets a contract lock the contract, and check its level in the same transaction.
+- Why: a lock only in the conversion lets a workflow change read the old level, pass its check, and write after the conversion.
+- Alternatives considered:
+  - Accept the race: conversions are rare and admin-only, but the result is a workflow that cannot get its contract.
+- Source: [PR #3789 review](https://github.com/chainloop-dev/chainloop/pull/3789#discussion_r4490911182)
+
 ## Open Questions
 
 None.
@@ -178,4 +198,4 @@ None.
 | Risk | Mitigation |
 |------|------------|
 | After a project-to-organization move, project members cannot manage a contract that they managed before. | This is the rule for organization-level contracts. Only organization admins can do the move, and the audit event records it. |
-| A user attaches the contract to a workflow of a different project while the conversion runs. | Do the workflow check and the level change in one database transaction that locks the contract. |
+| A user attaches the contract to a workflow of a different project while the conversion runs. | The conversion and each workflow change lock the contract and check its level in the same transaction (D-008). |
