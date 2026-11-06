@@ -677,7 +677,8 @@ func TestLineAttribution_ShellDoesNotRecordOpenLinesAgain(t *testing.T) {
 	attr := r.store.LoadAILineAttribution(lineSession)
 	assert.Equal(t, 3, attr.Written["a.go"].Len())
 	assert.Equal(t, 3, attr.Open["a.go"].Added.Len())
-	assert.Equal(t, 3, attr.GeneratedAdded)
+	added, _ := attr.GeneratedLines(nil)
+	assert.Equal(t, 3, added)
 
 	r.commit("feat: a", "a.go")
 	assert.Equal(t, lineSplit{aiAdded: 3}, fileSplitOf(t, r.sessionChanges(lineSession), "a.go"))
@@ -718,7 +719,8 @@ func TestLineAttribution_ShellCommandWithSeveralCommits(t *testing.T) {
 	attr := r.store.LoadAILineAttribution(lineSession)
 	assert.Equal(t, 3, attr.Written["a.go"].Len())
 	assert.Equal(t, 1, attr.Written["b.go"].Len())
-	assert.Equal(t, 4, attr.GeneratedAdded)
+	added, _ := attr.GeneratedLines(nil)
+	assert.Equal(t, 4, added)
 }
 
 // A pre hook whose HEAD commits were lost (the heads file is missing or
@@ -746,7 +748,8 @@ func TestLineAttribution_ShellLostHeadsIsNotAHeadMove(t *testing.T) {
 
 	attr := r.store.LoadAILineAttribution(lineSession)
 	assert.Contains(t, attr.Files, "a.go")
-	assert.Equal(t, 0, attr.GeneratedAdded)
+	added, _ := attr.GeneratedLines(nil)
+	assert.Equal(t, 0, added)
 }
 
 // wireGenFile is a file that a code generator rewrites.
@@ -877,8 +880,9 @@ func TestLineAttribution_ShellHeadMoveRecordsNoUpstreamLines(t *testing.T) {
 			tc.run(t, r)
 
 			attr := r.store.LoadAILineAttribution(lineSession)
-			assert.Equal(t, tc.wantAdded, attr.GeneratedAdded, "generated lines added")
-			assert.Equal(t, tc.wantRemoved, attr.GeneratedRemoved, "generated lines removed")
+			added, removed := attr.GeneratedLines(nil)
+			assert.Equal(t, tc.wantAdded, added, "generated lines added")
+			assert.Equal(t, tc.wantRemoved, removed, "generated lines removed")
 			files := make([]string, 0, len(attr.Files))
 			for f := range attr.Files {
 				files = append(files, f)
@@ -899,6 +903,41 @@ func TestLineAttribution_GeneratedLines(t *testing.T) {
 	require.NoError(t, os.Remove(filepath.Join(r.dir, "scratch.go")))
 
 	attr := r.store.LoadAILineAttribution(lineSession)
-	assert.Equal(t, 4, attr.GeneratedAdded)
-	assert.Equal(t, 2, attr.GeneratedRemoved)
+	added, removed := attr.GeneratedLines(nil)
+	assert.Equal(t, 4, added)
+	assert.Equal(t, 2, removed)
+}
+
+// A generator that the agent runs, such as wire, writes a generated file. Its
+// lines are not in the files of the evidence, and they do not count in the
+// AI-generated lines either (PFM-8130).
+func TestSessionCodeChanges_GeneratedFilesDoNotCountAsAIGenerated(t *testing.T) {
+	r := newLineRepo(t)
+	r.humanWrite(".gitattributes", wireGenFile+" linguist-generated=true\n")
+	r.humanWrite(wireGenFile, "package main\n")
+	runGit(t, r.dir, "add", ".gitattributes", wireGenFile)
+	runGit(t, r.dir, "commit", "-q", "-m", "chore: attributes")
+
+	r.agentWrite(lineSession, "a.go", "one\ntwo\n")
+	r.shellWrite(lineSession, func() {
+		r.humanWrite(wireGenFile, "package main\n\nfunc a() {}\nfunc b() {}\n")
+	})
+	r.commit("feat: a", "a.go", wireGenFile)
+
+	// The ledger holds the lines of both files: the shell command wrote them.
+	all, _ := r.store.LoadAILineAttribution(lineSession).GeneratedLines(nil)
+	require.Equal(t, 5, all)
+
+	records, err := r.store.LoadAllCommitRecords()
+	require.NoError(t, err)
+	commits := sessionCommitGroups(records, nil, false)[lineSession]
+	require.Len(t, commits, 1)
+
+	client := tracegit.NewGitClient()
+	cc := sessionCodeChanges(client, r.dir, lineSession, commits, loadLedgers(r.store, zerolog.Nop()), newLineCache(client, r.dir, zerolog.Nop()), client.GeneratedMatcher(r.dir), zerolog.Nop())
+	require.NotNil(t, cc)
+	require.Len(t, cc.Files, 1)
+	assert.Equal(t, "a.go", cc.Files[0].Path)
+	assert.Equal(t, 2, cc.AIGeneratedLinesAdded)
+	assert.Equal(t, 0, cc.AIGeneratedLinesRemoved)
 }

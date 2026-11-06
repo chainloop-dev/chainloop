@@ -138,8 +138,22 @@ func TestAILineAttribution_Lines(t *testing.T) {
 		require.NoError(t, store.SettleLines("sess", fileA, LineSet{Added: []string{"a", "b"}}))
 
 		attr := store.LoadAILineAttribution("sess")
-		assert.Equal(t, 6, attr.GeneratedAdded)
-		assert.Equal(t, 3, attr.GeneratedRemoved)
+		added, removed := attr.GeneratedLines(nil)
+		assert.Equal(t, 6, added)
+		assert.Equal(t, 3, removed)
+		assert.Equal(t, map[string]LineTotals{fileA: {Added: 2, Removed: 1}, "b.go": {Added: 4, Removed: 2}}, attr.Generated)
+	})
+
+	t.Run("generated line counts leave out the files that skip matches", func(t *testing.T) {
+		store := NewGitStore(t.TempDir())
+		require.NoError(t, store.RecordEdit("sess", fileA, EditRecord{AddedCount: 3, RemovedCount: 1, Lines: LineSet{}}))
+		require.NoError(t, store.RecordEdit("sess", "wire_gen.go", EditRecord{AddedCount: 5, RemovedCount: 1, Lines: LineSet{}}))
+		require.NoError(t, store.RecordEdit("sess", "wire_gen.go", EditRecord{AddedCount: 2, RemovedCount: 4, Lines: LineSet{}}))
+
+		attr := store.LoadAILineAttribution("sess")
+		added, removed := attr.GeneratedLines(func(path string) bool { return path == "wire_gen.go" })
+		assert.Equal(t, 3, added)
+		assert.Equal(t, 1, removed)
 	})
 
 	t.Run("an entry without fingerprints is legacy", func(t *testing.T) {
