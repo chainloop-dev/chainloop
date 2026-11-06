@@ -49,8 +49,9 @@ func TestCodexMultiFilePatchAttribution(t *testing.T) {
 	assert.Contains(t, ledger.Open, "two.txt")
 	assert.Contains(t, ledger.Open, "gone.txt")
 	assert.Len(t, ledger.Open["gone.txt"].Removed, 1)
-	assert.Equal(t, 2, ledger.GeneratedAdded)
-	assert.Equal(t, 2, ledger.GeneratedRemoved)
+	added, removed := ledger.GeneratedLines(nil)
+	assert.Equal(t, 2, added)
+	assert.Equal(t, 2, removed)
 	// An unchanged human line must not become an AI addition.
 	assert.Len(t, ledger.Open["one.txt"].Added, 1)
 	session, err := store.LoadSessionRecord("codex-patch")

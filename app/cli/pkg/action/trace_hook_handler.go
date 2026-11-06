@@ -1101,6 +1101,7 @@ func sessionCodeChanges(gitClient tracegit.Client, repoRoot, sessionID string, c
 	}
 
 	attribution.Enrich(sessionID, ledgers, lines, tip, codeChanges)
+	attribution.SetAIGeneratedLines(codeChanges, ledgers[sessionID], isGenerated)
 
 	if !complete {
 		for i := range codeChanges.Files {

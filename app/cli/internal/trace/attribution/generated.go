@@ -16,6 +16,7 @@
 package attribution
 
 import (
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
 
@@ -46,4 +47,18 @@ func FilterGenerated(changes *aicodingsession.CodeChanges, isGenerated func(path
 		filtered = append(filtered, f)
 	}
 	changes.Files = filtered
+}
+
+// SetAIGeneratedLines sets the lines that the agent edits of a session added
+// and removed, also the ones that never reached a commit (spec issue-3639,
+// R-011, D-011). As in FilterGenerated, the files that isGenerated matches do
+// not count: a generator wrote them, not the agent. A nil ledger sets no
+// lines, and a nil isGenerated leaves out no file.
+func SetAIGeneratedLines(changes *aicodingsession.CodeChanges, ledger *state.AILineAttribution, isGenerated func(path string) bool) {
+	changes.AIGeneratedLinesAdded, changes.AIGeneratedLinesRemoved = 0, 0
+	if ledger == nil {
+		return
+	}
+
+	changes.AIGeneratedLinesAdded, changes.AIGeneratedLinesRemoved = ledger.GeneratedLines(isGenerated)
 }
