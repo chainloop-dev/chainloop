@@ -140,6 +140,8 @@ type ContractUpdateOpts struct {
 	Description *string
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
 	Contract *Contract
+	// Scope converts the contract to the organization level or to a project level
+	Scope *ContractScopeChange
 }
 
 type WorkflowContractUseCase struct {
@@ -405,6 +407,16 @@ func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionI
 type WorkflowContractUpdateOpts struct {
 	RawSchema   []byte
 	Description *string
+	// Scope converts the contract to the organization level or to a project level.
+	// When nil, the level of the contract does not change.
+	Scope *ContractScopeChange
+}
+
+// ContractScopeChange is the level that a contract converts to.
+type ContractScopeChange struct {
+	// ProjectID is the project that the contract converts to.
+	// When nil, the contract converts to the organization level.
+	ProjectID *uuid.UUID
 }
 
 func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
@@ -435,7 +447,7 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 		return nil, fmt.Errorf("failed to find contract %s in org %s: %w", name, orgUUID, err)
 	}
 
-	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract}
+	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract, Scope: opts.Scope}
 	c, err := uc.repo.Update(ctx, orgUUID, name, args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update contract: %w", err)
@@ -461,9 +473,40 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 
 	uc.auditorUC.Dispatch(ctx, eventPayload, &orgUUID)
 
+	// A conversion between the organization level and a project level gets its own event
+	if !sameContractScope(wfContractPreUpdate, c.Contract) {
+		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractScopeChanged{
+			WorkflowContractBase: eventPayload.WorkflowContractBase,
+			OldScope:             contractScopeForEvent(wfContractPreUpdate),
+			NewScope:             contractScopeForEvent(c.Contract),
+		}, &orgUUID)
+	}
+
 	c.Changed = changed
 
 	return c, nil
+}
+
+// sameContractScope reports whether both contracts are at the same level.
+func sameContractScope(a, b *WorkflowContract) bool {
+	if a.IsProjectScoped() != b.IsProjectScoped() {
+		return false
+	}
+
+	return !a.IsProjectScoped() || a.ScopedEntity.ID == b.ScopedEntity.ID
+}
+
+// contractScopeForEvent returns the level of the contract, as the audit events show it.
+func contractScopeForEvent(c *WorkflowContract) *events.WorkflowContractScope {
+	if !c.IsProjectScoped() {
+		return &events.WorkflowContractScope{Type: events.WorkflowContractScopeOrganization}
+	}
+
+	return &events.WorkflowContractScope{
+		Type:        events.WorkflowContractScopeProject,
+		ProjectID:   &c.ScopedEntity.ID,
+		ProjectName: c.ScopedEntity.Name,
+	}
 }
 
 // RevisionWouldChange reports whether applying rawSchema to the contract

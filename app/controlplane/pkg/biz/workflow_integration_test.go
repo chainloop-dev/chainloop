@@ -309,6 +309,23 @@ func (s *workflowIntegrationTestSuite) TestCreateWithProjectScopedContract() {
 		s.ErrorContains(err, "scoped to a different project")
 	})
 
+	s.Run("fails when the default contract of the workflow is scoped to a different project (spec issue-3644 R-010)", func() {
+		// The default contract of workflow "default-wf" in project "other-project" is "other-project-default-wf"
+		_, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{
+			OrgID:     s.org.ID,
+			Name:      "other-project-default-wf",
+			ProjectID: &wf.ProjectID,
+		})
+		s.Require().NoError(err)
+
+		_, err = s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			OrgID:   s.org.ID,
+			Name:    "default-wf",
+			Project: "other-project",
+		})
+		s.ErrorContains(err, "scoped to a different project")
+	})
+
 	s.Run("succeeds after the original project is soft-deleted and a new one with the same name is created", func() {
 		// Simulate the bug: soft-delete the original project so the next workflow creation
 		// creates a new project with the same name but a different UUID.
@@ -327,6 +344,58 @@ func (s *workflowIntegrationTestSuite) TestCreateWithProjectScopedContract() {
 		})
 		s.NoError(err)
 	})
+}
+
+// Spec issue-3644 R-010: a workflow update cannot attach a contract of a different project.
+func (s *workflowIntegrationTestSuite) TestUpdateWithProjectScopedContract() {
+	ctx := context.Background()
+
+	wfA, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "wf-a", Project: "project-a"})
+	s.Require().NoError(err)
+	wfB, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: "wf-b", Project: "project-b"})
+	s.Require().NoError(err)
+
+	contractA, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "contract-a", ProjectID: &wfA.ProjectID})
+	s.Require().NoError(err)
+	orgContract, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "org-contract"})
+	s.Require().NoError(err)
+
+	testCases := []struct {
+		name       string
+		workflow   *biz.Workflow
+		contract   *biz.WorkflowContract
+		wantErrMsg string
+	}{
+		{
+			name:     "a contract of the same project",
+			workflow: wfA,
+			contract: contractA,
+		},
+		{
+			name:     "an organization-level contract",
+			workflow: wfB,
+			contract: orgContract,
+		},
+		{
+			name:       "a contract of a different project",
+			workflow:   wfB,
+			contract:   contractA,
+			wantErrMsg: "scoped to a different project",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			got, err := s.Workflow.Update(ctx, s.org.ID, tc.workflow.ID.String(), &biz.WorkflowUpdateOpts{ContractID: toPtrS(tc.contract.ID.String())})
+			if tc.wantErrMsg != "" {
+				s.ErrorContains(err, tc.wantErrMsg)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Equal(tc.contract.ID, got.ContractID)
+		})
+	}
 }
 
 func (s *workflowIntegrationTestSuite) TestUpdate() {
@@ -678,6 +747,9 @@ func (s *workflowListIntegrationTestSuite) TearDownSubTest() {
 	_, _ = s.Data.DB.Project.Delete().Exec(context.Background())
 	_, _ = s.Data.DB.WorkflowRun.Delete().Exec(context.Background())
 	_, _ = s.Data.DB.CASBackend.Delete().Exec(context.Background())
+	// The default contracts of the deleted workflows are scoped to the deleted projects
+	_, _ = s.Data.DB.WorkflowContractVersion.Delete().Exec(context.Background())
+	_, _ = s.Data.DB.WorkflowContract.Delete().Exec(context.Background())
 }
 
 func toPtrS(s string) *string {

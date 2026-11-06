@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,10 +24,24 @@ import (
 func newWorkflowContractUpdateCmd() *cobra.Command {
 	var name, description, contractPath string
 	var contractName string
+	var scope action.WorkflowContractUpdateScope
 
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "Update an existing contract",
+		Long: `Update an existing contract.
+
+Use --project to move an organization-level contract to a project, or --org to move a
+project-level contract to the organization. Only organization administrators and
+organization-level API tokens can move a contract.`,
+		Example: `  # Update the contract content
+  chainloop workflow contract update --name my-contract --contract contract.yaml
+
+  # Move an organization-level contract to a project
+  chainloop workflow contract update --name my-contract --project my-project
+
+  # Move a project-level contract to the organization
+  chainloop workflow contract update --name my-contract --org`,
 		PreRunE: func(_ *cobra.Command, _ []string) error {
 			// Validate and extract the contract name
 			var err error
@@ -44,7 +58,7 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 				desc = &description
 			}
 
-			res, err := action.NewWorkflowContractUpdate(ActionOpts).Run(contractName, desc, contractPath)
+			res, err := action.NewWorkflowContractUpdate(ActionOpts).Run(contractName, desc, contractPath, scope)
 			if err != nil {
 				return err
 			}
@@ -57,6 +71,9 @@ func newWorkflowContractUpdateCmd() *cobra.Command {
 	cmd.Flags().StringVar(&name, "name", "", "contract name")
 	cmd.Flags().StringVarP(&contractPath, "contract", "f", "", "path or URL to the contract schema")
 	cmd.Flags().StringVar(&description, "description", "", "description of the contract")
+	cmd.Flags().StringVar(&scope.ProjectName, "project", "", "move the contract to this project, the contract must be at the organization level")
+	cmd.Flags().BoolVar(&scope.Organization, "org", false, "move the contract to the organization level")
+	cmd.MarkFlagsMutuallyExclusive("project", "org")
 
 	return cmd
 }

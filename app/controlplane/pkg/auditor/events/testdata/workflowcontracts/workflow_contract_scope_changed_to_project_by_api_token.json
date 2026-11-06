@@ -1,0 +1,24 @@
+{
+  "ActionType": "WorkflowContractScopeChanged",
+  "TargetType": "WorkflowContract",
+  "TargetID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "API_TOKEN",
+  "ActorID": "2089bb36-e27b-428b-8009-d015c8737c55",
+  "ActorEmail": "",
+  "ActorName": "test-token",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "test-token has moved the workflow contract test-contract from the organization level to the project contract-project",
+  "Info": {
+    "workflow_contract_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "workflow_contract_name": "test-contract",
+    "old_scope": {
+      "type": "organization"
+    },
+    "new_scope": {
+      "type": "project",
+      "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+      "project_name": "contract-project"
+    }
+  },
+  "Digest": "sha256:af0fe73d99d2c0082938e5fc6ebb7e30fb7c3b9b9fd927c5f4b69efea9932af3"
+}

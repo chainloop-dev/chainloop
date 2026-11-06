@@ -3744,8 +3744,29 @@ Options inherited from parent commands
 
 Update an existing contract
 
+Synopsis
+
+Update an existing contract.
+
+Use --project to move an organization-level contract to a project, or --org to move a
+project-level contract to the organization. Only organization administrators and
+organization-level API tokens can move a contract.
+
 ```
 chainloop workflow contract update [flags]
+```
+
+Examples
+
+```
+Update the contract content
+chainloop workflow contract update --name my-contract --contract contract.yaml
+
+Move an organization-level contract to a project
+chainloop workflow contract update --name my-contract --project my-project
+
+Move a project-level contract to the organization
+chainloop workflow contract update --name my-contract --org
 ```
 
 Options
@@ -3755,6 +3776,8 @@ Options
 --description string   description of the contract
 -h, --help                 help for update
 --name string          contract name
+--org                  move the contract to the organization level
+--project string       move the contract to this project, the contract must be at the organization level
 ```
 
 Options inherited from parent commands
@@ -3768,7 +3791,6 @@ Options inherited from parent commands
 --debug                     Enable debug/verbose logging mode
 -i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
--n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
 -y, --yes                       Skip confirmation
