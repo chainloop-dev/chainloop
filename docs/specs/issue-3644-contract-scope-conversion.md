@@ -205,10 +205,10 @@ Supersedes D-003. The update command gets `--project <name>` and `--org-level`, 
   - `--global`: "global" is a word of the code, not of the product.
 - Source: [PR #3794 review](https://github.com/chainloop-dev/chainloop/pull/3794#discussion_r4492196064)
 
-### D-010: The audit event uses the level read under the lock
-The old level in the audit event is the level that the conversion read after it locked the contract. The system writes the event only when the conversion changed the level.
-- Why: a level read before the lock can be old when two conversions run at the same time. Then the event shows a wrong old level, or it records a change that did not occur.
-- Source: [PR #3794 review](https://github.com/chainloop-dev/chainloop/pull/3794#discussion_r4492196071)
+### D-010: The audit event uses the levels read under the lock
+The old level and the new level in the audit event are the levels that the conversion read and set while it held the lock on the contract. The system writes the event only when the conversion changed the level.
+- Why: a level read before the lock or after the commit can be wrong when two conversions run at the same time. Then the event shows a wrong level, or it records a change that did not occur.
+- Source: [PR #3794 review](https://github.com/chainloop-dev/chainloop/pull/3794#discussion_r4492196071), [PR #3794 review](https://github.com/chainloop-dev/chainloop/pull/3794#discussion_r4492659279)
 
 ## Open Questions
 

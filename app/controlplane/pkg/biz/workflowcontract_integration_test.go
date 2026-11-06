@@ -172,7 +172,7 @@ func (s *workflowContractIntegrationTestSuite) TestUpdateScope() {
 		wantProjectID *uuid.UUID
 		wantRevision  int
 		wantWorkflows int
-		// the repository reports a change of level, with the level before it
+		// the repository reports a change of level, with the levels before and after it
 		wantScopeChanged bool
 	}{
 		{
@@ -286,9 +286,12 @@ func (s *workflowContractIntegrationTestSuite) TestUpdateScope() {
 			}
 			s.Require().NoError(err)
 
-			s.Equal(tc.wantScopeChanged, got.ScopeChanged)
 			if tc.wantScopeChanged {
-				s.Equal(contract.ScopedEntity, got.PreviousScopedEntity)
+				s.Require().NotNil(got.ScopeChange)
+				s.Equal(contract.ScopedEntity, got.ScopeChange.From)
+				s.Equal(got.Contract.ScopedEntity, got.ScopeChange.To)
+			} else {
+				s.Nil(got.ScopeChange)
 			}
 
 			s.Equal(contract.ID, got.Contract.ID)

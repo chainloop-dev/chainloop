@@ -253,13 +253,13 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 	var (
 		lv                 *ent.WorkflowContractVersion
 		workflowReferences []*biz.WorkflowRef
-		// the contract as it was under the lock, when the update changed its level
-		previous *ent.WorkflowContract
+		// the contract before and after the change of level, read under the lock
+		previous, converted *ent.WorkflowContract
 	)
 
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
 		if opts.Scope != nil {
-			if previous, err = changeContractScope(ctx, tx, orgID, contract.ID, opts.Scope); err != nil {
+			if previous, converted, err = changeContractScope(ctx, tx, orgID, contract.ID, opts.Scope); err != nil {
 				return err
 			}
 		}
@@ -314,8 +314,10 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 	}
 
 	if previous != nil {
-		result.ScopeChanged = true
-		result.PreviousScopedEntity = r.scopedEntity(ctx, previous)
+		result.ScopeChange = &biz.ContractScopeTransition{
+			From: r.scopedEntity(ctx, previous),
+			To:   r.scopedEntity(ctx, converted),
+		}
 	}
 
 	return result, nil
@@ -324,12 +326,12 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 // changeContractScope converts the contract to the organization level or to a project level.
 // It locks the contract first, so a workflow change on the same contract waits until the
 // conversion completes, and the other way around (spec issue-3644, D-008).
-// When it changes the level, it returns the contract as it was under the lock. When the
-// contract is already at the requested level, it returns nil.
-func changeContractScope(ctx context.Context, tx *ent.Tx, orgID, contractID uuid.UUID, scope *biz.ContractScopeChange) (*ent.WorkflowContract, error) {
+// When it changes the level, it returns the contract before and after the change, both read
+// under the lock. When the contract is already at the requested level, it returns nil for both.
+func changeContractScope(ctx context.Context, tx *ent.Tx, orgID, contractID uuid.UUID, scope *biz.ContractScopeChange) (previous, converted *ent.WorkflowContract, err error) {
 	current, err := tx.WorkflowContract.Query().Where(workflowcontract.ID(contractID)).ForUpdate().Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("locking the contract: %w", err)
+		return nil, nil, fmt.Errorf("locking the contract: %w", err)
 	}
 
 	projectScoped := current.ScopedResourceType == biz.ContractScopeProject && current.ScopedResourceID != uuid.Nil
@@ -337,31 +339,32 @@ func changeContractScope(ctx context.Context, tx *ent.Tx, orgID, contractID uuid
 	// To the organization level
 	if scope.ProjectID == nil {
 		if !projectScoped {
-			return nil, nil
+			return nil, nil, nil
 		}
 
-		if err := tx.WorkflowContract.UpdateOneID(contractID).ClearScopedResourceType().ClearScopedResourceID().Exec(ctx); err != nil {
-			return nil, fmt.Errorf("converting the contract to the organization level: %w", err)
+		converted, err = tx.WorkflowContract.UpdateOneID(contractID).ClearScopedResourceType().ClearScopedResourceID().Save(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("converting the contract to the organization level: %w", err)
 		}
 
-		return current, nil
+		return current, converted, nil
 	}
 
 	// To a project level
 	targetID := *scope.ProjectID
 	if projectScoped {
 		if current.ScopedResourceID == targetID {
-			return nil, nil
+			return nil, nil, nil
 		}
 
-		return nil, biz.NewErrValidationStr("a project-level contract can not be moved to a different project")
+		return nil, nil, biz.NewErrValidationStr("a project-level contract can not be moved to a different project")
 	}
 
 	exists, err := tx.Project.Query().Where(project.ID(targetID), project.OrganizationID(orgID), project.DeletedAtIsNil()).Exist(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("finding the project: %w", err)
+		return nil, nil, fmt.Errorf("finding the project: %w", err)
 	} else if !exists {
-		return nil, biz.NewErrNotFound("project")
+		return nil, nil, biz.NewErrNotFound("project")
 	}
 
 	// Workflows of other projects can not use a project-level contract
@@ -374,7 +377,7 @@ func changeContractScope(ctx context.Context, tx *ent.Tx, orgID, contractID uuid
 		WithProject().
 		All(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("finding the workflows of the contract: %w", err)
+		return nil, nil, fmt.Errorf("finding the workflows of the contract: %w", err)
 	}
 
 	if len(others) > 0 {
@@ -384,17 +387,18 @@ func changeContractScope(ctx context.Context, tx *ent.Tx, orgID, contractID uuid
 		}
 		slices.Sort(refs)
 
-		return nil, biz.NewErrValidationStr(fmt.Sprintf("the contract is used by workflows of other projects, attach a different contract to them first: %s", strings.Join(refs, ", ")))
+		return nil, nil, biz.NewErrValidationStr(fmt.Sprintf("the contract is used by workflows of other projects, attach a different contract to them first: %s", strings.Join(refs, ", ")))
 	}
 
-	if err := tx.WorkflowContract.UpdateOneID(contractID).
+	converted, err = tx.WorkflowContract.UpdateOneID(contractID).
 		SetScopedResourceType(biz.ContractScopeProject).
 		SetScopedResourceID(targetID).
-		Exec(ctx); err != nil {
-		return nil, fmt.Errorf("converting the contract to a project level: %w", err)
+		Save(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("converting the contract to a project level: %w", err)
 	}
 
-	return current, nil
+	return current, converted, nil
 }
 
 func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contractID uuid.UUID) (*biz.WorkflowContract, error) {

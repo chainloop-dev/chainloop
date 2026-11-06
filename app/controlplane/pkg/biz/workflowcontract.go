@@ -99,11 +99,14 @@ type WorkflowContractWithVersion struct {
 	Contract *WorkflowContract
 	Version  *WorkflowContractVersion
 	Changed  bool
-	// ScopeChanged reports whether the update changed the level of the contract
-	ScopeChanged bool
-	// PreviousScopedEntity is the level of the contract before an update that changed it,
-	// read under the contract lock. Nil means the organization level.
-	PreviousScopedEntity *ScopedEntity
+	// ScopeChange is the change of level that the update made, nil when it did not change it
+	ScopeChange *ContractScopeTransition
+}
+
+// ContractScopeTransition is a change of the level of a contract. The repository reads both
+// levels under the contract lock. A nil scoped entity is the organization level.
+type ContractScopeTransition struct {
+	From, To *ScopedEntity
 }
 
 type WorkflowContractRepo interface {
@@ -479,12 +482,12 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	uc.auditorUC.Dispatch(ctx, eventPayload, &orgUUID)
 
 	// A conversion between the organization level and a project level gets its own event.
-	// The old level comes from the repository, which read it under the contract lock.
-	if c.ScopeChanged {
+	// Both levels come from the repository, which read them under the contract lock.
+	if c.ScopeChange != nil {
 		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractScopeChanged{
 			WorkflowContractBase: eventPayload.WorkflowContractBase,
-			OldScope:             contractScopeForEvent(c.PreviousScopedEntity),
-			NewScope:             contractScopeForEvent(c.Contract.ScopedEntity),
+			OldScope:             contractScopeForEvent(c.ScopeChange.From),
+			NewScope:             contractScopeForEvent(c.ScopeChange.To),
 		}, &orgUUID)
 	}
 

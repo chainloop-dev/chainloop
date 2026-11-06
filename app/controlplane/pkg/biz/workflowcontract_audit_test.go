@@ -46,8 +46,8 @@ func (s *stubWorkflowContractRepo) Update(_ context.Context, _ uuid.UUID, _ stri
 }
 
 // Spec issue-3644 R-008: each conversion writes an audit event with the old and the new level.
-// The old level is the one that the repository saw under the contract lock, not the one read
-// before the update, which a concurrent conversion can make stale.
+// Both levels are the ones that the repository saw under the contract lock, not the one read
+// before the update or the one read after the commit, which a concurrent conversion can make stale.
 func TestWorkflowContractUpdateDispatchesScopeChanged(t *testing.T) {
 	project := &ScopedEntity{Type: string(ContractScopeProject), ID: uuid.New(), Name: "my-project"}
 	otherProject := &ScopedEntity{Type: string(ContractScopeProject), ID: uuid.New(), Name: "other-project"}
@@ -59,26 +59,26 @@ func TestWorkflowContractUpdateDispatchesScopeChanged(t *testing.T) {
 		name string
 		// preRead is the level that the use case reads before the update
 		preRead *ScopedEntity
-		// changed, previous and after are what the repository reports
-		changed         bool
-		previous, after *ScopedEntity
+		// after is the level of the returned contract, read after the commit
+		after *ScopedEntity
+		// change is the change of level that the repository reports
+		change *ContractScopeTransition
 		// nil means no scope event is dispatched
 		wantOld, wantNew *events.WorkflowContractScope
 	}{
 		{
 			name:    "organization to project",
-			changed: true,
 			after:   project,
+			change:  &ContractScopeTransition{To: project},
 			wantOld: orgScope,
 			wantNew: projectScope,
 		},
 		{
-			name:     "project to organization",
-			preRead:  project,
-			changed:  true,
-			previous: project,
-			wantOld:  projectScope,
-			wantNew:  orgScope,
+			name:    "project to organization",
+			preRead: project,
+			change:  &ContractScopeTransition{From: project},
+			wantOld: projectScope,
+			wantNew: orgScope,
 		},
 		{
 			name:    "the repository did not change the level",
@@ -86,11 +86,17 @@ func TestWorkflowContractUpdateDispatchesScopeChanged(t *testing.T) {
 			after:   project,
 		},
 		{
-			name:     "the old level is the one the repository saw, not the stale pre-read",
-			changed:  true,
-			previous: otherProject,
-			wantOld:  otherProjectScope,
-			wantNew:  orgScope,
+			name:    "the old level is the one the repository saw, not the stale pre-read",
+			change:  &ContractScopeTransition{From: otherProject},
+			wantOld: otherProjectScope,
+			wantNew: orgScope,
+		},
+		{
+			name:    "the new level is the one the repository set, not the read after the commit",
+			after:   otherProject,
+			change:  &ContractScopeTransition{To: project},
+			wantOld: orgScope,
+			wantNew: projectScope,
 		},
 		{
 			name:  "no event when a concurrent conversion already set the level",
@@ -105,10 +111,9 @@ func TestWorkflowContractUpdateDispatchesScopeChanged(t *testing.T) {
 			repo := &stubWorkflowContractRepo{
 				preRead: &WorkflowContract{ID: contractID, Name: "my-contract", LatestRevision: 1, ScopedEntity: tc.preRead},
 				result: &WorkflowContractWithVersion{
-					Contract:             &WorkflowContract{ID: contractID, Name: "my-contract", LatestRevision: 1, ScopedEntity: tc.after},
-					Version:              &WorkflowContractVersion{ID: uuid.New(), Revision: 1},
-					ScopeChanged:         tc.changed,
-					PreviousScopedEntity: tc.previous,
+					Contract:    &WorkflowContract{ID: contractID, Name: "my-contract", LatestRevision: 1, ScopedEntity: tc.after},
+					Version:     &WorkflowContractVersion{ID: uuid.New(), Revision: 1},
+					ScopeChange: tc.change,
 				},
 			}
 			uc := NewWorkflowContractUseCase(repo, nil, auditorUC, log.NewStdLogger(io.Discard))
