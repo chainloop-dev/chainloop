@@ -1,0 +1,264 @@
+# =============================================================================
+# Reconcile of the Current Decisions pages (docs/decisions/)
+# =============================================================================
+# Runs the `eng-adr reconcile` skill of chainloop-dev/brain with Claude Code.
+# Runs on weekdays, and on a manual start. When the pages change, it opens or updates one draft PR.
+#
+# The skill runs in its scheduled mode: it asks no questions, writes only the
+# changes that need no person, and lists the open questions in the PR body.
+#
+# Claude edits files only. It gets read-only tokens. This workflow commits,
+# pushes and opens the PR with the chainloop-eng GitHub App. The commits are
+# signed by GitHub (sign-commits), signed off (DCO), and have an Assisted-by trailer.
+#
+# Required secrets:   LINEAR_CLIENT_SECRET, CHAINLOOP_ENG_APP_PRIVATE_KEY
+# Required variables: ANTHROPIC_FEDERATION_RULE_ID, LINEAR_CLIENT_ID
+#
+# Linear access uses an OAuth app with "client credentials tokens" on. Each run
+# gets a token with the read scope. The token acts as the app.
+#
+# Claude API access uses workload identity federation, not an API key. The
+# federation IDs in the "Run eng-adr reconcile" step are not secrets. The
+# federation rule must match only this repository on main:
+#   subject_prefix: repo:chainloop-dev/chainloop:ref:refs/heads/main
+#   claims: repository_owner=chainloop-dev, workflow=Reconcile Current Decisions
+#   audience: https://api.anthropic.com
+# The chainloop-eng app must be installed on chainloop-dev/chainloop
+# (contents and pull requests: write) and chainloop-dev/brain (contents: read).
+# =============================================================================
+
+name: Reconcile Current Decisions
+
+on:
+  schedule:
+    # 05:00 UTC, Monday to Friday.
+    - cron: "0 5 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      area:
+        description: "Reconcile only this area. Leave blank for all areas."
+        required: false
+        type: string
+      dry_run:
+        description: "Do not open a PR. Upload the diff and the PR body as an artifact. Clear it to open the PR."
+        required: false
+        default: true
+        type: boolean
+
+permissions: {}
+
+concurrency:
+  group: decisions-reconcile
+  cancel-in-progress: false
+
+env:
+  # Client ID of the chainloop-eng app (chainloop-dev/brain config/release.yaml). GitHub accepts the client ID
+  # in place of the numeric App ID to sign the app JWT, so it goes in the app-id input.
+  CHAINLOOP_ENG_APP_CLIENT_ID: Iv23liu5FUQ9TuCCdxpP
+  PR_BRANCH: decisions-reconcile-scheduled
+  # A scheduled run opens a PR. A manual run opens a PR only when dry_run is cleared.
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+
+jobs:
+  reconcile:
+    # Forks have no access to the secrets, the GitHub App or the federation rule.
+    if: github.repository == 'chainloop-dev/chainloop'
+    permissions:
+      contents: read
+      pull-requests: read
+      # GitHub OIDC token for the Anthropic workload identity federation.
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          # The skill reads the git history (refresh commits, git log -S).
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Generate brain read token
+        id: brain-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ env.CHAINLOOP_ENG_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CHAINLOOP_ENG_APP_PRIVATE_KEY }}
+          owner: chainloop-dev
+          repositories: brain
+          permission-contents: read
+
+      - name: Fetch brain plugin
+        env:
+          BRAIN_TOKEN: ${{ steps.brain-token.outputs.token }}
+        run: |
+          # Outside the workspace, so that the plugin files are never part of the PR.
+          git clone --depth 1 \
+            "https://x-access-token:${BRAIN_TOKEN}@github.com/chainloop-dev/brain.git" \
+            "$RUNNER_TEMP/brain"
+          echo "Brain commit: $(git -C "$RUNNER_TEMP/brain" rev-parse HEAD)"
+
+      - name: Prepare reconcile run
+        id: prepare
+        env:
+          # Client ID of the Linear OAuth app. Not a secret, but kept in a variable so that secret scanners do not flag it.
+          LINEAR_CLIENT_ID: ${{ vars.LINEAR_CLIENT_ID }}
+          LINEAR_CLIENT_SECRET: ${{ secrets.LINEAR_CLIENT_SECRET }}
+          AREA: ${{ inputs.area }}
+          OUT_DIR: ${{ runner.temp }}/decisions
+        run: |
+          mkdir -p "$OUT_DIR"
+
+          # Client credentials grant: a read-only token that acts as the Linear OAuth app, not as a person.
+          linear_token=$(curl -fsS https://api.linear.app/oauth/token \
+            -u "${LINEAR_CLIENT_ID}:${LINEAR_CLIENT_SECRET}" \
+            -d grant_type=client_credentials -d scope=read | jq -r .access_token)
+          if [ -z "$linear_token" ] || [ "$linear_token" = "null" ]; then
+            echo "::error::Could not get a Linear token with the client credentials grant."
+            exit 1
+          fi
+          echo "::add-mask::${linear_token}"
+
+          jq -n --arg auth "Bearer ${linear_token}" \
+            '{mcpServers: {linear: {type: "http", url: "https://mcp.linear.app/mcp", headers: {Authorization: $auth}}}}' \
+            > "$RUNNER_TEMP/mcp.json"
+
+          {
+            echo "prompt<<PROMPT_EOF"
+            cat <<EOF
+          /br:eng-adr reconcile ${AREA}
+
+          This is an unattended run in GitHub Actions. Follow the scheduled-run rules of the skill: ask no questions,
+          write only the changes that need no person, and list each open question in the PR body.
+
+          This workflow owns git and the PR. Change these steps of the skill:
+          - Step 1 and "Before you commit": stay on the current checkout of the default branch. Do not create or
+            switch branches. Do not commit, push, or open, edit or comment on a PR.
+          - Step 14: there is no person to show the diff to. Do not file tickets.
+          - Step 15: write the PR title to ${OUT_DIR}/pr-title.txt and the PR body to ${OUT_DIR}/pr-body.md,
+            in the format of step 15. Write the GitHub handles of the reviewers of step 15 to
+            ${OUT_DIR}/reviewers.txt, one per line.
+          When nothing changed, write none of these files.
+
+          Change only files under docs/decisions/ and the repository agent instructions file (CLAUDE.md).
+          EOF
+            echo "PROMPT_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run eng-adr reconcile
+        # The action SHA also pins the Claude Code CLI: v1.0.266 installs Claude Code 2.1.316.
+        # Bump the SHA deliberately, and check the CLI version in the run log.
+        uses: anthropics/claude-code-action@d535f5172dec02b204866b393d6b20b9b2aaf98d # v1.0.266
+        env:
+          # Read-only. The collector looks up the PRs of the decisions with it.
+          GH_TOKEN: ${{ github.token }}
+        with:
+          # Workload identity federation: the action exchanges the GitHub OIDC token for a short-lived
+          # Anthropic token. These are identifiers, not secrets. Do not also set anthropic_api_key.
+          # The federation rule is specific to this repository (see the header).
+          anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          anthropic_organization_id: 33e34a9b-ec6d-437d-ae3f-48eda06ae6d3
+          anthropic_service_account_id: svac_01DNrcgtbfDfSTjmGkSpHGqR
+          anthropic_workspace_id: wrkspc_011fX5ZMoA7ZBqRG66mYGifU
+          # Read-only token, so the action does not mint a Claude GitHub App token with write access.
+          github_token: ${{ github.token }}
+          prompt: ${{ steps.prepare.outputs.prompt }}
+          # Shows Claude's final report in the job summary, also the open questions of a run that opens no PR.
+          display_report: true
+          claude_args: >-
+            --plugin-dir ${{ runner.temp }}/brain
+            --mcp-config ${{ runner.temp }}/mcp.json
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent,Task,mcp__linear"
+
+      - name: Upload Claude output (failure)
+        # The action hides Claude's output in the log. Keep it as an artifact to find the cause of a failure.
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: claude-execution-output
+          path: ${{ runner.temp }}/claude-execution-output.json
+          retention-days: 7
+
+      - name: Check changes
+        id: changes
+        env:
+          OUT_DIR: ${{ runner.temp }}/decisions
+        run: |
+          changed=$(git status --porcelain --untracked-files=all | awk '{print $2}')
+          unexpected=$(echo "$changed" | grep -vE '^(docs/decisions/|CLAUDE\.md$)' | grep -v '^$' || true)
+          if [ -n "$unexpected" ]; then
+            echo "::error::The reconcile run changed files outside docs/decisions/ and CLAUDE.md:"
+            echo "$unexpected"
+            exit 1
+          fi
+
+          if [ -z "$changed" ]; then
+            echo "No change to the Current Decisions pages."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ ! -s "$OUT_DIR/pr-title.txt" ] || [ ! -s "$OUT_DIR/pr-body.md" ]; then
+            echo "::error::The pages changed, but the run wrote no PR title or body."
+            exit 1
+          fi
+
+          # Include new pages: mark untracked files as intent-to-add for the diff, then unstage them again.
+          git ls-files --others --exclude-standard -z | xargs -0 -r git add -N --
+          git diff > "$OUT_DIR/changes.diff"
+          git reset -q
+          title=$(head -n1 "$OUT_DIR/pr-title.txt")
+          {
+            echo "title=${title}"
+            echo "reviewers=$(paste -sd, "$OUT_DIR/reviewers.txt" 2>/dev/null | tr -d '@ ')"
+            # AI disclosure (AI_POLICY.md): every commit that AI produced has an Assisted-by trailer.
+            echo "commit-message<<COMMIT_EOF"
+            printf '%s\n\nAssisted-by: Claude Code\n' "$title"
+            echo "COMMIT_EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## ${title}"
+            cat "$OUT_DIR/pr-body.md"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload result (dry run)
+        if: ${{ env.DRY_RUN == 'true' && steps.changes.outputs.changed == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: decisions-reconcile
+          path: ${{ runner.temp }}/decisions/
+
+      - name: Generate repository write token
+        if: ${{ env.DRY_RUN != 'true' && steps.changes.outputs.changed == 'true' }}
+        id: write-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ env.CHAINLOOP_ENG_APP_CLIENT_ID }}
+          private-key: ${{ secrets.CHAINLOOP_ENG_APP_PRIVATE_KEY }}
+          # Only this repository, also when the app is installed on other repositories.
+          repositories: chainloop
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Open or update PR
+        if: ${{ env.DRY_RUN != 'true' && steps.changes.outputs.changed == 'true' }}
+        # Each run starts from the default branch and force-updates PR_BRANCH, so the PR always shows the latest
+        # reconcile. Do not push manual fixes to that branch: answer the open questions in a separate PR.
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          token: ${{ steps.write-token.outputs.token }}
+          branch: ${{ env.PR_BRANCH }}
+          title: ${{ steps.changes.outputs.title }}
+          body-path: ${{ runner.temp }}/decisions/pr-body.md
+          commit-message: ${{ steps.changes.outputs.commit-message }}
+          signoff: true
+          # The repository requires signed commits. GitHub signs the commits that the app makes with the API.
+          sign-commits: true
+          add-paths: |
+            docs/decisions
+            CLAUDE.md
+          reviewers: ${{ steps.changes.outputs.reviewers }}
+          draft: true
+          delete-branch: true
