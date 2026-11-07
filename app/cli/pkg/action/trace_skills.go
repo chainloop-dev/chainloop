@@ -205,6 +205,10 @@ func attachSkills(ctx context.Context, adder specMaterialAdder, redactor *specRe
 		if warning != "" {
 			warnings = append(warnings, warning)
 		}
+		if s.use.FirstUsedAt == "" {
+			// The entry got the push time, which is later than the use.
+			warnings = append(warnings, fmt.Sprintf("the time of the first use of skill %q is unknown; the push time is recorded", s.use.Name))
+		}
 
 		entries = append(entries, entry)
 	}

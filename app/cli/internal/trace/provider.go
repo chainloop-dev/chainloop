@@ -22,6 +22,7 @@ import (
 	"io"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/skill"
@@ -237,7 +238,8 @@ type SkillUse struct {
 	// skill has no folder (a skill built into the agent) or the session data
 	// does not tell. A use with no folder is not recorded.
 	Dir string
-	// FirstUsedAt is the time of the first use, RFC3339.
+	// FirstUsedAt is the time of the first use, RFC3339 in UTC with whole
+	// seconds, or "" when no use has a time that can be read.
 	FirstUsedAt string
 	// ByModel counts the uses that the model started with a tool call.
 	ByModel int
@@ -248,7 +250,8 @@ type SkillUse struct {
 }
 
 // Record adds one use at time at, RFC3339, to the counts. The first use is
-// the earliest time recorded, whatever the order of the calls.
+// the earliest time recorded, whatever the order of the calls. A use whose
+// time cannot be read is counted, but its time is ignored.
 func (u *SkillUse) Record(at string, byModel, subagent bool) {
 	u.noteTime(at)
 	if byModel {
@@ -272,15 +275,27 @@ func (u *SkillUse) Merge(other SkillUse) {
 	}
 }
 
+// noteTime keeps the earliest time of use. It stores the time as RFC3339 in
+// UTC with whole seconds, so that FirstUsedAt has one format for all
+// providers, and so that a string comparison gives the time order. A time
+// that cannot be read is ignored.
 func (u *SkillUse) noteTime(at string) {
-	if at != "" && (u.FirstUsedAt == "" || at < u.FirstUsedAt) {
+	t, err := time.Parse(time.RFC3339Nano, at)
+	if err != nil {
+		return
+	}
+
+	at = t.UTC().Format(time.RFC3339)
+	if u.FirstUsedAt == "" || at < u.FirstUsedAt {
 		u.FirstUsedAt = at
 	}
 }
 
-// SortedSkillUses returns the uses in the order of their first use. The name
-// breaks ties, so that the same session data always gives the same order:
-// the limit on skill entries keeps the first ones.
+// SortedSkillUses returns the uses in the order of their first use. The uses
+// with no time come last, so that the limit on skill entries, which keeps the
+// first ones, does not drop a skill with a known time for one with no time.
+// The name breaks ties, so that the same session data always gives the same
+// order.
 func SortedSkillUses(uses map[string]*SkillUse) []SkillUse {
 	out := make([]SkillUse, 0, len(uses))
 	for _, use := range uses {
@@ -288,8 +303,13 @@ func SortedSkillUses(uses map[string]*SkillUse) []SkillUse {
 	}
 
 	sort.Slice(out, func(i, j int) bool {
-		if out[i].FirstUsedAt != out[j].FirstUsedAt {
-			return out[i].FirstUsedAt < out[j].FirstUsedAt
+		a, b := out[i].FirstUsedAt, out[j].FirstUsedAt
+		if a != b {
+			if a == "" || b == "" {
+				return b == ""
+			}
+
+			return a < b
 		}
 
 		return out[i].Name < out[j].Name
