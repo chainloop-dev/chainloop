@@ -41,10 +41,7 @@ Update patterns:
 
 **Dockerfile.migrations:**
 ```dockerfile
-# from: arigaio/atlas:X.XX.X
-# docker run arigaio/atlas@sha256:DIGEST version
-# atlas version vX.XX.X
-FROM arigaio/atlas@sha256:DIGEST as base
+FROM arigaio/atlas:X.XX.X@sha256:DIGEST as base
 ```
 
 **common.mk:**

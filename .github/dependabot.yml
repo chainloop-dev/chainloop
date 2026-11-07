@@ -29,3 +29,30 @@ updates:
       - "go"
     commit-message:
       prefix: "chore(deps)"
+
+  # Docker base images. Dependabot scans each listed directory for Dockerfiles
+  # (non-recursive), so every directory with a Dockerfile needs an entry.
+  # Today this tracks the Atlas image in app/controlplane/Dockerfile.migrations.
+  # When it bumps Atlas, also bump ATLAS_VERSION in common.mk and
+  # .github/workflows/test.yml in the same PR.
+  - package-ecosystem: "docker"
+    directories:
+      - "/app/controlplane"
+      - "/app/cli"
+      - "/app/artifact-cas"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    cooldown:
+      default-days: 7
+    # Go version bumps are coordinated with go.mod through the upgrading-golang
+    # skill (.claude/skills/upgrading-golang). Dependabot bumps the image tag
+    # only and would drift it away from go.mod.
+    ignore:
+      - dependency-name: "golang"
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(deps)"
