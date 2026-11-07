@@ -15,6 +15,22 @@ b) [Attestation Crafting Process](https://docs.chainloop.dev/getting-started/att
 
 The project is a [Go](https://go.dev/) CLI that leverages [Cobra](https://github.com/spf13/cobra) for CLI scaffolding, [Viper](https://github.com/spf13/viper) for configuration handling, [gRPC](https://grpc.io/) to communicate with both the control plane and the Artifact CAS APIs, and the [cosign](https://github.com/sigstore/cosign), [in-toto](https://github.com/in-toto/in-toto), [DSEE](https://github.com/secure-systems-lab/dsse/) and [SLSA](https://github.com/slsa-framework/slsa) projects for the attestation process.
 
+## OrcaRouter Cyber Inference
+
+`chainloop orcarouter` configures [OrcaRouter](https://www.orcarouter.ai), an OpenAI-compatible inference gateway for security teams, so `chainloop trace run --codex` and the Trace end-to-end suite can route a Codex session through `https://api.orcarouter.ai/v1` with `model_providers.orcarouter`. The provider is `OrcaRouter Cyber Inference`: cyber models for an authorized red team, gateway controls for a blue team.
+
+Two credential paths end at the same durable `sk-orca-…` API key, and either works alone:
+
+```
+chainloop orcarouter login     # paste an existing key, or read $ORCAROUTER_API_KEY
+chainloop orcarouter connect   # OAuth 2.0 + PKCE, loopback redirect
+chainloop orcarouter status    # masked credential and its generation
+chainloop orcarouter models    # live GET /v1/models, filtered per capability
+chainloop orcarouter logout    # remove the stored key
+```
+
+The key is stored in the CLI configuration file, next to `auth.token`, and is never printed. `connect` opens `https://www.orcarouter.ai/auth` and receives the code on `127.0.0.1`; the exchange posts to `https://www.orcarouter.ai/api/v1/auth/keys`, never to the inference origin. See the [provider page](https://www.orcarouter.ai/cyber) and the [cyber model catalog](https://www.orcarouter.ai/models?tier=cyber).
+
 ## Runbook
 
 We use `make` for most development tasks. Run `make -C app/cli` to see a list of the available tasks.

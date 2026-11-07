@@ -217,6 +217,8 @@ The harnesses run as follows:
 
 The configured OpenCode 2, Pi, and Codex models use OpenRouter and need `OPENROUTER_API_KEY`. A Codex model without the `openrouter/` prefix uses the default Codex provider and needs `CODEX_API_KEY`. The pinned Codex model is `openrouter/openai/gpt-6-luna`. GPT-5 Mini frequently ended the scripted task before committing and pushing, so it is not the default test model.
 
+A Codex model can also run on [OrcaRouter](https://www.orcarouter.ai), the OpenAI-compatible gateway for security teams: write it as `orcarouter:<model id>`, for example `orcarouter:orcarouter/auto`, and set `ORCAROUTER_API_KEY`. The suite passes `model_providers.orcarouter` to Codex with `base_url = https://api.orcarouter.ai/v1`, the same definition `chainloop orcarouter` uses. `chainloop orcarouter login` stores a pasted key and `chainloop orcarouter connect` obtains one with OAuth 2.0 + PKCE; either credential works, and `chainloop orcarouter models` lists the live catalog. See the [Cyber Inference models](https://www.orcarouter.ai/models?tier=cyber).
+
 Some scenarios add the git commands of a human after the session, for example a commit that replaces an AI line, an amend, or a rename, and then push again. They work on a feature branch, because the push reads only the commits that are not on the default branch of the remote.
 
 A feature row maps to its checks by the feature name. When you rename a feature in a table, rename it in `e2e/checks.go` too. The suite tests a cell marked **Yes**, **Partial**, or **Unknown** only when the row has a registered check. It reports the other cells as follows:

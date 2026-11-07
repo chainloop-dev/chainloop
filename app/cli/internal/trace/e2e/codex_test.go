@@ -69,12 +69,40 @@ func TestCodexModelArgs(t *testing.T) {
 				"-c", codexOpenRouterProvider,
 			},
 		},
+		{
+			name:  "orcarouter",
+			model: "orcarouter:orcarouter/auto",
+			want: []string{
+				flagModel, "orcarouter/auto",
+				"-c", "model_provider=orcarouter",
+				"-c", codexOrcaRouterProvider,
+			},
+		},
+		{
+			name:  "orcarouter cyber model",
+			model: "orcarouter:orca/orcacyber-ultra-1.0",
+			want: []string{
+				flagModel, "orca/orcacyber-ultra-1.0",
+				"-c", "model_provider=orcarouter",
+				"-c", codexOrcaRouterProvider,
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			assert.Equal(t, tc.want, codexModelArgs(tc.model))
 		})
 	}
+}
+
+func TestCodexOrcaRouterProviderDefinition(t *testing.T) {
+	// A named provider, not a generic base URL override: it keeps the
+	// OrcaRouter name, the documented inference base URL, and the environment
+	// variable the CLI's `orcarouter` commands use.
+	const want = `model_providers.orcarouter={name="OrcaRouter Cyber Inference",base_url="https://api.orcarouter.ai/v1",env_key="ORCAROUTER_API_KEY"}`
+	assert.Equal(t, want, codexOrcaRouterProvider)
+	assert.Contains(t, codexOrcaRouterProvider, "orcarouter")
+	assert.NotContains(t, codexOrcaRouterProvider, "openrouter.ai")
 }
 
 func TestCodexStreamErrors(t *testing.T) {
