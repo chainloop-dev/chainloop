@@ -203,7 +203,18 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
-	if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractUpdate, false); err != nil {
+	// A conversion to another level (spec issue-3644). Only the callers that manage
+	// organization-level contracts can convert, and this check replaces the normal access check.
+	var scope *biz.ContractScopeChange
+	if req.GetScope() != nil {
+		if !canConvertContracts(ctx) {
+			return nil, errors.Forbidden("forbidden", "only organization administrators can move a contract between the organization and a project")
+		}
+
+		if scope, err = s.contractScopeChange(ctx, currentOrg.ID, req); err != nil {
+			return nil, err
+		}
+	} else if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractUpdate, false); err != nil {
 		return nil, err
 	}
 
@@ -223,6 +234,7 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		&biz.WorkflowContractUpdateOpts{
 			Description: description,
 			RawSchema:   req.RawContract,
+			Scope:       scope,
 		})
 	if err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
@@ -234,6 +246,30 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	return &pb.WorkflowContractServiceUpdateResponse{Result: result}, nil
+}
+
+// contractScopeChange returns the level that the update request converts the contract to.
+func (s *WorkflowContractService) contractScopeChange(ctx context.Context, orgID string, req *pb.WorkflowContractServiceUpdateRequest) (*biz.ContractScopeChange, error) {
+	switch scope := req.GetScope().(type) {
+	case *pb.WorkflowContractServiceUpdateRequest_OrganizationScoped:
+		return &biz.ContractScopeChange{}, nil
+	case *pb.WorkflowContractServiceUpdateRequest_ProjectReference:
+		project, err := s.userHasPermissionOnProject(ctx, orgID, scope.ProjectReference, authz.PolicyWorkflowContractUpdate)
+		if err != nil {
+			return nil, err
+		}
+
+		return &biz.ContractScopeChange{ProjectID: &project.ID}, nil
+	default:
+		return nil, errors.BadRequest("invalid", "unknown contract scope")
+	}
+}
+
+// canConvertContracts reports whether the caller can move a contract between the organization
+// level and a project level. These are the callers that manage organization-level contracts:
+// organization owners and admins, and organization-level API tokens (spec issue-3644, R-004).
+func canConvertContracts(ctx context.Context) bool {
+	return canCreateContractsInRestrictedMode(ctx)
 }
 
 func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowContractServiceApplyRequest) (*pb.WorkflowContractServiceApplyResponse, error) {

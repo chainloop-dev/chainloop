@@ -99,6 +99,14 @@ type WorkflowContractWithVersion struct {
 	Contract *WorkflowContract
 	Version  *WorkflowContractVersion
 	Changed  bool
+	// ScopeChange is the change of level that the update made, nil when it did not change it
+	ScopeChange *ContractScopeTransition
+}
+
+// ContractScopeTransition is a change of the level of a contract. The repository reads both
+// levels under the contract lock. A nil scoped entity is the organization level.
+type ContractScopeTransition struct {
+	From, To *ScopedEntity
 }
 
 type WorkflowContractRepo interface {
@@ -140,6 +148,8 @@ type ContractUpdateOpts struct {
 	Description *string
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
 	Contract *Contract
+	// Scope converts the contract to the organization level or to a project level
+	Scope *ContractScopeChange
 }
 
 type WorkflowContractUseCase struct {
@@ -405,6 +415,16 @@ func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionI
 type WorkflowContractUpdateOpts struct {
 	RawSchema   []byte
 	Description *string
+	// Scope converts the contract to the organization level or to a project level.
+	// When nil, the level of the contract does not change.
+	Scope *ContractScopeChange
+}
+
+// ContractScopeChange is the level that a contract converts to.
+type ContractScopeChange struct {
+	// ProjectID is the project that the contract converts to.
+	// When nil, the contract converts to the organization level.
+	ProjectID *uuid.UUID
 }
 
 func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
@@ -435,7 +455,7 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 		return nil, fmt.Errorf("failed to find contract %s in org %s: %w", name, orgUUID, err)
 	}
 
-	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract}
+	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract, Scope: opts.Scope}
 	c, err := uc.repo.Update(ctx, orgUUID, name, args)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update contract: %w", err)
@@ -461,9 +481,33 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 
 	uc.auditorUC.Dispatch(ctx, eventPayload, &orgUUID)
 
+	// A conversion between the organization level and a project level gets its own event.
+	// Both levels come from the repository, which read them under the contract lock.
+	if c.ScopeChange != nil {
+		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractScopeChanged{
+			WorkflowContractBase: eventPayload.WorkflowContractBase,
+			OldScope:             contractScopeForEvent(c.ScopeChange.From),
+			NewScope:             contractScopeForEvent(c.ScopeChange.To),
+		}, &orgUUID)
+	}
+
 	c.Changed = changed
 
 	return c, nil
+}
+
+// contractScopeForEvent returns a level of a contract, as the audit events show it.
+// A nil scoped entity is the organization level.
+func contractScopeForEvent(s *ScopedEntity) *events.WorkflowContractScope {
+	if s == nil || s.Type != string(ContractScopeProject) {
+		return &events.WorkflowContractScope{Type: events.WorkflowContractScopeOrganization}
+	}
+
+	return &events.WorkflowContractScope{
+		Type:        events.WorkflowContractScopeProject,
+		ProjectID:   &s.ID,
+		ProjectName: s.Name,
+	}
 }
 
 // RevisionWouldChange reports whether applying rawSchema to the contract

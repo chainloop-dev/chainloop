@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -46,6 +46,11 @@ func TestWorkflowContractEvents(t *testing.T) {
 	wfUUID, err := uuid.Parse("1089bb36-e27b-428b-8009-d015c8737c54")
 	require.NoError(t, err)
 	wfName := "test-workflow"
+	projectUUID, err := uuid.Parse("3089bb36-e27b-428b-8009-d015c8737c56")
+	require.NoError(t, err)
+	orgScope := &events.WorkflowContractScope{Type: events.WorkflowContractScopeOrganization}
+	projectScope := &events.WorkflowContractScope{Type: events.WorkflowContractScopeProject, ProjectID: &projectUUID, ProjectName: "contract-project"}
+	contractBase := &events.WorkflowContractBase{WorkflowContractID: uuidPtr(wfContractUUID), WorkflowContractName: wfContractName}
 
 	tests := []struct {
 		name     string
@@ -185,6 +190,34 @@ func TestWorkflowContractEvents(t *testing.T) {
 				WorkflowName: wfName,
 			},
 			expected: "testdata/workflowcontracts/workflow_detached_from_contract_by_api_token.json",
+			actor:    auditor.ActorTypeAPIToken,
+			actorID:  apiTokenUUID,
+		},
+		{
+			name:     "Workflow contract converted from organization to project by user",
+			event:    &events.WorkflowContractScopeChanged{WorkflowContractBase: contractBase, OldScope: orgScope, NewScope: projectScope},
+			expected: "testdata/workflowcontracts/workflow_contract_scope_changed_to_project.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name:     "Workflow contract converted from organization to project by API token",
+			event:    &events.WorkflowContractScopeChanged{WorkflowContractBase: contractBase, OldScope: orgScope, NewScope: projectScope},
+			expected: "testdata/workflowcontracts/workflow_contract_scope_changed_to_project_by_api_token.json",
+			actor:    auditor.ActorTypeAPIToken,
+			actorID:  apiTokenUUID,
+		},
+		{
+			name:     "Workflow contract converted from project to organization by user",
+			event:    &events.WorkflowContractScopeChanged{WorkflowContractBase: contractBase, OldScope: projectScope, NewScope: orgScope},
+			expected: "testdata/workflowcontracts/workflow_contract_scope_changed_to_organization.json",
+			actor:    auditor.ActorTypeUser,
+			actorID:  userUUID,
+		},
+		{
+			name:     "Workflow contract converted from project to organization by API token",
+			event:    &events.WorkflowContractScopeChanged{WorkflowContractBase: contractBase, OldScope: projectScope, NewScope: orgScope},
+			expected: "testdata/workflowcontracts/workflow_contract_scope_changed_to_organization_by_api_token.json",
 			actor:    auditor.ActorTypeAPIToken,
 			actorID:  apiTokenUUID,
 		},

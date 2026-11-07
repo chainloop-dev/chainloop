@@ -21,6 +21,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -140,4 +141,42 @@ func TestNewRootCmdInitializesLogger(t *testing.T) {
 	rootLogger := Logger()
 	rootLogger.Error().Msg("boom")
 	assert.Contains(t, out.String(), "boom")
+}
+
+// A command flag with the name or the shorthand of a global flag hides the global flag on that
+// command. For example, a local --org hides the global --org that selects the organization.
+func TestNoCommandShadowsAGlobalFlag(t *testing.T) {
+	root := NewRootCmd(zerolog.Nop())
+
+	globalNames := map[string]bool{}
+	globalShorthands := map[string]bool{}
+	root.PersistentFlags().VisitAll(func(f *pflag.Flag) {
+		globalNames[f.Name] = true
+		if f.Shorthand != "" {
+			globalShorthands[f.Shorthand] = true
+		}
+	})
+
+	// Flags that hid a global flag before this test existed. Do not add to this list.
+	known := map[string]bool{
+		"chainloop artifact download --output": true,
+		"chainloop trace uninstall --yes":      true,
+		"chainloop trace uninstall -y":         true,
+	}
+
+	var walk func(c *cobra.Command)
+	walk = func(c *cobra.Command) {
+		for _, sub := range c.Commands() {
+			sub.LocalFlags().VisitAll(func(f *pflag.Flag) {
+				if name := sub.CommandPath() + " --" + f.Name; globalNames[f.Name] && !known[name] {
+					assert.Failf(t, "global flag hidden", "%q defines --%s, which hides the global flag", sub.CommandPath(), f.Name)
+				}
+				if name := sub.CommandPath() + " -" + f.Shorthand; f.Shorthand != "" && globalShorthands[f.Shorthand] && !known[name] {
+					assert.Failf(t, "global flag hidden", "%q defines -%s, which hides the global flag", sub.CommandPath(), f.Shorthand)
+				}
+			})
+			walk(sub)
+		}
+	}
+	walk(root)
 }

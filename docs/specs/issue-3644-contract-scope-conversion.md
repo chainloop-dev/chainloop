@@ -48,9 +48,15 @@ A workflow contract gets its level when someone creates it, and the level cannot
 The system MUST let an authorized caller convert an organization-level contract into a project-level contract of a project that exists in the same organization.
 - Done when: `chainloop wf contract update --name foo --project my-proj` succeeds, and `chainloop wf contract describe --name foo` shows the contract in project `my-proj`.
 
-### R-002: Convert a project-level contract to organization level
-The system MUST let an authorized caller convert a project-level contract into an organization-level contract.
-- Done when: `chainloop wf contract update --name foo --org` succeeds, and the contract shows no project.
+### ~~R-002: Convert a project-level contract to organization level~~
+Superseded by R-011.
+
+~~The system MUST let an authorized caller convert a project-level contract into an organization-level contract.~~
+- ~~Done when: `chainloop wf contract update --name foo --org` succeeds, and the contract shows no project.~~
+
+### R-011: Convert a project-level contract to organization level
+Supersedes R-002. The system MUST let an authorized caller convert a project-level contract into an organization-level contract.
+- Done when: `chainloop wf contract update --name foo --org-level` succeeds, and the contract shows no project.
 
 ### R-003: Keep the contract identity
 A conversion MUST keep the contract ID, its name, all its revisions, and the links to all its workflows.
@@ -146,13 +152,15 @@ The field is either not set (no change), a project reference, or "organization".
   - An optional project field, where an empty value means the organization: easy to misuse, and not clear to a reader.
 - Source: drafting
 
-### D-003: CLI flags `--project` and `--org`
-The update command gets `--project <name>` and `--org`, and the user can give only one of them.
-- Why: `--project` matches the create command. `--org` matches the words that users see, "organization-level contract".
-- Alternatives considered:
-  - `--global` in place of `--org`: "global" is a word of the code, not of the product.
-  - `--scope org|project` with `--project`: adds a rule ("`--project` is necessary when the scope is project") and gives nothing more with only two levels.
-- Source: drafting
+### ~~D-003: CLI flags `--project` and `--org`~~
+Superseded by D-009.
+
+~~The update command gets `--project <name>` and `--org`, and the user can give only one of them.~~
+- ~~Why: `--project` matches the create command. `--org` matches the words that users see, "organization-level contract".~~
+- ~~Alternatives considered:~~
+  - ~~`--global` in place of `--org`: "global" is a word of the code, not of the product.~~
+  - ~~`--scope org|project` with `--project`: adds a rule ("`--project` is necessary when the scope is project") and gives nothing more with only two levels.~~
+- ~~Source: drafting~~
 
 ### D-004: The same callers that manage organization-level contracts can convert
 Organization owners, organization admins, and organization-level API tokens can convert. Project-level callers cannot convert, in either direction.
@@ -188,6 +196,19 @@ A conversion and each workflow change that sets a contract lock the contract, an
 - Alternatives considered:
   - Accept the race: conversions are rare and admin-only, but the result is a workflow that cannot get its contract.
 - Source: [PR #3789 review](https://github.com/chainloop-dev/chainloop/pull/3789#discussion_r4490911182)
+
+### D-009: CLI flags `--project` and `--org-level`
+Supersedes D-003. The update command gets `--project <name>` and `--org-level`, and the user can give only one of them.
+- Why: all commands of the CLI already have a global `--org` flag that selects the organization. A local `--org` on the update command hides that flag.
+- Alternatives considered:
+  - `--organization-scoped`: matches the API field, but it is long.
+  - `--global`: "global" is a word of the code, not of the product.
+- Source: [PR #3794 review](https://github.com/chainloop-dev/chainloop/pull/3794#discussion_r4492196064)
+
+### D-010: The audit event uses the levels read under the lock
+The old level and the new level in the audit event are the levels that the conversion read and set while it held the lock on the contract. The system writes the event only when the conversion changed the level.
+- Why: a level read before the lock or after the commit can be wrong when two conversions run at the same time. Then the event shows a wrong level, or it records a change that did not occur.
+- Source: [PR #3794 review](https://github.com/chainloop-dev/chainloop/pull/3794#discussion_r4492196071), [PR #3794 review](https://github.com/chainloop-dev/chainloop/pull/3794#discussion_r4492659279)
 
 ## Open Questions
 
