@@ -48,9 +48,11 @@ services:
       - ../app/artifact-cas/configs:/data/conf
       # development keys
       - ../devel/devkeys:/devkeys
+      - cas-staging:/tmp-staging-fs
     environment:
       CAS_VAULT_ADDRESS: http://vault:8200
-      CAS_PUBLIC_KEY_PATH: /devkeys/cas.pem
+      CAS_PUBLIC_KEY_PATH: /devkeys/cas.pub
+      CAS_STAGING_DIR: /tmp-staging-fs
     ports:
       - 9001:9001
       - 8001:8001
@@ -76,3 +78,6 @@ services:
       RUSTFS_CONSOLE_ENABLE: "true"
     profiles:
       - optional
+
+volumes:
+  cas-staging:
