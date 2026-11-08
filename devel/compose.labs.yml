@@ -23,6 +23,7 @@ services:
       CP_FILE_CA_CERT_PATH: /devkeys/ca.pub
       CP_FILE_CA_KEY_PATH: /devkeys/ca.pem
       CP_CAS_KEY_PATH: /devkeys/cas.pem
+      CP_CAS_SERVER_ADDR: cas:8001
       CP_DEV_USER: john@chainloop.local
     volumes:
       # main configuration
