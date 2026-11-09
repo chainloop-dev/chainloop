@@ -6,13 +6,10 @@ FROM golang:1.27.3@sha256:957861185dbf29d93668ace41e011d091c6e779953d47f0316ef2c
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /tmp-staging-fs
-
 FROM scratch
 
 COPY ./artifact-cas /
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder --chown=1001:1001 /tmp-staging-fs /tmp-staging-fs
 
 USER 1001
 

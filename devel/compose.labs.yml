@@ -49,7 +49,8 @@ services:
       - ../app/artifact-cas/configs:/data/conf
       # development keys
       - ../devel/devkeys:/devkeys
-      - cas-staging:/tmp-staging-fs
+    tmpfs:
+      - /tmp-staging-fs:uid=1001,gid=1001
     environment:
       CAS_VAULT_ADDRESS: http://vault:8200
       CAS_PUBLIC_KEY_PATH: /devkeys/cas.pub
@@ -79,6 +80,3 @@ services:
       RUSTFS_CONSOLE_ENABLE: "true"
     profiles:
       - optional
-
-volumes:
-  cas-staging:
