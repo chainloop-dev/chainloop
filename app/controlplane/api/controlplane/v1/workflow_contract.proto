@@ -75,6 +75,15 @@ message WorkflowContractServiceUpdateRequest {
   bytes raw_contract = 5;
 
   optional string description = 4;
+
+  // Converts the contract to another level. When not set, the level does not change.
+  // Only organization admins and organization-level API tokens can convert a contract.
+  oneof scope {
+    // Converts the contract to a project-level contract of this project
+    IdentityReference project_reference = 6;
+    // Converts the contract to an organization-level contract. It must be true.
+    bool organization_scoped = 7 [(buf.validate.field).bool.const = true];
+  }
 }
 
 message WorkflowContractServiceUpdateResponse {

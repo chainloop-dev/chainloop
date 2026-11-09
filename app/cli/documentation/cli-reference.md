@@ -3744,8 +3744,29 @@ Options inherited from parent commands
 
 Update an existing contract
 
+Synopsis
+
+Update an existing contract.
+
+Use --project to move an organization-level contract to a project, or --org-level to move a
+project-level contract to the organization. Only organization administrators and
+organization-level API tokens can move a contract.
+
 ```
 chainloop workflow contract update [flags]
+```
+
+Examples
+
+```
+Update the contract content
+chainloop workflow contract update --name my-contract --contract contract.yaml
+
+Move an organization-level contract to a project
+chainloop workflow contract update --name my-contract --project my-project
+
+Move a project-level contract to the organization
+chainloop workflow contract update --name my-contract --org-level
 ```
 
 Options
@@ -3755,6 +3776,8 @@ Options
 --description string   description of the contract
 -h, --help                 help for update
 --name string          contract name
+--org-level            move the contract to the organization level
+--project string       move the contract to this project, the contract must be at the organization level
 ```
 
 Options inherited from parent commands
