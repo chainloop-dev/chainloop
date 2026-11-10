@@ -132,24 +132,6 @@ Trace writes its own file in the Copilot hook folder. Each hook in it carries th
   - Merge into a file of the user, found by marker text, as Claude Code, Cursor, and Codex do: those agents read one file only. Copilot does not need it.
 - Source: drafting.
 
-### D-003: One spec for the Copilot provider and the Claude Code guard
-
-The guard that stops the Claude Code hooks on Copilot payloads (R-003) ships with the Copilot provider.
-
-- Why: the guard fixes a problem that exists today, but the Copilot provider cannot meet "one record for each session" without it. One review covers both sides of the same payload detection.
-- Alternatives considered:
-  - A separate bug ticket and fix first: one more review cycle for a small change that this spec needs anyway.
-- Source: drafting.
-
-### D-004: One spec for the core provider and the milestone-2 extensions
-
-Skills, spec pointers, and pasted-image pointers (R-008, R-009) are in this spec, as milestone 2.
-
-- Why: the parent issue groups them with the core provider for complete Copilot support, as the Codex spec did. Milestone 1 delivers the core provider first.
-- Alternatives considered:
-  - A separate spec: it splits requirements that the parent issue groups, and repeats the provider context.
-- Source: drafting, and the scope of the parent issue.
-
 ## Open Questions
 
 - [ ] **Does the Copilot agent in VS Code write the same session event log as Copilot CLI?** Proposed: yes. GitHub says that the hosts share the agent and its hooks. Milestone 1 checks this. If the log is different, VS Code sessions keep their hooks and attribution. Trace then gives a warning about the transcript, and a follow-up ticket adds a parser. This fallback supersedes the VS Code part of R-004 and changes the first goal.
