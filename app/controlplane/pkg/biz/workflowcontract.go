@@ -113,10 +113,10 @@ type WorkflowContractRepo interface {
 	Create(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error)
 	List(ctx context.Context, orgID uuid.UUID, filter *WorkflowContractListFilters) ([]*WorkflowContract, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowContract, error)
-	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*WorkflowContract, error)
+	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, opts ...ContractQueryOpt) (*WorkflowContract, error)
 	Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int, opts ...ContractQueryOpt) (*WorkflowContractWithVersion, error)
 	FindVersionByID(ctx context.Context, versionID uuid.UUID) (*WorkflowContractWithVersion, error)
-	Update(ctx context.Context, orgID uuid.UUID, name string, opts *ContractUpdateOpts) (*WorkflowContractWithVersion, error)
+	Update(ctx context.Context, orgID uuid.UUID, name string, opts *ContractUpdateOpts, queryOpts ...ContractQueryOpt) (*WorkflowContractWithVersion, error)
 	SoftDelete(ctx context.Context, contractID uuid.UUID) error
 }
 
@@ -124,6 +124,9 @@ type ContractQueryOpts struct {
 	// SkipGetReferences will skip the get references subquery
 	// The references are composed by the project name and workflow name
 	SkipGetReferences bool
+	// ReferencesInProjects confines the references to the workflows of these projects. nil means
+	// no filter is applied; a non-nil empty list matches no project, so no reference is returned.
+	ReferencesInProjects []uuid.UUID
 }
 
 type ContractQueryOpt func(opts *ContractQueryOpts)
@@ -132,6 +135,25 @@ func WithoutReferences() ContractQueryOpt {
 	return func(opts *ContractQueryOpts) {
 		opts.SkipGetReferences = true
 	}
+}
+
+// WithReferencesInProjects confines the workflow references of the contract to the given projects,
+// so that a caller only learns about the workflows of the projects it can see (GHSA-hjc7-j8v3-8gh2).
+// nil means no filter is applied.
+func WithReferencesInProjects(projectIDs []uuid.UUID) ContractQueryOpt {
+	return func(opts *ContractQueryOpts) {
+		opts.ReferencesInProjects = projectIDs
+	}
+}
+
+// NewContractQueryOpts applies the given options.
+func NewContractQueryOpts(opts ...ContractQueryOpt) *ContractQueryOpts {
+	c := &ContractQueryOpts{}
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
 }
 
 type ContractCreateOpts struct {
@@ -166,6 +188,7 @@ func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *polic
 type WorkflowContractListFilters struct {
 	// FilterByProjects narrows the result to the given projects. nil means no filter is applied;
 	// a non-nil empty list matches no project, so only the organization's global contracts.
+	// It confines the workflow references of the returned contracts to the same projects.
 	FilterByProjects []uuid.UUID
 }
 
@@ -211,7 +234,7 @@ func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, con
 	return uc.repo.FindByIDInOrg(ctx, orgUUID, contractUUID)
 }
 
-func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*WorkflowContract, error) {
+func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, name string, opts ...ContractQueryOpt) (*WorkflowContract, error) {
 	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.FindByNameInOrg")
 	defer span.End()
 
@@ -220,7 +243,7 @@ func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, n
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.FindByNameInOrg(ctx, orgUUID, name)
+	return uc.repo.FindByNameInOrg(ctx, orgUUID, name, opts...)
 }
 
 func (c *WorkflowContract) IsGlobalScoped() bool {
@@ -427,7 +450,8 @@ type ContractScopeChange struct {
 	ProjectID *uuid.UUID
 }
 
-func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
+// Update updates the contract. queryOpts shape the contract that it returns.
+func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts, queryOpts ...ContractQueryOpt) (*WorkflowContractWithVersion, error) {
 	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.Update")
 	defer span.End()
 
@@ -456,7 +480,7 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 	}
 
 	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract, Scope: opts.Scope}
-	c, err := uc.repo.Update(ctx, orgUUID, name, args)
+	c, err := uc.repo.Update(ctx, orgUUID, name, args, queryOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update contract: %w", err)
 	} else if c == nil {

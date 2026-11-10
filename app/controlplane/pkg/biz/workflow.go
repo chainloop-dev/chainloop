@@ -52,6 +52,7 @@ type Workflow struct {
 type WorkflowRef struct {
 	ID          uuid.UUID
 	Name        string
+	ProjectID   uuid.UUID
 	ProjectName string
 }
 

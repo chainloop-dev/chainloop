@@ -667,3 +667,74 @@ func (s *workflowContractIntegrationTestSuite) TestListProjectFilterDistinguishe
 		})
 	}
 }
+
+// An organization-level contract is reachable by every caller, but its workflow references must
+// only name the workflows of the projects the caller can see (GHSA-hjc7-j8v3-8gh2). nil means RBAC
+// does not narrow the caller; an empty slice reaches no project.
+func (s *workflowContractIntegrationTestSuite) TestWorkflowReferencesFollowProjectVisibility() {
+	ctx := context.Background()
+
+	newWorkflow := func(name string, project *biz.Project) {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			OrgID: s.org.ID, Name: name, Project: project.Name, ContractID: s.contractOrg1.ID.String(),
+		})
+		s.Require().NoError(err)
+	}
+
+	newWorkflow("wf-p1", s.p1)
+	newWorkflow("wf-p2", s.p2)
+
+	refNames := func(c *biz.WorkflowContract) []string {
+		names := make([]string, 0, len(c.WorkflowRefs))
+		for _, ref := range c.WorkflowRefs {
+			names = append(names, ref.Name)
+		}
+		return names
+	}
+
+	testCases := []struct {
+		name     string
+		projects []uuid.UUID
+		want     []string
+	}{
+		{name: "nil means no RBAC filter", projects: nil, want: []string{"wf-p1", "wf-p2"}},
+		{name: "an empty slice reaches no project", projects: []uuid.UUID{}, want: []string{}},
+		{name: "a visible project reaches its own workflows", projects: []uuid.UUID{s.p1.ID}, want: []string{"wf-p1"}},
+		{name: "an unrelated project reaches no workflow", projects: []uuid.UUID{uuid.New()}, want: []string{}},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			contracts, err := s.WorkflowContract.List(ctx, s.org.ID, biz.WithProjectFilter(tc.projects))
+			s.Require().NoError(err)
+			var listed *biz.WorkflowContract
+			for _, c := range contracts {
+				if c.ID == s.contractOrg1.ID {
+					listed = c
+				}
+			}
+			s.Require().NotNil(listed)
+			s.ElementsMatch(tc.want, refNames(listed), "list")
+
+			found, err := s.WorkflowContract.FindByNameInOrg(ctx, s.org.ID, s.contractOrg1.Name, biz.WithReferencesInProjects(tc.projects))
+			s.Require().NoError(err)
+			s.ElementsMatch(tc.want, refNames(found), "find by name")
+
+			described, err := s.WorkflowContract.Describe(ctx, s.org.ID, s.contractOrg1.ID.String(), 0, biz.WithReferencesInProjects(tc.projects))
+			s.Require().NoError(err)
+			s.ElementsMatch(tc.want, refNames(described.Contract), "describe")
+
+			description := "updated"
+			updated, err := s.WorkflowContract.Update(ctx, s.org.ID, s.contractOrg1.Name,
+				&biz.WorkflowContractUpdateOpts{Description: &description}, biz.WithReferencesInProjects(tc.projects))
+			s.Require().NoError(err)
+			s.ElementsMatch(tc.want, refNames(updated.Contract), "update")
+		})
+	}
+
+	s.Run("delete still sees every workflow reference", func() {
+		err := s.WorkflowContract.Delete(ctx, s.org.ID, s.contractOrg1.ID.String())
+		s.Require().Error(err)
+		s.ErrorContains(err, "there are associated workflows")
+	})
+}

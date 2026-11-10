@@ -37,11 +37,11 @@ type stubWorkflowContractRepo struct {
 	result  *WorkflowContractWithVersion
 }
 
-func (s *stubWorkflowContractRepo) FindByNameInOrg(_ context.Context, _ uuid.UUID, _ string) (*WorkflowContract, error) {
+func (s *stubWorkflowContractRepo) FindByNameInOrg(_ context.Context, _ uuid.UUID, _ string, _ ...ContractQueryOpt) (*WorkflowContract, error) {
 	return s.preRead, nil
 }
 
-func (s *stubWorkflowContractRepo) Update(_ context.Context, _ uuid.UUID, _ string, _ *ContractUpdateOpts) (*WorkflowContractWithVersion, error) {
+func (s *stubWorkflowContractRepo) Update(_ context.Context, _ uuid.UUID, _ string, _ *ContractUpdateOpts, _ ...ContractQueryOpt) (*WorkflowContractWithVersion, error) {
 	return s.result, nil
 }
 
