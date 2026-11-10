@@ -21,7 +21,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/skill"
@@ -95,7 +94,7 @@ func selectedSkills(parsed *parsedSession, after int64) []trace.SkillUse {
 			if uses[dir] == nil {
 				uses[dir] = &trace.SkillUse{Name: name, Dir: dir}
 			}
-			uses[dir].Record(normalizeSkillTimestamp(entry.Timestamp), byModel, false)
+			uses[dir].Record(entry.Timestamp, byModel, false)
 		}
 		switch message.Role {
 		case "user":
@@ -123,38 +122,36 @@ func selectedSkills(parsed *parsedSession, after int64) []trace.SkillUse {
 		case "toolResult":
 			call, ok := calls[message.ToolCallID]
 			delete(calls, message.ToolCallID)
-			if !ok || message.IsError || message.ToolName != "read" || call.Offset > 1 || call.Offset < 0 || call.Limit != nil {
+			if !ok || message.IsError || message.ToolName != "read" {
 				continue
 			}
-			text := strings.ReplaceAll(skillMessageText(message.Content), "\r\n", "\n")
-			front, ok := strings.CutPrefix(text, "---\n")
-			if !ok {
-				continue
-			}
-			front, _, ok = strings.Cut(front, "\n---")
-			var meta struct {
-				Name        string `yaml:"name"`
-				Description string `yaml:"description"`
-			}
-			if !ok || yaml.Unmarshal([]byte(front), &meta) != nil || strings.TrimSpace(meta.Description) == "" {
-				continue
-			}
-			if meta.Name == "" {
-				meta.Name = filepath.Base(filepath.Dir(call.Path))
-			}
-			record(meta.Name, call.Path, true)
+			record(readSkillName(call, message.Content), call.Path, true)
 		}
 	}
 	return trace.SortedSkillUses(uses)
 }
 
-func normalizeSkillTimestamp(timestamp string) string {
-	at, err := time.Parse(time.RFC3339Nano, timestamp)
-	if err != nil {
+func readSkillName(call skillReadCall, content json.RawMessage) string {
+	if call.Offset > 1 || call.Offset < 0 || call.Limit != nil {
 		return ""
 	}
-
-	return at.UTC().Format(time.RFC3339)
+	text := strings.ReplaceAll(skillMessageText(content), "\r\n", "\n")
+	front, ok := strings.CutPrefix(text, "---\n")
+	if !ok {
+		return ""
+	}
+	front, _, ok = strings.Cut(front, "\n---")
+	var meta struct {
+		Name        string `yaml:"name"`
+		Description string `yaml:"description"`
+	}
+	if !ok || yaml.Unmarshal([]byte(front), &meta) != nil || strings.TrimSpace(meta.Description) == "" {
+		return ""
+	}
+	if meta.Name == "" {
+		meta.Name = filepath.Base(filepath.Dir(call.Path))
+	}
+	return meta.Name
 }
 
 func skillMessageText(content json.RawMessage) string {

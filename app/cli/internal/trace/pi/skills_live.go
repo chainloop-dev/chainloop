@@ -137,9 +137,8 @@ func scanSkillTail(path string, offset int64) (next int64, candidate, reset bool
 			return offset, false, reset, readErr
 		}
 		next += int64(len(line))
-		if bytes.Contains(line, []byte(`\u`)) ||
-			bytes.Contains(line, []byte(`<skill name=`)) ||
-			(bytes.Contains(line, []byte(`toolResult`)) && bytes.Contains(line, []byte(`read`))) {
+		if bytes.Contains(line, []byte(`"toolName":"read"`)) ||
+			bytes.Contains(line, []byte(`<skill name=`)) {
 			candidate = true
 		}
 	}

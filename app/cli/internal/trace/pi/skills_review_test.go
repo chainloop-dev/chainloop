@@ -160,3 +160,46 @@ func TestScanSkillTail(t *testing.T) {
 		require.True(t, reset)
 	})
 }
+
+func TestScanSkillTailCandidates(t *testing.T) {
+	cases := []struct {
+		name      string
+		line      string
+		candidate bool
+	}{
+		{
+			name: "bash output with unicode escape",
+			line: `{"message":{"role":"toolResult","toolName":"bash","content":"\u001b[32mdone"}}`,
+		},
+		{
+			name: "bash output with read substring",
+			line: `{"message":{"role":"toolResult","toolName":"bash","content":"already on main"}}`,
+		},
+		{
+			name: "bash output with ANSI escapes and read substring",
+			line: `{"message":{"role":"toolResult","toolName":"bash","content":"\u001b[32malready on main\\^["}}`,
+		},
+		{
+			name:      "native user skill expansion",
+			line:      `{"message":{"role":"user","content":"<skill name=\"review\" location=\"skills/review/SKILL.md\">\nReview.\n</skill>"}}`,
+			candidate: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Given
+			path := filepath.Join(t.TempDir(), "session.jsonl")
+			data := []byte(tc.line + "\n")
+			require.NoError(t, os.WriteFile(path, data, 0o600))
+
+			// When
+			next, candidate, reset, err := scanSkillTail(path, 0)
+
+			// Then
+			require.NoError(t, err)
+			require.Equal(t, int64(len(data)), next)
+			require.Equal(t, tc.candidate, candidate)
+			require.False(t, reset)
+		})
+	}
+}
