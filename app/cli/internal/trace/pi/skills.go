@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/skill"
@@ -31,45 +32,6 @@ import (
 var _ trace.SkillTracker = (*Provider)(nil)
 
 var userSkillBlock = regexp.MustCompile(`(?s)^<skill name="([^"]+)" location="([^"]+)">\n.*\n</skill>(?:\n\n.*)?$`)
-
-// NewSkillLoads scans the selected live branch for completed loads. The cursor
-// advances over entries, not calls, so a result in a later hook can still pair
-// with the original call. Generic hooks copy the skill before the next mutation.
-func (p *Provider) NewSkillLoads(store *state.Store, input *trace.HookInput) []string {
-	if store == nil || input == nil || !state.ValidSessionID(input.SessionID) || !filepath.IsAbs(input.TranscriptPath) {
-		return nil
-	}
-	info, err := os.Stat(input.TranscriptPath)
-	if err != nil || !info.Mode().IsRegular() {
-		return nil
-	}
-	parsed, err := readSkillSession(input.TranscriptPath, input.SessionID)
-	if err != nil {
-		return nil
-	}
-	offsets, err := store.SkillScanOffsets(input.SessionID)
-	if err != nil {
-		offsets = make(map[string]int64)
-	}
-	var last int64
-	for _, entry := range parsed.Selected {
-		last = max(last, int64(entry.Line))
-	}
-	after := offsets["main"]
-	if after > last {
-		after = 0
-	}
-	uses := selectedSkills(parsed, after)
-	dirs := make([]string, 0, len(uses))
-	for _, use := range uses {
-		dirs = append(dirs, use.Dir)
-	}
-	offsets["main"] = last
-	if err := store.SetSkillScanOffsets(input.SessionID, offsets); err != nil {
-		return nil
-	}
-	return dirs
-}
 
 // SessionSkills reads only Trace's private transcript copy.
 func (p *Provider) SessionSkills(opts *trace.ParseOpts) ([]trace.SkillUse, []string, error) {
@@ -98,6 +60,7 @@ func readSkillSession(path, sessionID string) (*parsedSession, error) {
 type skillReadCall struct {
 	Path   string `json:"path"`
 	Offset int    `json:"offset"`
+	Limit  *int   `json:"limit"`
 }
 
 func selectedSkills(parsed *parsedSession, after int64) []trace.SkillUse {
@@ -125,11 +88,14 @@ func selectedSkills(parsed *parsedSession, after int64) []trace.SkillUse {
 			if path == "" || filepath.Base(path) != skill.DefinitionFile {
 				return
 			}
+			if byModel && !modelSkillPath(path, parsed.Header.Cwd) {
+				return
+			}
 			dir := filepath.Dir(path)
 			if uses[dir] == nil {
 				uses[dir] = &trace.SkillUse{Name: name, Dir: dir}
 			}
-			uses[dir].Record(entry.Timestamp, byModel, false)
+			uses[dir].Record(normalizeSkillTimestamp(entry.Timestamp), byModel, false)
 		}
 		switch message.Role {
 		case "user":
@@ -157,7 +123,7 @@ func selectedSkills(parsed *parsedSession, after int64) []trace.SkillUse {
 		case "toolResult":
 			call, ok := calls[message.ToolCallID]
 			delete(calls, message.ToolCallID)
-			if !ok || message.IsError || message.ToolName != "read" || call.Offset > 1 || call.Offset < 0 {
+			if !ok || message.IsError || message.ToolName != "read" || call.Offset > 1 || call.Offset < 0 || call.Limit != nil {
 				continue
 			}
 			text := strings.ReplaceAll(skillMessageText(message.Content), "\r\n", "\n")
@@ -180,6 +146,15 @@ func selectedSkills(parsed *parsedSession, after int64) []trace.SkillUse {
 		}
 	}
 	return trace.SortedSkillUses(uses)
+}
+
+func normalizeSkillTimestamp(timestamp string) string {
+	at, err := time.Parse(time.RFC3339Nano, timestamp)
+	if err != nil {
+		return ""
+	}
+
+	return at.UTC().Format(time.RFC3339)
 }
 
 func skillMessageText(content json.RawMessage) string {
@@ -219,26 +194,4 @@ func skillFilePath(path, cwd string) string {
 		path = filepath.Join(cwd, path)
 	}
 	return filepath.Clean(path)
-}
-
-// SkillRoots follows Pi's user/project and managed package locations. Pi does
-// not identify an organization scope; arbitrary external paths stay unknown.
-func (p *Provider) SkillRoots(repoRoot string) skill.Roots {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return skill.Roots{Project: []string{repoRoot}}
-	}
-	agentDir := os.Getenv("PI_CODING_AGENT_DIR")
-	if agentDir == "" {
-		agentDir = filepath.Join(home, ".pi", "agent")
-	}
-	agentDir = skillFilePath(agentDir, repoRoot)
-	return skill.Roots{
-		Plugin: []string{
-			filepath.Join(agentDir, "git"), filepath.Join(agentDir, "npm", "node_modules"),
-			filepath.Join(repoRoot, ".pi", "git"), filepath.Join(repoRoot, ".pi", "npm", "node_modules"),
-		},
-		User:    []string{filepath.Join(agentDir, "skills"), filepath.Join(home, ".agents", "skills")},
-		Project: []string{repoRoot},
-	}
 }

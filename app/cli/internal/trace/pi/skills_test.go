@@ -50,11 +50,12 @@ func TestPiSessionSkills(t *testing.T) {
 	// Given
 	tracker, ok := any(New()).(trace.SkillTracker)
 	require.True(t, ok, "Pi must implement the shared skill tracker")
-	read := `{"role":"assistant","content":[{"type":"toolCall","id":"load-1","name":"read","arguments":{"path":"skills/review/SKILL.md"}}]}`
+	read := `{"role":"assistant","content":[{"type":"toolCall","id":"load-1","name":"read","arguments":{"path":".agents/skills/review/SKILL.md"}}]}`
 	result := fmt.Sprintf(`{"role":"toolResult","toolCallId":"load-1","toolName":"read","isError":false,"content":[{"type":"text","text":%q}]}`, skillTestDefinition)
 	cases := []struct {
 		name     string
 		messages []string
+		dir      string
 		model    int
 		user     int
 	}{
@@ -91,13 +92,15 @@ func TestPiSessionSkills(t *testing.T) {
 		{name: "unfinished read", messages: []string{read}},
 		{name: "failed read", messages: []string{read, strings.Replace(result, `"isError":false`, `"isError":true`, 1)}},
 		{name: "partial read", messages: []string{strings.Replace(read, `"path":`, `"offset":2,"path":`, 1), result}},
+		{name: "limited read", messages: []string{strings.Replace(read, `"path":`, `"limit":200,"path":`, 1), result}},
 		{name: "failed assistant response", messages: []string{strings.Replace(read, `"role":"assistant"`, `"role":"assistant","stopReason":"error"`, 1)}},
 		{name: "result without matching call", messages: []string{result}},
 		{name: "non-skill read", messages: []string{strings.Replace(read, "SKILL.md", "README.md", 1), result}},
+		{name: "skill outside discovery roots", messages: []string{strings.Replace(read, ".agents/skills/", "docs/", 1), result}},
 		{name: "result without a definition", messages: []string{read, strings.Replace(result, fmt.Sprintf("%q", skillTestDefinition), `"unrelated output"`, 1)}},
 		{name: "duplicate result counts once", messages: []string{read, result, result}, model: 1},
 		{name: "repeated completed loads", messages: []string{read, result, strings.ReplaceAll(read, "load-1", "load-2"), strings.ReplaceAll(result, "load-1", "load-2")}, model: 2},
-		{name: "user skill expansion", messages: []string{`{"role":"user","content":"<skill name=\"review\" location=\"skills/review/SKILL.md\">\nReferences are relative to skills/review.\n\nReview the code.\n</skill>"}`}, user: 1},
+		{name: "user skill expansion", messages: []string{`{"role":"user","content":"<skill name=\"review\" location=\"skills/review/SKILL.md\">\nReferences are relative to skills/review.\n\nReview the code.\n</skill>"}`}, dir: "skills/review", user: 1},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -117,7 +120,11 @@ func TestPiSessionSkills(t *testing.T) {
 			}
 			require.Len(t, uses, 1)
 			require.Equal(t, "review", uses[0].Name)
-			require.Equal(t, filepath.Join(root, "skills", "review"), uses[0].Dir)
+			dir := tc.dir
+			if dir == "" {
+				dir = ".agents/skills/review"
+			}
+			require.Equal(t, filepath.Join(root, filepath.FromSlash(dir)), uses[0].Dir)
 			require.Equal(t, tc.model, uses[0].ByModel)
 			require.Equal(t, tc.user, uses[0].ByUser)
 			require.Zero(t, uses[0].InSubagents)
@@ -166,6 +173,11 @@ func TestPiSessionSkillsSelectedBranchAndFirstUseOrder(t *testing.T) {
 		`{"role":"user","content":"<skill name=\"review\" location=\"skills/review/SKILL.md\">\nReview again.\n</skill>"}`,
 	}
 	transcript := piSkillMessages(root, messages)
+	transcript = []byte(strings.Replace(string(transcript),
+		`"timestamp":"2026-10-30T10:00:01Z"`,
+		`"timestamp":"2026-10-30T10:00:01.123Z"`,
+		1,
+	))
 	writeRawSession(t, rawDir, transcript)
 
 	// When
@@ -197,17 +209,31 @@ func TestPiNewSkillLoadsWaitsForCompletedResult(t *testing.T) {
 	require.NoError(t, store.InitTraceDir())
 	transcript := filepath.Join(root, "live.jsonl")
 	input := &trace.HookInput{SessionID: testSessionID, TranscriptPath: transcript, ToolName: skillSnapshotTool}
-	call := `{"role":"assistant","content":[{"type":"toolCall","id":"load-1","name":"read","arguments":{"path":"skills/review/SKILL.md"}}]}`
+	call := `{"role":"assistant","content":[{"type":"toolCall","id":"load-1","name":"read","arguments":{"path":".agents/skills/review/SKILL.md"}}]}`
 	result := fmt.Sprintf(`{"role":"toolResult","toolCallId":"load-1","toolName":"read","content":[{"type":"text","text":%q}]}`, skillTestDefinition)
-	require.NoError(t, os.WriteFile(transcript, piSkillMessages(root, []string{call}), 0o600))
+	secondCall := strings.ReplaceAll(call, "load-1", "load-2")
+	secondResult := strings.ReplaceAll(result, "load-1", "load-2")
+	header := piSkillMessages(root, nil)
+	require.NoError(t, os.WriteFile(transcript, header, 0o600))
 	require.Empty(t, tracker.NewSkillLoads(store, input))
+	offsets, err := store.SkillScanOffsets(testSessionID)
+	require.NoError(t, err)
+	require.Equal(t, int64(len(header)), offsets[piSkillByteOffsetKey])
+
+	pending := piSkillMessages(root, []string{call})
+	require.NoError(t, os.WriteFile(transcript, pending, 0o600))
+	require.Empty(t, tracker.NewSkillLoads(store, input))
+	offsets, err = store.SkillScanOffsets(testSessionID)
+	require.NoError(t, err)
+	require.Equal(t, int64(len(pending)), offsets[piSkillByteOffsetKey])
+	require.Zero(t, offsets["main"], "an irrelevant tail advances without a full parse")
 
 	// When
-	require.NoError(t, os.WriteFile(transcript, piSkillMessages(root, []string{call, result}), 0o600))
+	require.NoError(t, os.WriteFile(transcript, piSkillMessages(root, []string{call, result, secondCall, secondResult}), 0o600))
 	loads := tracker.NewSkillLoads(store, input)
 
 	// Then
-	require.Equal(t, []string{filepath.Join(root, "skills", "review")}, loads)
+	require.Equal(t, []string{filepath.Join(root, ".agents", "skills", "review")}, loads)
 	require.Empty(t, tracker.NewSkillLoads(store, input), "an unchanged transcript is not a new use")
 	input.SessionID = "another-session"
 	require.Empty(t, tracker.NewSkillLoads(store, input), "a different session cannot supply skill snapshots")
