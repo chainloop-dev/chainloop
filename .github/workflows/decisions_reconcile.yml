@@ -11,11 +11,15 @@
 # pushes and opens the PR with the chainloop-eng GitHub App. The commits are
 # signed by GitHub (sign-commits), signed off (DCO), and have an Assisted-by trailer.
 #
-# Required secrets:   LINEAR_CLIENT_SECRET, CHAINLOOP_ENG_APP_PRIVATE_KEY
-# Required variables: ANTHROPIC_FEDERATION_RULE_ID, LINEAR_CLIENT_ID
+# The parent tickets of the specs are GitHub issues of this repository. Claude
+# reads them, and the pull requests, with the read-only job token.
 #
-# Linear access uses an OAuth app with "client credentials tokens" on. Each run
-# gets a token with the read scope. The token acts as the app.
+# A run that cannot read a source (GitHub, the brain plugin) fails. It never
+# reports "no change": "Check sources" runs before Claude starts, and
+# "Check Claude run" checks the source errors and that Claude finished after.
+#
+# Required secrets:   CHAINLOOP_ENG_APP_PRIVATE_KEY
+# Required variables: ANTHROPIC_FEDERATION_RULE_ID
 #
 # Claude API access uses workload identity federation, not an API key. The
 # federation IDs in the "Run eng-adr reconcile" step are not secrets. The
@@ -66,6 +70,8 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      # The parent tickets of the specs.
+      issues: read
       # GitHub OIDC token for the Anthropic workload identity federation.
       id-token: write
     runs-on: ubuntu-latest
@@ -98,30 +104,37 @@ jobs:
             "$RUNNER_TEMP/brain"
           echo "Brain commit: $(git -C "$RUNNER_TEMP/brain" rev-parse HEAD)"
 
+      - name: Check sources
+        # The skill needs each of these sources. Without one, a run can report "no change" on pages that are
+        # out of date. This step fails the job before Claude starts.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRAIN_DIR: ${{ runner.temp }}/brain
+        run: |
+          fail() { echo "::error::$1"; exit 1; }
+
+          # GitHub. Claude, the collector and the skill read the issues and the pull requests with the job token.
+          issues=$(gh api "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=1" --jq 'length') || issues=""
+          [ "$issues" = "1" ] || fail "GitHub: the job token could not read the issues of ${GITHUB_REPOSITORY}."
+          echo "GitHub: read the issues of ${GITHUB_REPOSITORY}."
+          prs=$(gh api "repos/${GITHUB_REPOSITORY}/pulls?state=all&per_page=1" --jq 'length') || prs=""
+          [ "$prs" = "1" ] || fail "GitHub: the job token could not read the pull requests of ${GITHUB_REPOSITORY}."
+          echo "GitHub: read the pull requests of ${GITHUB_REPOSITORY}."
+
+          # Brain plugin.
+          [ -f "$BRAIN_DIR/skills/eng-adr/SKILL.md" ] || fail "Brain plugin: skills/eng-adr/SKILL.md does not exist."
+          specs=$(python3 "$BRAIN_DIR/skills/eng-adr/tools/decisions.py" --repo "$GITHUB_WORKSPACE" \
+            | jq -r '.specs | length') || specs=""
+          [ -n "$specs" ] || fail "Brain plugin: the collector decisions.py did not run on the checkout."
+          echo "Brain plugin: the collector found ${specs} specs."
+
       - name: Prepare reconcile run
         id: prepare
         env:
-          # Client ID of the Linear OAuth app. Not a secret, but kept in a variable so that secret scanners do not flag it.
-          LINEAR_CLIENT_ID: ${{ vars.LINEAR_CLIENT_ID }}
-          LINEAR_CLIENT_SECRET: ${{ secrets.LINEAR_CLIENT_SECRET }}
           AREA: ${{ inputs.area }}
           OUT_DIR: ${{ runner.temp }}/decisions
         run: |
           mkdir -p "$OUT_DIR"
-
-          # Client credentials grant: a read-only token that acts as the Linear OAuth app, not as a person.
-          linear_token=$(curl -fsS https://api.linear.app/oauth/token \
-            -u "${LINEAR_CLIENT_ID}:${LINEAR_CLIENT_SECRET}" \
-            -d grant_type=client_credentials -d scope=read | jq -r .access_token)
-          if [ -z "$linear_token" ] || [ "$linear_token" = "null" ]; then
-            echo "::error::Could not get a Linear token with the client credentials grant."
-            exit 1
-          fi
-          echo "::add-mask::${linear_token}"
-
-          jq -n --arg auth "Bearer ${linear_token}" \
-            '{mcpServers: {linear: {type: "http", url: "https://mcp.linear.app/mcp", headers: {Authorization: $auth}}}}' \
-            > "$RUNNER_TEMP/mcp.json"
 
           {
             echo "prompt<<PROMPT_EOF"
@@ -129,16 +142,46 @@ jobs:
           /br:eng-adr reconcile ${AREA}
 
           This is an unattended run in GitHub Actions. Follow the scheduled-run rules of the skill: ask no questions,
-          write only the changes that need no person, and list each open question in the PR body.
+          write the changes that need no person, and list each open question in the PR body.
+
+          These changes need no person. Write them:
+          - Each result of "Re-check of a page entry" in the format doc that asks nobody. For example, a
+            "not confirmed" entry whose behavior the code check finds now becomes "verified" and moves to
+            Current decisions.
+          - A new reason on a Non-Confirmed entry whose ticket changed state.
+          - A new spec decision that both workers of "Worth an entry" pass. Its code state gives its section.
+            A decision that both workers fail goes on the "Not shown" line.
+          - A replacement that the replacement rules of the format doc settle with explicit evidence.
+          - The deciders from the collector, new IDs from next_ids, and the refresh line.
+          - A correction of "Check the written text" that does not change the meaning.
+          - The block of "Agent instructions".
+
+          These changes need a person. Do not write them. List each one as an open question in the PR body:
+          - A BORDER verdict of "Worth an entry".
+          - "A current decision that no longer holds".
+          - A decision that nothing in the repository can show ("user confirmed").
+          - A change to the area map, for example an area for a spec in unmapped_specs.
+          - A change to the Language.
+          - A correction of "Check the written text" that changes the meaning.
+          - A conflict, and code that goes against a "Not shown" decision.
 
           This workflow owns git and the PR. Change these steps of the skill:
-          - Step 1 and "Before you commit": stay on the current checkout of the default branch. Do not create or
+          - "Branch" and "Before you commit": stay on the current checkout of the default branch. Do not create or
             switch branches. Do not commit, push, or open, edit or comment on a PR.
-          - Step 14: there is no person to show the diff to. Do not file tickets.
-          - Step 15: write the PR title to ${OUT_DIR}/pr-title.txt and the PR body to ${OUT_DIR}/pr-body.md,
-            in the format of step 15. Write the GitHub handles of the reviewers of step 15 to
+          - "Show the user": there is no person to show the diff to. Do not file tickets.
+          - "PR": write the PR title to ${OUT_DIR}/pr-title.txt and the PR body to ${OUT_DIR}/pr-body.md, in the
+            format of the "PR" step. No person read the final text, so the body lists what nobody reviewed, as
+            that step says. Write the GitHub handles of the reviewers of the "PR" step to
             ${OUT_DIR}/reviewers.txt, one per line.
           When nothing changed, write none of these files.
+
+          Sources: when a tool call to GitHub or the collector fails or is refused, stop. Do not continue with
+          less data, and do not report "no change". Write the tool, the call, and the error to
+          ${OUT_DIR}/source-error.txt.
+
+          Finish: the run ends when your turn ends. Wait for the result of each subagent before you end your turn.
+          As your last action, after the pages are written or you found that nothing changed, write
+          ${OUT_DIR}/done.txt.
 
           Change only files under docs/decisions/ and the repository agent instructions file (CLAUDE.md).
           EOF
@@ -150,8 +193,11 @@ jobs:
         # Bump the SHA deliberately, and check the CLI version in the run log.
         uses: anthropics/claude-code-action@d535f5172dec02b204866b393d6b20b9b2aaf98d # v1.0.266
         env:
-          # Read-only. The collector looks up the PRs of the decisions with it.
+          # Read-only. The collector looks up the PRs and the tickets of the decisions with it.
           GH_TOKEN: ${{ github.token }}
+          # Subagents run in the foreground. A headless run ends with Claude's turn, so a background subagent's
+          # result is lost, and the run reports "no change".
+          CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: "1"
         with:
           # Workload identity federation: the action exchanges the GitHub OIDC token for a short-lived
           # Anthropic token. These are identifiers, not secrets. Do not also set anthropic_api_key.
@@ -167,17 +213,31 @@ jobs:
           display_report: true
           claude_args: >-
             --plugin-dir ${{ runner.temp }}/brain
-            --mcp-config ${{ runner.temp }}/mcp.json
-            --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent,Task,mcp__linear"
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep,Agent,Task"
 
-      - name: Upload Claude output (failure)
-        # The action hides Claude's output in the log. Keep it as an artifact to find the cause of a failure.
-        if: ${{ failure() }}
+      - name: Upload Claude output
+        # The action hides Claude's output in the log. Keep it after each run, to see what a run did and why.
+        if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: claude-execution-output
           path: ${{ runner.temp }}/claude-execution-output.json
+          if-no-files-found: warn
           retention-days: 7
+
+      - name: Check Claude run
+        env:
+          OUT_DIR: ${{ runner.temp }}/decisions
+        run: |
+          if [ -e "$OUT_DIR/source-error.txt" ]; then
+            echo "::error::Claude could not read a source. The run stopped:"
+            cat "$OUT_DIR/source-error.txt"
+            exit 1
+          fi
+          if [ ! -e "$OUT_DIR/done.txt" ]; then
+            echo "::error::The Claude step ended before the reconcile finished (no done.txt)."
+            exit 1
+          fi
 
       - name: Check changes
         id: changes
