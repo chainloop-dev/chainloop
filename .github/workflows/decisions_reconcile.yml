@@ -169,8 +169,8 @@ jobs:
           - "Branch" and "Before you commit": stay on the current checkout of the default branch. Do not create or
             switch branches. Do not commit, push, or open, edit or comment on a PR.
           - "Show the user": there is no person to show the diff to. Do not file tickets.
-          - "PR": write the PR title to ${OUT_DIR}/pr-title.txt and the PR body to ${OUT_DIR}/pr-body.md, in the
-            format of the "PR" step. No person read the final text, so the body lists what nobody reviewed, as
+          - "PR": write the PR body to ${OUT_DIR}/pr-body.md, in the format of the "PR" step. Do not write a PR
+            title: this workflow sets it. No person read the final text, so the body lists what nobody reviewed, as
             that step says. Write the GitHub handles of the reviewers of the "PR" step to
             ${OUT_DIR}/reviewers.txt, one per line.
           When nothing changed, write none of these files.
@@ -258,8 +258,8 @@ jobs:
             exit 0
           fi
 
-          if [ ! -s "$OUT_DIR/pr-title.txt" ] || [ ! -s "$OUT_DIR/pr-body.md" ]; then
-            echo "::error::The pages changed, but the run wrote no PR title or body."
+          if [ ! -s "$OUT_DIR/pr-body.md" ]; then
+            echo "::error::The pages changed, but the run wrote no PR body."
             exit 1
           fi
 
@@ -267,7 +267,8 @@ jobs:
           git ls-files --others --exclude-standard -z | xargs -0 -r git add -N --
           git diff > "$OUT_DIR/changes.diff"
           git reset -q
-          title=$(head -n1 "$OUT_DIR/pr-title.txt")
+          # A dated title tells the runs apart. Each run force-updates the PR, so the date shows the latest run.
+          title="adr: update $(date -u +%F)"
           {
             echo "title=${title}"
             echo "reviewers=$(paste -sd, "$OUT_DIR/reviewers.txt" 2>/dev/null | tr -d '@ ')"
@@ -320,5 +321,8 @@ jobs:
             docs/decisions
             CLAUDE.md
           reviewers: ${{ steps.changes.outputs.reviewers }}
+          labels: |
+            automated
+            skip-ai-session
           draft: true
           delete-branch: true
