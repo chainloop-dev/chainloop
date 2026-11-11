@@ -26,9 +26,20 @@ import (
 	"path/filepath"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pointer"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
+
+// viewerTranscript reports whether the provider of the session converts its
+// native transcript to the viewer message shape. For these providers the
+// suite checks that each pointer is in a viewer message, that no inline copy
+// stays, and that a skill has its package: Codex and Copilot.
+func viewerTranscript(s *Session) bool {
+	name := evidence(s).Agent.Name
+	return name == codex.Name || name == copilot.Name
+}
 
 // codexViewerPointer deliberately ignores source_event and other native
 // metadata. A matching digest there alone cannot make a viewer link work.
@@ -84,11 +95,11 @@ func checkCodexSpecPointer(s *Session, digest string) error {
 	}
 	for _, raw := range evidence(s).RawSession["main"] {
 		if inlineSource(raw, content) || inlineSource(raw, original) {
-			return errors.New("the Codex transcript retains an inline copy of the stored spec")
+			return errors.New("the transcript retains an inline copy of the stored spec")
 		}
 	}
 	if !codexViewerPointer(evidence(s).RawSession["main"], digest) {
-		return errors.New("the Codex viewer message has no spec material pointer")
+		return errors.New("the viewer message has no spec material pointer")
 	}
 	return nil
 }
@@ -130,13 +141,13 @@ func inlineSource(raw json.RawMessage, content []byte) bool {
 func checkCodexSkillMaterials(s *Session, entry aicodingsession.SpecEntry) error {
 	definition, err := s.Stored.Material(entry.Digest)
 	if err != nil {
-		return fmt.Errorf("read the Codex skill definition: %w", err)
+		return fmt.Errorf("read the skill definition: %w", err)
 	}
 	if !bytes.Contains(definition, []byte(skillName)) || !bytes.Contains(definition, []byte("farewell.txt")) {
-		return errors.New("the Codex skill material does not contain its definition")
+		return errors.New("the skill material does not contain its definition")
 	}
 	if entry.Metadata.PackageDigest == "" {
-		return errors.New("the Codex skill has no supporting-file package")
+		return errors.New("the skill has no supporting-file package")
 	}
 	data, err := s.Stored.Material(entry.Metadata.PackageDigest)
 	if err != nil {
@@ -151,7 +162,7 @@ func checkCodexSkillMaterials(s *Session, entry aicodingsession.SpecEntry) error
 	for {
 		header, err := archive.Next()
 		if errors.Is(err, io.EOF) {
-			return errors.New("the Codex skill package has no matching definition")
+			return errors.New("the skill package has no matching definition")
 		}
 		if err != nil {
 			return err
@@ -162,7 +173,7 @@ func checkCodexSkillMaterials(s *Session, entry aicodingsession.SpecEntry) error
 				return err
 			}
 			if !bytes.Equal(content, definition) {
-				return errors.New("the Codex skill package differs from its stored definition")
+				return errors.New("the skill package differs from its stored definition")
 			}
 			return nil
 		}

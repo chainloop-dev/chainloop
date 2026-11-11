@@ -35,10 +35,6 @@ const copilotHooksPath = ".github/hooks/chainloop-trace.json"
 // copilotHooksPath.
 const copilotSessionStartEvent = "sessionStart"
 
-// errCopilotImages is the error of a run with pasted images. The headless
-// Copilot CLI has no input for an image.
-var errCopilotImages = errors.New("copilot: the headless CLI cannot attach a pasted image")
-
 // Copilot is the harness adapter of GitHub Copilot CLI. The Copilot agent in
 // VS Code reads the same hook file, but it has no headless mode, so the
 // suite runs the CLI only.
@@ -96,10 +92,6 @@ func parseCopilotVersion(out []byte) (string, error) {
 // The headless output does not show the hook responses, so the hook messages
 // are not reported.
 func (c *Copilot) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
-	if len(req.Images) > 0 {
-		return nil, errCopilotImages
-	}
-
 	home := filepath.Join(filepath.Dir(req.Dir), "copilot-home")
 	if err := os.MkdirAll(home, 0o700); err != nil {
 		return nil, err
@@ -114,6 +106,24 @@ func (c *Copilot) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 		"--allow-all-tools",
 		"--no-ask-user",
 		flagModel, req.Model,
+	}
+
+	// A pasted image goes in as an attached file, from outside the
+	// repository, so that the agent cannot commit it. A prompt-mode run has
+	// no paste: --attachment is its input for an image.
+	if len(req.Images) > 0 {
+		dir, err := os.MkdirTemp("", "chainloop-trace-e2e-")
+		if err != nil {
+			return nil, err
+		}
+		defer os.RemoveAll(dir)
+		for i, img := range req.Images {
+			path := filepath.Join(dir, fmt.Sprintf("pasted-%d.png", i+1))
+			if err := os.WriteFile(path, img, 0o600); err != nil {
+				return nil, err
+			}
+			args = append(args, "--attachment", path)
+		}
 	}
 
 	name := c.bin()

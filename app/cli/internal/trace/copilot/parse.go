@@ -17,6 +17,7 @@ package copilot
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -39,6 +40,9 @@ const (
 	eventToolComplete       = "tool.execution_complete"
 	eventUsageRecord        = "session.usage_record"
 	eventShutdown           = "session.shutdown"
+	eventSkillInvoked       = "skill.invoked"
+	eventBinaryAsset        = "session.binary_asset"
+	eventHookStart          = "hook.start"
 
 	// modelProvider is the vendor of the models as Trace records it: Copilot
 	// routes requests to models of several vendors.
@@ -113,7 +117,13 @@ type eventData struct {
 	} `json:"toolRequests"`
 	Result *struct {
 		Content string `json:"content"`
+		// Replaced is the pointer that replaced Content (spec issue-3800 R-009).
+		Replaced json.RawMessage `json:"chainloop.replaced"`
 	} `json:"result"`
+	Attachments []struct {
+		// Replaced is the pointer to the stored image of the attachment.
+		Replaced json.RawMessage `json:"chainloop.replaced"`
+	} `json:"attachments"`
 	Usage        *copilotUsage `json:"usage"`
 	CurrentModel string        `json:"currentModel"`
 	ModelMetrics map[string]struct {
@@ -464,14 +474,19 @@ func rawEntry(e logEvent, data eventData, raw json.RawMessage, line int) json.Ra
 	switch e.Type {
 	case eventUserMessage:
 		entry.Type = trace.RoleUser
-		blocks = append(blocks, trace.RawSessionTextBlock{Type: "text", Text: data.Content})
+		blocks = append(blocks, trace.RawSessionTextBlock{Type: textBlock, Text: data.Content})
+		for _, a := range data.Attachments {
+			if len(a.Replaced) > 0 {
+				blocks = append(blocks, map[string]json.RawMessage{"type": json.RawMessage(`"image"`), "source": a.Replaced})
+			}
+		}
 	case eventAssistantMessage:
 		entry.Type = trace.RoleAssistant
 		if data.ReasoningText != "" {
 			blocks = append(blocks, map[string]string{"type": "thinking", "thinking": data.ReasoningText})
 		}
 		if data.Content != "" {
-			blocks = append(blocks, trace.RawSessionTextBlock{Type: "text", Text: data.Content})
+			blocks = append(blocks, trace.RawSessionTextBlock{Type: textBlock, Text: data.Content})
 		}
 		for _, req := range data.ToolRequests {
 			blocks = append(blocks, trace.RawSessionToolUseBlock{Type: "tool_use", ID: req.ToolCallID, Name: req.Name, Input: toolInput(req.Arguments)})
@@ -483,6 +498,14 @@ func rawEntry(e logEvent, data eventData, raw json.RawMessage, line int) json.Ra
 			content = data.Result.Content
 		}
 		encoded, _ := json.Marshal(content)
+		if data.Result != nil && len(data.Result.Replaced) > 0 {
+			// A pointer, or text and pointer blocks for a shell output that
+			// holds copies of sources.
+			encoded = data.Result.Replaced
+			if !bytes.HasPrefix(bytes.TrimSpace(encoded), []byte("[")) {
+				encoded, _ = json.Marshal([]json.RawMessage{data.Result.Replaced})
+			}
+		}
 		blocks = append(blocks, trace.RawSessionToolResultBlock{Type: "tool_result", ToolUseID: data.ToolCallID, Content: encoded})
 	default:
 		return raw
