@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
@@ -354,9 +355,8 @@ func TestWriteTraceNextSteps(t *testing.T) {
 
 			assert.Contains(t, got, tc.wantHarnesses)
 			assert.Contains(t, got, traceDocsURL)
-			if slices.Contains(tc.providers, pi.Name) {
-				assert.Contains(t, got, "--approve")
-			}
+			// The summary ends with the docs link: no per-agent notes follow.
+			assert.True(t, strings.HasSuffix(strings.TrimSpace(got), traceDocsURL), "nothing follows the docs link: %q", got)
 		})
 	}
 }

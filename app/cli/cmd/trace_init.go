@@ -27,11 +27,9 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/repositoryconfig"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
-	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
@@ -388,18 +386,6 @@ What's next
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
-	writeTraceHarnessNotes(w, installed)
-}
-
-func writeTraceHarnessNotes(w io.Writer, installed []trace.Provider) {
-	for _, p := range installed {
-		switch p.Name() {
-		case codex.Name:
-			fmt.Fprintln(w, "For Codex, review and trust the installed hooks in Codex before starting work.")
-		case pi.Name:
-			fmt.Fprintln(w, "For Pi, review the project extension at .pi/extensions/chainloop-trace.ts before starting work. Interactive Pi asks to trust project files. Non-interactive runs need saved trust or --approve.")
-		}
-	}
 }
 
 // writeTraceInitLocalSummary reports what a local init set up. It names no
@@ -457,7 +443,6 @@ What's next
 
 Learn more: %s
 `, strings.Join(files, " "), joinWithOr(providerNames(installed)), traceDocsURL)
-	writeTraceHarnessNotes(w, installed)
 }
 
 // providerNames names the harnesses, in the order they were installed.

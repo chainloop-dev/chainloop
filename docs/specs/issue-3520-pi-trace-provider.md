@@ -116,9 +116,17 @@ When `ctx.hasUI` is true, the extension MUST show the existing Trace banner and 
 
 - Done when: first start, reload, resume, fork/clone, an abandoned branch containing a marker, a spec introduced or changed after the first turn, TUI/RPC messages, clean JSON/print stdout, and JSON/print stderr delivery of every pending link follow these rules.
 
-### R-009: Compatibility and failure safety
+### ~~R-009: Compatibility and failure safety~~
+Superseded by R-010.
 
-The first supported Pi baseline MUST be version 0.80.10 with JSONL v3. Older or incompatible persisted formats MUST fail as unsupported session evidence without blocking Pi or Git push. Initialization output MUST explain Pi project trust; non-interactive Pi requires saved trust or `--approve` for the project extension to load. Chainloop MUST NOT bypass Pi's trust mechanism.
+~~The first supported Pi baseline MUST be version 0.80.10 with JSONL v3. Older or incompatible persisted formats MUST fail as unsupported session evidence without blocking Pi or Git push. Initialization output MUST explain Pi project trust; non-interactive Pi requires saved trust or `--approve` for the project extension to load. Chainloop MUST NOT bypass Pi's trust mechanism.~~
+
+~~The generated extension MUST execute `chainloop` directly without a shell. Every child process MUST run in `ctx.cwd`, use a 60-second timeout, and cap each captured stdout and stderr stream at 64 KiB. At timeout the extension MUST send SIGTERM, allow a five-second grace period, and send SIGKILL only if the child remains alive. Spawn errors, timeouts, non-zero exits, malformed hook responses, and extra output MUST be absorbed by the extension and MUST NOT throw from any lifecycle, `tool_call`, or `tool_result` handler. A `tool_call` handler MUST always return `undefined` and MUST never return `{ block: true }`.~~
+
+### R-010: Compatibility and failure safety
+Supersedes R-009. Initialization output no longer explains Pi project trust: the trace init summary prints no per-agent notes ([PR #3801](https://github.com/chainloop-dev/chainloop/pull/3801)). The Trace README keeps the Pi trust steps.
+
+The first supported Pi baseline MUST be version 0.80.10 with JSONL v3. Older or incompatible persisted formats MUST fail as unsupported session evidence without blocking Pi or Git push. Non-interactive Pi requires saved trust or `--approve` for the project extension to load. Chainloop MUST NOT bypass Pi's trust mechanism.
 
 The generated extension MUST execute `chainloop` directly without a shell. Every child process MUST run in `ctx.cwd`, use a 60-second timeout, and cap each captured stdout and stderr stream at 64 KiB. At timeout the extension MUST send SIGTERM, allow a five-second grace period, and send SIGKILL only if the child remains alive. Spawn errors, timeouts, non-zero exits, malformed hook responses, and extra output MUST be absorbed by the extension and MUST NOT throw from any lifecycle, `tool_call`, or `tool_result` handler. A `tool_call` handler MUST always return `undefined` and MUST never return `{ block: true }`.
 
