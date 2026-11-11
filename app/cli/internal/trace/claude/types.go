@@ -26,6 +26,29 @@ type tokenUsage struct {
 	// CacheCreation1hTokens is the subset of CacheCreationInputTokens written to the 1-hour tier.
 	CacheCreation1hTokens int
 	CacheReadInputTokens  int
+	// LongContext is the subset of the counters above that comes from requests priced at the
+	// model's long-context rates. Nil when no request passed the model's threshold.
+	LongContext *tokenUsage
+}
+
+// merge adds the counters of o, including its long-context subset, to t.
+func (t *tokenUsage) merge(o *tokenUsage) {
+	t.InputTokens += o.InputTokens
+	t.OutputTokens += o.OutputTokens
+	t.CacheCreationInputTokens += o.CacheCreationInputTokens
+	t.CacheCreation5mTokens += o.CacheCreation5mTokens
+	t.CacheCreation1hTokens += o.CacheCreation1hTokens
+	t.CacheReadInputTokens += o.CacheReadInputTokens
+	if o.LongContext != nil {
+		t.longContext().merge(o.LongContext)
+	}
+}
+
+func (t *tokenUsage) longContext() *tokenUsage {
+	if t.LongContext == nil {
+		t.LongContext = &tokenUsage{}
+	}
+	return t.LongContext
 }
 
 func (t *tokenUsage) add(u *jsonlUsage) {
@@ -65,6 +88,11 @@ type jsonlUsage struct {
 	CacheCreationInputTokens int                     `json:"cache_creation_input_tokens"`
 	CacheReadInputTokens     int                     `json:"cache_read_input_tokens"`
 	CacheCreation            *jsonlCacheCreationInfo `json:"cache_creation,omitempty"`
+}
+
+// promptTokens is the size of the request prompt: base input plus cache reads and writes.
+func (u *jsonlUsage) promptTokens() int {
+	return u.InputTokens + u.CacheReadInputTokens + u.CacheCreationInputTokens
 }
 
 // jsonlCacheCreationInfo mirrors the nested usage.cache_creation object emitted by recent

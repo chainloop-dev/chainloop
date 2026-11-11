@@ -33,6 +33,20 @@ type modelPricing struct {
 	CacheWrite1h float64 `json:"cache_write_1h"`
 	// CacheRead is the price per 1M tokens read from the prompt cache (0.1x base input on most models; see pricing.json notes for exceptions).
 	CacheRead float64 `json:"cache_read"`
+	// LongContextThreshold is the prompt size in tokens (input, cache reads and cache writes)
+	// above which a request is priced at LongContext. Zero when the model has one price.
+	LongContextThreshold int `json:"long_context_threshold,omitempty"`
+	// LongContext holds the rates for requests whose prompt is larger than LongContextThreshold.
+	LongContext *modelPricing `json:"long_context,omitempty"`
+}
+
+// cost returns the price in USD of the given usage at these rates.
+func (p modelPricing) cost(u *tokenUsage) float64 {
+	return (float64(u.InputTokens)*p.Input +
+		float64(u.OutputTokens)*p.Output +
+		float64(u.CacheCreation5mTokens)*p.CacheWrite +
+		float64(u.CacheCreation1hTokens)*p.CacheWrite1h +
+		float64(u.CacheReadInputTokens)*p.CacheRead) / 1_000_000
 }
 
 // pricingFile is the schema of the embedded pricing.json data file.
@@ -59,6 +73,12 @@ func init() {
 
 	if len(f.Models) == 0 {
 		panic("claude trace: embedded pricing.json has no models")
+	}
+
+	for model, p := range f.Models {
+		if (p.LongContext != nil) != (p.LongContextThreshold > 0) {
+			panic(fmt.Sprintf("claude trace: pricing.json model %q must set both long_context and long_context_threshold, or neither", model))
+		}
 	}
 
 	def, ok := f.Models[f.DefaultModel]

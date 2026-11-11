@@ -169,7 +169,7 @@ func parseJSONL(path string) (*sessionData, []json.RawMessage, error) {
 			data.modelsSeen[model]++
 
 			if record.Message.Usage != nil {
-				getOrCreateUsage(data.tokenUsageByModel, model).add(record.Message.Usage)
+				addUsage(data.tokenUsageByModel, model, record.Message.Usage)
 			}
 
 			// Content can be a string or an array of blocks; only parse arrays
@@ -256,7 +256,7 @@ func parseSubagentUsage(jsonlPath string, totalUsage map[string]*tokenUsage, war
 			u := record.Message.Usage
 			subInput += u.InputTokens
 			subOutput += u.OutputTokens
-			getOrCreateUsage(totalUsage, model).add(u)
+			addUsage(totalUsage, model, u)
 		}
 	}, rawLines); err != nil {
 		addWarning(warnings, fmt.Sprintf("Failed to read subagent %s: %v", filepath.Base(jsonlPath), err))
@@ -273,17 +273,23 @@ func mergeUsage(main, sub map[string]*tokenUsage) map[string]*tokenUsage {
 	merged := make(map[string]*tokenUsage)
 	for _, source := range []map[string]*tokenUsage{main, sub} {
 		for model, u := range source {
-			bucket := getOrCreateUsage(merged, model)
-			bucket.InputTokens += u.InputTokens
-			bucket.OutputTokens += u.OutputTokens
-			bucket.CacheCreationInputTokens += u.CacheCreationInputTokens
-			bucket.CacheCreation5mTokens += u.CacheCreation5mTokens
-			bucket.CacheCreation1hTokens += u.CacheCreation1hTokens
-			bucket.CacheReadInputTokens += u.CacheReadInputTokens
+			getOrCreateUsage(merged, model).merge(u)
 		}
 	}
 
 	return merged
+}
+
+// addUsage adds the usage of one request to the model's bucket. A request whose prompt is
+// larger than the model's long-context threshold is also counted in the long-context subset,
+// so that computeCost prices it at the long-context rates.
+func addUsage(m map[string]*tokenUsage, model string, u *jsonlUsage) {
+	bucket := getOrCreateUsage(m, model)
+	bucket.add(u)
+
+	if p, ok := pricing[model]; ok && p.LongContext != nil && u.promptTokens() > p.LongContextThreshold {
+		bucket.longContext().add(u)
+	}
 }
 
 func computeCost(usage map[string]*tokenUsage, warnings *[]string) float64 {
@@ -296,12 +302,11 @@ func computeCost(usage map[string]*tokenUsage, warnings *[]string) float64 {
 				fmt.Sprintf("Unknown model '%s', using default (sonnet) pricing", model))
 		}
 
-		cost := float64(u.InputTokens)*p.Input/1_000_000 +
-			float64(u.OutputTokens)*p.Output/1_000_000 +
-			float64(u.CacheCreation5mTokens)*p.CacheWrite/1_000_000 +
-			float64(u.CacheCreation1hTokens)*p.CacheWrite1h/1_000_000 +
-			float64(u.CacheReadInputTokens)*p.CacheRead/1_000_000
-		totalCost += cost
+		totalCost += p.cost(u)
+		// Reprice the long-context subset: remove it at the standard rates, add it at the long-context rates.
+		if u.LongContext != nil && p.LongContext != nil {
+			totalCost += p.LongContext.cost(u.LongContext) - p.cost(u.LongContext)
+		}
 	}
 
 	return math.Round(totalCost*10000) / 10000

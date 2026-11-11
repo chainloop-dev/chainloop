@@ -198,6 +198,81 @@ func TestComputeCost_SplitCacheTiers(t *testing.T) {
 	assert.Empty(t, warnings)
 }
 
+// haiku55 is a model with long-context rates.
+const haiku55 = "claude-haiku-5-5"
+
+func TestComputeCostLongContext(t *testing.T) {
+	small := &jsonlUsage{InputTokens: 50_000, CacheReadInputTokens: 40_000, OutputTokens: 1_000}
+	large := &jsonlUsage{InputTokens: 10_000, CacheReadInputTokens: 100_000, OutputTokens: 1_000}
+
+	testCases := []struct {
+		name     string
+		model    string
+		requests []*jsonlUsage
+		want     float64
+	}{
+		{
+			// 50k * $0.10 + 40k * $0.01 + 1k * $0.50
+			name: "prompt under threshold uses standard rates", model: haiku55,
+			requests: []*jsonlUsage{small}, want: 0.0059,
+		},
+		{
+			// 100k * $0.10: the long-context rates start above the threshold
+			name: "prompt at threshold uses standard rates", model: haiku55,
+			requests: []*jsonlUsage{{InputTokens: 100_000}}, want: 0.01,
+		},
+		{
+			// 10k * $0.50 + 100k * $0.05 + 1k * $2.50
+			name: "prompt over threshold uses long-context rates", model: haiku55,
+			requests: []*jsonlUsage{large}, want: 0.0125,
+		},
+		{
+			name: "each request is priced on its own prompt size", model: haiku55,
+			requests: []*jsonlUsage{small, large}, want: 0.0059 + 0.0125,
+		},
+		{
+			// 5m: 100k * $0.625, 1h: 100k * $1.00
+			name: "cache writes count toward the prompt size", model: haiku55,
+			requests: []*jsonlUsage{{
+				CacheCreationInputTokens: 200_000,
+				CacheCreation:            &jsonlCacheCreationInfo{Ephemeral5mInputTokens: 100_000, Ephemeral1hInputTokens: 100_000},
+			}},
+			want: 0.1625,
+		},
+		{
+			// 200k * $5.00: no long-context rates
+			name: "model without long-context rates", model: "claude-opus-4-7",
+			requests: []*jsonlUsage{{InputTokens: 200_000}}, want: 1.0,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			usage := make(map[string]*tokenUsage)
+			for _, r := range tc.requests {
+				addUsage(usage, tc.model, r)
+			}
+			var warnings []string
+			assert.InDelta(t, tc.want, computeCost(usage, &warnings), 0.00001)
+			assert.Empty(t, warnings)
+		})
+	}
+}
+
+func TestMergeUsageLongContext(t *testing.T) {
+	main := map[string]*tokenUsage{
+		haiku55: {InputTokens: 300_000, LongContext: &tokenUsage{InputTokens: 200_000}},
+	}
+	sub := map[string]*tokenUsage{
+		haiku55: {InputTokens: 150_000, LongContext: &tokenUsage{InputTokens: 150_000}},
+	}
+
+	merged := mergeUsage(main, sub)
+	assert.Equal(t, 450_000, merged[haiku55].InputTokens)
+	require.NotNil(t, merged[haiku55].LongContext)
+	assert.Equal(t, 350_000, merged[haiku55].LongContext.InputTokens)
+}
+
 func TestComputeCostUnknownModel(t *testing.T) {
 	usage := map[string]*tokenUsage{
 		"claude-unknown-99": {InputTokens: 1_000_000},

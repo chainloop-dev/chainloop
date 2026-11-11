@@ -1,7 +1,7 @@
 {
   "version": "2026-11-11",
   "source": "https://platform.claude.com/docs/en/about-claude/pricing",
-  "notes": "cache_write = 5-minute tier (~1.25x base input). cache_write_1h = 1-hour tier (~2x base input). cache_read = ~0.1x base input (0.025x on claude-fable-5-2 / claude-mythos-5-2 / claude-fable-5-1 / claude-mythos-5-1, 0.05x on claude-opus-5-5 / claude-sonnet-5-5). claude-haiku-5-5 uses the rates for prompts up to 100,000 tokens; prompts over 100,000 tokens cost 5x more. Multipliers are approximate; the published rates at the source URL are authoritative and may differ due to rounding (e.g. claude-3-haiku-20240307 cache_write is $0.30, not 0.25 * 1.25 = $0.3125).",
+  "notes": "cache_write = 5-minute tier (~1.25x base input). cache_write_1h = 1-hour tier (~2x base input). cache_read = ~0.1x base input (0.025x on claude-fable-5-2 / claude-mythos-5-2 / claude-fable-5-1 / claude-mythos-5-1, 0.05x on claude-opus-5-5 / claude-sonnet-5-5). long_context = rates for a request whose prompt (input + cache reads + cache writes) is larger than long_context_threshold tokens; each request is priced on its own prompt size (claude-haiku-5-5 above 100,000 tokens). Multipliers are approximate; the published rates at the source URL are authoritative and may differ due to rounding (e.g. claude-3-haiku-20240307 cache_write is $0.30, not 0.25 * 1.25 = $0.3125).",
   "default_model": "claude-sonnet-4-6",
   "models": {
     "claude-fable-5-2": {
@@ -107,7 +107,15 @@
       "output": 0.50,
       "cache_write": 0.125,
       "cache_write_1h": 0.20,
-      "cache_read": 0.01
+      "cache_read": 0.01,
+      "long_context_threshold": 100000,
+      "long_context": {
+        "input": 0.50,
+        "output": 2.50,
+        "cache_write": 0.625,
+        "cache_write_1h": 1.00,
+        "cache_read": 0.05
+      }
     },
     "claude-haiku-4-5-20251001": {
       "input": 1.00,

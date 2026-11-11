@@ -69,7 +69,20 @@ func TestPricingModelRates(t *testing.T) {
 		t.Run(tc.model, func(t *testing.T) {
 			got, ok := pricing[tc.model]
 			require.True(t, ok, "expected %s in embedded pricing table", tc.model)
+			got.LongContext, got.LongContextThreshold = nil, 0
 			assert.Equal(t, tc.want, got)
 		})
 	}
+}
+
+func TestPricingLongContextRates(t *testing.T) {
+	haiku, ok := pricing[haiku55]
+	require.True(t, ok)
+	assert.Equal(t, 100_000, haiku.LongContextThreshold)
+	require.NotNil(t, haiku.LongContext)
+	assert.Equal(t, modelPricing{Input: 0.50, Output: 2.50, CacheWrite: 0.625, CacheWrite1h: 1.00, CacheRead: 0.05}, *haiku.LongContext)
+
+	sonnet, ok := pricing["claude-sonnet-5-5"]
+	require.True(t, ok)
+	assert.Nil(t, sonnet.LongContext)
 }
