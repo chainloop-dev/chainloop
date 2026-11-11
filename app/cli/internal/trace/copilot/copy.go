@@ -31,16 +31,25 @@ import (
 // eventsFile is the name of the session event log in a session folder.
 const eventsFile = "events.jsonl"
 
+// copilotHomeDir returns the Copilot configuration folder: $COPILOT_HOME, or
+// ~/.copilot. It returns "" when neither is known.
+func copilotHomeDir() string {
+	if home := os.Getenv("COPILOT_HOME"); home != "" {
+		return home
+	}
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(userHome, ".copilot")
+}
+
 // sessionStateRoot returns the folder where Copilot keeps its sessions:
 // $COPILOT_HOME/session-state, or ~/.copilot/session-state.
 func sessionStateRoot() string {
-	home := os.Getenv("COPILOT_HOME")
+	home := copilotHomeDir()
 	if home == "" {
-		userHome, err := os.UserHomeDir()
-		if err != nil {
-			return ""
-		}
-		home = filepath.Join(userHome, ".copilot")
+		return ""
 	}
 	return filepath.Join(home, "session-state")
 }
