@@ -202,10 +202,11 @@ func TestAnnounce(t *testing.T) {
 			run:  func(p *Provider) error { return p.AnnouncePromptSubmit("reminder") },
 		},
 		{
+			// The progress line reaches the user. The model gets no copy, so
+			// that it does not show the link a second time.
 			name: "announce to user",
 			run:  func(p *Provider) error { return p.AnnounceToUser("https://example.com/s") },
-			want: `{"type":"progress","message":"https://example.com/s"}` + "\n" +
-				`{"additionalContext":"Tell the user the following, including any link verbatim: https://example.com/s"}` + "\n",
+			want: `{"type":"progress","message":"https://example.com/s"}` + "\n",
 		},
 		{
 			name: "empty announce",

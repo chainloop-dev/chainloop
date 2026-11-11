@@ -126,7 +126,7 @@ Why not Yes:
 - **Welcome message, Cursor and OpenCode:** the provider gives the session-start context to the model only. It has no channel that shows a message to the user at session start, so the welcome message is dropped.
 - **Credentials warning, Cursor and OpenCode:** the provider has no channel to the user at session start. The model is told to tell the user, so the warning depends on the model.
 - **Session link after push, Cursor:** the `postToolUse` hook runs after a shell command, but its response has no field that Cursor shows to the user. The link stays pending until it expires.
-- **Session link after push and credentials warning, Copilot:** these need a control plane, so the end-to-end suite does not cover them. The link and the warning go to the user as hook progress lines, the same channel as the welcome message, and the link also goes to the model in `additionalContext`.
+- **Session link after push and credentials warning, Copilot:** these need a control plane, so the end-to-end suite does not cover them. The link and the warning go to the user as hook progress lines, the same channel as the welcome message. The link does not go to the model, so the user sees it one time.
 - **Session link after push, OpenCode:** the plugin hook fires after a shell command, but the response that shows a message to the user is not verified yet. The link stays pending until it expires.
 
 ## Specs and skills

@@ -123,13 +123,10 @@ func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
 // AnnouncePromptSubmit does nothing: Copilot drops the output of the hook.
 func (p *Provider) AnnouncePromptSubmit(string) error { return nil }
 
-// AnnounceToUser shows the message to the user, and adds it to the result of
-// the tool, so that the model can repeat it in the same turn.
+// AnnounceToUser shows the message to the user as a progress line. The model
+// gets no copy: it would show the message to the user a second time.
 func (p *Provider) AnnounceToUser(msg string) error {
-	if msg == "" {
-		return nil
-	}
-	return p.writeResponse(msg, "Tell the user the following, including any link verbatim: "+msg)
+	return p.writeResponse(msg, "")
 }
 
 // progressMessage is a line that Copilot shows to the user, before the final
