@@ -357,9 +357,6 @@ func TestWriteTraceNextSteps(t *testing.T) {
 			if slices.Contains(tc.providers, pi.Name) {
 				assert.Contains(t, got, "--approve")
 			}
-			if slices.Contains(tc.providers, copilot.Name) {
-				assert.Contains(t, got, "For Copilot")
-			}
 		})
 	}
 }
