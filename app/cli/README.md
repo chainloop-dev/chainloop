@@ -1,5 +1,3 @@
-Random date: 2024-07-19
-
 # Command Line Interface (CLI)
 
 This Command Line Interface (CLI) is a local client that's used for two purposes:
