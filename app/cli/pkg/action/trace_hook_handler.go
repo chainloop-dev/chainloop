@@ -90,16 +90,21 @@ func handleCommitMsg(msgFilePath string, log zerolog.Logger) error {
 		log.Debug().Strs("session_ids", sessionIDs).Msg("amending HEAD, keeping its trace sessions")
 	}
 
-	attrs, err := state.NewRepoStore(gitDir, repoRoot).LoadAllAILineAttributions()
+	store := state.NewRepoStore(gitDir, repoRoot)
+	stagedFiles, err := client.StagedFiles(repoRoot)
+	if err != nil {
+		return fmt.Errorf("get staged files: %w", err)
+	}
+
+	if err := checkpointActiveShellAttribution(store, repoRoot, stagedFiles); err != nil {
+		log.Debug().Err(err).Msg("commit-msg: checkpoint active shell attribution failed")
+	}
+
+	attrs, err := store.LoadAllAILineAttributions()
 	if err != nil {
 		return fmt.Errorf("load AI line attributions: %w", err)
 	}
 	if len(attrs) > 0 {
-		stagedFiles, err := client.StagedFiles(repoRoot)
-		if err != nil {
-			return fmt.Errorf("get staged files: %w", err)
-		}
-
 		sessionIDs = mergeSessionIDs(sessionIDs, matchSessionsToFiles(attrs, stagedFiles))
 	}
 
@@ -254,6 +259,10 @@ func handlePostCommit(_ context.Context, log zerolog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("get commit info: %w", err)
 	}
+	store := state.NewRepoStore(gitDir, repoRoot)
+	if err := advanceActiveShellHead(store, repoRoot, sha); err != nil {
+		log.Debug().Err(err).Msg("post-commit: advance active shell HEAD failed")
+	}
 
 	// Skip merge commits: their content is already attributed in the
 	// merged-in branch's commits, so recording them would double-count.
@@ -269,8 +278,6 @@ func handlePostCommit(_ context.Context, log zerolog.Logger) error {
 
 	// Prefer the trailer's session IDs when present — they survive rebase
 	// and cherry-pick verbatim. Fall back to file-based derivation otherwise.
-	store := state.NewRepoStore(gitDir, repoRoot)
-
 	sessionIDs := state.ParseSessionIDsFromTrailer(message)
 	if len(sessionIDs) == 0 {
 		sessionIDs = deriveSessionIDsForCommit(client, store, repoRoot, sha)

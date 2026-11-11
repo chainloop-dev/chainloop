@@ -253,6 +253,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		input.FilePath = toolInput.FilePath
 	}
 	input.Command = toolInput.Command
+	input.RawToolInput = append(json.RawMessage(nil), raw.ToolInput...)
 	input.ToolFailed = input.HookEventName == eventPostToolUseFailure
 
 	return &input, nil
