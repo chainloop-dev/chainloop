@@ -18,6 +18,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -59,9 +60,10 @@ func (s *WorkflowContractService) List(ctx context.Context, _ *pb.WorkflowContra
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
+	visibleProjects := s.visibleProjects(ctx)
 	result := make([]*pb.WorkflowContractItem, 0, len(contracts))
-	for _, s := range contracts {
-		result = append(result, bizWorkFlowContractToPb(s))
+	for _, c := range contracts {
+		result = append(result, bizWorkFlowContractToPb(c, visibleProjects))
 	}
 
 	return &pb.WorkflowContractServiceListResponse{Result: result}, nil
@@ -73,12 +75,15 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 		return nil, err
 	}
 
-	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetName())
+	// The contract is only read to check access, its references come with the version below
+	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, req.GetName(), biz.WithoutReferences())
 	if err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if contract == nil {
 		return nil, errors.NotFound("not found", "contract not found")
 	}
+
+	visibleProjects := s.visibleProjects(ctx)
 
 	// 1 - If the contract is scoped to a project, make sure the user has permission to read it
 	// otherwise everyone can read it, use it
@@ -87,7 +92,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 	}
 
 	// 2 - Get the contract version
-	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, contract.ID.String(), int(req.GetRevision()))
+	contractWithVersion, err := s.contractUseCase.Describe(ctx, currentOrg.ID, contract.ID.String(), int(req.GetRevision()), biz.WithReferencesInProjects(visibleProjects))
 	if err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	} else if contractWithVersion == nil {
@@ -95,7 +100,7 @@ func (s *WorkflowContractService) Describe(ctx context.Context, req *pb.Workflow
 	}
 
 	result := &pb.WorkflowContractServiceDescribeResponse_Result{
-		Contract: bizWorkFlowContractToPb(contractWithVersion.Contract),
+		Contract: bizWorkFlowContractToPb(contractWithVersion.Contract, visibleProjects),
 		Revision: bizWorkFlowContractVersionToPb(contractWithVersion.Version, contractWithVersion.Contract),
 	}
 
@@ -146,7 +151,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 	}
 
 	if len(req.RawContract) != 0 {
-		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil); err != nil {
+		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil, nil); err != nil {
 			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
@@ -168,7 +173,7 @@ func (s *WorkflowContractService) Create(ctx context.Context, req *pb.WorkflowCo
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
-	return &pb.WorkflowContractServiceCreateResponse{Result: bizWorkFlowContractToPb(schema)}, nil
+	return &pb.WorkflowContractServiceCreateResponse{Result: bizWorkFlowContractToPb(schema, s.visibleProjects(ctx))}, nil
 }
 
 func canCreateContractsInRestrictedMode(ctx context.Context) bool {
@@ -203,7 +208,18 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 		return nil, errors.NotFound("not found", "contract not found")
 	}
 
-	if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractUpdate, false); err != nil {
+	// A conversion to another level (spec issue-3644). Only the callers that manage
+	// organization-level contracts can convert, and this check replaces the normal access check.
+	var scope *biz.ContractScopeChange
+	if req.GetScope() != nil {
+		if !canConvertContracts(ctx) {
+			return nil, errors.Forbidden("forbidden", "only organization administrators can move a contract between the organization and a project")
+		}
+
+		if scope, err = s.contractScopeChange(ctx, currentOrg.ID, req); err != nil {
+			return nil, err
+		}
+	} else if err := s.checkContractAccess(ctx, contract, authz.PolicyWorkflowContractUpdate, false); err != nil {
 		return nil, err
 	}
 
@@ -214,26 +230,52 @@ func (s *WorkflowContractService) Update(ctx context.Context, req *pb.WorkflowCo
 
 	// Validate the contract policies if the raw contract is provided
 	if len(req.RawContract) != 0 {
-		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil); err != nil {
+		if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawContract, token, nil, nil, nil); err != nil {
 			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
 	}
 
+	visibleProjects := s.visibleProjects(ctx)
 	schemaWithVersion, err := s.contractUseCase.Update(ctx, currentOrg.ID, contractName,
 		&biz.WorkflowContractUpdateOpts{
 			Description: description,
 			RawSchema:   req.RawContract,
-		})
+			Scope:       scope,
+		}, biz.WithReferencesInProjects(visibleProjects))
 	if err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
 	result := &pb.WorkflowContractServiceUpdateResponse_Result{
-		Contract: bizWorkFlowContractToPb(schemaWithVersion.Contract),
+		Contract: bizWorkFlowContractToPb(schemaWithVersion.Contract, visibleProjects),
 		Revision: bizWorkFlowContractVersionToPb(schemaWithVersion.Version, schemaWithVersion.Contract),
 	}
 
 	return &pb.WorkflowContractServiceUpdateResponse{Result: result}, nil
+}
+
+// contractScopeChange returns the level that the update request converts the contract to.
+func (s *WorkflowContractService) contractScopeChange(ctx context.Context, orgID string, req *pb.WorkflowContractServiceUpdateRequest) (*biz.ContractScopeChange, error) {
+	switch scope := req.GetScope().(type) {
+	case *pb.WorkflowContractServiceUpdateRequest_OrganizationScoped:
+		return &biz.ContractScopeChange{}, nil
+	case *pb.WorkflowContractServiceUpdateRequest_ProjectReference:
+		project, err := s.userHasPermissionOnProject(ctx, orgID, scope.ProjectReference, authz.PolicyWorkflowContractUpdate)
+		if err != nil {
+			return nil, err
+		}
+
+		return &biz.ContractScopeChange{ProjectID: &project.ID}, nil
+	default:
+		return nil, errors.BadRequest("invalid", "unknown contract scope")
+	}
+}
+
+// canConvertContracts reports whether the caller can move a contract between the organization
+// level and a project level. These are the callers that manage organization-level contracts:
+// organization owners and admins, and organization-level API tokens (spec issue-3644, R-004).
+func canConvertContracts(ctx context.Context) bool {
+	return canCreateContractsInRestrictedMode(ctx)
 }
 
 func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowContractServiceApplyRequest) (*pb.WorkflowContractServiceApplyResponse, error) {
@@ -259,17 +301,24 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 	// the resources may not be persisted yet. A real apply persists batch resources before the
 	// contract, so it must always validate fully and never trust the client-supplied batch lists.
 	var batchPolicyNames, batchPolicyGroupNames []string
+	var batchPolicies map[string]*schemav1.Policy
 	if dryRun {
 		batchPolicyNames = req.GetBatchPolicyNames()
 		batchPolicyGroupNames = req.GetBatchPolicyGroupNames()
+
+		if batchPolicies, err = parseBatchPolicies(req.GetBatchPolicies()); err != nil {
+			return nil, err
+		}
 	}
 
-	if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawSchema, token, batchPolicyNames, batchPolicyGroupNames); err != nil {
+	if err = s.contractUseCase.ValidateContractPolicies(ctx, req.RawSchema, token, batchPolicyNames, batchPolicyGroupNames, batchPolicies); err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
 
+	visibleProjects := s.visibleProjects(ctx)
+
 	// Check if the contract already exists
-	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, contractName)
+	contract, err := s.contractUseCase.FindByNameInOrg(ctx, currentOrg.ID, contractName, biz.WithReferencesInProjects(visibleProjects))
 	if err != nil && !biz.IsNotFound(err) {
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
@@ -293,7 +342,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 			}
 
 			return &pb.WorkflowContractServiceApplyResponse{
-				Result:          bizWorkFlowContractToPb(contract),
+				Result:          bizWorkFlowContractToPb(contract, visibleProjects),
 				Changed:         changed,
 				Status:          status,
 				CurrentRevision: int32(contract.LatestRevision),
@@ -304,7 +353,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 			&biz.WorkflowContractUpdateOpts{
 				Description: description,
 				RawSchema:   req.RawSchema,
-			})
+			}, biz.WithReferencesInProjects(visibleProjects))
 		if err != nil {
 			return nil, handleUseCaseErr(ctx, err, s.log)
 		}
@@ -315,7 +364,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 		}
 
 		return &pb.WorkflowContractServiceApplyResponse{
-			Result:          bizWorkFlowContractToPb(schemaWithVersion.Contract),
+			Result:          bizWorkFlowContractToPb(schemaWithVersion.Contract, visibleProjects),
 			Changed:         schemaWithVersion.Changed,
 			Status:          status,
 			CurrentRevision: int32(schemaWithVersion.Contract.LatestRevision),
@@ -361,7 +410,7 @@ func (s *WorkflowContractService) Apply(ctx context.Context, req *pb.WorkflowCon
 	}
 
 	return &pb.WorkflowContractServiceApplyResponse{
-		Result:          bizWorkFlowContractToPb(schema),
+		Result:          bizWorkFlowContractToPb(schema, visibleProjects),
 		Changed:         true,
 		Status:          pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_CREATED,
 		CurrentRevision: int32(schema.LatestRevision),
@@ -392,11 +441,21 @@ func (s *WorkflowContractService) Delete(ctx context.Context, req *pb.WorkflowCo
 	return &pb.WorkflowContractServiceDeleteResponse{}, nil
 }
 
-func bizWorkFlowContractToPb(schema *biz.WorkflowContract) *pb.WorkflowContractItem {
+// bizWorkFlowContractToPb converts a contract to its API representation. visibleProjects confines the
+// workflow references to the projects the caller can see: an organization-level contract is returned
+// to every caller, but its references must not disclose workflows and projects outside the caller's
+// reach (GHSA-hjc7-j8v3-8gh2). The repository already loads only those references when it is asked
+// to; this check is a second layer for a read path that does not ask. A nil visibleProjects means
+// that RBAC does not apply to the caller.
+func bizWorkFlowContractToPb(schema *biz.WorkflowContract, visibleProjects []uuid.UUID) *pb.WorkflowContractItem {
 	// nolint:prealloc
 	var workflowNames []string
 	workflowRefs := make([]*pb.WorkflowRef, 0, len(schema.WorkflowRefs))
 	for _, ref := range schema.WorkflowRefs {
+		if visibleProjects != nil && !slices.Contains(visibleProjects, ref.ProjectID) {
+			continue
+		}
+
 		workflowRefs = append(workflowRefs, bizWorkflowRefToPb(ref))
 		workflowNames = append(workflowNames, ref.Name)
 	}
@@ -524,6 +583,34 @@ func validateAndExtractMetadata(rawContract []byte, explicitName, explicitDesc s
 		description = &desc
 	}
 	return name, description, nil
+}
+
+// parseBatchPolicies parses the raw policies sent with a batch apply, indexed by policy name
+func parseBatchPolicies(raws [][]byte) (map[string]*schemav1.Policy, error) {
+	if len(raws) == 0 {
+		return nil, nil
+	}
+
+	parsed := make(map[string]*schemav1.Policy, len(raws))
+	for _, raw := range raws {
+		format, err := unmarshal.IdentifyFormat(raw)
+		if err != nil {
+			return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid batch policy: %s", err))
+		}
+
+		policy := &schemav1.Policy{}
+		if err := unmarshal.FromRaw(raw, format, policy, true); err != nil {
+			return nil, errors.BadRequest("invalid", fmt.Sprintf("invalid batch policy: %s", err))
+		}
+
+		if policy.GetMetadata().GetName() == "" {
+			return nil, errors.BadRequest("invalid", "invalid batch policy: missing metadata name")
+		}
+
+		parsed[policy.GetMetadata().GetName()] = policy
+	}
+
+	return parsed, nil
 }
 
 // extractMetadata attempts to extract the name from metadata.name in v2 contracts

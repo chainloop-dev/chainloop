@@ -319,6 +319,38 @@ func TestAttachSkills(t *testing.T) {
 		assert.Equal(t, []string{`skill "asd-ste100" was not recorded`}, warnings)
 	})
 
+	t.Run("an entry with no time of use gets the push time, with a warning", func(t *testing.T) {
+		const unknownTime = `the time of the first use of skill "asd-ste100" is unknown; the push time is recorded`
+		cases := []struct {
+			name     string
+			at       string
+			failOn   map[string]bool
+			entries  int
+			warnings []string
+		}{
+			{name: "known time", at: skillTenOClock, entries: 1},
+			{name: "unknown time", entries: 1, warnings: []string{unknownTime}},
+			{
+				name:     "no time warning for a skill that is not recorded",
+				failOn:   map[string]bool{"spec-7412a0-skill-asd-ste100": true},
+				warnings: []string{`skill "asd-ste100" was not recorded`},
+			},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				s := stored(t, map[string]string{skill.DefinitionFile: skillDoc}, trace.SkillUse{Name: steSkillName, FirstUsedAt: tc.at, ByModel: 1})
+
+				adder := &fakeMaterialAdder{failOn: tc.failOn}
+				entries, warnings := attachSkills(context.Background(), adder, newSpecRedactor(t.TempDir(), false), materials.NewNameAllocator(nil), skillSessionID, []sessionSkill{s}, zerolog.Nop())
+				require.Len(t, entries, tc.entries)
+				assert.Equal(t, tc.warnings, warnings)
+				for _, entry := range entries {
+					assert.NotEmpty(t, entry.CapturedAt)
+				}
+			})
+		}
+	})
+
 	t.Run("a plugin skill gets a valid material name", func(t *testing.T) {
 		s := stored(t, map[string]string{skill.DefinitionFile: skillDoc}, trace.SkillUse{Name: "superpowers:brainstorming", FirstUsedAt: skillTenOClock, ByModel: 1})
 

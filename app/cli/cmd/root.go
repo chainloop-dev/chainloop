@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -170,35 +171,15 @@ func ensureActionOpts(cmd *cobra.Command) error {
 		}
 	}
 
-	var opts = []grpcconn.Option{
-		grpcconn.WithInsecure(apiInsecure()),
-		grpcconn.WithCLIVersion(fullVersion()),
-	}
-
-	if maxRecv := apiMaxRecvMsgSize(); maxRecv > 0 {
-		opts = append(opts, grpcconn.WithMaxRecvMsgSize(maxRecv))
-	}
-
-	if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
-		// Check if the value is a file path, if it is we read the content and encode it to base64, if not we assume it's the content already
-		if _, err := os.Stat(caValue); err == nil {
-			opts = append(opts, grpcconn.WithCAFile(caValue))
-		} else {
-			opts = append(opts, grpcconn.WithCAContent(caValue))
-		}
-	}
+	opts := controlPlaneConnOpts()
 
 	controlplaneURL := viper.GetString(confOptions.controlplaneAPI.viperKey)
 
 	// If no organization is selected, load it from the server and save it.
 	orgName := effectiveOrganization(cmd)
 	if orgName == "" {
-		conn, err := grpcconn.New(controlplaneURL, authToken, opts...)
-		if err != nil {
-			return err
-		}
-
-		currentContext, err := action.NewConfigCurrentContext(newActionOpts(logger, conn, authToken)).Run()
+		// A connection error here also fails the connection below, which returns it
+		currentContext, err := fetchCurrentContext(cmd.Context(), authToken)
 		if err == nil && currentContext.CurrentMembership != nil {
 			if err := setLocalOrganization(currentContext.CurrentMembership.Org.Name); err != nil {
 				return fmt.Errorf("writing config file: %w", err)
@@ -233,6 +214,42 @@ func ensureActionOpts(cmd *cobra.Command) error {
 	}
 
 	return nil
+}
+
+// controlPlaneConnOpts returns the gRPC options for a control plane connection,
+// without the organization
+func controlPlaneConnOpts() []grpcconn.Option {
+	opts := []grpcconn.Option{
+		grpcconn.WithInsecure(apiInsecure()),
+		grpcconn.WithCLIVersion(fullVersion()),
+	}
+
+	if maxRecv := apiMaxRecvMsgSize(); maxRecv > 0 {
+		opts = append(opts, grpcconn.WithMaxRecvMsgSize(maxRecv))
+	}
+
+	if caValue := viper.GetString(confOptions.controlplaneCA.viperKey); caValue != "" {
+		// Check if the value is a file path, if it is we read the content and encode it to base64, if not we assume it's the content already
+		if _, err := os.Stat(caValue); err == nil {
+			opts = append(opts, grpcconn.WithCAFile(caValue))
+		} else {
+			opts = append(opts, grpcconn.WithCAContent(caValue))
+		}
+	}
+
+	return opts
+}
+
+// fetchCurrentContext asks the control plane who the token belongs to, on a connection
+// without an organization, so it also works for a user that is not a member of one
+func fetchCurrentContext(ctx context.Context, token string) (*action.ConfigContextItem, error) {
+	conn, err := grpcconn.New(viper.GetString(confOptions.controlplaneAPI.viperKey), token, controlPlaneConnOpts()...)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	return action.NewConfigCurrentContext(newActionOpts(logger, conn, token)).Run(ctx)
 }
 
 func NewRootCmd(l zerolog.Logger) *cobra.Command {

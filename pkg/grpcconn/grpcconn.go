@@ -44,13 +44,15 @@ const DefaultMaxRecvMsgSize = 32 * 1024 * 1024
 const CLIVersionHeader = "Chainloop-Cli-Version"
 
 type newOptionalArg struct {
-	caFilePath     string
-	caContent      string
-	insecure       bool
-	orgName        string
-	cliVersion     string
-	maxRecvMsgSize int
-	tokenProvider  TokenProvider
+	caFilePath         string
+	caContent          string
+	insecure           bool
+	orgName            string
+	cliVersion         string
+	maxRecvMsgSize     int
+	tokenProvider      TokenProvider
+	unaryInterceptors  []grpc.UnaryClientInterceptor
+	streamInterceptors []grpc.StreamClientInterceptor
 }
 
 // TokenProvider returns the bearer token for the next request. Use it when the
@@ -108,6 +110,20 @@ func WithMaxRecvMsgSize(size int) Option {
 	}
 }
 
+// WithUnaryInterceptors appends interceptors to the connection's unary client chain.
+func WithUnaryInterceptors(interceptors ...grpc.UnaryClientInterceptor) Option {
+	return func(opt *newOptionalArg) {
+		opt.unaryInterceptors = append(opt.unaryInterceptors, interceptors...)
+	}
+}
+
+// WithStreamInterceptors appends interceptors to the connection's stream client chain.
+func WithStreamInterceptors(interceptors ...grpc.StreamClientInterceptor) Option {
+	return func(opt *newOptionalArg) {
+		opt.streamInterceptors = append(opt.streamInterceptors, interceptors...)
+	}
+}
+
 func cliVersionUnaryInterceptor(version string) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
 		ctx = metadata.AppendToOutgoingContext(ctx, CLIVersionHeader, version)
@@ -131,8 +147,10 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 	}
 
 	var opts []grpc.DialOption
-	unaryInterceptors := []grpc.UnaryClientInterceptor{}
-	streamInterceptors := []grpc.StreamClientInterceptor{}
+	// The stack interceptors come first, so they are outermost: inner
+	// interceptors such as retry see the errors as gRPC returns them.
+	unaryInterceptors := []grpc.UnaryClientInterceptor{StackUnaryClientInterceptor()}
+	streamInterceptors := []grpc.StreamClientInterceptor{StackStreamClientInterceptor()}
 
 	if authToken != "" || optionalArgs.tokenProvider != nil {
 		grpcCreds := newTokenAuth(authToken, optionalArgs.insecure, optionalArgs.orgName)
@@ -146,12 +164,13 @@ func New(uri, authToken string, opt ...Option) (*grpc.ClientConn, error) {
 		streamInterceptors = append(streamInterceptors, cliVersionStreamInterceptor(optionalArgs.cliVersion))
 	}
 
-	if len(unaryInterceptors) > 0 {
-		opts = append(opts, grpc.WithChainUnaryInterceptor(unaryInterceptors...))
-	}
-	if len(streamInterceptors) > 0 {
-		opts = append(opts, grpc.WithChainStreamInterceptor(streamInterceptors...))
-	}
+	unaryInterceptors = append(unaryInterceptors, optionalArgs.unaryInterceptors...)
+	streamInterceptors = append(streamInterceptors, optionalArgs.streamInterceptors...)
+
+	opts = append(opts,
+		grpc.WithChainUnaryInterceptor(unaryInterceptors...),
+		grpc.WithChainStreamInterceptor(streamInterceptors...),
+	)
 
 	// Currently we only support system tls certs
 	var tlsDialOption grpc.DialOption

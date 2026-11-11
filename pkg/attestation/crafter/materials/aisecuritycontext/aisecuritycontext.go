@@ -117,6 +117,12 @@ type ScanStats struct {
 	// SurvivorsTotal is how many survivors the context holds at the covered
 	// window.
 	SurvivorsTotal int `json:"survivors_total,omitempty"`
+	// RepoCommitsTotal is the total number of commits reachable from the scanned
+	// revision — the denominator a consumer renders scan progress against
+	// ("N of M commits"). A snapshot pinned to the target SHA, not a funnel counter,
+	// so it is outside the reconciles invariant. Omitted (zero) when unknown: a
+	// shallow clone, or an artifact produced before this field existed.
+	RepoCommitsTotal int `json:"repo_commits_total,omitempty"`
 	// PendingSurvivors is how many survivors still await adjudication: neither in
 	// the frontier, nor a triage hole, nor abandoned after the retry cap. Zero
 	// alongside AdjudicationComplete is the drained queue.

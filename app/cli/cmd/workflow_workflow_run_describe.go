@@ -164,16 +164,7 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 		}
 	}
 
-	gt.AppendRow(table.Row{"Policies violation strategy", att.PolicyEvaluationStatus.Strategy})
-	if att.PolicyEvaluationStatus.Blocked {
-		gt.AppendRow(table.Row{"Run Blocked", att.PolicyEvaluationStatus.Blocked})
-	}
-	if att.PolicyEvaluationStatus.HasGatedViolations {
-		gt.AppendRow(table.Row{"Run Gated", text.Colors{text.FgHiRed}.Sprint(att.PolicyEvaluationStatus.HasGatedViolations)})
-	}
-	if att.PolicyEvaluationStatus.Strategy == action.PolicyViolationBlockingStrategyEnforced {
-		gt.AppendRow(table.Row{"Policy enforcement bypassed", att.PolicyEvaluationStatus.Bypassed})
-	}
+	appendPolicyStrategyRows(att.PolicyEvaluationStatus, gt)
 
 	appendPolicySection(att, gt, flagDebug)
 
@@ -186,6 +177,25 @@ func workflowRunDescribeTableOutput(run *action.WorkflowRunItemFull) error {
 	predicateV1Table(att)
 	logger.Info().Msg("you can use the flag \"--output statement\" to see the full in-toto statement")
 	return nil
+}
+
+// appendPolicyStrategyRows adds the policy enforcement rows of a run.
+// Only show the strategy when it is enforced. Showing "ADVISORY" is misleading
+// when individual policies are configured as gates.
+func appendPolicyStrategyRows(status *action.PolicyEvaluationStatus, gt table.Writer) {
+	enforced := status.Strategy == action.PolicyViolationBlockingStrategyEnforced
+	if enforced {
+		gt.AppendRow(table.Row{"Policies violation strategy", status.Strategy})
+	}
+	if status.Blocked {
+		gt.AppendRow(table.Row{"Run Blocked", status.Blocked})
+	}
+	if status.HasGatedViolations {
+		gt.AppendRow(table.Row{"Run Gated", text.Colors{text.FgHiRed}.Sprint(status.HasGatedViolations)})
+	}
+	if enforced {
+		gt.AppendRow(table.Row{"Policy enforcement bypassed", status.Bypassed})
+	}
 }
 
 func predicateV1Table(att *action.WorkflowRunAttestationItem) {

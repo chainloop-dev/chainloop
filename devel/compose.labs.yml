@@ -23,6 +23,7 @@ services:
       CP_FILE_CA_CERT_PATH: /devkeys/ca.pub
       CP_FILE_CA_KEY_PATH: /devkeys/ca.pem
       CP_CAS_KEY_PATH: /devkeys/cas.pem
+      CP_CAS_SERVER_ADDR: cas:8001
       CP_DEV_USER: john@chainloop.local
     volumes:
       # main configuration
@@ -48,9 +49,12 @@ services:
       - ../app/artifact-cas/configs:/data/conf
       # development keys
       - ../devel/devkeys:/devkeys
+    tmpfs:
+      - /tmp-staging-fs:uid=1001,gid=1001
     environment:
       CAS_VAULT_ADDRESS: http://vault:8200
-      CAS_PUBLIC_KEY_PATH: /devkeys/cas.pem
+      CAS_PUBLIC_KEY_PATH: /devkeys/cas.pub
+      CAS_STAGING_DIR: /tmp-staging-fs
     ports:
       - 9001:9001
       - 8001:8001

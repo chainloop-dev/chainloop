@@ -99,16 +99,24 @@ type WorkflowContractWithVersion struct {
 	Contract *WorkflowContract
 	Version  *WorkflowContractVersion
 	Changed  bool
+	// ScopeChange is the change of level that the update made, nil when it did not change it
+	ScopeChange *ContractScopeTransition
+}
+
+// ContractScopeTransition is a change of the level of a contract. The repository reads both
+// levels under the contract lock. A nil scoped entity is the organization level.
+type ContractScopeTransition struct {
+	From, To *ScopedEntity
 }
 
 type WorkflowContractRepo interface {
 	Create(ctx context.Context, opts *ContractCreateOpts) (*WorkflowContract, error)
 	List(ctx context.Context, orgID uuid.UUID, filter *WorkflowContractListFilters) ([]*WorkflowContract, error)
 	FindByIDInOrg(ctx context.Context, orgID, ID uuid.UUID) (*WorkflowContract, error)
-	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*WorkflowContract, error)
+	FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, opts ...ContractQueryOpt) (*WorkflowContract, error)
 	Describe(ctx context.Context, orgID, contractID uuid.UUID, revision int, opts ...ContractQueryOpt) (*WorkflowContractWithVersion, error)
 	FindVersionByID(ctx context.Context, versionID uuid.UUID) (*WorkflowContractWithVersion, error)
-	Update(ctx context.Context, orgID uuid.UUID, name string, opts *ContractUpdateOpts) (*WorkflowContractWithVersion, error)
+	Update(ctx context.Context, orgID uuid.UUID, name string, opts *ContractUpdateOpts, queryOpts ...ContractQueryOpt) (*WorkflowContractWithVersion, error)
 	SoftDelete(ctx context.Context, contractID uuid.UUID) error
 }
 
@@ -116,6 +124,9 @@ type ContractQueryOpts struct {
 	// SkipGetReferences will skip the get references subquery
 	// The references are composed by the project name and workflow name
 	SkipGetReferences bool
+	// ReferencesInProjects confines the references to the workflows of these projects. nil means
+	// no filter is applied; a non-nil empty list matches no project, so no reference is returned.
+	ReferencesInProjects []uuid.UUID
 }
 
 type ContractQueryOpt func(opts *ContractQueryOpts)
@@ -124,6 +135,25 @@ func WithoutReferences() ContractQueryOpt {
 	return func(opts *ContractQueryOpts) {
 		opts.SkipGetReferences = true
 	}
+}
+
+// WithReferencesInProjects confines the workflow references of the contract to the given projects,
+// so that a caller only learns about the workflows of the projects it can see (GHSA-hjc7-j8v3-8gh2).
+// nil means no filter is applied.
+func WithReferencesInProjects(projectIDs []uuid.UUID) ContractQueryOpt {
+	return func(opts *ContractQueryOpts) {
+		opts.ReferencesInProjects = projectIDs
+	}
+}
+
+// NewContractQueryOpts applies the given options.
+func NewContractQueryOpts(opts ...ContractQueryOpt) *ContractQueryOpts {
+	c := &ContractQueryOpts{}
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	return c
 }
 
 type ContractCreateOpts struct {
@@ -140,6 +170,8 @@ type ContractUpdateOpts struct {
 	Description *string
 	// raw representation of the contract in whatever original format it was (json, yaml, ...)
 	Contract *Contract
+	// Scope converts the contract to the organization level or to a project level
+	Scope *ContractScopeChange
 }
 
 type WorkflowContractUseCase struct {
@@ -156,6 +188,7 @@ func NewWorkflowContractUseCase(repo WorkflowContractRepo, policyRegistry *polic
 type WorkflowContractListFilters struct {
 	// FilterByProjects narrows the result to the given projects. nil means no filter is applied;
 	// a non-nil empty list matches no project, so only the organization's global contracts.
+	// It confines the workflow references of the returned contracts to the same projects.
 	FilterByProjects []uuid.UUID
 }
 
@@ -201,7 +234,7 @@ func (uc *WorkflowContractUseCase) FindByIDInOrg(ctx context.Context, orgID, con
 	return uc.repo.FindByIDInOrg(ctx, orgUUID, contractUUID)
 }
 
-func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, name string) (*WorkflowContract, error) {
+func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, name string, opts ...ContractQueryOpt) (*WorkflowContract, error) {
 	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.FindByNameInOrg")
 	defer span.End()
 
@@ -210,7 +243,7 @@ func (uc *WorkflowContractUseCase) FindByNameInOrg(ctx context.Context, orgID, n
 		return nil, NewErrInvalidUUID(err)
 	}
 
-	return uc.repo.FindByNameInOrg(ctx, orgUUID, name)
+	return uc.repo.FindByNameInOrg(ctx, orgUUID, name, opts...)
 }
 
 func (c *WorkflowContract) IsGlobalScoped() bool {
@@ -405,9 +438,20 @@ func (uc *WorkflowContractUseCase) FindVersionByID(ctx context.Context, versionI
 type WorkflowContractUpdateOpts struct {
 	RawSchema   []byte
 	Description *string
+	// Scope converts the contract to the organization level or to a project level.
+	// When nil, the level of the contract does not change.
+	Scope *ContractScopeChange
 }
 
-func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts) (*WorkflowContractWithVersion, error) {
+// ContractScopeChange is the level that a contract converts to.
+type ContractScopeChange struct {
+	// ProjectID is the project that the contract converts to.
+	// When nil, the contract converts to the organization level.
+	ProjectID *uuid.UUID
+}
+
+// Update updates the contract. queryOpts shape the contract that it returns.
+func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name string, opts *WorkflowContractUpdateOpts, queryOpts ...ContractQueryOpt) (*WorkflowContractWithVersion, error) {
 	ctx, span := otelx.Start(ctx, workflowContractTracer, "WorkflowContractUseCase.Update")
 	defer span.End()
 
@@ -435,8 +479,8 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 		return nil, fmt.Errorf("failed to find contract %s in org %s: %w", name, orgUUID, err)
 	}
 
-	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract}
-	c, err := uc.repo.Update(ctx, orgUUID, name, args)
+	args := &ContractUpdateOpts{Description: opts.Description, Contract: contract, Scope: opts.Scope}
+	c, err := uc.repo.Update(ctx, orgUUID, name, args, queryOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update contract: %w", err)
 	} else if c == nil {
@@ -461,9 +505,33 @@ func (uc *WorkflowContractUseCase) Update(ctx context.Context, orgID, name strin
 
 	uc.auditorUC.Dispatch(ctx, eventPayload, &orgUUID)
 
+	// A conversion between the organization level and a project level gets its own event.
+	// Both levels come from the repository, which read them under the contract lock.
+	if c.ScopeChange != nil {
+		uc.auditorUC.Dispatch(ctx, &events.WorkflowContractScopeChanged{
+			WorkflowContractBase: eventPayload.WorkflowContractBase,
+			OldScope:             contractScopeForEvent(c.ScopeChange.From),
+			NewScope:             contractScopeForEvent(c.ScopeChange.To),
+		}, &orgUUID)
+	}
+
 	c.Changed = changed
 
 	return c, nil
+}
+
+// contractScopeForEvent returns a level of a contract, as the audit events show it.
+// A nil scoped entity is the organization level.
+func contractScopeForEvent(s *ScopedEntity) *events.WorkflowContractScope {
+	if s == nil || s.Type != string(ContractScopeProject) {
+		return &events.WorkflowContractScope{Type: events.WorkflowContractScopeOrganization}
+	}
+
+	return &events.WorkflowContractScope{
+		Type:        events.WorkflowContractScopeProject,
+		ProjectID:   &s.ID,
+		ProjectName: s.Name,
+	}
 }
 
 // RevisionWouldChange reports whether applying rawSchema to the contract
@@ -507,8 +575,9 @@ func (uc *WorkflowContractUseCase) RevisionWouldChange(ctx context.Context, orgI
 // exist. batchPolicyNames and batchPolicyGroupNames carry the names of resources being
 // created/updated in the same batch apply: references to those are treated as known instead of
 // being resolved against the registry, since they may not be persisted yet (e.g. during
-// dry-run). Remote references are still validated regardless.
-func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context, rawSchema []byte, token string, batchPolicyNames, batchPolicyGroupNames []string) error {
+// dry-run). Remote references are still validated regardless. batchPolicies optionally carries the
+// specs of those policies by name, so their inputs and material applicability are validated too.
+func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context, rawSchema []byte, token string, batchPolicyNames, batchPolicyGroupNames []string, batchPolicies map[string]*schemav1.Policy) error {
 	// Validate that externally provided policies exist
 	c, err := identifyUnMarshalAndValidateRawContract(rawSchema)
 	if err != nil {
@@ -521,12 +590,12 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context,
 		// DEPRECATED: v1 schema is deprecated, use v2 Contract format instead
 		schema := c.Schema
 		for _, att := range schema.GetPolicies().GetAttestation() {
-			if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames); err != nil {
+			if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames, batchPolicies); err != nil {
 				return NewErrValidation(err)
 			}
 		}
 		for _, att := range schema.GetPolicies().GetMaterials() {
-			if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames); err != nil {
+			if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, batchPolicies, schema.GetMaterials()); err != nil {
 				return NewErrValidation(err)
 			}
 		}
@@ -540,12 +609,12 @@ func (uc *WorkflowContractUseCase) ValidateContractPolicies(ctx context.Context,
 		spec := c.Schemav2.GetSpec()
 		if spec.GetPolicies() != nil {
 			for _, att := range spec.GetPolicies().GetAttestation() {
-				if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames); err != nil {
+				if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames, batchPolicies); err != nil {
 					return NewErrValidation(err)
 				}
 			}
 			for _, att := range spec.GetPolicies().GetMaterials() {
-				if _, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames); err != nil {
+				if err := uc.findAndValidateMaterialPolicy(ctx, att, token, batchPolicyNames, batchPolicies, spec.GetMaterials()); err != nil {
 					return NewErrValidation(err)
 				}
 			}
@@ -578,7 +647,7 @@ func (uc *WorkflowContractUseCase) ValidatePolicyAttachment(ctx context.Context,
 	return nil
 }
 
-func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string) (*schemav1.Policy, error) {
+func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string, batchPolicies map[string]*schemav1.Policy) (*schemav1.Policy, error) {
 	var policy *schemav1.Policy
 
 	if att.GetEmbedded() != nil {
@@ -593,21 +662,24 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, at
 		// treat references to them as known instead of resolving against the registry. Only
 		// bare references (no provider/org) can name a batch-local policy; references that
 		// explicitly target a remote provider or org are always validated.
-		if pr.Provider == "" && pr.OrgName == "" && slices.Contains(batchPolicyNames, pr.Name) {
-			return nil, nil
-		}
-		// Validate attachment
-		if err := uc.ValidatePolicyAttachment(ctx, pr.Provider, att, token); err != nil {
-			return nil, err
-		}
+		if pr.Provider == "" && pr.OrgName == "" && (slices.Contains(batchPolicyNames, pr.Name) || batchPolicies[pr.Name] != nil) {
+			// Use the batch spec when the caller sent it, so the same checks as a real apply
+			// run. Without it the policy is only known and nothing else can be validated.
+			policy = batchPolicies[pr.Name]
+		} else {
+			// Validate attachment
+			if err := uc.ValidatePolicyAttachment(ctx, pr.Provider, att, token); err != nil {
+				return nil, err
+			}
 
-		// The control plane is a non-CLI caller, so resolve the true latest revision
-		// and skip CLI-version compatibility gating.
-		remotePolicy, err := uc.GetPolicy(ctx, pr.Provider, pr.Name, pr.OrgName, "", token, policies.WithIgnoreCLICompatibility())
-		if err != nil {
-			return nil, err
+			// The control plane is a non-CLI caller, so resolve the true latest revision
+			// and skip CLI-version compatibility gating.
+			remotePolicy, err := uc.GetPolicy(ctx, pr.Provider, pr.Name, pr.OrgName, "", token, policies.WithIgnoreCLICompatibility())
+			if err != nil {
+				return nil, err
+			}
+			policy = remotePolicy.Policy
 		}
-		policy = remotePolicy.Policy
 	}
 
 	if policy != nil {
@@ -623,6 +695,22 @@ func (uc *WorkflowContractUseCase) findAndValidatePolicy(ctx context.Context, at
 
 	// return policy or nil, as it might not be available in this context
 	return policy, nil
+}
+
+// findAndValidateMaterialPolicy validates a material policy attachment and, when its
+// policy can be resolved, checks that the attachment can apply to at least one material.
+func (uc *WorkflowContractUseCase) findAndValidateMaterialPolicy(ctx context.Context, att *schemav1.PolicyAttachment, token string, batchPolicyNames []string, batchPolicies map[string]*schemav1.Policy, materials []*schemav1.CraftingSchema_Material) error {
+	policy, err := uc.findAndValidatePolicy(ctx, att, token, batchPolicyNames, batchPolicies)
+	if err != nil {
+		return err
+	}
+
+	// the policy might not be available in this context (local or batch-local policy)
+	if policy == nil {
+		return nil
+	}
+
+	return loader.ValidateMaterialAttachment(policy, att, materials)
 }
 
 func (uc *WorkflowContractUseCase) findAndValidatePolicyGroup(ctx context.Context, att *schemav1.PolicyGroupAttachment, token string, batchPolicyGroupNames []string) (*schemav1.PolicyGroup, error) {
@@ -686,7 +774,7 @@ func (uc *WorkflowContractUseCase) validateSkipList(ctx context.Context, group *
 	for _, groupMaterial := range policies.GetMaterials() {
 		for _, policyAtt := range groupMaterial.GetPolicies() {
 			// Group member policies come from an already-resolved remote group, never batch-local.
-			policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token, nil)
+			policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token, nil, nil)
 			if err != nil {
 				return fmt.Errorf("failed to get policy name during skip list validation: %w", err)
 			}
@@ -696,7 +784,7 @@ func (uc *WorkflowContractUseCase) validateSkipList(ctx context.Context, group *
 
 	// Collect attestation policy names
 	for _, policyAtt := range policies.GetAttestation() {
-		policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token, nil)
+		policy, err := uc.findAndValidatePolicy(ctx, policyAtt, token, nil, nil)
 		if err != nil {
 			return fmt.Errorf("failed to get policy name during skip list validation: %w", err)
 		}

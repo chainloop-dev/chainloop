@@ -17,4 +17,3 @@ spec:
     - ref: slsa-checks
       with:
         runner: GITHUB_ACTION
-    - ref: ai-config-policies

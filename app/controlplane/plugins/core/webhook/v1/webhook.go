@@ -27,6 +27,7 @@ import (
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -278,7 +279,7 @@ func (i *Integration) sendWebhook(ctx context.Context, url, kind string, payload
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		i.Logger.Errorw("webhook responded with non-success status code", "status", resp.StatusCode, "body", string(body))
-		return fmt.Errorf("webhook responded with status code %d: %s", resp.StatusCode, string(body))
+		return errorsx.Errorf("webhook responded with status code %d: %s", resp.StatusCode, string(body))
 	}
 
 	return nil

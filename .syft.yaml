@@ -1,0 +1,22 @@
+# Root syft config, read automatically when syft runs from the repository root,
+# as in the source SBOM that the sbom-generation workflow makes.
+#
+# The source SBOM lists what this repository ships. These paths are not part of
+# it: CI workflows and their actions, CI tooling (extras), the experimental
+# policy SDKs (labs), and test data.
+exclude:
+  - ./.github/**
+  - ./extras/**
+  - ./labs/**
+  - "**/testdata/**"
+
+# Without a module cache, syft finds no license for Go modules. Get the
+# licenses from the module proxy.
+golang:
+  search-remote-licenses: true
+
+# Do not list the manifest files (go.mod and others) as components. They are
+# not packages and have no license.
+file:
+  metadata:
+    selection: none

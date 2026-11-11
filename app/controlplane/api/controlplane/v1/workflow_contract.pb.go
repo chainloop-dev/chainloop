@@ -291,8 +291,16 @@ type WorkflowContractServiceUpdateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Name  string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Raw representation of the contract in json, yaml or cue
-	RawContract   []byte  `protobuf:"bytes,5,opt,name=raw_contract,json=rawContract,proto3" json:"raw_contract,omitempty"`
-	Description   *string `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	RawContract []byte  `protobuf:"bytes,5,opt,name=raw_contract,json=rawContract,proto3" json:"raw_contract,omitempty"`
+	Description *string `protobuf:"bytes,4,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	// Converts the contract to another level. When not set, the level does not change.
+	// Only organization admins and organization-level API tokens can convert a contract.
+	//
+	// Types that are valid to be assigned to Scope:
+	//
+	//	*WorkflowContractServiceUpdateRequest_ProjectReference
+	//	*WorkflowContractServiceUpdateRequest_OrganizationScoped
+	Scope         isWorkflowContractServiceUpdateRequest_Scope `protobuf_oneof:"scope"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -346,6 +354,51 @@ func (x *WorkflowContractServiceUpdateRequest) GetDescription() string {
 		return *x.Description
 	}
 	return ""
+}
+
+func (x *WorkflowContractServiceUpdateRequest) GetScope() isWorkflowContractServiceUpdateRequest_Scope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
+func (x *WorkflowContractServiceUpdateRequest) GetProjectReference() *IdentityReference {
+	if x != nil {
+		if x, ok := x.Scope.(*WorkflowContractServiceUpdateRequest_ProjectReference); ok {
+			return x.ProjectReference
+		}
+	}
+	return nil
+}
+
+func (x *WorkflowContractServiceUpdateRequest) GetOrganizationScoped() bool {
+	if x != nil {
+		if x, ok := x.Scope.(*WorkflowContractServiceUpdateRequest_OrganizationScoped); ok {
+			return x.OrganizationScoped
+		}
+	}
+	return false
+}
+
+type isWorkflowContractServiceUpdateRequest_Scope interface {
+	isWorkflowContractServiceUpdateRequest_Scope()
+}
+
+type WorkflowContractServiceUpdateRequest_ProjectReference struct {
+	// Converts the contract to a project-level contract of this project
+	ProjectReference *IdentityReference `protobuf:"bytes,6,opt,name=project_reference,json=projectReference,proto3,oneof"`
+}
+
+type WorkflowContractServiceUpdateRequest_OrganizationScoped struct {
+	// Converts the contract to an organization-level contract. It must be true.
+	OrganizationScoped bool `protobuf:"varint,7,opt,name=organization_scoped,json=organizationScoped,proto3,oneof"`
+}
+
+func (*WorkflowContractServiceUpdateRequest_ProjectReference) isWorkflowContractServiceUpdateRequest_Scope() {
+}
+
+func (*WorkflowContractServiceUpdateRequest_OrganizationScoped) isWorkflowContractServiceUpdateRequest_Scope() {
 }
 
 type WorkflowContractServiceUpdateResponse struct {
@@ -580,8 +633,13 @@ type WorkflowContractServiceApplyRequest struct {
 	BatchPolicyNames []string `protobuf:"bytes,3,rep,name=batch_policy_names,json=batchPolicyNames,proto3" json:"batch_policy_names,omitempty"`
 	// Same as batch_policy_names, for policy groups created/updated in the same batch.
 	BatchPolicyGroupNames []string `protobuf:"bytes,4,rep,name=batch_policy_group_names,json=batchPolicyGroupNames,proto3" json:"batch_policy_group_names,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Raw representation (json or yaml) of the policies created/updated in the same batch apply.
+	// Only used on dry runs, ignored on a real apply (which persists batch resources first).
+	// When present, the specs of batch-local references are used to validate their inputs and
+	// whether the attachment can apply to a material, as a real apply does.
+	BatchPolicies [][]byte `protobuf:"bytes,5,rep,name=batch_policies,json=batchPolicies,proto3" json:"batch_policies,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WorkflowContractServiceApplyRequest) Reset() {
@@ -638,6 +696,13 @@ func (x *WorkflowContractServiceApplyRequest) GetBatchPolicyNames() []string {
 func (x *WorkflowContractServiceApplyRequest) GetBatchPolicyGroupNames() []string {
 	if x != nil {
 		return x.BatchPolicyGroupNames
+	}
+	return nil
+}
+
+func (x *WorkflowContractServiceApplyRequest) GetBatchPolicies() [][]byte {
+	if x != nil {
+		return x.BatchPolicies
 	}
 	return nil
 }
@@ -848,12 +913,15 @@ const file_controlplane_v1_workflow_contract_proto_rawDesc = "" +
 	"\x11project_reference\x18\x05 \x01(\v2\".controlplane.v1.IdentityReferenceR\x10projectReferenceB\x0e\n" +
 	"\f_description\"f\n" +
 	"%WorkflowContractServiceCreateResponse\x12=\n" +
-	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\"\x9e\x02\n" +
+	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\"\xb6\x03\n" +
 	"$WorkflowContractServiceUpdateRequest\x12\x9b\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x86\x01\xbaH\x82\x01\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')\xd8\x01\x01R\x04name\x12!\n" +
 	"\fraw_contract\x18\x05 \x01(\fR\vrawContract\x12%\n" +
-	"\vdescription\x18\x04 \x01(\tH\x00R\vdescription\x88\x01\x01B\x0e\n" +
+	"\vdescription\x18\x04 \x01(\tH\x01R\vdescription\x88\x01\x01\x12Q\n" +
+	"\x11project_reference\x18\x06 \x01(\v2\".controlplane.v1.IdentityReferenceH\x00R\x10projectReference\x12:\n" +
+	"\x13organization_scoped\x18\a \x01(\bB\a\xbaH\x04j\x02\b\x01H\x00R\x12organizationScopedB\a\n" +
+	"\x05scopeB\x0e\n" +
 	"\f_description\"\x96\x02\n" +
 	"%WorkflowContractServiceUpdateResponse\x12U\n" +
 	"\x06result\x18\x01 \x01(\v2=.controlplane.v1.WorkflowContractServiceUpdateResponse.ResultR\x06result\x1a\x95\x01\n" +
@@ -872,13 +940,14 @@ const file_controlplane_v1_workflow_contract_proto_rawDesc = "" +
 	"$WorkflowContractServiceDeleteRequest\x12\x97\x01\n" +
 	"\x04name\x18\x01 \x01(\tB\x82\x01\xbaH\x7f\xba\x01|\n" +
 	"\rname.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a/this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x04name\"'\n" +
-	"%WorkflowContractServiceDeleteResponse\"\xc4\x01\n" +
+	"%WorkflowContractServiceDeleteResponse\"\xeb\x01\n" +
 	"#WorkflowContractServiceApplyRequest\x12\x1d\n" +
 	"\n" +
 	"raw_schema\x18\x01 \x01(\fR\trawSchema\x12\x17\n" +
 	"\adry_run\x18\x02 \x01(\bR\x06dryRun\x12,\n" +
 	"\x12batch_policy_names\x18\x03 \x03(\tR\x10batchPolicyNames\x127\n" +
-	"\x18batch_policy_group_names\x18\x04 \x03(\tR\x15batchPolicyGroupNames\"\xa4\x03\n" +
+	"\x18batch_policy_group_names\x18\x04 \x03(\tR\x15batchPolicyGroupNames\x12%\n" +
+	"\x0ebatch_policies\x18\x05 \x03(\fR\rbatchPolicies\"\xa4\x03\n" +
 	"$WorkflowContractServiceApplyResponse\x12=\n" +
 	"\x06result\x18\x01 \x01(\v2%.controlplane.v1.WorkflowContractItemR\x06result\x12 \n" +
 	"\tunchanged\x18\x02 \x01(\bB\x02\x18\x01R\tunchanged\x12\x18\n" +
@@ -936,31 +1005,32 @@ var file_controlplane_v1_workflow_contract_proto_depIdxs = []int32{
 	15, // 0: controlplane.v1.WorkflowContractServiceListResponse.result:type_name -> controlplane.v1.WorkflowContractItem
 	16, // 1: controlplane.v1.WorkflowContractServiceCreateRequest.project_reference:type_name -> controlplane.v1.IdentityReference
 	15, // 2: controlplane.v1.WorkflowContractServiceCreateResponse.result:type_name -> controlplane.v1.WorkflowContractItem
-	13, // 3: controlplane.v1.WorkflowContractServiceUpdateResponse.result:type_name -> controlplane.v1.WorkflowContractServiceUpdateResponse.Result
-	14, // 4: controlplane.v1.WorkflowContractServiceDescribeResponse.result:type_name -> controlplane.v1.WorkflowContractServiceDescribeResponse.Result
-	15, // 5: controlplane.v1.WorkflowContractServiceApplyResponse.result:type_name -> controlplane.v1.WorkflowContractItem
-	0,  // 6: controlplane.v1.WorkflowContractServiceApplyResponse.status:type_name -> controlplane.v1.WorkflowContractServiceApplyResponse.ApplyStatus
-	15, // 7: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
-	17, // 8: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
-	15, // 9: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
-	17, // 10: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
-	1,  // 11: controlplane.v1.WorkflowContractService.List:input_type -> controlplane.v1.WorkflowContractServiceListRequest
-	3,  // 12: controlplane.v1.WorkflowContractService.Create:input_type -> controlplane.v1.WorkflowContractServiceCreateRequest
-	5,  // 13: controlplane.v1.WorkflowContractService.Update:input_type -> controlplane.v1.WorkflowContractServiceUpdateRequest
-	7,  // 14: controlplane.v1.WorkflowContractService.Describe:input_type -> controlplane.v1.WorkflowContractServiceDescribeRequest
-	9,  // 15: controlplane.v1.WorkflowContractService.Delete:input_type -> controlplane.v1.WorkflowContractServiceDeleteRequest
-	11, // 16: controlplane.v1.WorkflowContractService.Apply:input_type -> controlplane.v1.WorkflowContractServiceApplyRequest
-	2,  // 17: controlplane.v1.WorkflowContractService.List:output_type -> controlplane.v1.WorkflowContractServiceListResponse
-	4,  // 18: controlplane.v1.WorkflowContractService.Create:output_type -> controlplane.v1.WorkflowContractServiceCreateResponse
-	6,  // 19: controlplane.v1.WorkflowContractService.Update:output_type -> controlplane.v1.WorkflowContractServiceUpdateResponse
-	8,  // 20: controlplane.v1.WorkflowContractService.Describe:output_type -> controlplane.v1.WorkflowContractServiceDescribeResponse
-	10, // 21: controlplane.v1.WorkflowContractService.Delete:output_type -> controlplane.v1.WorkflowContractServiceDeleteResponse
-	12, // 22: controlplane.v1.WorkflowContractService.Apply:output_type -> controlplane.v1.WorkflowContractServiceApplyResponse
-	17, // [17:23] is the sub-list for method output_type
-	11, // [11:17] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	16, // 3: controlplane.v1.WorkflowContractServiceUpdateRequest.project_reference:type_name -> controlplane.v1.IdentityReference
+	13, // 4: controlplane.v1.WorkflowContractServiceUpdateResponse.result:type_name -> controlplane.v1.WorkflowContractServiceUpdateResponse.Result
+	14, // 5: controlplane.v1.WorkflowContractServiceDescribeResponse.result:type_name -> controlplane.v1.WorkflowContractServiceDescribeResponse.Result
+	15, // 6: controlplane.v1.WorkflowContractServiceApplyResponse.result:type_name -> controlplane.v1.WorkflowContractItem
+	0,  // 7: controlplane.v1.WorkflowContractServiceApplyResponse.status:type_name -> controlplane.v1.WorkflowContractServiceApplyResponse.ApplyStatus
+	15, // 8: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
+	17, // 9: controlplane.v1.WorkflowContractServiceUpdateResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
+	15, // 10: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.contract:type_name -> controlplane.v1.WorkflowContractItem
+	17, // 11: controlplane.v1.WorkflowContractServiceDescribeResponse.Result.revision:type_name -> controlplane.v1.WorkflowContractVersionItem
+	1,  // 12: controlplane.v1.WorkflowContractService.List:input_type -> controlplane.v1.WorkflowContractServiceListRequest
+	3,  // 13: controlplane.v1.WorkflowContractService.Create:input_type -> controlplane.v1.WorkflowContractServiceCreateRequest
+	5,  // 14: controlplane.v1.WorkflowContractService.Update:input_type -> controlplane.v1.WorkflowContractServiceUpdateRequest
+	7,  // 15: controlplane.v1.WorkflowContractService.Describe:input_type -> controlplane.v1.WorkflowContractServiceDescribeRequest
+	9,  // 16: controlplane.v1.WorkflowContractService.Delete:input_type -> controlplane.v1.WorkflowContractServiceDeleteRequest
+	11, // 17: controlplane.v1.WorkflowContractService.Apply:input_type -> controlplane.v1.WorkflowContractServiceApplyRequest
+	2,  // 18: controlplane.v1.WorkflowContractService.List:output_type -> controlplane.v1.WorkflowContractServiceListResponse
+	4,  // 19: controlplane.v1.WorkflowContractService.Create:output_type -> controlplane.v1.WorkflowContractServiceCreateResponse
+	6,  // 20: controlplane.v1.WorkflowContractService.Update:output_type -> controlplane.v1.WorkflowContractServiceUpdateResponse
+	8,  // 21: controlplane.v1.WorkflowContractService.Describe:output_type -> controlplane.v1.WorkflowContractServiceDescribeResponse
+	10, // 22: controlplane.v1.WorkflowContractService.Delete:output_type -> controlplane.v1.WorkflowContractServiceDeleteResponse
+	12, // 23: controlplane.v1.WorkflowContractService.Apply:output_type -> controlplane.v1.WorkflowContractServiceApplyResponse
+	18, // [18:24] is the sub-list for method output_type
+	12, // [12:18] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_workflow_contract_proto_init() }
@@ -971,7 +1041,10 @@ func file_controlplane_v1_workflow_contract_proto_init() {
 	file_controlplane_v1_response_messages_proto_init()
 	file_controlplane_v1_shared_message_proto_init()
 	file_controlplane_v1_workflow_contract_proto_msgTypes[2].OneofWrappers = []any{}
-	file_controlplane_v1_workflow_contract_proto_msgTypes[4].OneofWrappers = []any{}
+	file_controlplane_v1_workflow_contract_proto_msgTypes[4].OneofWrappers = []any{
+		(*WorkflowContractServiceUpdateRequest_ProjectReference)(nil),
+		(*WorkflowContractServiceUpdateRequest_OrganizationScoped)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

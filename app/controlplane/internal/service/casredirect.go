@@ -308,5 +308,6 @@ func (s *CASRedirectService) setDownloadVerifierCookie(w http.ResponseWriter, fl
 		cookie.MaxAge = -1
 		cookie.Expires = time.Unix(1, 0)
 	}
+	// codeql[go/cookie-secure-not-set] Secure is true, and false only in development mode.
 	http.SetCookie(w, cookie)
 }

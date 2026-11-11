@@ -597,6 +597,7 @@ func (w *rewriter) redactLeaf(s, path string) string {
 	w.count += n
 
 	var out string
+	// codeql[go/unsafe-quoting] body is escaped by encodeStringBody, and the sink is a JSON decode.
 	if err := json.Unmarshal([]byte(`"`+body+`"`), &out); err != nil {
 		// A replacement cut through a JSON escape sequence. Drop the whole leaf
 		// rather than risk leaving part of the secret behind.

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -142,6 +143,69 @@ func TestFilterGenerated(t *testing.T) {
 		assert.Equal(t, 1, changes.FilesModified)
 		assert.Equal(t, 0, changes.FilesDeleted)
 	})
+}
+
+func TestSetAIGeneratedLines(t *testing.T) {
+	const genFile = "cmd/wire_gen.go"
+	isGenerated := func(path string) bool { return path == genFile }
+
+	testCases := []struct {
+		name                   string
+		ledger                 *state.AILineAttribution
+		isGenerated            func(string) bool
+		wantAdded, wantRemoved int
+	}{
+		{
+			// The agent wrote 10 lines and removed 3. Only some of them may
+			// reach a commit; the session still reports all of them (spec
+			// issue-3639, D-011).
+			name:        "reports all the lines of the agent edits, also the ones that no commit holds",
+			ledger:      &state.AILineAttribution{Generated: map[string]state.LineTotals{testFile: {Added: 10, Removed: 3}}},
+			isGenerated: isGenerated,
+			wantAdded:   10,
+			wantRemoved: 3,
+		},
+		{
+			// A shell command such as wire rewrote a generated file (PFM-8130).
+			name: "leaves out the lines of generated files",
+			ledger: &state.AILineAttribution{Generated: map[string]state.LineTotals{
+				testFile: {Added: 2, Removed: 1},
+				genFile:  {Added: 1334405, Removed: 1638639},
+			}},
+			isGenerated: isGenerated,
+			wantAdded:   2,
+			wantRemoved: 1,
+		},
+		{
+			name:        "a session that changed only generated files reports no lines",
+			ledger:      &state.AILineAttribution{Generated: map[string]state.LineTotals{genFile: {Added: 5, Removed: 1}}},
+			isGenerated: isGenerated,
+		},
+		{
+			name: "a nil matcher leaves out no file",
+			ledger: &state.AILineAttribution{Generated: map[string]state.LineTotals{
+				testFile: {Added: 2},
+				genFile:  {Added: 5, Removed: 1},
+			}},
+			wantAdded:   7,
+			wantRemoved: 1,
+		},
+		{
+			name:        "a session with no ledger reports no lines",
+			isGenerated: isGenerated,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			changes := &aicodingsession.CodeChanges{AIGeneratedLinesAdded: 99, AIGeneratedLinesRemoved: 99}
+
+			SetAIGeneratedLines(changes, tc.ledger, tc.isGenerated)
+
+			assert.Equal(t, tc.wantAdded, changes.AIGeneratedLinesAdded)
+			assert.Equal(t, tc.wantRemoved, changes.AIGeneratedLinesRemoved)
+		})
+	}
 }
 
 func writeGitAttributes(t *testing.T, dir, content string) {

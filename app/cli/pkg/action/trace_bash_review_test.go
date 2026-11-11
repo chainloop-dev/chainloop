@@ -172,5 +172,6 @@ func TestCommitLifecycle_BashRestageDoesNotClaimPreStagedHumanLines(t *testing.T
 	require.NotNil(t, open)
 	require.Equal(t, state.LineCounts{attribution.Fingerprint("AI added line"): 1}, open.Added,
 		"restaging must not credit the earlier human addition to Bash")
-	require.Equal(t, 1, attr.GeneratedAdded)
+	added, _ := attr.GeneratedLines(nil)
+	require.Equal(t, 1, added)
 }

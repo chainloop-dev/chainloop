@@ -28,6 +28,7 @@ import (
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/pkg/entdriver"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 	"github.com/google/wire"
@@ -76,7 +77,11 @@ type Data struct {
 // NOTE: this is different than running migrations
 // this method is used to load the schema into the DB for TESTING!
 func (data *Data) SchemaLoad() error {
-	return data.DB.Schema.Create(context.Background())
+	// ent's Atlas schema code casts the rows handle to *sql.Rows, which the
+	// stack-recording rows of StackDriver are not, so load with a plain driver.
+	plain := ent.NewClient(ent.Driver(entsql.OpenDB(dialect.Postgres, data.SQLDB)))
+
+	return plain.Schema.Create(context.Background())
 }
 
 // NewData .
@@ -140,7 +145,7 @@ func initSQLDatabase(c *config.DatabaseConfig, tp trace.TracerProvider, log *log
 		db.SetConnMaxIdleTime(t)
 	}
 
-	drv := entsql.OpenDB(dialect.Postgres, db)
+	drv := entdriver.NewStackDriver(entsql.OpenDB(dialect.Postgres, db))
 	client := ent.NewClient(ent.Driver(drv))
 
 	// NOTE: We do not run migrations automatically anymore

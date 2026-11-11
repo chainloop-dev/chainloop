@@ -6,7 +6,8 @@ on:
       - "v*.*.*"
 
 # https://github.com/ossf/scorecard/blob/7ed886f1bd917d19cb9d6ce6c10e80e81fa31c39/docs/checks.md#token-permissions
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   release_gate:
@@ -21,8 +22,15 @@ jobs:
           persist-credentials: false
 
       - name: Install Chainloop
+        # The installer is pinned by digest, as in package_sandbox_kit.yaml.
+        # If dl.chainloop.dev publishes a new installer, re-pin with:
+        #   curl -sfL https://dl.chainloop.dev/cli/install.sh | sha256sum
+        env:
+          INSTALLER_SHA256: 6ebcdb8edc6f22c92b6ac31a363f7d60da6e04c60c4fadda44169f18492ba46e
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh -o /tmp/chainloop-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/chainloop-install.sh" | sha256sum -c -
+          bash /tmp/chainloop-install.sh
 
       - name: Run Release Gate Attestation
         run: |
@@ -66,8 +74,15 @@ jobs:
           cosign-release: "v2.2.3"
 
       - name: Install Chainloop
+        # The installer is pinned by digest, as in package_sandbox_kit.yaml.
+        # If dl.chainloop.dev publishes a new installer, re-pin with:
+        #   curl -sfL https://dl.chainloop.dev/cli/install.sh | sha256sum
+        env:
+          INSTALLER_SHA256: 6ebcdb8edc6f22c92b6ac31a363f7d60da6e04c60c4fadda44169f18492ba46e
         run: |
-          curl -sfL https://dl.chainloop.dev/cli/install.sh | bash -s
+          curl -sfL https://dl.chainloop.dev/cli/install.sh -o /tmp/chainloop-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/chainloop-install.sh" | sha256sum -c -
+          bash /tmp/chainloop-install.sh
 
       - name: Checkout
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
@@ -104,12 +119,20 @@ jobs:
         uses: docker/setup-qemu-action@53851d14592bedcffcf25ea515637cff71ef929a # v3.3.0
 
       - name: Install Syft
+        env:
+          INSTALLER_SHA256: 709ae9171e3d44e456a111943c341d0bf0fd2176b41af124d019823a70c34a3f
         run: |
-          # Install Syft
-          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/c43f4fb416c34c1c4b3997373689d8d4c0fb9b36/install.sh -O - | sh -s -- -b /usr/local/bin
+          wget --no-verbose https://raw.githubusercontent.com/anchore/syft/c43f4fb416c34c1c4b3997373689d8d4c0fb9b36/install.sh -O /tmp/syft-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/syft-install.sh" | sha256sum -c -
+          sh /tmp/syft-install.sh -b /usr/local/bin
 
       - name: Install Grype
-        run: curl -sSfL https://raw.githubusercontent.com/anchore/grype/fe186c3e986dda3cb4c5e90798f82c52aefcb4b8/install.sh | sh -s -- -b /usr/local/bin
+        env:
+          INSTALLER_SHA256: 8646f06a90b10ca64992c1809b4aa00c44e30b4f551f63c309b0b0ab66873556
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/fe186c3e986dda3cb4c5e90798f82c52aefcb4b8/install.sh -o /tmp/grype-install.sh
+          echo "${INSTALLER_SHA256}  /tmp/grype-install.sh" | sha256sum -c -
+          sh /tmp/grype-install.sh -b /usr/local/bin
 
       - name: Run GoReleaser
         id: release
@@ -191,6 +214,14 @@ jobs:
             chainloop attestation add --name $material_name --value $entry --kind ARTIFACT --attestation-id ${{ env.ATTESTATION_ID }}
           done
 
+      - name: Publish release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          # goreleaser creates the release as a draft. Publish it after all
+          # assets are uploaded: an immutable release cannot get new assets.
+          gh release edit "$RELEASE_TAG" --draft=false --latest
+
       - name: Include source code on attestation
         env:
           ATTESTATION_ID: ${{ steps.init_attestation.outputs.attestation_id }}
@@ -255,26 +286,6 @@ jobs:
           echo "current_version=$CURRENT_VERSION"
           echo "target_version=$TARGET_VERSION"
           chainloop project version update --project chainloop --name "$CURRENT_VERSION" --new-name "$TARGET_VERSION" || true
-
-      - name: Add attestation link to release notes
-        if: ${{ success() }}
-        env:
-          ATTESTATION_SHA: ${{ steps.attestation_push.outputs.attestation_sha }}
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          chainloop_release_url="## Chainloop Attestation"$'\n'"[View the attestation of this release](https://app.chainloop.dev/attestation/${{ env.ATTESTATION_SHA }})"
-          current_notes=$(gh release view $RELEASE_TAG --json body -q '.body')
-
-          if echo "$current_notes" | grep -q "## Chainloop Attestation"; then
-            # Replace the existing Chainloop Attestation section with the new URL
-            modified_notes=$(echo "$current_notes" | sed -E "s|## Chainloop Attestation[^\n]*\n\[View the attestation of this release\]\(https://app\.chainloop\.dev/attestation/[^\)]*\)|$chainloop_release_url|")
-          else
-            # Add the Chainloop Attestation section to the top
-            modified_notes="$chainloop_release_url"$'\n\n'"$current_notes"
-          fi
-
-          # Update the release notes and ignore if it fails since we might be lacking permissions to update the release notes
-          gh release edit $RELEASE_TAG -n "$modified_notes" || echo -n "Not enough permissions to edit the release notes. Skipping..."
 
       - name: Mark attestation as failed
         if: ${{ failure() }}

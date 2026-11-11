@@ -50,10 +50,10 @@ dex:
   staticUsers:
     - email: "john@chainloop.local"
       # password: "password"
-      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W" # development-only user # nosemgrep
     - email: "sarah@chainloop.local"
       # password: "password"
-      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W" # development-only user # nosemgrep
   ## @param dex.image.registry [default: REGISTRY_NAME] Dex image registry
   ## @param dex.image.repository [default: REPOSITORY_NAME/dex] Dex image repository
   ## @skip dex.image.tag Dex image tag (immutable tags are recommended)

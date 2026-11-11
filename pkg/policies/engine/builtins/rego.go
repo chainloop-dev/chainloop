@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,6 +31,10 @@ const discoverBuiltinName = "chainloop.discover"
 //
 //	chainloop.discover(digest, kind)
 //
+// The result holds the references of all the pages of the API, up to a cap.
+// When the read stops before the last page, the result has "truncated": true. This happens
+// when the cap is reached, or when the control plane repeats its next cursor.
+//
 // For instance, to get the references for an CONTAINER_IMAGE material, and fail if any of them is an attestation with policy violations:
 // ```
 //
@@ -55,15 +59,13 @@ func RegisterDiscoverBuiltin(conn *grpc.ClientConn) error {
 				types.Named("digest", types.S).Description("digest of the artifact to discover"),
 				types.Named("kind", types.S).Description("optional filter by kind to disambiguate"),
 			),
-			types.Named("response", types.A).Description("response object as in the `chainloop discover` CLI output"),
+			types.Named("response", types.A).Description("response object as in the `chainloop discover` CLI output, with the references of all pages and a truncated field"),
 		),
 		Nondeterministic: true,
-	}, getDiscoverRegoImpl(conn))
+	}, getDiscoverRegoImpl(NewDiscoverService(conn)))
 }
 
-func getDiscoverRegoImpl(conn *grpc.ClientConn) topdown.BuiltinFunc {
-	discoverSvc := NewDiscoverService(conn)
-
+func getDiscoverRegoImpl(discoverSvc *DiscoverService) topdown.BuiltinFunc {
 	return func(bctx topdown.BuiltinContext, operands []*ast.Term, iter func(*ast.Term) error) error {
 		if len(operands) < 1 {
 			return errors.New("need at least one operand")
@@ -92,8 +94,13 @@ func getDiscoverRegoImpl(conn *grpc.ClientConn) topdown.BuiltinFunc {
 			return fmt.Errorf("failed to call discover endpoint: %w", err)
 		}
 
+		// no connection to the control plane
+		if resp == nil {
+			return iter(ast.NullTerm())
+		}
+
 		// call the iterator with the output value
-		return iter(ast.NewTerm(ast.MustInterfaceToValue(resp.Result)))
+		return iter(ast.NewTerm(ast.MustInterfaceToValue(resp)))
 	}
 }
 

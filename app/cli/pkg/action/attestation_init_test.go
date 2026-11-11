@@ -24,6 +24,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -424,4 +425,40 @@ func setupGitHubPREnv(t *testing.T) {
 	t.Setenv("GITHUB_SHA", "1234567890")
 	t.Setenv("RUNNER_NAME", "chainloop-runner")
 	t.Setenv("RUNNER_OS", "linux")
+}
+
+func TestIgnoredGateOptOutsWarning(t *testing.T) {
+	gateFalse := []*v1.PolicyAttachment{{Policy: &v1.PolicyAttachment_Ref{Ref: "sbom-banned-licenses"}, Gate: proto.Bool(false)}}
+
+	testCases := []struct {
+		name         string
+		enforced     bool
+		contractGate bool
+		want         string
+	}{
+		{name: "no warning when nothing enforces"},
+		{
+			name:     "organization",
+			enforced: true,
+			want:     "gate: false has no effect on spec.policies.gate, sbom-banned-licenses because policies are enforced by the organization, and enforcement cannot be relaxed",
+		},
+		{
+			name:         "contract",
+			enforced:     true,
+			contractGate: true,
+			want:         "gate: false has no effect on sbom-banned-licenses because policies are enforced by the contract, and enforcement cannot be relaxed",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			state := &craftingv1.CraftingState{
+				Attestation: &craftingv1.Attestation{BlockOnPolicyViolation: tc.enforced},
+				Schema: &craftingv1.CraftingState_SchemaV2{SchemaV2: &v1.CraftingSchemaV2{
+					Spec: &v1.CraftingSchemaV2Spec{Policies: &v1.Policies{Gate: proto.Bool(tc.contractGate), Materials: gateFalse}},
+				}},
+			}
+			assert.Equal(t, tc.want, ignoredGateOptOutsWarning(state))
+		})
+	}
 }

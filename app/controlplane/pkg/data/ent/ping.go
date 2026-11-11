@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,9 +15,18 @@
 
 package ent
 
-import "entgo.io/ent/dialect/sql"
+import (
+	"database/sql"
+	"fmt"
+)
 
 func (c *Client) Ping() error {
-	db := c.driver.(*sql.Driver).DB()
-	return db.Ping()
+	// The driver can be wrapped (for example to record error stacks), so ask
+	// for the method instead of the concrete *sql.Driver type.
+	d, ok := c.driver.(interface{ DB() *sql.DB })
+	if !ok {
+		return fmt.Errorf("ping: driver %T does not expose a database", c.driver)
+	}
+
+	return d.DB().Ping()
 }

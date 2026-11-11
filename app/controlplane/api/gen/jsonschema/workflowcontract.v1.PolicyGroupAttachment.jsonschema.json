@@ -5,7 +5,7 @@
   "description": "Represents a group attachment in a contract",
   "properties": {
     "gate": {
-      "description": "Controls whether policy violations act as a gate for this group.\n - true: policy violations are blocking for this policy group\n - false: policy violations are non-blocking for this policy group\n - unset: inherit organization-level default behavior",
+      "description": "Controls whether policy violations act as a gate for this group. Enforcement only tightens.\n - true: policy violations are blocking for every policy of this group\n - false or unset: inherit the organization and contract enforcement, and the policy `gate` values.\n   It does not turn off enforcement set at those levels.",
       "type": "boolean"
     },
     "ref": {

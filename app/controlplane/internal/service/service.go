@@ -425,8 +425,12 @@ func (s *service) visibleProjects(ctx context.Context) []uuid.UUID {
 
 	projects := make([]uuid.UUID, 0)
 
-	// 2 - We are a user
+	// 2 - We are a user. Without a membership the user reaches no project.
 	m := entities.CurrentMembership(ctx)
+	if m == nil {
+		return projects
+	}
+
 	for _, rm := range m.Resources {
 		if rm.ResourceType == authz.ResourceTypeProject {
 			projects = append(projects, rm.ResourceID)

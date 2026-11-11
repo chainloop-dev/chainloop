@@ -151,8 +151,10 @@ type Maintainer struct {
 }
 
 type Auth struct {
-	ID   string `json:"id"`
-	Type string `json:"type"`
+	ID      string `json:"id"`
+	Type    string `json:"type"`
+	Name    string `json:"name,omitempty"`
+	Subject string `json:"subject,omitempty"`
 }
 
 type CASBackend struct {
@@ -192,8 +194,10 @@ func predicateCommon(builderInfo *builderInfo, att *v1.Attestation) *ProvenanceP
 
 	if att.Auth != nil {
 		auth = &Auth{
-			ID:   att.Auth.GetId(),
-			Type: att.Auth.GetType().String(),
+			ID:      att.Auth.GetId(),
+			Type:    att.Auth.GetType().String(),
+			Name:    att.Auth.GetName(),
+			Subject: att.Auth.GetSubject(),
 		}
 	}
 

@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
@@ -41,6 +42,7 @@ var all = []trace.Provider{
 	opencode.New(),
 	pi.New(),
 	codex.New(),
+	copilot.New(),
 }
 
 // byName is a lookup-optimized view of all, built once at init.

@@ -29,6 +29,7 @@ import (
 	"code.cloudfoundry.org/bytefmt"
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/api/option"
 )
@@ -124,7 +125,7 @@ func (i *Integration) Register(ctx context.Context, req *sdk.RegistrationRequest
 	// Check that the credentials are valid and the bucket exists
 	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(request.Credentials)))
 	if err != nil {
-		return nil, fmt.Errorf("creating storage client: %w", err)
+		return nil, errorsx.Errorf("creating storage client: %w", err)
 	}
 
 	_, err = loadBucket(ctx, client, request.Bucket)
@@ -175,7 +176,7 @@ func (i *Integration) Execute(ctx context.Context, req *sdk.ExecutionRequest) er
 
 	client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(req.RegistrationInfo.Credentials.Password)))
 	if err != nil {
-		return fmt.Errorf("creating storage client: %w", err)
+		return errorsx.Errorf("creating storage client: %w", err)
 	}
 
 	bucket, err := loadBucket(ctx, client, registrationConfig.Bucket)
@@ -228,7 +229,7 @@ const pathPrefix = "chainloop"
 func uploadToBucket(ctx context.Context, bucket *storage.BucketHandle, filename string, content []byte, md *sdk.ChainloopMetadata, logger *log.Helper) error {
 	bucketInfo, err := bucket.Attrs(ctx)
 	if err != nil {
-		return fmt.Errorf("getting bucket info: %w", err)
+		return errorsx.Errorf("getting bucket info: %w", err)
 	}
 
 	buf := bytes.NewBuffer(content)
@@ -255,7 +256,7 @@ func uploadToBucket(ctx context.Context, bucket *storage.BucketHandle, filename 
 	}
 
 	if _, err := io.Copy(w, buf); err != nil {
-		return fmt.Errorf("writing to the bucket: %w", err)
+		return errorsx.Errorf("writing to the bucket: %w", err)
 	}
 
 	logger.Infow("msg", "uploaded to the bucket", "file", filename, "bucket", bucketInfo.Name, "size", bytefmt.ByteSize(fileSize))
@@ -280,13 +281,13 @@ func loadBucket(ctx context.Context, client *storage.Client, bucket string) (*st
 			return nil, fmt.Errorf("the bucket %s does not exist", bucket)
 		}
 
-		return nil, fmt.Errorf("checking the bucket: %w", err)
+		return nil, errorsx.Errorf("checking the bucket: %w", err)
 	}
 
 	// Write test file to make sure credentials have write permissions
 	testFile := b.Object("chainloop-test-write")
 	if err := testFile.NewWriter(ctx).Close(); err != nil {
-		return nil, fmt.Errorf("we can't write to the bucket %s: %w", bucket, err)
+		return nil, errorsx.Errorf("we can't write to the bucket %s: %w", bucket, err)
 	}
 	_ = testFile.Delete(ctx)
 

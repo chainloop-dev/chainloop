@@ -262,7 +262,6 @@ type evidenceAccumulator struct {
 	outputTokens    int
 	cacheRead       int
 	cacheWrite      int
-	totalTokens     int
 	totalCost       float64
 	models          map[string]struct{}
 	primaryModel    string
@@ -307,6 +306,12 @@ func buildEvidence(parsed *parsedSession, agentVersion string) *aicodingsession.
 	if parsed.TruncatedLine > 0 {
 		acc.warnings = append(acc.warnings, fmt.Sprintf("ignored truncated final Pi session line %d", parsed.TruncatedLine))
 	}
+	totalTokens := 0
+	if acc.outputTokens > int(^uint(0)>>1)-acc.inputTokens {
+		acc.warnings = append(acc.warnings, "Pi input + output token total overflows; total_tokens omitted")
+	} else {
+		totalTokens = acc.inputTokens + acc.outputTokens
+	}
 
 	endedAt := parsed.StartedAt
 	if len(parsed.Selected) > 0 {
@@ -336,7 +341,7 @@ func buildEvidence(parsed *parsedSession, agentVersion string) *aicodingsession.
 		Usage: &aicodingsession.Usage{
 			InputTokens:              acc.inputTokens,
 			OutputTokens:             acc.outputTokens,
-			TotalTokens:              acc.totalTokens,
+			TotalTokens:              totalTokens,
 			CacheReadInputTokens:     acc.cacheRead,
 			CacheCreationInputTokens: acc.cacheWrite,
 			EstimatedCostUSD:         roundedCost(acc.totalCost),
@@ -449,7 +454,10 @@ func (a *evidenceAccumulator) addUsage(line int, message messageView) {
 	a.addInt(line, "output", usage["output"], &a.outputTokens)
 	a.addInt(line, "cacheRead", usage["cacheRead"], &a.cacheRead)
 	a.addInt(line, "cacheWrite", usage["cacheWrite"], &a.cacheWrite)
-	a.addInt(line, "totalTokens", usage["totalTokens"], &a.totalTokens)
+	// Retain diagnostics for invalid source totals, but never use them for
+	// evidence: Pi totals can include both disjoint cache categories.
+	var suppliedTotal int
+	a.addInt(line, "totalTokens", usage["totalTokens"], &suppliedTotal)
 
 	costRaw, exists := usage["cost"]
 	if !exists || isNull(costRaw) {

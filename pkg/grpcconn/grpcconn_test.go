@@ -327,3 +327,46 @@ func TestNewWithTokenProviderSendsTokenPerCall(t *testing.T) {
 
 	assert.Equal(t, []string{"Bearer token-1", "Bearer token-2"}, gotAuth)
 }
+
+func TestNewWithClientInterceptors(t *testing.T) {
+	lis, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+
+	srv := grpc.NewServer()
+	healthpb.RegisterHealthServer(srv, health.NewServer())
+	go func() { _ = srv.Serve(lis) }()
+	t.Cleanup(srv.Stop)
+
+	var unaryCalls, streamCalls int
+	unaryInterceptor := func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
+		unaryCalls++
+		return invoker(ctx, method, req, reply, cc, opts...)
+	}
+	streamInterceptor := func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		streamCalls++
+		return streamer(ctx, desc, cc, method, opts...)
+	}
+
+	conn, err := New(
+		lis.Addr().String(),
+		"",
+		WithInsecure(true),
+		WithUnaryInterceptors(unaryInterceptor),
+		WithStreamInterceptors(streamInterceptor),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = conn.Close() })
+
+	client := healthpb.NewHealthClient(conn)
+	_, err = client.Check(context.Background(), &healthpb.HealthCheckRequest{})
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+	stream, err := client.Watch(ctx, &healthpb.HealthCheckRequest{})
+	require.NoError(t, err)
+	require.NoError(t, stream.CloseSend())
+
+	assert.Equal(t, 1, unaryCalls)
+	assert.Equal(t, 1, streamCalls)
+}

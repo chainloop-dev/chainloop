@@ -32,6 +32,10 @@ type ParsedToken struct {
 	OrgID     string
 	OrgName   string
 	TokenType v1.Attestation_Auth_AuthType
+	// Name of the API token ("token_name" claim). Only set for API tokens.
+	Name string
+	// OIDC subject ("sub" claim). Only set for federated tokens.
+	Subject string
 }
 
 const (
@@ -93,12 +97,14 @@ func Parse(token string) (*ParsedToken, error) {
 	//    - Type: AUTH_TYPE_API_TOKEN
 	//    - ID: 'jti' claim (JWT ID)
 	//    - OrgID: 'org_id' claim
+	//    - Name: 'token_name' claim
 	// 2. User Tokens:
 	//    - Type: AUTH_TYPE_USER
 	//    - ID: 'user_id' claim
 	// 3. Federated Tokens:
 	//    - Type: AUTH_TYPE_FEDERATED
 	//    - ID: 'iss' claim (issuer URL)
+	//    - Subject: 'sub' claim
 	switch audience {
 	case apiTokenAudience:
 		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_API_TOKEN
@@ -111,6 +117,9 @@ func Parse(token string) (*ParsedToken, error) {
 		if orgName, ok := claims["org_name"].(string); ok {
 			pToken.OrgName = orgName
 		}
+		if tokenName, ok := claims["token_name"].(string); ok {
+			pToken.Name = tokenName
+		}
 	case userAudience:
 		pToken.TokenType = v1.Attestation_Auth_AUTH_TYPE_USER
 		if userID, ok := claims["user_id"].(string); ok {
@@ -122,6 +131,9 @@ func Parse(token string) (*ParsedToken, error) {
 			pToken.ID = issuer
 		} else {
 			return nil, nil
+		}
+		if subject, ok := claims["sub"].(string); ok {
+			pToken.Subject = subject
 		}
 	default:
 		return nil, nil

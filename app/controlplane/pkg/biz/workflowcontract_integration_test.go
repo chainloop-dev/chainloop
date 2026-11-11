@@ -141,6 +141,180 @@ func (s *workflowContractIntegrationTestSuite) TestUpdate() {
 	}
 }
 
+// Spec issue-3644: a contract converts between the organization level and a project level,
+// and keeps its identity, revisions and workflows.
+func (s *workflowContractIntegrationTestSuite) TestUpdateScope() {
+	ctx := context.Background()
+
+	toOrg := &biz.ContractScopeChange{}
+	toProject := func(p *biz.Project) *biz.ContractScopeChange {
+		return &biz.ContractScopeChange{ProjectID: &p.ID}
+	}
+
+	newContract := func(name string, projectID *uuid.UUID) *biz.WorkflowContract {
+		c, err := s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: name, ProjectID: projectID})
+		s.Require().NoError(err)
+		return c
+	}
+
+	attachWorkflow := func(contract *biz.WorkflowContract, project, name string) {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{OrgID: s.org.ID, Name: name, Project: project, ContractName: contract.Name})
+		s.Require().NoError(err)
+	}
+
+	testCases := []struct {
+		name string
+		// setup returns the contract to update
+		setup         func() *biz.WorkflowContract
+		scope         *biz.ContractScopeChange
+		rawSchema     []byte
+		wantErrMsg    []string
+		wantProjectID *uuid.UUID
+		wantRevision  int
+		wantWorkflows int
+		// the repository reports a change of level, with the levels before and after it
+		wantScopeChanged bool
+	}{
+		{
+			name:             "organization to project (R-001)",
+			wantScopeChanged: true,
+			setup:            func() *biz.WorkflowContract { return newContract("org-to-project", nil) },
+			scope:            toProject(s.p1),
+			wantProjectID:    &s.p1.ID,
+			wantRevision:     1,
+		},
+		{
+			name:             "project to organization (R-002)",
+			wantScopeChanged: true,
+			setup:            func() *biz.WorkflowContract { return newContract("project-to-org", &s.p1.ID) },
+			scope:            toOrg,
+			wantRevision:     1,
+		},
+		{
+			name:             "organization to project keeps the workflows of that project (R-003)",
+			wantScopeChanged: true,
+			setup: func() *biz.WorkflowContract {
+				c := newContract("org-to-project-with-workflows", nil)
+				attachWorkflow(c, s.p1.Name, "wf-in-p1")
+				return c
+			},
+			scope:         toProject(s.p1),
+			wantProjectID: &s.p1.ID,
+			wantRevision:  1,
+			wantWorkflows: 1,
+		},
+		{
+			name:             "project to organization keeps the workflows (R-003)",
+			wantScopeChanged: true,
+			setup: func() *biz.WorkflowContract {
+				c := newContract("project-to-org-with-workflows", &s.p1.ID)
+				attachWorkflow(c, s.p1.Name, "wf-in-p1-2")
+				return c
+			},
+			scope:         toOrg,
+			wantRevision:  1,
+			wantWorkflows: 1,
+		},
+		{
+			name: "organization to project fails when workflows of other projects use it (R-005)",
+			setup: func() *biz.WorkflowContract {
+				c := newContract("used-across-projects", nil)
+				attachWorkflow(c, s.p1.Name, "wf-a")
+				attachWorkflow(c, s.p2.Name, "wf-b")
+				return c
+			},
+			scope:      toProject(s.p1),
+			wantErrMsg: []string{"a-valid-project-2/wf-b"},
+		},
+		{
+			name:       "project to a different project fails (R-006)",
+			setup:      func() *biz.WorkflowContract { return newContract("project-to-project", &s.p1.ID) },
+			scope:      toProject(s.p2),
+			wantErrMsg: []string{"different project"},
+		},
+		{
+			name:          "project to the same project changes nothing (R-006)",
+			setup:         func() *biz.WorkflowContract { return newContract("project-to-same-project", &s.p1.ID) },
+			scope:         toProject(s.p1),
+			wantProjectID: &s.p1.ID,
+			wantRevision:  1,
+		},
+		{
+			name:         "organization to organization changes nothing (R-006)",
+			setup:        func() *biz.WorkflowContract { return newContract("org-to-org", nil) },
+			scope:        toOrg,
+			wantRevision: 1,
+		},
+		{
+			name:             "a new body in the same request creates a revision (R-007)",
+			wantScopeChanged: true,
+			setup:            func() *biz.WorkflowContract { return newContract("scope-and-body", nil) },
+			scope:            toProject(s.p1),
+			rawSchema:        []byte(`schemaVersion: v1`),
+			wantProjectID:    &s.p1.ID,
+			wantRevision:     2,
+		},
+		{
+			name:          "no scope keeps the scope (R-009)",
+			setup:         func() *biz.WorkflowContract { return newContract("no-scope", &s.p1.ID) },
+			rawSchema:     []byte(`schemaVersion: v1`),
+			wantProjectID: &s.p1.ID,
+			wantRevision:  2,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			contract := tc.setup()
+
+			got, err := s.WorkflowContract.Update(ctx, s.org.ID, contract.Name, &biz.WorkflowContractUpdateOpts{
+				RawSchema: tc.rawSchema,
+				Scope:     tc.scope,
+			})
+			if len(tc.wantErrMsg) > 0 {
+				s.Require().Error(err)
+				s.True(biz.IsErrValidation(err))
+				for _, msg := range tc.wantErrMsg {
+					s.ErrorContains(err, msg)
+				}
+
+				// The contract keeps its level
+				after, err := s.WorkflowContract.FindByIDInOrg(ctx, s.org.ID, contract.ID.String())
+				s.Require().NoError(err)
+				s.Equal(contract.ScopedEntity, after.ScopedEntity)
+				return
+			}
+			s.Require().NoError(err)
+
+			if tc.wantScopeChanged {
+				s.Require().NotNil(got.ScopeChange)
+				s.Equal(contract.ScopedEntity, got.ScopeChange.From)
+				s.Equal(got.Contract.ScopedEntity, got.ScopeChange.To)
+			} else {
+				s.Nil(got.ScopeChange)
+			}
+
+			s.Equal(contract.ID, got.Contract.ID)
+			s.Equal(contract.Name, got.Contract.Name)
+			s.Equal(tc.wantRevision, got.Version.Revision)
+			s.Len(got.Contract.WorkflowRefs, tc.wantWorkflows)
+
+			// Read it back to make sure the change was persisted
+			stored, err := s.WorkflowContract.FindByIDInOrg(ctx, s.org.ID, contract.ID.String())
+			s.Require().NoError(err)
+			for _, c := range []*biz.WorkflowContract{got.Contract, stored} {
+				if tc.wantProjectID == nil {
+					s.True(c.IsGlobalScoped())
+					continue
+				}
+
+				s.Require().True(c.IsProjectScoped())
+				s.Equal(*tc.wantProjectID, c.ScopedEntity.ID)
+			}
+		})
+	}
+}
+
 func (s *workflowContractIntegrationTestSuite) TestRevisionWouldChange() {
 	ctx := context.Background()
 
@@ -411,7 +585,7 @@ func TestWorkflowContractUseCase(t *testing.T) {
 type workflowContractIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
 	org, org2 *biz.Organization
-	p1        *biz.Project
+	p1, p2    *biz.Project
 
 	contractOrg1            *biz.WorkflowContract
 	contractScopedToProject *biz.WorkflowContract
@@ -430,7 +604,7 @@ func (s *workflowContractIntegrationTestSuite) SetupTest() {
 	s.p1, err = s.Project.Create(ctx, s.org.ID, "a-valid-project")
 	s.NoError(err)
 
-	p2, err := s.Project.Create(ctx, s.org.ID, "a-valid-project-2")
+	s.p2, err = s.Project.Create(ctx, s.org.ID, "a-valid-project-2")
 	s.NoError(err)
 
 	s.contractOrg1, err = s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "a-valid-contract"})
@@ -439,7 +613,7 @@ func (s *workflowContractIntegrationTestSuite) SetupTest() {
 	s.contractScopedToProject, err = s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "a-valid-contract-scoped-to-project", ProjectID: &s.p1.ID})
 	s.NoError(err)
 
-	_, err = s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "a-valid-contract-scoped-to-project-2", ProjectID: &p2.ID})
+	_, err = s.WorkflowContract.Create(ctx, &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "a-valid-contract-scoped-to-project-2", ProjectID: &s.p2.ID})
 	s.Require().NoError(err)
 }
 
@@ -492,4 +666,75 @@ func (s *workflowContractIntegrationTestSuite) TestListProjectFilterDistinguishe
 			s.ElementsMatch(tc.wantContracts, names)
 		})
 	}
+}
+
+// An organization-level contract is reachable by every caller, but its workflow references must
+// only name the workflows of the projects the caller can see (GHSA-hjc7-j8v3-8gh2). nil means RBAC
+// does not narrow the caller; an empty slice reaches no project.
+func (s *workflowContractIntegrationTestSuite) TestWorkflowReferencesFollowProjectVisibility() {
+	ctx := context.Background()
+
+	newWorkflow := func(name string, project *biz.Project) {
+		_, err := s.Workflow.Create(ctx, &biz.WorkflowCreateOpts{
+			OrgID: s.org.ID, Name: name, Project: project.Name, ContractID: s.contractOrg1.ID.String(),
+		})
+		s.Require().NoError(err)
+	}
+
+	newWorkflow("wf-p1", s.p1)
+	newWorkflow("wf-p2", s.p2)
+
+	refNames := func(c *biz.WorkflowContract) []string {
+		names := make([]string, 0, len(c.WorkflowRefs))
+		for _, ref := range c.WorkflowRefs {
+			names = append(names, ref.Name)
+		}
+		return names
+	}
+
+	testCases := []struct {
+		name     string
+		projects []uuid.UUID
+		want     []string
+	}{
+		{name: "nil means no RBAC filter", projects: nil, want: []string{"wf-p1", "wf-p2"}},
+		{name: "an empty slice reaches no project", projects: []uuid.UUID{}, want: []string{}},
+		{name: "a visible project reaches its own workflows", projects: []uuid.UUID{s.p1.ID}, want: []string{"wf-p1"}},
+		{name: "an unrelated project reaches no workflow", projects: []uuid.UUID{uuid.New()}, want: []string{}},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			contracts, err := s.WorkflowContract.List(ctx, s.org.ID, biz.WithProjectFilter(tc.projects))
+			s.Require().NoError(err)
+			var listed *biz.WorkflowContract
+			for _, c := range contracts {
+				if c.ID == s.contractOrg1.ID {
+					listed = c
+				}
+			}
+			s.Require().NotNil(listed)
+			s.ElementsMatch(tc.want, refNames(listed), "list")
+
+			found, err := s.WorkflowContract.FindByNameInOrg(ctx, s.org.ID, s.contractOrg1.Name, biz.WithReferencesInProjects(tc.projects))
+			s.Require().NoError(err)
+			s.ElementsMatch(tc.want, refNames(found), "find by name")
+
+			described, err := s.WorkflowContract.Describe(ctx, s.org.ID, s.contractOrg1.ID.String(), 0, biz.WithReferencesInProjects(tc.projects))
+			s.Require().NoError(err)
+			s.ElementsMatch(tc.want, refNames(described.Contract), "describe")
+
+			description := "updated"
+			updated, err := s.WorkflowContract.Update(ctx, s.org.ID, s.contractOrg1.Name,
+				&biz.WorkflowContractUpdateOpts{Description: &description}, biz.WithReferencesInProjects(tc.projects))
+			s.Require().NoError(err)
+			s.ElementsMatch(tc.want, refNames(updated.Contract), "update")
+		})
+	}
+
+	s.Run("delete still sees every workflow reference", func() {
+		err := s.WorkflowContract.Delete(ctx, s.org.ID, s.contractOrg1.ID.String())
+		s.Require().Error(err)
+		s.ErrorContains(err, "there are associated workflows")
+	})
 }

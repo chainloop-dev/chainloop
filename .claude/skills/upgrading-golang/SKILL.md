@@ -110,18 +110,12 @@ Extract the SHA256 digest from the output (format: `sha256:abc123...`).
 
 Pattern to replace:
 ```dockerfile
-# from: arigaio/atlas:X.XX.X
-# docker run arigaio/atlas@sha256:OLD_DIGEST version
-# atlas version vX.XX.X
-FROM arigaio/atlas@sha256:OLD_DIGEST as base
+FROM arigaio/atlas:X.XX.X@sha256:OLD_DIGEST as base
 ```
 
 With:
 ```dockerfile
-# from: arigaio/atlas:X.XX.X
-# docker run arigaio/atlas@sha256:NEW_DIGEST version
-# atlas version vX.XX.X
-FROM arigaio/atlas@sha256:NEW_DIGEST as base
+FROM arigaio/atlas:X.XX.X@sha256:NEW_DIGEST as base
 ```
 
 **7c. Update `./common.mk` for `make init`:**

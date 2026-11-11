@@ -159,12 +159,12 @@ func casCAPath() string { return viper.GetString("artifact-cas.api-ca") }
 func casInsecure() bool { return viper.GetBool("api-insecure") }
 
 // CheckAuth verifies the CLI can reach the control plane.
-func (e *AttestationExecutor) CheckAuth(_ context.Context) error {
+func (e *AttestationExecutor) CheckAuth(ctx context.Context) error {
 	_, err := NewConfigCurrentContext(&ActionsOpts{
 		CPConnection: e.actionOpts.CPConnection,
 		Logger:       e.actionOpts.Logger,
 		AuthTokenRaw: e.actionOpts.AuthTokenRaw,
-	}).Run()
+	}).Run(ctx)
 	if err != nil {
 		// The wrap keeps the gRPC status reachable with errors.As, so an
 		// authentication failure still renders through AuthErrorMessage;

@@ -173,7 +173,7 @@ func (w *Workspace) Git(ctx context.Context, args ...string) (string, error) {
 }
 
 func (w *Workspace) run(ctx context.Context, dir, name string, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, name, args...)
+	cmd := exec.CommandContext(ctx, name, args...) //nolint:gosec // fixed commands of the e2e harness // nosemgrep
 	cmd.Dir = dir
 	cmd.Env = w.Env
 	var stderr bytes.Buffer

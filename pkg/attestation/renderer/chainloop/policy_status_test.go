@@ -368,3 +368,39 @@ func TestPredicateToPolicyStatusSummary(t *testing.T) {
 		})
 	}
 }
+
+func TestPolicyEvaluationStatusEnforced(t *testing.T) {
+	testCases := []struct {
+		name        string
+		status      *PolicyEvaluationStatus
+		want        *PolicyEvaluationStatus
+		wantChanged bool
+	}{
+		{name: "nil status"},
+		{
+			name:   "already enforced",
+			status: &PolicyEvaluationStatus{Strategy: PolicyViolationBlockingStrategyEnforced, HasViolations: true, Blocked: true},
+			want:   &PolicyEvaluationStatus{Strategy: PolicyViolationBlockingStrategyEnforced, HasViolations: true, Blocked: true},
+		},
+		{
+			name:        "advisory with violations",
+			status:      &PolicyEvaluationStatus{Strategy: PolicyViolationBlockingStrategyAdvisory, HasViolations: true},
+			want:        &PolicyEvaluationStatus{Strategy: PolicyViolationBlockingStrategyEnforced, HasViolations: true, HasGates: true},
+			wantChanged: true,
+		},
+		{
+			name:        "advisory with a bypass",
+			status:      &PolicyEvaluationStatus{Strategy: PolicyViolationBlockingStrategyAdvisory, HasViolations: true, Bypassed: true},
+			want:        &PolicyEvaluationStatus{Strategy: PolicyViolationBlockingStrategyEnforced, HasViolations: true, HasGates: true, Bypassed: true},
+			wantChanged: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, changed := tc.status.Enforced()
+			assert.Equal(t, tc.want, got)
+			assert.Equal(t, tc.wantChanged, changed)
+		})
+	}
+}

@@ -199,7 +199,8 @@ func hasGatingViolation(violations []*action.PolicyViolation) bool {
 }
 
 func validatePolicyEnforcement(status *action.AttestationStatusResult, bypassPolicyCheck bool) error {
-	// Block if any of the policies has been configured as a gate. Entries
+	// Block if any of the policies acts as a gate. Organization and contract
+	// enforcement are already resolved into each evaluation's gate. Entries
 	// flagged Suppress are excluded from the gate count but remain in
 	// eval.Violations for CAS storage and ingestion (audit trail preserved).
 	for _, evaluations := range status.PolicyEvaluations {
@@ -213,16 +214,6 @@ func validatePolicyEnforcement(status *action.AttestationStatusResult, bypassPol
 				return NewGateError(eval.Name)
 			}
 		}
-	}
-
-	// Do a final check in case the operator has configured the attestation
-	// to be blocked on any policy violation.
-	if status.MustBlockOnPolicyViolations {
-		if bypassPolicyCheck {
-			logger.Warn().Msg(exceptionBypassPolicyCheck)
-			return nil
-		}
-
 	}
 
 	return nil

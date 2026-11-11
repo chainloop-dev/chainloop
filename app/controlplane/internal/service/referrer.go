@@ -41,7 +41,7 @@ func NewReferrerService(uc *biz.ReferrerUseCase, opts ...NewOpt) *ReferrerServic
 }
 
 func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerServiceDiscoverPrivateRequest) (*pb.ReferrerServiceDiscoverPrivateResponse, error) {
-	currentUser, currentToken, err := requireCurrentUserOrAPIToken(ctx)
+	currentUser, _, err := requireCurrentUserOrAPIToken(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -64,27 +64,20 @@ func (s *ReferrerService) DiscoverPrivate(ctx context.Context, req *pb.ReferrerS
 		extraFilters = append(extraFilters, biz.WithProjectScope(req.GetProjectName(), req.GetProjectVersion()))
 	}
 
-	// if we are logged in as user we find the referrer from the user
-	// otherwise for the current organization associated with the API token
+	orgUUID, err := uuid.Parse(currentOrg.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid org UUID: %w", err)
+	}
+
+	// Discovery is always limited to the current organization, with the project visibility of
+	// the caller in it (see GetFromRootUser for users)
 	var referrer *biz.StoredReferrer
 	var nextCursor string
 	if currentUser != nil {
-		referrer, nextCursor, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID, paginationOpts, extraFilters...)
-	} else if currentToken != nil {
-		var orgUUID uuid.UUID
-		orgUUID, err = uuid.Parse(currentOrg.ID)
-		if err != nil {
-			return nil, fmt.Errorf("invalid org UUID: %w", err)
-		}
-
-		// Apply RBAC visibility for api tokens (only for the current organization)
-		orgsProjectsMap := make(map[uuid.UUID][]uuid.UUID)
-		visibleProjects := s.visibleProjects(ctx)
-		if visibleProjects != nil {
-			orgsProjectsMap[orgUUID] = visibleProjects
-		}
-
-		referrer, nextCursor, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID}, orgsProjectsMap, paginationOpts, extraFilters...)
+		referrer, nextCursor, err = s.referrerUC.GetFromRootUser(ctx, req.GetDigest(), req.GetKind(), currentUser.ID, orgUUID, paginationOpts, extraFilters...)
+	} else {
+		referrer, nextCursor, err = s.referrerUC.GetFromRoot(ctx, req.GetDigest(), req.GetKind(), []uuid.UUID{orgUUID},
+			s.rbacScopesForOrg(ctx, orgUUID).ProjectIDsByOrg(), paginationOpts, extraFilters...)
 	}
 	if err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)

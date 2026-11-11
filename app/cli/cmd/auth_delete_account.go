@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ func newAuthDeleteAccountCmd() *cobra.Command {
 		Short: "delete your account",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Get user information to make sure the user knows the account she is deleting
-			contextResp, err := action.NewConfigCurrentContext(ActionOpts).Run()
+			contextResp, err := action.NewConfigCurrentContext(ActionOpts).Run(cmd.Context())
 			if err != nil {
 				return err
 			}

@@ -34,8 +34,8 @@ chainloop apply -f ./contracts/
 Options
 
 ```
--f, --file string   path to a YAML file or directory
--h, --help          help for apply
+-f, --file string         path to a YAML file or directory
+-h, --help[=true|false]   help for apply
 ```
 
 Options inherited from parent commands
@@ -46,13 +46,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop artifact
@@ -62,7 +62,7 @@ Download or upload Artifacts to the CAS
 Options
 
 ```
--h, --help   help for artifact
+-h, --help[=true|false]   help for artifact
 ```
 
 Options inherited from parent commands
@@ -73,13 +73,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop artifact download
@@ -93,10 +93,10 @@ chainloop artifact download [flags]
 Options
 
 ```
--d, --digest string   digest of the file to download
--h, --help            help for download
---output file     The file to write a single asset to (use "-" to write to standard output
---path string     download path, default to current directory
+-d, --digest string       digest of the file to download
+-h, --help[=true|false]   help for download
+--output file         The file to write a single asset to (use "-" to write to standard output
+--path string         download path, default to current directory
 ```
 
 Options inherited from parent commands
@@ -107,12 +107,12 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop artifact help
@@ -131,7 +131,7 @@ chainloop artifact help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -142,13 +142,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop artifact upload
@@ -162,8 +162,8 @@ chainloop artifact upload [flags]
 Options
 
 ```
--f, --file string   path to file to upload
--h, --help          help for upload
+-f, --file string         path to file to upload
+-h, --help[=true|false]   help for upload
 ```
 
 Options inherited from parent commands
@@ -174,13 +174,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop attestation
@@ -196,9 +196,9 @@ Refer to https://docs.chainloop.dev/getting-started/attestation-crafting
 Options
 
 ```
---graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
--h, --help                      help for attestation
---local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--graceful-exit[=true|false]   exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
+-h, --help[=true|false]            help for attestation
+--local-state-path string      path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
 ```
 
 Options inherited from parent commands
@@ -209,13 +209,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop attestation add
@@ -261,40 +261,40 @@ Options
 
 ```
 --annotation strings                   additional annotation in the format of key=value
---append                               reserved for a future release: will control whether --policy-input and --policy-input-from-file append to (rather than replace) the contract-declared value; has no effect yet
+--append[=true|false]                  reserved for a future release: will control whether --policy-input and --policy-input-from-file append to (rather than replace) the contract-declared value; has no effect yet
 --attestation-id string                Unique identifier of the in-progress attestation
--h, --help                                 help for add
---kind string                          kind of the material to be recorded: ["ARTIFACT" "ASYNCAPI_SPEC" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CERTCC_DRANZER" "CHAINLOOP_AI_AGENT_CONFIG" "CHAINLOOP_AI_CODING_SESSION" "CHAINLOOP_AI_SECURITY_CONTEXT" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CHECKMARX_JSON" "COBERTURA_XML" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "GITLEAKS_JSON" "GRAPHQL_SPEC" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENAPI_SPEC" "OPENVEX" "OSSF_SCORECARD_JSON" "OVERSECURED_JSON" "PITEST_XML" "RADAMSA_CRASHES" "RADAMSA_REPORT" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "SYSINTERNALS_ACCESSCHK" "SYSINTERNALS_SIGCHECK" "TRUFFLEHOG_JSON" "TWISTCLI_SCAN_JSON" "YELP_DETECT_SECRETS_BASELINE" "ZAP_DAST_ZIP"]
+-h, --help[=true|false]                    help for add
+--kind string                          kind of the material to be recorded: ["ARTIFACT" "ASYNCAPI_SPEC" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CERTCC_DRANZER" "CHAINLOOP_AI_AGENT_CONFIG" "CHAINLOOP_AI_CODING_SESSION" "CHAINLOOP_AI_SECURITY_CONTEXT" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CHECKMARX_JSON" "COBERTURA_XML" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "GITLEAKS_JSON" "GRAPHQL_SPEC" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "MSBUILD_LOG" "OPENAPI_SPEC" "OPENVEX" "OSSF_SCORECARD_JSON" "OVERSECURED_JSON" "PITEST_XML" "RADAMSA_CRASHES" "RADAMSA_REPORT" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "SYSINTERNALS_ACCESSCHK" "SYSINTERNALS_SIGCHECK" "TRUFFLEHOG_JSON" "TWISTCLI_SCAN_JSON" "YELP_DETECT_SECRETS_BASELINE" "ZAP_DAST_ZIP"]
 --max-extract-entries int              max number of files to extract when --value is an archive (default 10000)
 --max-extract-size string              max total uncompressed size to extract when --value is an archive (default "1GiB")
 --name string                          name of the material as shown in the contract
---no-strict-validation                 skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC, OSSF_SCORECARD_JSON)
+--no-strict-validation[=true|false]    skip strict schema validation for structured materials (SBOM_CYCLONEDX_JSON, OPENAPI_SPEC, ASYNCAPI_SPEC, OSSF_SCORECARD_JSON)
 --policy-input stringArray             set a policy input to a literal value that REPLACES (overrides) any contract-declared value for the input, in the format [<policy>:]<input>=<value> (e.g. min_iterations=10); use this to override a scalar input at run time; an optional <policy>: prefix scopes it to a single policy (matched by name or ref), otherwise it applies to every declaring policy; repeatable.
 --policy-input-from-file stringArray   feed a policy input from a column of a CSV or JSON file, in the format [<policy>:]<input>=<file>[:<column>] (e.g. ignored_paths=exception.csv:Path); the values are APPENDED to any contract-declared value; an optional <policy>: prefix scopes the input to a single policy (matched by name or ref), otherwise it applies to every declaring policy; <column> is a single top-level column/field name and defaults to the input name; repeatable. The file is also recorded as EVIDENCE.
 --registry-password string             registry password, ($CHAINLOOP_REGISTRY_PASSWORD)
 --registry-server string               OCI repository server, ($CHAINLOOP_REGISTRY_SERVER)
 --registry-username string             registry username, ($CHAINLOOP_REGISTRY_USERNAME)
---skip-secret-redaction                store evidence exactly as captured, without redacting detected secrets first (CHAINLOOP_AI_CODING_SESSION). Recorded in the attestation so policies can reject it
+--skip-secret-redaction[=true|false]   store evidence exactly as captured, without redacting detected secrets first (CHAINLOOP_AI_CODING_SESSION). Recorded in the attestation so policies can reject it
 --value string                         value to be recorded
 ```
 
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
---artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
--c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
---control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
---local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
---max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
--n, --org string                organization name
--o, --output string             Output format, valid options are json and table (default "table")
--t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+--artifact-cas string          URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string       CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string                Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string         URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string      CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug[=true|false]           Enable debug/verbose logging mode
+--graceful-exit[=true|false]   exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
+-i, --insecure[=true|false]        Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--local-state-path string      path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int        Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                   organization name
+-o, --output string                Output format, valid options are json and table (default "table")
+-t, --token string                 API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes[=true|false]             Skip confirmation
 ```
 
 ### chainloop attestation help
@@ -313,26 +313,26 @@ chainloop attestation help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
---artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
--c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
---control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
---local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
---max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
--n, --org string                organization name
--o, --output string             Output format, valid options are json and table (default "table")
--t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+--artifact-cas string          URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string       CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string                Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string         URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string      CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug[=true|false]           Enable debug/verbose logging mode
+--graceful-exit[=true|false]   exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
+-i, --insecure[=true|false]        Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--local-state-path string      path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int        Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                   organization name
+-o, --output string                Output format, valid options are json and table (default "table")
+-t, --token string                 API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes[=true|false]             Skip confirmation
 ```
 
 ### chainloop attestation init
@@ -346,40 +346,40 @@ chainloop attestation init [flags]
 Options
 
 ```
---collectors strings      comma-separated list of additional collectors to enable (e.g. aiconfig)
---contract string         name of an existing contract or the path/URL to a contract file, to attach it to the auto-created workflow (it doesn't update an existing one)
---contract-revision int   revision of the contract to retrieve, "latest" by default
---dry-run                 do not record attestation in the control plane, useful for development
---existing-version        return an error if the version doesn't exist in the project
--h, --help                    help for init
---latest-version          use the latest existing project version instead of specifying one
---mark-latest             explicitly mark the project version as latest (default: automatic for new versions; use =false to skip promotion) (default true)
---pr                      mark this attestation as a pull/merge request build (sets the chainloop.dev/is-pull-request annotation; auto-detected from CI env if not set)
---project string          name of the project of this workflow
---release                 promote the provided version as a release
---remote-state            Store the attestation state remotely
--f, --replace                 replace any existing in-progress attestation
---version string          project version, i.e 0.1.0
---workflow string         name of the workflow to run the attestation
+--collectors strings              comma-separated list of additional collectors to enable (e.g. aiconfig)
+--contract string                 name of an existing contract or the path/URL to a contract file, to attach it to the auto-created workflow (it doesn't update an existing one)
+--contract-revision int           revision of the contract to retrieve, "latest" by default
+--dry-run[=true|false]            do not record attestation in the control plane, useful for development
+--existing-version[=true|false]   return an error if the version doesn't exist in the project
+-h, --help[=true|false]               help for init
+--latest-version[=true|false]     use the latest existing project version instead of specifying one
+--mark-latest[=true|false]        explicitly mark the project version as latest (default: automatic for new versions; use =false to skip promotion) (default true)
+--pr[=true|false]                 mark this attestation as a pull/merge request build (sets the chainloop.dev/is-pull-request annotation; auto-detected from CI env if not set)
+--project string                  name of the project of this workflow
+--release[=true|false]            promote the provided version as a release
+--remote-state[=true|false]       Store the attestation state remotely
+-f, --replace[=true|false]            replace any existing in-progress attestation
+--version string                  project version, i.e 0.1.0
+--workflow string                 name of the workflow to run the attestation
 ```
 
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
---artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
--c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
---control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
---local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
---max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
--n, --org string                organization name
--o, --output string             Output format, valid options are json and table (default "table")
--t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+--artifact-cas string          URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string       CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string                Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string         URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string      CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug[=true|false]           Enable debug/verbose logging mode
+--graceful-exit[=true|false]   exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
+-i, --insecure[=true|false]        Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--local-state-path string      path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int        Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                   organization name
+-o, --output string                Output format, valid options are json and table (default "table")
+-t, --token string                 API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes[=true|false]             Skip confirmation
 ```
 
 ### chainloop attestation push
@@ -415,35 +415,35 @@ chainloop attestation push --annotation key=value,key2=value2
 Options
 
 ```
---annotation strings              additional annotation in the format of key=value
---attestation-id string           Unique identifier of the in-progress attestation
---bundle string                   output a Sigstore bundle to the provided path
---deactivate-ci-report            deactivate automatic attestation report to CI/CD platform
---exception-bypass-policy-check   do not fail this command on policy violations enforcement
--h, --help                            help for push
--k, --key string                      reference (path or env variable name) to the cosign or KMS key that will be used to sign the attestation
---signserver-ca-path string       custom CA to be used for SignServer TLS connection
---signserver-client-cert string   path to client certificate in PEM format for authenticated SignServer TLS connection
---signserver-client-pass string   certificate passphrase for authenticated SignServer TLS connection
+--annotation strings                           additional annotation in the format of key=value
+--attestation-id string                        Unique identifier of the in-progress attestation
+--bundle string                                output a Sigstore bundle to the provided path
+--deactivate-ci-report[=true|false]            deactivate automatic attestation report to CI/CD platform
+--exception-bypass-policy-check[=true|false]   do not fail this command on policy violations enforcement
+-h, --help[=true|false]                            help for push
+-k, --key string                                   reference (path or env variable name) to the cosign or KMS key that will be used to sign the attestation
+--signserver-ca-path string                    custom CA to be used for SignServer TLS connection
+--signserver-client-cert string                path to client certificate in PEM format for authenticated SignServer TLS connection
+--signserver-client-pass string                certificate passphrase for authenticated SignServer TLS connection
 ```
 
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
---artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
--c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
---control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
---local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
---max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
--n, --org string                organization name
--o, --output string             Output format, valid options are json and table (default "table")
--t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+--artifact-cas string          URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string       CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string                Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string         URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string      CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug[=true|false]           Enable debug/verbose logging mode
+--graceful-exit[=true|false]   exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
+-i, --insecure[=true|false]        Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--local-state-path string      path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int        Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                   organization name
+-o, --output string                Output format, valid options are json and table (default "table")
+-t, --token string                 API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes[=true|false]             Skip confirmation
 ```
 
 ### chainloop attestation reset
@@ -458,7 +458,7 @@ Options
 
 ```
 --attestation-id string   Unique identifier of the in-progress attestation
--h, --help                    help for reset
+-h, --help[=true|false]       help for reset
 --reason string           reset reason
 --trigger string          trigger for the reset, valid options are "failure" and "cancellation" (default "failure")
 ```
@@ -466,20 +466,20 @@ Options
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
---artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
--c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
---control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
---local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
---max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
--n, --org string                organization name
--o, --output string             Output format, valid options are json and table (default "table")
--t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+--artifact-cas string          URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string       CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string                Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string         URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string      CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug[=true|false]           Enable debug/verbose logging mode
+--graceful-exit[=true|false]   exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
+-i, --insecure[=true|false]        Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--local-state-path string      path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int        Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                   organization name
+-o, --output string                Output format, valid options are json and table (default "table")
+-t, --token string                 API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes[=true|false]             Skip confirmation
 ```
 
 ### chainloop attestation status
@@ -494,27 +494,27 @@ Options
 
 ```
 --attestation-id string   Unique identifier of the in-progress attestation
---full                    full report including current recorded values
--h, --help                    help for status
+--full[=true|false]       full report including current recorded values
+-h, --help[=true|false]       help for status
 ```
 
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
---artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
--c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
---control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
---local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
---max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
--n, --org string                organization name
--o, --output string             Output format, valid options are json and table (default "table")
--t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+--artifact-cas string          URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string       CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string                Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string         URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string      CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug[=true|false]           Enable debug/verbose logging mode
+--graceful-exit[=true|false]   exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
+-i, --insecure[=true|false]        Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--local-state-path string      path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int        Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                   organization name
+-o, --output string                Output format, valid options are json and table (default "table")
+-t, --token string                 API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes[=true|false]             Skip confirmation
 ```
 
 ### chainloop attestation verify
@@ -542,27 +542,27 @@ chainloop attestation verify -b https://myrepository/attestation.json
 Options
 
 ```
--b, --bundle string   bundle path or URL
--h, --help            help for verify
+-b, --bundle string       bundle path or URL
+-h, --help[=true|false]   help for verify
 ```
 
 Options inherited from parent commands
 
 ```
---artifact-cas string       URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
---artifact-cas-ca string    CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
--c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
---control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
---control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---graceful-exit             exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
---local-state-path string   path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
---max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
--n, --org string                organization name
--o, --output string             Output format, valid options are json and table (default "table")
--t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+--artifact-cas string          URL for the Artifacts Content Addressable Storage API ($CHAINLOOP_ARTIFACT_CAS_API) (default "cas.chainloop.dev:443")
+--artifact-cas-ca string       CUSTOM CA file for the Artifacts CAS API (optional) ($CHAINLOOP_ARTIFACT_CAS_API_CA)
+-c, --config string                Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
+--control-plane string         URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
+--control-plane-ca string      CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
+--debug[=true|false]           Enable debug/verbose logging mode
+--graceful-exit[=true|false]   exit 0 in case of error. NOTE: this flag will be removed once Chainloop reaches 1.0
+-i, --insecure[=true|false]        Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--local-state-path string      path to store the attestation state locally, default: [tmpDir]/chainloop_attestation.tmp.json
+--max-recv-msg-size int        Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
+-n, --org string                   organization name
+-o, --output string                Output format, valid options are json and table (default "table")
+-t, --token string                 API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
+-y, --yes[=true|false]             Skip confirmation
 ```
 
 ## chainloop auth
@@ -572,7 +572,7 @@ Authenticate with the Control Plane
 Options
 
 ```
--h, --help   help for auth
+-h, --help[=true|false]   help for auth
 ```
 
 Options inherited from parent commands
@@ -583,13 +583,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop auth delete-account
@@ -603,7 +603,7 @@ chainloop auth delete-account [flags]
 Options
 
 ```
--h, --help   help for delete-account
+-h, --help[=true|false]   help for delete-account
 ```
 
 Options inherited from parent commands
@@ -614,13 +614,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop auth help
@@ -639,7 +639,7 @@ chainloop auth help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -650,13 +650,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop auth login
@@ -670,8 +670,8 @@ chainloop auth login [flags]
 Options
 
 ```
--h, --help           help for login
---skip-browser   perform a headless login process without opening a browser
+-h, --help[=true|false]           help for login
+--skip-browser[=true|false]   perform a headless login process without opening a browser
 ```
 
 Options inherited from parent commands
@@ -682,13 +682,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop cas-backend
@@ -698,7 +698,7 @@ Operations on Artifact CAS backends
 Options
 
 ```
--h, --help   help for cas-backend
+-h, --help[=true|false]   help for cas-backend
 ```
 
 Options inherited from parent commands
@@ -709,13 +709,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop cas-backend add
@@ -725,12 +725,12 @@ Add a new Artifact CAS backend
 Options
 
 ```
---default              set the backend as default in your organization
---description string   descriptive information for this registration
---fallback             set the backend as fallback in your organization
--h, --help                 help for add
---max-bytes string     Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
---name string          CAS backend name
+--default[=true|false]    set the backend as default in your organization
+--description string      descriptive information for this registration
+--fallback[=true|false]   set the backend as fallback in your organization
+-h, --help[=true|false]       help for add
+--max-bytes string        Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
+--name string             CAS backend name
 ```
 
 Options inherited from parent commands
@@ -741,13 +741,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop cas-backend add aws-s3
@@ -764,7 +764,7 @@ Options
 --access-key-id string       AWS Access Key ID
 --bucket string              S3 bucket name
 --endpoint string            Custom Endpoint URL for other S3 compatible backends i.e MinIO
--h, --help                       help for aws-s3
+-h, --help[=true|false]          help for aws-s3
 --region string              AWS region for the bucket
 --secret-access-key string   AWS Secret Access Key
 ```
@@ -777,18 +777,18 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---default                   set the backend as default in your organization
+--debug[=true|false]        Enable debug/verbose logging mode
+--default[=true|false]      set the backend as default in your organization
 --description string        descriptive information for this registration
---fallback                  set the backend as fallback in your organization
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--fallback[=true|false]     set the backend as fallback in your organization
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop cas-backend add azure-blob
@@ -806,7 +806,7 @@ Options
 --client-secret string     Service Principal Client Secret
 --container string         Storage Container Name (default "chainloop")
 --endpoint string          Custom Azure Blob endpoint suffix (e.g., blob.core.usgovcloudapi.net), if not provided, the public Azure cloud endpoint will be used.
--h, --help                     help for azure-blob
+-h, --help[=true|false]        help for azure-blob
 --storage-account string   Storage Account Name
 --tenant string            Active Directory Tenant ID
 ```
@@ -819,18 +819,18 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---default                   set the backend as default in your organization
+--debug[=true|false]        Enable debug/verbose logging mode
+--default[=true|false]      set the backend as default in your organization
 --description string        descriptive information for this registration
---fallback                  set the backend as fallback in your organization
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--fallback[=true|false]     set the backend as fallback in your organization
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop cas-backend add help
@@ -849,7 +849,7 @@ chainloop cas-backend add help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -860,18 +860,18 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---default                   set the backend as default in your organization
+--debug[=true|false]        Enable debug/verbose logging mode
+--default[=true|false]      set the backend as default in your organization
 --description string        descriptive information for this registration
---fallback                  set the backend as fallback in your organization
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--fallback[=true|false]     set the backend as fallback in your organization
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop cas-backend add oci
@@ -885,10 +885,10 @@ chainloop cas-backend add oci [flags]
 Options
 
 ```
--h, --help              help for oci
--p, --password string   registry password
---repo string       FQDN repository name, including path
--u, --username string   registry username
+-h, --help[=true|false]   help for oci
+-p, --password string     registry password
+--repo string         FQDN repository name, including path
+-u, --username string     registry username
 ```
 
 Options inherited from parent commands
@@ -899,18 +899,18 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---default                   set the backend as default in your organization
+--debug[=true|false]        Enable debug/verbose logging mode
+--default[=true|false]      set the backend as default in your organization
 --description string        descriptive information for this registration
---fallback                  set the backend as fallback in your organization
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--fallback[=true|false]     set the backend as fallback in your organization
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop cas-backend delete
@@ -924,8 +924,8 @@ chainloop cas-backend delete [flags]
 Options
 
 ```
--h, --help          help for delete
---name string   CAS Backend name
+-h, --help[=true|false]   help for delete
+--name string         CAS Backend name
 ```
 
 Options inherited from parent commands
@@ -936,13 +936,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop cas-backend help
@@ -961,7 +961,7 @@ chainloop cas-backend help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -972,13 +972,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop cas-backend list
@@ -992,8 +992,8 @@ chainloop cas-backend list [flags]
 Options
 
 ```
---full   show the full output
--h, --help   help for list
+--full[=true|false]   show the full output
+-h, --help[=true|false]   help for list
 ```
 
 Options inherited from parent commands
@@ -1004,13 +1004,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop cas-backend update
@@ -1020,12 +1020,12 @@ Update a CAS backend description, credentials, default status, fallback status, 
 Options
 
 ```
---default              set the backend as default in your organization
---description string   descriptive information for this registration
---fallback             set the backend as fallback in your organization
--h, --help                 help for update
---max-bytes string     Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
---name string          CAS backend name
+--default[=true|false]    set the backend as default in your organization
+--description string      descriptive information for this registration
+--fallback[=true|false]   set the backend as fallback in your organization
+-h, --help[=true|false]       help for update
+--max-bytes string        Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
+--name string             CAS backend name
 ```
 
 Options inherited from parent commands
@@ -1036,13 +1036,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop cas-backend update aws-s3
@@ -1057,7 +1057,7 @@ Options
 
 ```
 --access-key-id string       AWS Access Key ID
--h, --help                       help for aws-s3
+-h, --help[=true|false]          help for aws-s3
 --name string                CAS Backend name
 --region string              AWS region for the bucket
 --secret-access-key string   AWS Secret Access Key
@@ -1071,17 +1071,17 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---default                   set the backend as default in your organization
+--debug[=true|false]        Enable debug/verbose logging mode
+--default[=true|false]      set the backend as default in your organization
 --description string        descriptive information for this registration
---fallback                  set the backend as fallback in your organization
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--fallback[=true|false]     set the backend as fallback in your organization
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop cas-backend update azure-blob
@@ -1097,7 +1097,7 @@ Options
 ```
 --client-id string       Service Principal Client ID
 --client-secret string   Service Principal Client Secret
--h, --help                   help for azure-blob
+-h, --help[=true|false]      help for azure-blob
 --name string            CAS Backend name
 --tenant string          Active Directory Tenant ID
 ```
@@ -1110,17 +1110,17 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---default                   set the backend as default in your organization
+--debug[=true|false]        Enable debug/verbose logging mode
+--default[=true|false]      set the backend as default in your organization
 --description string        descriptive information for this registration
---fallback                  set the backend as fallback in your organization
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--fallback[=true|false]     set the backend as fallback in your organization
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop cas-backend update help
@@ -1139,7 +1139,7 @@ chainloop cas-backend update help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -1150,18 +1150,18 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---default                   set the backend as default in your organization
+--debug[=true|false]        Enable debug/verbose logging mode
+--default[=true|false]      set the backend as default in your organization
 --description string        descriptive information for this registration
---fallback                  set the backend as fallback in your organization
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--fallback[=true|false]     set the backend as fallback in your organization
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 --name string               CAS backend name
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop cas-backend update inline
@@ -1175,8 +1175,8 @@ chainloop cas-backend update inline [flags]
 Options
 
 ```
--h, --help          help for inline
---name string   CAS Backend name
+-h, --help[=true|false]   help for inline
+--name string         CAS Backend name
 ```
 
 Options inherited from parent commands
@@ -1187,17 +1187,17 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---default                   set the backend as default in your organization
+--debug[=true|false]        Enable debug/verbose logging mode
+--default[=true|false]      set the backend as default in your organization
 --description string        descriptive information for this registration
---fallback                  set the backend as fallback in your organization
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--fallback[=true|false]     set the backend as fallback in your organization
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop cas-backend update oci
@@ -1211,10 +1211,10 @@ chainloop cas-backend update oci [flags]
 Options
 
 ```
--h, --help              help for oci
---name string       CAS Backend name
--p, --password string   registry password
--u, --username string   registry username
+-h, --help[=true|false]   help for oci
+--name string         CAS Backend name
+-p, --password string     registry password
+-u, --username string     registry username
 ```
 
 Options inherited from parent commands
@@ -1225,17 +1225,17 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
---default                   set the backend as default in your organization
+--debug[=true|false]        Enable debug/verbose logging mode
+--default[=true|false]      set the backend as default in your organization
 --description string        descriptive information for this registration
---fallback                  set the backend as fallback in your organization
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--fallback[=true|false]     set the backend as fallback in your organization
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-bytes string          Maximum size for each blob stored in this backend (e.g., 100MB, 1GB). Note: not supported for inline backends.
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop config
@@ -1245,7 +1245,7 @@ Configure this client
 Options
 
 ```
--h, --help   help for config
+-h, --help[=true|false]   help for config
 ```
 
 Options inherited from parent commands
@@ -1256,13 +1256,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop config help
@@ -1281,7 +1281,7 @@ chainloop config help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -1292,13 +1292,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop config reset
@@ -1312,7 +1312,7 @@ chainloop config reset [flags]
 Options
 
 ```
--h, --help   help for reset
+-h, --help[=true|false]   help for reset
 ```
 
 Options inherited from parent commands
@@ -1323,13 +1323,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop config save
@@ -1349,7 +1349,7 @@ chainloop config save --control-plane localhost:1234 --artifact-cas localhost:12
 Options
 
 ```
--h, --help   help for save
+-h, --help[=true|false]   help for save
 ```
 
 Options inherited from parent commands
@@ -1360,13 +1360,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop config view
@@ -1380,7 +1380,7 @@ chainloop config view [flags]
 Options
 
 ```
--h, --help   help for view
+-h, --help[=true|false]   help for view
 ```
 
 Options inherited from parent commands
@@ -1391,18 +1391,24 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop discover
 
 (Preview) inspect pieces of evidence or artifacts stored through Chainloop
+
+Synopsis
+
+(Preview) inspect pieces of evidence or artifacts stored through Chainloop.
+
+The discovery covers only the current organization. Select another organization with --org.
 
 ```
 chainloop discover [flags]
@@ -1411,11 +1417,11 @@ chainloop discover [flags]
 Options
 
 ```
--d, --digest string   hash of the attestation, piece of evidence or artifact, i.e sha256:deadbeef
--h, --help            help for discover
--k, --kind string     optional kind of the referrer, used to disambiguate between multiple referrers with the same digest
---limit int       number of items to show (default 20)
---next string     cursor to load the next page
+-d, --digest string       hash of the attestation, piece of evidence or artifact, i.e sha256:deadbeef
+-h, --help[=true|false]   help for discover
+-k, --kind string         optional kind of the referrer, used to disambiguate between multiple referrers with the same digest
+--limit int           number of items to show (default 20)
+--next string         cursor to load the next page
 ```
 
 Options inherited from parent commands
@@ -1426,13 +1432,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop integration
@@ -1442,7 +1448,7 @@ Third party integrations
 Options
 
 ```
--h, --help   help for integration
+-h, --help[=true|false]   help for integration
 ```
 
 Options inherited from parent commands
@@ -1453,13 +1459,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop integration attached
@@ -1469,7 +1475,7 @@ Integrations attached to workflows
 Options
 
 ```
--h, --help   help for attached
+-h, --help[=true|false]   help for attached
 ```
 
 Options inherited from parent commands
@@ -1480,13 +1486,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration attached add
@@ -1510,7 +1516,7 @@ chainloop integration attached add --workflow deadbeef --project my-project --in
 Options
 
 ```
--h, --help                 help for add
+-h, --help[=true|false]    help for add
 --integration string   Name of the integration already registered in this organization
 --opt stringArray      integration attachment arguments
 --project string       name of the project the workflow belongs to
@@ -1525,13 +1531,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration attached delete
@@ -1545,8 +1551,8 @@ chainloop integration attached delete [flags]
 Options
 
 ```
--h, --help        help for delete
---id string   ID of the existing attachment
+-h, --help[=true|false]   help for delete
+--id string           ID of the existing attachment
 ```
 
 Options inherited from parent commands
@@ -1557,13 +1563,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration attached help
@@ -1582,7 +1588,7 @@ chainloop integration attached help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -1593,13 +1599,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration attached list
@@ -1613,9 +1619,9 @@ chainloop integration attached list [flags]
 Options
 
 ```
--h, --help              help for list
---project string    project name
---workflow string   workflow name
+-h, --help[=true|false]   help for list
+--project string      project name
+--workflow string     workflow name
 ```
 
 Options inherited from parent commands
@@ -1626,13 +1632,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop integration available
@@ -1642,7 +1648,7 @@ Integrations available in the controlplane ready to be registered
 Options
 
 ```
--h, --help   help for available
+-h, --help[=true|false]   help for available
 ```
 
 Options inherited from parent commands
@@ -1653,13 +1659,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration available describe
@@ -1673,9 +1679,9 @@ chainloop integration available describe [flags]
 Options
 
 ```
---full          show the full output including JSON schemas
--h, --help          help for describe
---name string   integration name
+--full[=true|false]   show the full output including JSON schemas
+-h, --help[=true|false]   help for describe
+--name string         integration name
 ```
 
 Options inherited from parent commands
@@ -1686,13 +1692,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration available help
@@ -1711,7 +1717,7 @@ chainloop integration available help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -1722,13 +1728,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration available list
@@ -1742,7 +1748,7 @@ chainloop integration available list [flags]
 Options
 
 ```
--h, --help   help for list
+-h, --help[=true|false]   help for list
 ```
 
 Options inherited from parent commands
@@ -1753,13 +1759,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop integration help
@@ -1778,7 +1784,7 @@ chainloop integration help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -1789,13 +1795,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop integration registered
@@ -1805,7 +1811,7 @@ Integrations registered and configured in your Organization
 Options
 
 ```
--h, --help   help for registered
+-h, --help[=true|false]   help for registered
 ```
 
 Options inherited from parent commands
@@ -1816,13 +1822,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration registered add
@@ -1843,7 +1849,7 @@ Options
 
 ```
 --description string   integration registration description
--h, --help                 help for add
+-h, --help[=true|false]    help for add
 --name string          unique registration name, i.e my-registration, sboms-to-prod, etc.
 --opt stringArray      integration arguments
 ```
@@ -1856,13 +1862,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration registered delete
@@ -1876,8 +1882,8 @@ chainloop integration registered delete [flags]
 Options
 
 ```
--h, --help          help for delete
---name string   integration name
+-h, --help[=true|false]   help for delete
+--name string         integration name
 ```
 
 Options inherited from parent commands
@@ -1888,13 +1894,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration registered help
@@ -1913,7 +1919,7 @@ chainloop integration registered help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -1924,13 +1930,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop integration registered list
@@ -1944,7 +1950,7 @@ chainloop integration registered list [flags]
 Options
 
 ```
--h, --help   help for list
+-h, --help[=true|false]   help for list
 ```
 
 Options inherited from parent commands
@@ -1955,13 +1961,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop organization
@@ -1971,7 +1977,7 @@ Organizations management
 Options
 
 ```
--h, --help   help for organization
+-h, --help[=true|false]   help for organization
 ```
 
 Options inherited from parent commands
@@ -1982,13 +1988,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization api-token
@@ -2002,7 +2008,7 @@ Manage API tokens to authenticate with the Chainloop API or perform attestations
 Options
 
 ```
--h, --help   help for api-token
+-h, --help[=true|false]   help for api-token
 ```
 
 Options inherited from parent commands
@@ -2013,13 +2019,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop organization api-token create
@@ -2035,7 +2041,7 @@ Options
 ```
 --description string    API token description
 --expiration duration   optional API token expiration, in hours i.e 1h, 24h, 178h (week), ...
--h, --help                  help for create
+-h, --help[=true|false]     help for create
 --name string           token name
 --project string        project name used to scope the token, if not set the token will be created at the organization level
 ```
@@ -2048,13 +2054,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             output format, valid options are table, json, token (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop organization api-token help
@@ -2073,7 +2079,7 @@ chainloop organization api-token help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -2084,13 +2090,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop organization api-token list
@@ -2104,10 +2110,10 @@ chainloop organization api-token list [flags]
 Options
 
 ```
--h, --help             help for list
--p, --project string   filter by project name
--s, --scope string     filter by scope, available scopes: [project global]
---status string    filter by token status, available values: [active revoked all]
+-h, --help[=true|false]   help for list
+-p, --project string      filter by project name
+-s, --scope string        filter by scope, available scopes: [project global]
+--status string       filter by token status, available values: [active revoked all]
 ```
 
 Options inherited from parent commands
@@ -2118,13 +2124,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop organization api-token revoke
@@ -2138,8 +2144,8 @@ chainloop organization api-token revoke [flags]
 Options
 
 ```
--h, --help        help for revoke
---id string   API token ID
+-h, --help[=true|false]   help for revoke
+--id string           API token ID
 ```
 
 Options inherited from parent commands
@@ -2150,13 +2156,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization create
@@ -2170,8 +2176,8 @@ chainloop organization create [flags]
 Options
 
 ```
--h, --help          help for create
---name string   organization name
+-h, --help[=true|false]   help for create
+--name string         organization name
 ```
 
 Options inherited from parent commands
@@ -2182,13 +2188,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization delete
@@ -2206,8 +2212,8 @@ chainloop organization delete [flags]
 Options
 
 ```
--h, --help          help for delete
---name string   organization name
+-h, --help[=true|false]   help for delete
+--name string         organization name
 ```
 
 Options inherited from parent commands
@@ -2218,13 +2224,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization describe
@@ -2238,7 +2244,7 @@ chainloop organization describe [flags]
 Options
 
 ```
--h, --help   help for describe
+-h, --help[=true|false]   help for describe
 ```
 
 Options inherited from parent commands
@@ -2249,13 +2255,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization help
@@ -2274,7 +2280,7 @@ chainloop organization help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -2285,13 +2291,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization leave
@@ -2305,8 +2311,8 @@ chainloop organization leave [flags]
 Options
 
 ```
--h, --help          help for leave
---name string   organization name
+-h, --help[=true|false]   help for leave
+--name string         organization name
 ```
 
 Options inherited from parent commands
@@ -2317,13 +2323,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization list
@@ -2337,7 +2343,7 @@ chainloop organization list [flags]
 Options
 
 ```
--h, --help   help for list
+-h, --help[=true|false]   help for list
 ```
 
 Options inherited from parent commands
@@ -2348,13 +2354,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization member
@@ -2364,7 +2370,7 @@ Organization members management
 Options
 
 ```
--h, --help   help for member
+-h, --help[=true|false]   help for member
 ```
 
 Options inherited from parent commands
@@ -2375,13 +2381,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop organization member delete
@@ -2395,8 +2401,8 @@ chainloop organization member delete [flags]
 Options
 
 ```
--h, --help        help for delete
---id string   Membership ID
+-h, --help[=true|false]   help for delete
+--id string           Membership ID
 ```
 
 Options inherited from parent commands
@@ -2407,13 +2413,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop organization member help
@@ -2432,7 +2438,7 @@ chainloop organization member help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -2443,13 +2449,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop organization member invitation
@@ -2459,7 +2465,7 @@ User Invitations
 Options
 
 ```
--h, --help   help for invitation
+-h, --help[=true|false]   help for invitation
 ```
 
 Options inherited from parent commands
@@ -2470,13 +2476,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ##### chainloop organization member invitation create
@@ -2490,9 +2496,9 @@ chainloop organization member invitation create [flags]
 Options
 
 ```
--h, --help              help for create
---receiver string   Email of the user to invite
---role string       Role of the user in the organization, available admin, owner, viewer (default "viewer")
+-h, --help[=true|false]   help for create
+--receiver string     Email of the user to invite
+--role string         Role of the user in the organization, available admin, owner, viewer (default "viewer")
 ```
 
 Options inherited from parent commands
@@ -2503,13 +2509,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ##### chainloop organization member invitation help
@@ -2528,7 +2534,7 @@ chainloop organization member invitation help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -2539,13 +2545,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ##### chainloop organization member invitation list
@@ -2559,7 +2565,7 @@ chainloop organization member invitation list [flags]
 Options
 
 ```
--h, --help   help for list
+-h, --help[=true|false]   help for list
 ```
 
 Options inherited from parent commands
@@ -2570,13 +2576,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ##### chainloop organization member invitation revoke
@@ -2590,8 +2596,8 @@ chainloop organization member invitation revoke [flags]
 Options
 
 ```
--h, --help        help for revoke
---id string   Invitation ID
+-h, --help[=true|false]   help for revoke
+--id string           Invitation ID
 ```
 
 Options inherited from parent commands
@@ -2602,13 +2608,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop organization member list
@@ -2645,12 +2651,12 @@ chainloop organization member list --role admin --page 2 --limit 5
 Options
 
 ```
---email string   Filter by member email
--h, --help           help for list
---limit int      number of items to show (default 50)
---name string    Filter by member name or last name
---page int       page number (default 1)
---role string    Role of the user in the organization, available admin, owner, viewer
+--email string        Filter by member email
+-h, --help[=true|false]   help for list
+--limit int           number of items to show (default 50)
+--name string         Filter by member name or last name
+--page int            page number (default 1)
+--role string         Role of the user in the organization, available admin, owner, viewer
 ```
 
 Options inherited from parent commands
@@ -2661,13 +2667,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop organization member update
@@ -2681,9 +2687,9 @@ chainloop organization member update [flags]
 Options
 
 ```
--h, --help          help for update
---id string     Membership ID
---role string   Role of the user in the organization, available admin, owner, viewer (default "viewer")
+-h, --help[=true|false]   help for update
+--id string           Membership ID
+--role string         Role of the user in the organization, available admin, owner, viewer (default "viewer")
 ```
 
 Options inherited from parent commands
@@ -2694,13 +2700,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization set
@@ -2726,9 +2732,9 @@ $ chainloop org set --name my-org --default
 Options
 
 ```
---default       set this organization as the default one for all clients
--h, --help          help for set
---name string   organization name to make the switch
+--default[=true|false]   set this organization as the default one for all clients
+-h, --help[=true|false]      help for set
+--name string            organization name to make the switch
 ```
 
 Options inherited from parent commands
@@ -2739,13 +2745,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop organization update
@@ -2759,16 +2765,16 @@ chainloop organization update [flags]
 Options
 
 ```
---api-token-max-days-inactive string        maximum days of inactivity before API tokens are auto-revoked (e.g. '90', '0' to disable)
---block                                     set the default policy violation blocking strategy
---block-attestations-on-released-versions   reject new attestations pushed to project versions that are already released
---enable-ai-agent-collector                 enable automatic AI agent config collection during attestation init
--h, --help                                      help for update
---name string                               organization name
---policies-allowed-hostnames strings        set the allowed hostnames for the policy engine
---prevent-implicit-workflow-creation        prevent workflows and projects from being created implicitly during attestation init
---restrict-contract-creation                restrict contract creation (org-level and project-level) to only organization admins (owner/admin roles)
---skip-runner-env-vars                      opt out of storing the environment variables automatically discovered by the CI runner in the attestation
+--api-token-max-days-inactive string                     maximum days of inactivity before API tokens are auto-revoked (e.g. '90', '0' to disable)
+--block[=true|false]                                     set the default policy violation blocking strategy
+--block-attestations-on-released-versions[=true|false]   reject new attestations pushed to project versions that are already released
+--enable-ai-agent-collector[=true|false]                 enable automatic AI agent config collection during attestation init
+-h, --help[=true|false]                                      help for update
+--name string                                            organization name
+--policies-allowed-hostnames strings                     set the allowed hostnames for the policy engine
+--prevent-implicit-workflow-creation[=true|false]        prevent workflows and projects from being created implicitly during attestation init
+--restrict-contract-creation[=true|false]                restrict contract creation (org-level and project-level) to only organization admins (owner/admin roles)
+--skip-runner-env-vars[=true|false]                      opt out of storing the environment variables automatically discovered by the CI runner in the attestation
 ```
 
 Options inherited from parent commands
@@ -2779,13 +2785,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop policy
@@ -2795,7 +2801,7 @@ Craft chainloop policies
 Options
 
 ```
--h, --help   help for policy
+-h, --help[=true|false]   help for policy
 ```
 
 Options inherited from parent commands
@@ -2806,13 +2812,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop policy develop
@@ -2827,7 +2833,7 @@ Refer to https://docs.chainloop.dev/guides/custom-policies for more information.
 Options
 
 ```
--h, --help   help for develop
+-h, --help[=true|false]   help for develop
 ```
 
 Options inherited from parent commands
@@ -2838,13 +2844,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop policy develop eval
@@ -2874,9 +2880,9 @@ Options
 ```
 --allowed-hostnames strings   Additional hostnames allowed for http.send requests in policies
 --annotation strings          Key-value pairs of material annotations (key=value)
--h, --help                        help for eval
+-h, --help[=true|false]           help for eval
 --input stringArray           Key-value pairs of policy inputs (key=value)
---kind string                 Kind of the material: ["ARTIFACT" "ASYNCAPI_SPEC" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CERTCC_DRANZER" "CHAINLOOP_AI_AGENT_CONFIG" "CHAINLOOP_AI_CODING_SESSION" "CHAINLOOP_AI_SECURITY_CONTEXT" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CHECKMARX_JSON" "COBERTURA_XML" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "GITLEAKS_JSON" "GRAPHQL_SPEC" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "OPENAPI_SPEC" "OPENVEX" "OSSF_SCORECARD_JSON" "OVERSECURED_JSON" "PITEST_XML" "RADAMSA_CRASHES" "RADAMSA_REPORT" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "SYSINTERNALS_ACCESSCHK" "SYSINTERNALS_SIGCHECK" "TRUFFLEHOG_JSON" "TWISTCLI_SCAN_JSON" "YELP_DETECT_SECRETS_BASELINE" "ZAP_DAST_ZIP"]
+--kind string                 Kind of the material: ["ARTIFACT" "ASYNCAPI_SPEC" "ATTESTATION" "BLACKDUCK_SCA_JSON" "CERTCC_DRANZER" "CHAINLOOP_AI_AGENT_CONFIG" "CHAINLOOP_AI_CODING_SESSION" "CHAINLOOP_AI_SECURITY_CONTEXT" "CHAINLOOP_PR_INFO" "CHAINLOOP_RUNNER_CONTEXT" "CHECKMARX_JSON" "COBERTURA_XML" "CONTAINER_IMAGE" "CSAF_INFORMATIONAL_ADVISORY" "CSAF_SECURITY_ADVISORY" "CSAF_SECURITY_INCIDENT_RESPONSE" "CSAF_VEX" "EVIDENCE" "GHAS_CODE_SCAN" "GHAS_DEPENDENCY_SCAN" "GHAS_SECRET_SCAN" "GITLAB_SECURITY_REPORT" "GITLEAKS_JSON" "GRAPHQL_SPEC" "HELM_CHART" "JACOCO_XML" "JUNIT_XML" "MSBUILD_LOG" "OPENAPI_SPEC" "OPENVEX" "OSSF_SCORECARD_JSON" "OVERSECURED_JSON" "PITEST_XML" "RADAMSA_CRASHES" "RADAMSA_REPORT" "SARIF" "SBOM_CYCLONEDX_JSON" "SBOM_SPDX_JSON" "SLSA_PROVENANCE" "STRING" "SYSINTERNALS_ACCESSCHK" "SYSINTERNALS_SIGCHECK" "TRUFFLEHOG_JSON" "TWISTCLI_SCAN_JSON" "YELP_DETECT_SECRETS_BASELINE" "ZAP_DAST_ZIP"]
 --material string             Path to material or attestation file
 -p, --policy string               Policy reference (./my-policy.yaml, https://my-domain.com/my-policy.yaml, chainloop://my-stored-policy) (default "policy.yaml")
 --project string              Project name to use as engine context for chainloop.* built-ins
@@ -2891,13 +2897,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop policy develop help
@@ -2916,7 +2922,7 @@ chainloop policy develop help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -2927,13 +2933,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop policy develop init
@@ -2963,12 +2969,12 @@ chainloop policy develop init --directory ./policies --embedded --name mypolicy
 Options
 
 ```
---description string   description of the policy
---directory string     directory for policy
---embedded             initialize an embedded policy (single YAML file)
--f, --force                overwrite existing files
--h, --help                 help for init
---name string          name of the policy
+--description string      description of the policy
+--directory string        directory for policy
+--embedded[=true|false]   initialize an embedded policy (single YAML file)
+-f, --force[=true|false]      overwrite existing files
+-h, --help[=true|false]       help for init
+--name string             name of the policy
 ```
 
 Options inherited from parent commands
@@ -2979,13 +2985,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop policy develop lint
@@ -3005,8 +3011,8 @@ chainloop policy develop lint [flags]
 Options
 
 ```
---format                Auto-format standalone policy rego files with opa fmt (embedded policies not supported)
--h, --help                  help for lint
+--format[=true|false]   Auto-format standalone policy rego files with opa fmt (embedded policies not supported)
+-h, --help[=true|false]     help for lint
 -p, --policy string         Path to policy file (default "policy.yaml")
 --regal-config string   Path to custom regal config (Default: https://github.com/chainloop-dev/chainloop/tree/main/app/cli/internal/policydevel/.regal.yaml)
 ```
@@ -3019,13 +3025,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop policy help
@@ -3044,7 +3050,7 @@ chainloop policy help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -3055,13 +3061,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop trace
@@ -3071,7 +3077,7 @@ AI coding session tracing and attestation
 Options
 
 ```
--h, --help   help for trace
+-h, --help[=true|false]   help for trace
 ```
 
 Options inherited from parent commands
@@ -3082,13 +3088,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop trace help
@@ -3107,7 +3113,7 @@ chainloop trace help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -3118,13 +3124,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop trace init
@@ -3148,7 +3154,7 @@ named freely; the name is normalized to the lowercase, dash-separated form
 Chainloop stores. It then asks which harnesses to trace, with the ones the
 repository is already set up for ticked, or Claude Code on a first run; use
 space to tick more. Passing --org, --project or a harness flag
-(--claude, --cursor, --opencode, --pi, --codex) skips the matching question.
+(--claude, --cursor, --opencode, --pi, --codex, --copilot) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
 required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
@@ -3178,18 +3184,19 @@ chainloop trace init [flags]
 Options
 
 ```
---claude              install Claude Code hooks (default when no harness flag is set)
---codex               install Codex hooks
---contract string     workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
---cursor              install Cursor hooks
--h, --help                help for init
---local               set up local mode, with no control plane, login or workflow. The pre-push hook writes the session evidence to disk
---opencode            install opencode hooks
---pi                  install Pi extension
---project string      chainloop project name
---require-trace       block pushes when a required trace is missing
---trace-path string   the directory where Chainloop Trace keeps its data, in every mode (default: .git/chainloop-trace). Local mode writes the sessions to its local-sessions folder
---workflow string     chainloop workflow name used for trace attestations (defaults to "ai-coding-session")
+--claude[=true|false]          install Claude Code hooks (default when no harness flag is set)
+--codex[=true|false]           install Codex hooks
+--contract string              workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
+--copilot[=true|false]         install GitHub Copilot hooks (Copilot CLI and VS Code)
+--cursor[=true|false]          install Cursor hooks
+-h, --help[=true|false]            help for init
+--local[=true|false]           set up local mode, with no control plane, login or workflow. The pre-push hook writes the session evidence to disk
+--opencode[=true|false]        install opencode hooks
+--pi[=true|false]              install Pi extension
+--project string               chainloop project name
+--require-trace[=true|false]   block pushes when a required trace is missing
+--trace-path string            the directory where Chainloop Trace keeps its data, in every mode (default: .git/chainloop-trace). Local mode writes the sessions to its local-sessions folder
+--workflow string              chainloop workflow name used for trace attestations (defaults to "ai-coding-session")
 ```
 
 Options inherited from parent commands
@@ -3200,13 +3207,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop trace run
@@ -3248,17 +3255,18 @@ chainloop trace run -- <command> [args...] [flags]
 Options
 
 ```
---claude            install Claude Code hooks (default when no provider flag is set)
---codex             install Codex hooks
---contract string   workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
---cursor            install Cursor hooks
--h, --help              help for run
---local             store the session on disk, with no control plane, login or workflow
---opencode          install opencode hooks
---pi                install Pi extension
---project string    chainloop project name (required, except with --local). trace run does not read it from .chainloop.yml
---version string    chainloop project version (optional; defaults to the latest version)
---workflow string   chainloop workflow name for the trace attestations (required, except with --local). trace run does not read it from .chainloop.yml
+--claude[=true|false]     install Claude Code hooks (default when no provider flag is set)
+--codex[=true|false]      install Codex hooks
+--contract string         workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
+--copilot[=true|false]    install GitHub Copilot hooks (Copilot CLI and VS Code)
+--cursor[=true|false]     install Cursor hooks
+-h, --help[=true|false]       help for run
+--local[=true|false]      store the session on disk, with no control plane, login or workflow
+--opencode[=true|false]   install opencode hooks
+--pi[=true|false]         install Pi extension
+--project string          chainloop project name (required, except with --local). trace run does not read it from .chainloop.yml
+--version string          chainloop project version (optional; defaults to the latest version)
+--workflow string         chainloop workflow name for the trace attestations (required, except with --local). trace run does not read it from .chainloop.yml
 ```
 
 Options inherited from parent commands
@@ -3269,13 +3277,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop trace uninstall
@@ -3289,8 +3297,8 @@ chainloop trace uninstall [flags]
 Options
 
 ```
--h, --help   help for uninstall
--y, --yes    skip confirmation prompt
+-h, --help[=true|false]   help for uninstall
+-y, --yes[=true|false]    skip confirmation prompt
 ```
 
 Options inherited from parent commands
@@ -3301,8 +3309,8 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
@@ -3320,7 +3328,7 @@ chainloop version [flags]
 Options
 
 ```
--h, --help   help for version
+-h, --help[=true|false]   help for version
 ```
 
 Options inherited from parent commands
@@ -3331,13 +3339,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ## chainloop workflow
@@ -3347,7 +3355,7 @@ Workflow management in the control plane
 Options
 
 ```
--h, --help   help for workflow
+-h, --help[=true|false]   help for workflow
 ```
 
 Options inherited from parent commands
@@ -3358,13 +3366,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop workflow attached
@@ -3374,7 +3382,7 @@ Integrations attached to workflows
 Options
 
 ```
--h, --help   help for attached
+-h, --help[=true|false]   help for attached
 ```
 
 Options inherited from parent commands
@@ -3385,13 +3393,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow attached add
@@ -3415,7 +3423,7 @@ chainloop integration attached add --workflow deadbeef --project my-project --in
 Options
 
 ```
--h, --help                 help for add
+-h, --help[=true|false]    help for add
 --integration string   Name of the integration already registered in this organization
 --opt stringArray      integration attachment arguments
 --project string       name of the project the workflow belongs to
@@ -3430,13 +3438,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow attached delete
@@ -3450,8 +3458,8 @@ chainloop workflow attached delete [flags]
 Options
 
 ```
--h, --help        help for delete
---id string   ID of the existing attachment
+-h, --help[=true|false]   help for delete
+--id string           ID of the existing attachment
 ```
 
 Options inherited from parent commands
@@ -3462,13 +3470,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow attached help
@@ -3487,7 +3495,7 @@ chainloop workflow attached help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -3498,13 +3506,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow attached list
@@ -3518,9 +3526,9 @@ chainloop workflow attached list [flags]
 Options
 
 ```
--h, --help              help for list
---project string    project name
---workflow string   workflow name
+-h, --help[=true|false]   help for list
+--project string      project name
+--workflow string     workflow name
 ```
 
 Options inherited from parent commands
@@ -3531,13 +3539,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop workflow contract
@@ -3547,7 +3555,7 @@ Workflow Contract related operations
 Options
 
 ```
--h, --help   help for contract
+-h, --help[=true|false]   help for contract
 ```
 
 Options inherited from parent commands
@@ -3558,13 +3566,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow contract create
@@ -3580,7 +3588,7 @@ Options
 ```
 -f, --contract string      path or URL to the contract schema
 --description string   description of the contract
--h, --help                 help for create
+-h, --help[=true|false]    help for create
 --name string          contract name
 --project string       project name used to scope the contract, if not set the contract will be created in the organization
 ```
@@ -3593,13 +3601,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow contract delete
@@ -3613,8 +3621,8 @@ chainloop workflow contract delete [flags]
 Options
 
 ```
--h, --help          help for delete
---name string   contract name
+-h, --help[=true|false]   help for delete
+--name string         contract name
 ```
 
 Options inherited from parent commands
@@ -3625,13 +3633,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow contract describe
@@ -3645,9 +3653,9 @@ chainloop workflow contract describe [flags]
 Options
 
 ```
--h, --help             help for describe
---name string      contract name
---revision int32   revision of the contract to retrieve, by default is latest
+-h, --help[=true|false]   help for describe
+--name string         contract name
+--revision int32      revision of the contract to retrieve, by default is latest
 ```
 
 Options inherited from parent commands
@@ -3658,13 +3666,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             output format, valid options are table, json or schema (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow contract help
@@ -3683,7 +3691,7 @@ chainloop workflow contract help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -3694,13 +3702,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow contract list
@@ -3714,7 +3722,7 @@ chainloop workflow contract list [flags]
 Options
 
 ```
--h, --help   help for list
+-h, --help[=true|false]   help for list
 ```
 
 Options inherited from parent commands
@@ -3725,30 +3733,53 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow contract update
 
 Update an existing contract
 
+Synopsis
+
+Update an existing contract.
+
+Use --project to move an organization-level contract to a project, or --org-level to move a
+project-level contract to the organization. Only organization administrators and
+organization-level API tokens can move a contract.
+
 ```
 chainloop workflow contract update [flags]
+```
+
+Examples
+
+```
+Update the contract content
+chainloop workflow contract update --name my-contract --contract contract.yaml
+
+Move an organization-level contract to a project
+chainloop workflow contract update --name my-contract --project my-project
+
+Move a project-level contract to the organization
+chainloop workflow contract update --name my-contract --org-level
 ```
 
 Options
 
 ```
--f, --contract string      path or URL to the contract schema
---description string   description of the contract
--h, --help                 help for update
---name string          contract name
+-f, --contract string          path or URL to the contract schema
+--description string       description of the contract
+-h, --help[=true|false]        help for update
+--name string              contract name
+--org-level[=true|false]   move the contract to the organization level
+--project string           move the contract to this project, the contract must be at the organization level
 ```
 
 Options inherited from parent commands
@@ -3759,13 +3790,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop workflow create
@@ -3796,13 +3827,13 @@ chainloop workflow create --name release --project skynet --contract https://sky
 Options
 
 ```
---name string          workflow name
---description string   workflow description
---project string       project name
---team string          team name
---contract string      the name of an existing contract or the path/URL to a contract file. If not provided an empty one will be created.
--f, --skip-if-exists       do not fail if the workflow with the provided name already exists
--h, --help                 help for create
+--name string                   workflow name
+--description string            workflow description
+--project string                project name
+--team string                   team name
+--contract string               the name of an existing contract or the path/URL to a contract file. If not provided an empty one will be created.
+-f, --skip-if-exists[=true|false]   do not fail if the workflow with the provided name already exists
+-h, --help[=true|false]             help for create
 ```
 
 Options inherited from parent commands
@@ -3813,13 +3844,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop workflow delete
@@ -3833,9 +3864,9 @@ chainloop workflow delete [flags]
 Options
 
 ```
--h, --help             help for delete
---name string      workflow name
---project string   project name
+-h, --help[=true|false]   help for delete
+--name string         workflow name
+--project string      project name
 ```
 
 Options inherited from parent commands
@@ -3846,13 +3877,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop workflow describe
@@ -3866,9 +3897,9 @@ chainloop workflow describe [flags]
 Options
 
 ```
--h, --help             help for describe
---name string      workflow name
---project string   project name
+-h, --help[=true|false]   help for describe
+--name string         workflow name
+--project string      project name
 ```
 
 Options inherited from parent commands
@@ -3879,13 +3910,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop workflow help
@@ -3904,7 +3935,7 @@ chainloop workflow help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -3915,13 +3946,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop workflow list
@@ -3952,10 +3983,10 @@ chainloop workflow list --full
 Options
 
 ```
---full        show the full report
--h, --help        help for list
---limit int   number of items to show (default 50)
---page int    page number (default 1)
+--full[=true|false]   show the full report
+-h, --help[=true|false]   help for list
+--limit int           number of items to show (default 50)
+--page int            page number (default 1)
 ```
 
 Options inherited from parent commands
@@ -3966,13 +3997,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop workflow update
@@ -3988,7 +4019,7 @@ Options
 ```
 --contract string      the name of an existing contract
 --description string   workflow description
--h, --help                 help for update
+-h, --help[=true|false]    help for update
 --name string          workflow name
 --project string       project name
 --team string          team name
@@ -4002,13 +4033,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 ### chainloop workflow workflow-run
@@ -4018,7 +4049,7 @@ Workflow Runs related operations
 Options
 
 ```
--h, --help   help for workflow-run
+-h, --help[=true|false]   help for workflow-run
 ```
 
 Options inherited from parent commands
@@ -4029,13 +4060,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow workflow-run describe
@@ -4049,13 +4080,13 @@ chainloop workflow workflow-run describe [flags]
 Options
 
 ```
---cert string         public certificate in PEM format to be used to verify the attestation
---cert-chain string   certificate chain (intermediates, root) in PEM format to be used to verify the attestation
--d, --digest string       content digest of the attestation
--h, --help                help for describe
---id string           workflow Run ID
---key string          public key used to verify the attestation. Note: You can also use env variable CHAINLOOP_SIGNING_PUBLIC_KEY
---verify              verify the attestation
+--cert string           public certificate in PEM format to be used to verify the attestation
+--cert-chain string     certificate chain (intermediates, root) in PEM format to be used to verify the attestation
+-d, --digest string         content digest of the attestation
+-h, --help[=true|false]     help for describe
+--id string             workflow Run ID
+--key string            public key used to verify the attestation. Note: You can also use env variable CHAINLOOP_SIGNING_PUBLIC_KEY
+--verify[=true|false]   verify the attestation
 ```
 
 Options inherited from parent commands
@@ -4066,13 +4097,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             output format, valid options are table, json, attestation, statement or payload-pae (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow workflow-run help
@@ -4091,7 +4122,7 @@ chainloop workflow workflow-run help [command] [flags]
 Options
 
 ```
--h, --help   help for help
+-h, --help[=true|false]   help for help
 ```
 
 Options inherited from parent commands
@@ -4102,13 +4133,13 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 
 #### chainloop workflow workflow-run list
@@ -4122,8 +4153,8 @@ chainloop workflow workflow-run list [flags]
 Options
 
 ```
---full                   full report
--h, --help                   help for list
+--full[=true|false]      full report
+-h, --help[=true|false]      help for list
 --limit int              number of items to show (default 50)
 --next string            cursor to load the next page
 --policy-status string   filter by policy violations status: all, failed, passed
@@ -4141,12 +4172,12 @@ Options inherited from parent commands
 -c, --config string             Path to an existing config file (default is $HOME/.config/chainloop/config.toml)
 --control-plane string      URL for the Control Plane API ($CHAINLOOP_CONTROL_PLANE_API) (default "cp.chainloop.dev:443")
 --control-plane-ca string   CUSTOM CA file for the Control Plane API (optional) ($CHAINLOOP_CONTROL_PLANE_API_CA)
---debug                     Enable debug/verbose logging mode
--i, --insecure                  Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
+--debug[=true|false]        Enable debug/verbose logging mode
+-i, --insecure[=true|false]     Skip TLS transport during connection to the control plane ($CHAINLOOP_API_INSECURE)
 --max-recv-msg-size int     Max size in bytes for incoming gRPC messages (0 = default 33554432) ($CHAINLOOP_API_MAX_RECV_MSG_SIZE)
 -n, --org string                organization name
 -o, --output string             Output format, valid options are json and table (default "table")
 -t, --token string              API token. NOTE: Alternatively use the env variable CHAINLOOP_TOKEN
--y, --yes                       Skip confirmation
+-y, --yes[=true|false]          Skip confirmation
 ```
 

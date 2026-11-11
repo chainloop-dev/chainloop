@@ -161,9 +161,10 @@ func (s *ReferrerUseCase) ExtractAndPersist(ctx context.Context, att *dsse.Envel
 }
 
 // GetFromRootUser returns the referrer identified by the provided content digest, including its first-level references.
-// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it.
-// It only returns referrers that belong to organizations the user is member of.
-func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {
+// The discovery is limited to the given organization, with the project visibility that the user has in that
+// organization. The caller makes sure that the user can work in the organization, as for any other operation.
+// A user without a membership in it (an instance admin) sees the whole organization.
+func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind, userID string, orgID uuid.UUID, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {
 	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRootUser")
 	defer span.End()
 
@@ -172,17 +173,25 @@ func (s *ReferrerUseCase) GetFromRootUser(ctx context.Context, digest, rootKind,
 		return nil, "", NewErrInvalidUUID(err)
 	}
 
-	userOrgs, scopes, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
+	_, scopes, err := s.membershipUseCase.GetOrgsAndRBACInfoForUser(ctx, userUUID)
 	if err != nil {
 		return nil, "", err
 	}
 
-	// We pass the list of organizationsIDs from where to look for the referrer:
-	// the organizations the user is a member of. Referrers are always project-scoped, so only the
-	// project dimension of the RBAC scopes is relevant here.
-	return s.GetFromRoot(ctx, digest, rootKind, userOrgs, scopes.ProjectIDsByOrg(), p, extraFilters...)
+	// Only the project visibility of the user in this organization applies. A referrer lists its
+	// projects of all organizations, so a visible project in another organization must not count.
+	// Referrers are always project-scoped, so only the project dimension of the RBAC scopes is relevant.
+	var projectIDs map[OrgID][]ProjectID
+	if scope, ok := scopes[orgID]; ok {
+		projectIDs = RBACScopes{orgID: scope}.ProjectIDsByOrg()
+	}
+
+	return s.GetFromRoot(ctx, digest, rootKind, []uuid.UUID{orgID}, projectIDs, p, extraFilters...)
 }
 
+// GetFromRoot returns the referrer identified by the provided content digest, including its first-level references.
+// For example if sha:deadbeef represents an attestation, the result will contain the attestation + materials associated to it.
+// It only returns referrers that belong to the given organizations, with the given project visibility.
 func (s *ReferrerUseCase) GetFromRoot(ctx context.Context, digest, rootKind string, orgIDs []uuid.UUID, projectIDs map[OrgID][]ProjectID, p *pagination.CursorOptions, extraFilters ...GetFromRootFilter) (*StoredReferrer, string, error) {
 	ctx, span := otelx.Start(ctx, referrerTracer, "ReferrerUseCase.GetFromRoot")
 	defer span.End()

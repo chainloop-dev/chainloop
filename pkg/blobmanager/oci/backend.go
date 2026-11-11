@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import (
 
 	pb "github.com/chainloop-dev/chainloop/app/artifact-cas/api/cas/v1"
 	backend "github.com/chainloop-dev/chainloop/pkg/blobmanager"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 )
 
 type Backend struct {
@@ -78,12 +79,12 @@ func NewBackend(repository string, regOpts *RegistryOptions, opts ...NewBackendO
 // This method is very naive so signatures will be used in future releases
 func (b *Backend) Exists(_ context.Context, digest string) (bool, error) {
 	if digest == "" {
-		return false, errors.New("digest is empty")
+		return false, errorsx.New("digest is empty")
 	}
 
 	ref, err := name.ParseReference(b.resourcePath(digest))
 	if err != nil {
-		return false, err
+		return false, errorsx.WithStack(err)
 	}
 
 	// It's not trivial to catch if the error is a 404 (yeah I know...) so we will assume that
@@ -110,12 +111,12 @@ func (b *Backend) Upload(_ context.Context, r io.Reader, resource *pb.CASResourc
 	// TODO: Split content in multiple layers and do concurrent uploads/downloads
 	data, err := io.ReadAll(r)
 	if err != nil {
-		return fmt.Errorf("reading content: %w", err)
+		return errorsx.Errorf("reading content: %w", err)
 	}
 
 	ref, err := name.ParseReference(b.resourcePath(resource.Digest))
 	if err != nil {
-		return fmt.Errorf("parsing reference: %w", err)
+		return errorsx.Errorf("parsing reference: %w", err)
 	}
 
 	img, err := craftImage(data, resource)
@@ -129,7 +130,7 @@ func (b *Backend) Upload(_ context.Context, r io.Reader, resource *pb.CASResourc
 
 	err = remote.Write(ref, img, remote.WithAuthFromKeychain(b.keychain))
 	if err != nil {
-		return fmt.Errorf("writing image: %w", err)
+		return errorsx.Errorf("writing image: %w", err)
 	}
 
 	return nil
@@ -141,11 +142,11 @@ func (b *Backend) resourcePath(resourceName string) string {
 
 func craftImage(content []byte, resource *pb.CASResource) (v1.Image, error) {
 	if len(content) == 0 {
-		return nil, errors.New("content is empty")
+		return nil, errorsx.New("content is empty")
 	}
 
 	if resource == nil || resource.FileName == "" || resource.Digest == "" {
-		return nil, errors.New("resource metadata is not valid")
+		return nil, errorsx.New("resource metadata is not valid")
 	}
 
 	base := mutate.MediaType(empty.Image, types.OCIManifestSchema1)
@@ -159,7 +160,7 @@ func craftImage(content []byte, resource *pb.CASResource) (v1.Image, error) {
 	layer := static.NewLayer(content, backend.DetectedMediaType(content))
 	img, err := mutate.Append(base, mutate.Addendum{Layer: layer})
 	if err != nil {
-		return nil, err
+		return nil, errorsx.WithStack(err)
 	}
 
 	return img, nil
@@ -167,12 +168,12 @@ func craftImage(content []byte, resource *pb.CASResource) (v1.Image, error) {
 
 func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, error) {
 	if digest == "" {
-		return nil, errors.New("digest is empty")
+		return nil, errorsx.New("digest is empty")
 	}
 
 	ref, err := name.ParseReference(b.resourcePath(digest))
 	if err != nil {
-		return nil, fmt.Errorf("parsing reference: %w", err)
+		return nil, errorsx.Errorf("parsing reference: %w", err)
 	}
 
 	img, err := remote.Image(ref, remote.WithAuthFromKeychain(b.keychain))
@@ -182,7 +183,7 @@ func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, e
 			return nil, backend.NewErrNotFound("image")
 		}
 
-		return nil, fmt.Errorf("getting image: %w", err)
+		return nil, errorsx.Errorf("getting image: %w", err)
 	}
 
 	if err := validateImage(img, digest); err != nil {
@@ -191,7 +192,7 @@ func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, e
 
 	manifest, err := img.Manifest()
 	if err != nil {
-		return nil, fmt.Errorf("extracting manifest: %w", err)
+		return nil, errorsx.Errorf("extracting manifest: %w", err)
 	}
 
 	// Validate image already checked that the manifest has exactly one layer
@@ -199,7 +200,7 @@ func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, e
 
 	filename, ok := manifest.Annotations[ocispec.AnnotationTitle]
 	if !ok {
-		return nil, errors.New("couldn't find file metadata")
+		return nil, errorsx.New("couldn't find file metadata")
 	}
 
 	return &pb.CASResource{Digest: digest, FileName: filename, Size: size}, nil
@@ -207,17 +208,17 @@ func (b *Backend) Describe(_ context.Context, digest string) (*pb.CASResource, e
 
 func (b *Backend) Download(_ context.Context, w io.Writer, digest string) error {
 	if digest == "" {
-		return errors.New("digest is empty")
+		return errorsx.New("digest is empty")
 	}
 
 	ref, err := name.ParseReference(b.resourcePath(digest))
 	if err != nil {
-		return fmt.Errorf("parsing reference: %w", err)
+		return errorsx.Errorf("parsing reference: %w", err)
 	}
 
 	img, err := remote.Image(ref, remote.WithAuthFromKeychain(b.keychain))
 	if err != nil {
-		return fmt.Errorf("getting image: %w", err)
+		return errorsx.Errorf("getting image: %w", err)
 	}
 
 	if err := validateImage(img, digest); err != nil {
@@ -227,13 +228,13 @@ func (b *Backend) Download(_ context.Context, w io.Writer, digest string) error 
 	// Download the layer with the same digest, not relying on the image name
 	l, err := img.LayerByDiffID(v1.Hash{Algorithm: "sha256", Hex: digest})
 	if err != nil {
-		return fmt.Errorf("getting layer with hash sha256:%s: %w", digest, err)
+		return errorsx.Errorf("getting layer with hash sha256:%s: %w", digest, err)
 	}
 
 	// Do not uncompress since we want the raw stored data
 	rc, err := l.Compressed()
 	if err != nil {
-		return fmt.Errorf("extracting data from layer: %w", err)
+		return errorsx.Errorf("extracting data from layer: %w", err)
 	}
 
 	defer rc.Close()
@@ -241,7 +242,7 @@ func (b *Backend) Download(_ context.Context, w io.Writer, digest string) error 
 	buf := make([]byte, 1<<20)
 	_, err = io.CopyBuffer(w, rc, buf)
 	if err != nil {
-		return fmt.Errorf("copying data from layer: %w", err)
+		return errorsx.Errorf("copying data from layer: %w", err)
 	}
 
 	return nil
@@ -252,35 +253,35 @@ func validateImage(img v1.Image, digest string) error {
 	// Review required annotations
 	m, err := img.Manifest()
 	if err != nil {
-		return fmt.Errorf("getting manifest: %w", err)
+		return errorsx.Errorf("getting manifest: %w", err)
 	}
 
 	if v, ok := m.Annotations[ocispec.AnnotationAuthors]; !ok || v != backend.AuthorAnnotation {
-		return errors.New("image not uploaded by chainloop")
+		return errorsx.New("image not uploaded by chainloop")
 	}
 
 	if v, ok := m.Annotations[ocispec.AnnotationTitle]; !ok && v != "" {
-		return errors.New("image does not contain filename information")
+		return errorsx.New("image does not contain filename information")
 	}
 
 	// NOTE: we use img.Layers instead of LayerByDiffID because the latter does not compute the image manifest
 	layers, err := img.Layers()
 	if err != nil {
-		return fmt.Errorf("getting layers: %w", err)
+		return errorsx.Errorf("getting layers: %w", err)
 	}
 
 	if len(layers) != 1 {
-		return errors.New("image does not contain a single layer")
+		return errorsx.New("image does not contain a single layer")
 	}
 
 	// Check the actual layer digest content meets the expected one
 	d, err := layers[0].Digest()
 	if err != nil {
-		return fmt.Errorf("getting layer digest: %w", err)
+		return errorsx.Errorf("getting layer digest: %w", err)
 	}
 
 	if d.Hex != digest {
-		return errors.New("layer digest does not match the expected one")
+		return errorsx.New("layer digest does not match the expected one")
 	}
 
 	return nil
@@ -290,8 +291,8 @@ func validateImage(img v1.Image, digest string) error {
 func (b *Backend) CheckWritePermissions(_ context.Context) error {
 	ref, err := name.ParseReference(fmt.Sprintf("%s/chainloop-test", b.repo))
 	if err != nil {
-		return fmt.Errorf("parsing the reference image for validation: %w", err)
+		return errorsx.Errorf("parsing the reference image for validation: %w", err)
 	}
 
-	return remote.CheckPushPermission(ref, b.keychain, http.DefaultTransport)
+	return errorsx.WithStack(remote.CheckPushPermission(ref, b.keychain, http.DefaultTransport))
 }

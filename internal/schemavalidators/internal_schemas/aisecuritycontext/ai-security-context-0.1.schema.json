@@ -429,6 +429,11 @@
           "minimum": 0,
           "description": "How many survivors the context holds at the covered window."
         },
+        "repo_commits_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of commits reachable from the scanned revision (git rev-list --count of the target SHA). The denominator a consumer needs to render scan progress as \"N of M commits\" or a percentage. OPTIONAL: omitted when unknown — a shallow clone (whose count would be truncated) or an artifact produced before this field existed. The managed flow mirror-clones full history, so it is populated there. A snapshot of repository size, not a funnel counter, so it is not part of the reconciles invariant."
+        },
         "pending_survivors": {
           "type": "integer",
           "minimum": 0,

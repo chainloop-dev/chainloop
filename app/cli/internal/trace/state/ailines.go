@@ -51,11 +51,30 @@ type AILineAttribution struct {
 	// Legacy marks each file with an edit recorded before line fingerprints
 	// existed. Its attribution falls back to the recorded ranges.
 	Legacy map[string]bool `json:"-"`
-	// GeneratedAdded and GeneratedRemoved are the lines that all the agent
-	// edits of the session added and removed, also the ones that never
-	// reached a commit (R-011).
-	GeneratedAdded   int `json:"-"`
-	GeneratedRemoved int `json:"-"`
+	// Generated holds, for each file, the lines that all the agent edits of
+	// the session added and removed, also the ones that never reached a
+	// commit (R-011).
+	Generated map[string]LineTotals `json:"-"`
+}
+
+// LineTotals is a number of added and removed lines.
+type LineTotals struct {
+	Added, Removed int
+}
+
+// GeneratedLines returns the lines that all the agent edits of the session
+// added and removed (R-011), except in the files that skip matches. A nil
+// skip leaves out no file.
+func (a *AILineAttribution) GeneratedLines(skip func(path string) bool) (added, removed int) {
+	for file, t := range a.Generated {
+		if skip != nil && skip(file) {
+			continue
+		}
+		added += t.Added
+		removed += t.Removed
+	}
+
+	return added, removed
 }
 
 // PendingEdit is an uncommitted edit to one file.
@@ -82,6 +101,7 @@ func newAILineAttribution(sessionID string) *AILineAttribution {
 		Erased:    make(map[string]LineCounts),
 		Open:      make(map[string]*OpenLines),
 		Legacy:    make(map[string]bool),
+		Generated: make(map[string]LineTotals),
 	}
 }
 
@@ -143,8 +163,12 @@ func (a *AILineAttribution) applyEdit(entry *aiLineEntry) {
 		}
 	}
 
-	a.GeneratedAdded += entry.LinesAdded
-	a.GeneratedRemoved += entry.LinesRemoved
+	if entry.LinesAdded != 0 || entry.LinesRemoved != 0 {
+		t := a.Generated[entry.File]
+		t.Added += entry.LinesAdded
+		t.Removed += entry.LinesRemoved
+		a.Generated[entry.File] = t
+	}
 }
 
 // aiLinesPath returns the path for a session's AI line attribution file (JSONL).

@@ -53,7 +53,8 @@
           "sha": "d514564a92bf4f472b0ac21cbac794a9494346f4",
           "reason": "diff too large (2065160 bytes)"
         }
-      ]
+      ],
+      "repo_commits_total": 149841
     },
     "class_counts": {
       "access_control": 1,

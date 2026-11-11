@@ -25,7 +25,7 @@
     "usage": {
       "input_tokens": 300,
       "output_tokens": 60,
-      "total_tokens": 395,
+      "total_tokens": 360,
       "cache_read_input_tokens": 30,
       "cache_creation_input_tokens": 7,
       "estimated_cost_usd": 0.3

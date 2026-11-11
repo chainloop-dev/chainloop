@@ -425,7 +425,7 @@ func checkTicketPointer(s *Session) error {
 	if err != nil {
 		return err
 	}
-	if evidence(s).Agent.Name == codex.Name {
+	if viewerTranscript(s) {
 		return checkCodexSpecPointer(s, e.Digest)
 	}
 	for _, msg := range evidence(s).RawSession["main"] {
@@ -457,7 +457,7 @@ func checkSkillTracked(s *Session) error {
 		if e.Metadata == nil || e.Metadata.InvocationCount == 0 {
 			return errors.New("the skill entry has no invocation")
 		}
-		if evidence(s).Agent.Name == codex.Name {
+		if viewerTranscript(s) {
 			return checkCodexSkillMaterials(s, e)
 		}
 		return nil

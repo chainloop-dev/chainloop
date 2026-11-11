@@ -231,14 +231,16 @@ func (pgv *PolicyGroupVerifier) VerifyStatement(ctx context.Context, statement *
 	return result, nil
 }
 
+// applyGroupGate makes every policy of the group a gate when the group
+// attachment enforces it. Enforcement only tightens: a group with `gate: false`
+// leaves the policy gates as they are.
 func applyGroupGate(policyAtt *v1.PolicyAttachment, groupAtt *v1.PolicyGroupAttachment) *v1.PolicyAttachment {
-	if policyAtt == nil || groupAtt == nil || groupAtt.Gate == nil {
+	if policyAtt == nil || !groupAtt.GetGate() || policyAtt.GetGate() {
 		return policyAtt
 	}
 
 	cloned := proto.Clone(policyAtt).(*v1.PolicyAttachment)
-	groupGate := groupAtt.GetGate()
-	cloned.Gate = &groupGate
+	cloned.Gate = proto.Bool(true)
 
 	return cloned
 }

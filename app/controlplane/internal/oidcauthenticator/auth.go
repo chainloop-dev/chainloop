@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@ package authenticator
 
 import (
 	"context"
-	"errors"
 
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/oauth2"
 )
@@ -34,7 +34,7 @@ type OIDC struct {
 func NewOIDC(discoveryDomain, clientID, clientSecret, redirectURL string) (*OIDC, error) {
 	provider, err := oidc.NewProvider(context.Background(), discoveryDomain)
 	if err != nil {
-		return nil, err
+		return nil, errorsx.WithStack(err)
 	}
 
 	conf := oauth2.Config{
@@ -56,11 +56,16 @@ func NewOIDC(discoveryDomain, clientID, clientSecret, redirectURL string) (*OIDC
 func (a *OIDC) VerifyIDToken(ctx context.Context, token *oauth2.Token) (*oidc.IDToken, error) {
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok {
-		return nil, errors.New("no id_token field in oauth2 token")
+		return nil, errorsx.New("no id_token field in oauth2 token")
 	}
 
 	// default settings
 	oidcConfig := &oidc.Config{ClientID: a.ClientID}
 
-	return a.Verifier(oidcConfig).Verify(ctx, rawIDToken)
+	idToken, err := a.Verifier(oidcConfig).Verify(ctx, rawIDToken)
+	if err != nil {
+		return nil, errorsx.WithStack(err)
+	}
+
+	return idToken, nil
 }

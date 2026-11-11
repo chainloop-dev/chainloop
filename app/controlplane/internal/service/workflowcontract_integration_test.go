@@ -382,17 +382,7 @@ func (s *workflowContractApplyIntegrationTestSuite) TestApplyLetsAConfinedTokenU
 
 // Organization-wide tokens and organization administrators still create contracts through Apply.
 func (s *workflowContractApplyIntegrationTestSuite) TestApplyLetsAnUnconfinedCallerCreateAContract() {
-	testCases := []applyCaller{
-		{name: "org token", ctx: s.apiTokenContext(authz.ResourceTypeOrganization, func(t *entities.APIToken) {
-			orgID := uuid.MustParse(s.org.ID)
-			t.ScopeID = &orgID
-		})},
-		{name: "instance token", ctx: s.apiTokenContext(authz.ResourceTypeInstance, nil)},
-		{name: "org owner", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleOwner))},
-		{name: "org admin", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleAdmin))},
-	}
-
-	for i, tc := range testCases {
+	for i, tc := range s.unconfinedCallers() {
 		s.Run(tc.name, func() {
 			name := fmt.Sprintf("unconfined-create-%d", i)
 
@@ -404,6 +394,87 @@ func (s *workflowContractApplyIntegrationTestSuite) TestApplyLetsAnUnconfinedCal
 			s.Require().NoError(err)
 			s.Equal(pb.WorkflowContractServiceApplyResponse_APPLY_STATUS_CREATED, resp.GetStatus())
 			s.Equal(1, s.revisionOf(name))
+		})
+	}
+}
+
+// unconfinedCallers are the callers that manage organization-level contracts.
+func (s *workflowContractApplyIntegrationTestSuite) unconfinedCallers() []applyCaller {
+	orgID := uuid.MustParse(s.org.ID)
+
+	return []applyCaller{
+		{name: "org token", ctx: s.apiTokenContext(authz.ResourceTypeOrganization, func(t *entities.APIToken) {
+			t.ScopeID = &orgID
+		})},
+		{name: "instance token", ctx: s.apiTokenContext(authz.ResourceTypeInstance, nil)},
+		{name: "org owner", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleOwner))},
+		{name: "org admin", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleAdmin))},
+	}
+}
+
+func toProjectScope(name string) *pb.WorkflowContractServiceUpdateRequest_ProjectReference {
+	return &pb.WorkflowContractServiceUpdateRequest_ProjectReference{ProjectReference: &pb.IdentityReference{Name: &name}}
+}
+
+var toOrgScope = &pb.WorkflowContractServiceUpdateRequest_OrganizationScoped{OrganizationScoped: true}
+
+// Spec issue-3644 R-001, R-002 and R-004: the callers that manage organization-level contracts
+// convert a contract in both directions.
+func (s *workflowContractApplyIntegrationTestSuite) TestUpdateLetsAnUnconfinedCallerConvertAContract() {
+	project, err := s.Project.Create(context.Background(), s.org.ID, "convert-project")
+	s.Require().NoError(err)
+
+	for i, tc := range s.unconfinedCallers() {
+		s.Run(tc.name, func() {
+			name := fmt.Sprintf("unconfined-convert-%d", i)
+			_, err := s.WorkflowContract.Create(context.Background(), &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: name})
+			s.Require().NoError(err)
+
+			resp, err := s.svc.Update(tc.ctx, &pb.WorkflowContractServiceUpdateRequest{Name: name, Scope: toProjectScope(project.Name)})
+			s.Require().NoError(err)
+			s.Equal(project.ID.String(), resp.GetResult().GetContract().GetScopedEntity().GetId())
+			s.Equal(1, s.revisionOf(name), "a conversion creates no revision")
+
+			resp, err = s.svc.Update(tc.ctx, &pb.WorkflowContractServiceUpdateRequest{Name: name, Scope: toOrgScope})
+			s.Require().NoError(err)
+			s.Nil(resp.GetResult().GetContract().GetScopedEntity())
+		})
+	}
+}
+
+// Spec issue-3644 R-004: a caller confined to projects can not convert a contract, in either
+// direction, also when it can manage the project-level contract.
+func (s *workflowContractApplyIntegrationTestSuite) TestUpdateRefusesAConfinedCallerConvertingAContract() {
+	project, err := s.Project.Create(context.Background(), s.org.ID, "confined-convert-project")
+	s.Require().NoError(err)
+
+	orgContract, err := s.WorkflowContract.Create(context.Background(), &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "confined-org-contract"})
+	s.Require().NoError(err)
+	projectContract, err := s.WorkflowContract.Create(context.Background(), &biz.WorkflowContractCreateOpts{OrgID: s.org.ID, Name: "confined-project-contract", ProjectID: &project.ID})
+	s.Require().NoError(err)
+
+	callers := append(s.confinedTokens(project.ID),
+		applyCaller{name: "org member", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleOrgMember))},
+		applyCaller{name: "org contributor", ctx: usercontext.WithAuthzSubject(s.ctx, string(authz.RoleOrgContributor))},
+	)
+
+	for _, tc := range callers {
+		s.Run(tc.name, func() {
+			_, err := s.svc.Update(tc.ctx, &pb.WorkflowContractServiceUpdateRequest{Name: orgContract.Name, Scope: toProjectScope(project.Name)})
+			s.Require().Error(err)
+			s.True(kerrors.IsForbidden(err), "got %v", err)
+
+			_, err = s.svc.Update(tc.ctx, &pb.WorkflowContractServiceUpdateRequest{Name: projectContract.Name, Scope: toOrgScope})
+			s.Require().Error(err)
+			s.True(kerrors.IsForbidden(err), "got %v", err)
+
+			// Nothing changed
+			got, err := s.WorkflowContract.FindByIDInOrg(context.Background(), s.org.ID, orgContract.ID.String())
+			s.Require().NoError(err)
+			s.True(got.IsGlobalScoped())
+			got, err = s.WorkflowContract.FindByIDInOrg(context.Background(), s.org.ID, projectContract.ID.String())
+			s.Require().NoError(err)
+			s.True(got.IsProjectScoped())
 		})
 	}
 }
@@ -426,7 +497,7 @@ func (s *workflowContractApplyIntegrationTestSuite) SetupTest() {
 	s.org, err = s.Organization.CreateWithRandomName(context.Background())
 	s.Require().NoError(err)
 
-	s.svc = NewWorkflowSchemaService(s.WorkflowContract, s.Organization, s.User)
+	s.svc = NewWorkflowSchemaService(s.WorkflowContract, s.Organization, s.User, WithProjectUseCase(s.Project))
 
 	// Build a context with the current org and a bearer token, as the handler expects
 	ctx := entities.WithCurrentOrg(context.Background(), &entities.Org{ID: s.org.ID, Name: s.org.Name})
@@ -465,3 +536,68 @@ func (tr *applyMockTransport) Endpoint() string                { return "" }
 func (tr *applyMockTransport) Operation() string               { return "" }
 func (tr *applyMockTransport) RequestHeader() transport.Header { return tr.header }
 func (tr *applyMockTransport) ReplyHeader() transport.Header   { return tr.header }
+
+// An organization-level contract is returned to every caller, but each caller sees only the
+// workflow references of the projects it can see (GHSA-hjc7-j8v3-8gh2).
+func (s *workflowContractApplyIntegrationTestSuite) TestOrgContractWorkflowRefsFollowProjectVisibility() {
+	s.apply(applyContractV1, false)
+
+	newWorkflow := func(name, project string) *biz.Workflow {
+		wf, err := s.Workflow.Create(context.Background(), &biz.WorkflowCreateOpts{
+			OrgID: s.org.ID, Name: name, Project: project, ContractName: applyContractName,
+		})
+		s.Require().NoError(err)
+		return wf
+	}
+
+	visibleWf := newWorkflow("visible-wf", "visible-project")
+	hiddenWf := newWorkflow("hidden-wf", "hidden-project")
+	visibleProjectID := visibleWf.ProjectID
+
+	projectMember := usercontext.WithAuthzSubject(s.ctx, string(authz.RoleOrgMember))
+	projectMember = entities.WithMembership(projectMember, &entities.Membership{
+		UserID: uuid.New(),
+		Resources: []*entities.ResourceMembership{
+			{Role: authz.RoleProjectViewer, ResourceType: authz.ResourceTypeProject, ResourceID: visibleProjectID},
+		},
+	})
+
+	confined := append(s.confinedTokens(visibleProjectID), applyCaller{name: "project member", ctx: projectMember})
+
+	type callerCase struct {
+		caller applyCaller
+		want   []string
+	}
+
+	cases := make([]callerCase, 0, len(confined)+4)
+	for _, c := range confined {
+		cases = append(cases, callerCase{caller: c, want: []string{visibleWf.Name}})
+	}
+
+	for _, c := range s.unconfinedCallers() {
+		cases = append(cases, callerCase{caller: c, want: []string{visibleWf.Name, hiddenWf.Name}})
+	}
+
+	refNames := func(item *pb.WorkflowContractItem) []string {
+		names := make([]string, 0, len(item.GetWorkflowRefs()))
+		for _, ref := range item.GetWorkflowRefs() {
+			names = append(names, ref.GetName())
+		}
+		return names
+	}
+
+	for _, tc := range cases {
+		s.Run(tc.caller.name, func() {
+			listResp, err := s.svc.List(tc.caller.ctx, &pb.WorkflowContractServiceListRequest{})
+			s.Require().NoError(err)
+			s.Require().Len(listResp.GetResult(), 1)
+			s.ElementsMatch(tc.want, refNames(listResp.GetResult()[0]))
+			s.ElementsMatch(tc.want, listResp.GetResult()[0].GetWorkflowNames()) //nolint:staticcheck // the deprecated field must be confined too
+
+			descResp, err := s.svc.Describe(tc.caller.ctx, &pb.WorkflowContractServiceDescribeRequest{Name: applyContractName})
+			s.Require().NoError(err)
+			s.ElementsMatch(tc.want, refNames(descResp.GetResult().GetContract()))
+			s.ElementsMatch(tc.want, descResp.GetResult().GetContract().GetWorkflowNames()) //nolint:staticcheck // the deprecated field must be confined too
+		})
+	}
+}

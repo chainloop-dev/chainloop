@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "hooks": {
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook copilot post-tool-use'"
+      }
+    ],
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook copilot pre-tool-use'"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "bash": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook copilot session-end'"
+      }
+    ],
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "sh -c 'if ! command -v chainloop \u003e/dev/null 2\u003e\u00261; then exit 0; fi; exec chainloop trace hook copilot session-start'"
+      }
+    ]
+  }
+}

@@ -219,7 +219,7 @@ func (c *GitHubOIDCClient) requestToken(ctx context.Context, audience []string) 
 }
 
 func (c *GitHubOIDCClient) decodePayload(b []byte) (string, error) {
-	c.logger.Debug().Msgf("decoding payload: %s", b)
+	c.logger.Debug().Msg("decoding token request payload")
 	var payload struct {
 		Value string `json:"value"`
 	}
@@ -233,7 +233,7 @@ func (c *GitHubOIDCClient) decodePayload(b []byte) (string, error) {
 // verifyToken verifies the token contents and signature.
 func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, actor []string, rawIDToken string) (*oidc.IDToken, error) {
 	// Verify the token.
-	c.logger.Debug().Msgf("verifying token: %s with audience: %s and actor: %s", rawIDToken, audience, actor)
+	c.logger.Debug().Msgf("verifying token with audience: %s and actor: %s", audience, actor)
 	verifier, err := c.verifierFunc(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%w: creating verifier: %w", errVerify, err)
@@ -264,7 +264,7 @@ func (c *GitHubOIDCClient) verifyToken(ctx context.Context, audience []string, a
 }
 
 func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*Token, error) {
-	c.logger.Debug().Msgf("decoding token: %s", token)
+	c.logger.Debug().Msg("decoding verified token claims")
 	var t Token
 	if err := token.Claims(&t); err != nil {
 		return nil, fmt.Errorf("%w: getting claims: %w", errToken, err)
@@ -274,7 +274,7 @@ func (c *GitHubOIDCClient) decodeToken(token *oidc.IDToken) (*Token, error) {
 }
 
 func (c *GitHubOIDCClient) verifyClaims(token *Token) error {
-	c.logger.Debug().Msgf("verifying claims: %s", token)
+	c.logger.Debug().Msg("verifying token claims")
 	if token.JobWorkflowRef == "" {
 		return fmt.Errorf("%w: job workflow ref is empty", errClaims)
 	}

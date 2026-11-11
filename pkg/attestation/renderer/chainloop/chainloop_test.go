@@ -20,6 +20,7 @@ import (
 	"os"
 	"testing"
 
+	v1 "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/secure-systems-lab/go-securesystemslib/dsse"
 	"github.com/stretchr/testify/assert"
@@ -135,4 +136,46 @@ func testEnvelope(filePath string) (*dsse.Envelope, error) {
 	}
 
 	return &envelope, nil
+}
+
+func TestPredicateCommonAuth(t *testing.T) {
+	testCases := []struct {
+		name     string
+		auth     *v1.Attestation_Auth
+		wantJSON string
+	}{
+		{
+			name:     "no auth",
+			wantJSON: `null`,
+		},
+		{
+			name:     "user token",
+			auth:     &v1.Attestation_Auth{Type: v1.Attestation_Auth_AUTH_TYPE_USER, Id: "user-id"},
+			wantJSON: `{"id":"user-id","type":"AUTH_TYPE_USER"}`,
+		},
+		{
+			name:     "api token with name",
+			auth:     &v1.Attestation_Auth{Type: v1.Attestation_Auth_AUTH_TYPE_API_TOKEN, Id: "token-id", Name: "release-pipeline-token"},
+			wantJSON: `{"id":"token-id","type":"AUTH_TYPE_API_TOKEN","name":"release-pipeline-token"}`,
+		},
+		{
+			name:     "api token without name",
+			auth:     &v1.Attestation_Auth{Type: v1.Attestation_Auth_AUTH_TYPE_API_TOKEN, Id: "token-id"},
+			wantJSON: `{"id":"token-id","type":"AUTH_TYPE_API_TOKEN"}`,
+		},
+		{
+			name:     "federated token with subject",
+			auth:     &v1.Attestation_Auth{Type: v1.Attestation_Auth_AUTH_TYPE_FEDERATED, Id: "https://token.actions.githubusercontent.com", Subject: "repo:chainloop-dev/chainloop:ref:refs/heads/main"},
+			wantJSON: `{"id":"https://token.actions.githubusercontent.com","type":"AUTH_TYPE_FEDERATED","subject":"repo:chainloop-dev/chainloop:ref:refs/heads/main"}`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := predicateCommon(&builderInfo{}, &v1.Attestation{Auth: tc.auth})
+			raw, err := json.Marshal(got.Auth)
+			require.NoError(t, err)
+			assert.JSONEq(t, tc.wantJSON, string(raw))
+		})
+	}
 }

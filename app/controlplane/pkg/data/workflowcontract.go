@@ -19,6 +19,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	schemav1 "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
@@ -79,6 +81,10 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID, filter
 	contracts, err := wcontractQuery.
 		WithWorkflows(func(q *ent.WorkflowQuery) {
 			q.Where(workflow.DeletedAtIsNil())
+			// The references follow the same project filter as the contracts (GHSA-hjc7-j8v3-8gh2)
+			if filter.FilterByProjects != nil {
+				q.Where(workflow.ProjectIDIn(filter.FilterByProjects...))
+			}
 		}).
 		Order(ent.Desc(workflow.FieldCreatedAt)).
 		All(ctx)
@@ -93,7 +99,7 @@ func (r *WorkflowContractRepo) List(ctx context.Context, orgID uuid.UUID, filter
 			return nil, err
 		}
 
-		workflowReferences, err := getWorkflowReferences(ctx, s)
+		workflowReferences, err := getWorkflowReferences(ctx, s, filter.FilterByProjects)
 		if err != nil {
 			return nil, err
 		}
@@ -209,14 +215,11 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 		return nil, err
 	}
 
-	c := &biz.ContractQueryOpts{}
-	for _, opt := range opts {
-		opt(c)
-	}
+	c := biz.NewContractQueryOpts(opts...)
 
 	var workflowReferences []*biz.WorkflowRef
 	if !c.SkipGetReferences {
-		workflowReferences, err = getWorkflowReferences(ctx, contract)
+		workflowReferences, err = getWorkflowReferences(ctx, contract, c.ReferencesInProjects)
 		if err != nil {
 			return nil, err
 		}
@@ -231,9 +234,11 @@ func (r *WorkflowContractRepo) Describe(ctx context.Context, orgID, contractID u
 
 // Update will add a new version of the contract.
 // NOTE: ContractVersions are immutable
-func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name string, opts *biz.ContractUpdateOpts) (*biz.WorkflowContractWithVersion, error) {
+func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name string, opts *biz.ContractUpdateOpts, queryOpts ...biz.ContractQueryOpt) (*biz.WorkflowContractWithVersion, error) {
 	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.Update")
 	defer span.End()
+
+	q := biz.NewContractQueryOpts(queryOpts...)
 
 	contract, err := contractInOrg(ctx, r.data.DB, orgID, nil, &name)
 	if err != nil {
@@ -251,10 +256,18 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 	var (
 		lv                 *ent.WorkflowContractVersion
 		workflowReferences []*biz.WorkflowRef
+		// the contract before and after the change of level, read under the lock
+		previous, converted *ent.WorkflowContract
 	)
 
 	if err = WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
-		contract, err = contract.Update().SetNillableDescription(opts.Description).SetUpdatedAt(time.Now()).Save(ctx)
+		if opts.Scope != nil {
+			if previous, converted, err = changeContractScope(ctx, tx, orgID, contract.ID, opts.Scope); err != nil {
+				return err
+			}
+		}
+
+		contract, err = tx.WorkflowContract.UpdateOne(contract).SetNillableDescription(opts.Description).SetUpdatedAt(time.Now()).Save(ctx)
 		if err != nil {
 			return handleError(err)
 		}
@@ -278,7 +291,7 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 			}
 		}
 
-		workflowReferences, err = getWorkflowReferences(ctx, contract)
+		workflowReferences, err = getWorkflowReferences(ctx, contract, q.ReferencesInProjects)
 		if err != nil {
 			return err
 		}
@@ -298,10 +311,97 @@ func (r *WorkflowContractRepo) Update(ctx context.Context, orgID uuid.UUID, name
 		return nil, err
 	}
 
-	return &biz.WorkflowContractWithVersion{
+	result := &biz.WorkflowContractWithVersion{
 		Contract: r.entContractToBizContract(ctx, contract, lv, workflowReferences),
 		Version:  v,
-	}, nil
+	}
+
+	if previous != nil {
+		result.ScopeChange = &biz.ContractScopeTransition{
+			From: r.scopedEntity(ctx, previous),
+			To:   r.scopedEntity(ctx, converted),
+		}
+	}
+
+	return result, nil
+}
+
+// changeContractScope converts the contract to the organization level or to a project level.
+// It locks the contract first, so a workflow change on the same contract waits until the
+// conversion completes, and the other way around (spec issue-3644, D-008).
+// When it changes the level, it returns the contract before and after the change, both read
+// under the lock. When the contract is already at the requested level, it returns nil for both.
+func changeContractScope(ctx context.Context, tx *ent.Tx, orgID, contractID uuid.UUID, scope *biz.ContractScopeChange) (previous, converted *ent.WorkflowContract, err error) {
+	current, err := tx.WorkflowContract.Query().Where(workflowcontract.ID(contractID)).ForUpdate().Only(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("locking the contract: %w", err)
+	}
+
+	projectScoped := current.ScopedResourceType == biz.ContractScopeProject && current.ScopedResourceID != uuid.Nil
+
+	// To the organization level
+	if scope.ProjectID == nil {
+		if !projectScoped {
+			return nil, nil, nil
+		}
+
+		converted, err = tx.WorkflowContract.UpdateOneID(contractID).ClearScopedResourceType().ClearScopedResourceID().Save(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("converting the contract to the organization level: %w", err)
+		}
+
+		return current, converted, nil
+	}
+
+	// To a project level
+	targetID := *scope.ProjectID
+	if projectScoped {
+		if current.ScopedResourceID == targetID {
+			return nil, nil, nil
+		}
+
+		return nil, nil, biz.NewErrValidationStr("a project-level contract can not be moved to a different project")
+	}
+
+	exists, err := tx.Project.Query().Where(project.ID(targetID), project.OrganizationID(orgID), project.DeletedAtIsNil()).Exist(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("finding the project: %w", err)
+	} else if !exists {
+		return nil, nil, biz.NewErrNotFound("project")
+	}
+
+	// Workflows of other projects can not use a project-level contract
+	others, err := tx.Workflow.Query().
+		Where(
+			workflow.HasContractWith(workflowcontract.ID(contractID)),
+			workflow.DeletedAtIsNil(),
+			workflow.ProjectIDNEQ(targetID),
+		).
+		WithProject().
+		All(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("finding the workflows of the contract: %w", err)
+	}
+
+	if len(others) > 0 {
+		refs := make([]string, 0, len(others))
+		for _, wf := range others {
+			refs = append(refs, fmt.Sprintf("%s/%s", wf.Edges.Project.Name, wf.Name))
+		}
+		slices.Sort(refs)
+
+		return nil, nil, biz.NewErrValidationStr(fmt.Sprintf("the contract is used by workflows of other projects, attach a different contract to them first: %s", strings.Join(refs, ", ")))
+	}
+
+	converted, err = tx.WorkflowContract.UpdateOneID(contractID).
+		SetScopedResourceType(biz.ContractScopeProject).
+		SetScopedResourceID(targetID).
+		Save(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("converting the contract to a project level: %w", err)
+	}
+
+	return current, converted, nil
 }
 
 func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contractID uuid.UUID) (*biz.WorkflowContract, error) {
@@ -315,7 +415,8 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 		return nil, nil
 	}
 
-	workflowReferences, err := getWorkflowReferences(ctx, contract)
+	// Every reference, regardless of the caller: Delete relies on them to refuse deleting a contract in use
+	workflowReferences, err := getWorkflowReferences(ctx, contract, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -328,20 +429,25 @@ func (r *WorkflowContractRepo) FindByIDInOrg(ctx context.Context, orgID, contrac
 	return r.entContractToBizContract(ctx, contract, latestV, workflowReferences), nil
 }
 
-func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string) (*biz.WorkflowContract, error) {
+func (r *WorkflowContractRepo) FindByNameInOrg(ctx context.Context, orgID uuid.UUID, name string, opts ...biz.ContractQueryOpt) (*biz.WorkflowContract, error) {
 	ctx, span := otelx.Start(ctx, workflowContractRepoTracer, "WorkflowContractRepo.FindByNameInOrg")
 	defer span.End()
 
-	contract, err := contractInOrg(ctx, r.data.DB, orgID, nil, &name)
+	c := biz.NewContractQueryOpts(opts...)
+
+	contract, err := contractInOrg(ctx, r.data.DB, orgID, nil, &name, opts...)
 	if err != nil && !ent.IsNotFound(err) {
 		return nil, fmt.Errorf("failed to find contract: %w", err)
 	} else if contract == nil {
 		return nil, biz.NewErrNotFound("contract")
 	}
 
-	workflowReferences, err := getWorkflowReferences(ctx, contract)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get workflows: %w", err)
+	var workflowReferences []*biz.WorkflowRef
+	if !c.SkipGetReferences {
+		workflowReferences, err = getWorkflowReferences(ctx, contract, c.ReferencesInProjects)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get workflows: %w", err)
+		}
 	}
 
 	latestV, err := latestVersion(ctx, contract)
@@ -429,10 +535,7 @@ func contractInOrg(ctx context.Context, client *ent.Client, orgID uuid.UUID, con
 
 // It can be loaded via by ID or name
 func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uuid.UUID, contractID *uuid.UUID, name *string, opts ...biz.ContractQueryOpt) (*ent.WorkflowContract, error) {
-	c := &biz.ContractQueryOpts{}
-	for _, opt := range opts {
-		opt(c)
-	}
+	c := biz.NewContractQueryOpts(opts...)
 
 	if contractID == nil && name == nil {
 		return nil, fmt.Errorf("either contractID or name must be provided")
@@ -446,6 +549,9 @@ func contractInOrgQuery(ctx context.Context, q *ent.OrganizationQuery, orgID uui
 	if !c.SkipGetReferences {
 		query = query.WithWorkflows(func(q *ent.WorkflowQuery) {
 			q.Where(workflow.DeletedAtIsNil()).WithProject().Select(project.FieldID, project.FieldName)
+			if c.ReferencesInProjects != nil {
+				q.Where(workflow.ProjectIDIn(c.ReferencesInProjects...))
+			}
 		})
 	}
 
@@ -469,13 +575,22 @@ func (r *WorkflowContractRepo) entContractToBizContract(ctx context.Context, w *
 		LatestRevisionCreatedAt: toTimePtr(version.CreatedAt),
 		WorkflowRefs:            workflowReferences,
 		Description:             w.Description,
+		ScopedEntity:            r.scopedEntity(ctx, w),
+		LatestRevision:          version.Revision,
 	}
 
-	if w.ScopedResourceID != uuid.Nil {
-		c.ScopedEntity = &biz.ScopedEntity{
-			Type: string(w.ScopedResourceType),
-			ID:   w.ScopedResourceID,
-		}
+	return c
+}
+
+// scopedEntity returns the level of the contract. Nil means the organization level.
+func (r *WorkflowContractRepo) scopedEntity(ctx context.Context, w *ent.WorkflowContract) *biz.ScopedEntity {
+	if w.ScopedResourceID == uuid.Nil {
+		return nil
+	}
+
+	s := &biz.ScopedEntity{
+		Type: string(w.ScopedResourceType),
+		ID:   w.ScopedResourceID,
 	}
 
 	// preload the project name if the contract is scoped to a project
@@ -483,23 +598,27 @@ func (r *WorkflowContractRepo) entContractToBizContract(ctx context.Context, w *
 		project, err := r.data.DB.Project.Get(ctx, w.ScopedResourceID)
 		if err != nil {
 			r.log.Errorf("failed to get project: %w", err)
-			return c
+			return s
 		}
-		c.ScopedEntity.Name = project.Name
+		s.Name = project.Name
 	}
 
-	c.LatestRevision = version.Revision
-	return c
+	return s
 }
 
-// getWorkflowReferences get the list of workflows associated with a given contract
-func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract) ([]*biz.WorkflowRef, error) {
+// getWorkflowReferences get the list of workflows associated with a given contract.
+// inProjects confines them to the workflows of those projects; nil means every project.
+func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract, inProjects []uuid.UUID) ([]*biz.WorkflowRef, error) {
 	// Either get it from preloaded entity or query it
 	workflows := schema.Edges.Workflows
 	if workflows == nil {
+		query := schema.QueryWorkflows().Where(workflow.DeletedAtIsNil())
+		if inProjects != nil {
+			query = query.Where(workflow.ProjectIDIn(inProjects...))
+		}
+
 		var err error
-		workflows, err = schema.QueryWorkflows().
-			Where(workflow.DeletedAtIsNil()).
+		workflows, err = query.
 			WithProject().
 			Select(workflow.FieldID, workflow.FieldName).
 			All(ctx)
@@ -515,9 +634,15 @@ func getWorkflowReferences(ctx context.Context, schema *ent.WorkflowContract) ([
 			return nil, err
 		}
 
+		// The preloaded workflows may come from a query that did not filter them
+		if inProjects != nil && !slices.Contains(inProjects, wfBiz.ProjectID) {
+			continue
+		}
+
 		references = append(references, &biz.WorkflowRef{
 			ID:          wfBiz.ID,
 			Name:        wfBiz.Name,
+			ProjectID:   wfBiz.ProjectID,
 			ProjectName: wfBiz.Project,
 		})
 	}

@@ -260,6 +260,11 @@ const (
 	// repository's fix history, the attack surfaces they share, ranked risks,
 	// and byte-verifiable evidence anchors backing each claim
 	CraftingSchema_Material_CHAINLOOP_AI_SECURITY_CONTEXT CraftingSchema_Material_MaterialType = 45
+	// Build log of Microsoft build tools: an MSBuild binary log (-bl), an
+	// MSBuild text log, a Visual C++ build log (BuildLog.htm, written by
+	// VCBuild), or an archive of them. Its compiler and build warnings and
+	// errors are evaluated.
+	CraftingSchema_Material_MSBUILD_LOG CraftingSchema_Material_MaterialType = 46
 )
 
 // Enum value maps for CraftingSchema_Material_MaterialType.
@@ -311,6 +316,7 @@ var (
 		43: "OVERSECURED_JSON",
 		44: "PITEST_XML",
 		45: "CHAINLOOP_AI_SECURITY_CONTEXT",
+		46: "MSBUILD_LOG",
 	}
 	CraftingSchema_Material_MaterialType_value = map[string]int32{
 		"MATERIAL_TYPE_UNSPECIFIED":       0,
@@ -359,6 +365,7 @@ var (
 		"OVERSECURED_JSON":                43,
 		"PITEST_XML":                      44,
 		"CHAINLOOP_AI_SECURITY_CONTEXT":   45,
+		"MSBUILD_LOG":                     46,
 	}
 )
 
@@ -782,7 +789,12 @@ type Policies struct {
 	// Policies to be applied to materials
 	Materials []*PolicyAttachment `protobuf:"bytes,1,rep,name=materials,proto3" json:"materials,omitempty"`
 	// Policies to be applied to attestation metadata
-	Attestation   []*PolicyAttachment `protobuf:"bytes,2,rep,name=attestation,proto3" json:"attestation,omitempty"`
+	Attestation []*PolicyAttachment `protobuf:"bytes,2,rep,name=attestation,proto3" json:"attestation,omitempty"`
+	// Enforce every policy of this contract, including the policies of its policy groups.
+	// Enforcement only tightens:
+	// - true: every policy of the contract acts as a gate
+	// - false or unset: the organization default and the attachment `gate` values decide
+	Gate          *bool `protobuf:"varint,3,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -831,6 +843,13 @@ func (x *Policies) GetAttestation() []*PolicyAttachment {
 	return nil
 }
 
+func (x *Policies) GetGate() bool {
+	if x != nil && x.Gate != nil {
+		return *x.Gate
+	}
+	return false
+}
+
 // A policy to be applied to this contract
 type PolicyAttachment struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -855,10 +874,10 @@ type PolicyAttachment struct {
 	With map[string]string `protobuf:"bytes,5,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// List of requirements this policy contributes to satisfy
 	Requirements []string `protobuf:"bytes,6,rep,name=requirements,proto3" json:"requirements,omitempty"`
-	// Controls whether policy violations act as a gate.
+	// Controls whether policy violations act as a gate. Enforcement only tightens.
 	// - true: policy violations are blocking for this policy
-	// - false: policy violations are non-blocking for this policy
-	// - unset: inherit organization-level default behavior
+	// - false or unset: inherit the organization and contract enforcement.
+	//   It does not turn off enforcement set at those levels.
 	Gate          *bool `protobuf:"varint,7,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1561,10 +1580,10 @@ type PolicyGroupAttachment struct {
 	With map[string]string `protobuf:"bytes,2,rep,name=with,proto3" json:"with,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// policy names to skip (matched against metadata.name)
 	Skip []string `protobuf:"bytes,3,rep,name=skip,proto3" json:"skip,omitempty"`
-	// Controls whether policy violations act as a gate for this group.
-	// - true: policy violations are blocking for this policy group
-	// - false: policy violations are non-blocking for this policy group
-	// - unset: inherit organization-level default behavior
+	// Controls whether policy violations act as a gate for this group. Enforcement only tightens.
+	// - true: policy violations are blocking for every policy of this group
+	// - false or unset: inherit the organization and contract enforcement, and the policy `gate` values.
+	//   It does not turn off enforcement set at those levels.
 	Gate          *bool `protobuf:"varint,4,opt,name=gate,proto3,oneof" json:"gate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2105,7 +2124,7 @@ var File_workflowcontract_v1_crafting_schema_proto protoreflect.FileDescriptor
 
 const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\n" +
-	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\x99\x13\n" +
+	")workflowcontract/v1/crafting_schema.proto\x12\x13workflowcontract.v1\x1a\x1bbuf/validate/validate.proto\"\xaa\x13\n" +
 	"\x0eCraftingSchema\x122\n" +
 	"\x0eschema_version\x18\x01 \x01(\tB\v\xbaH\x06r\x04\n" +
 	"\x02v1\x18\x01R\rschemaVersion\x12N\n" +
@@ -2128,7 +2147,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x0fDAGGER_PIPELINE\x10\x06\x12\x15\n" +
 	"\x11TEAMCITY_PIPELINE\x10\a\x12\x13\n" +
 	"\x0fTEKTON_PIPELINE\x10\b\x12\x15\n" +
-	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\xe4\f\n" +
+	"\x11CHAINLOOP_SANDBOX\x10\t:\x02\x18\x01\x1a\xf5\f\n" +
 	"\bMaterial\x12[\n" +
 	"\x04type\x18\x01 \x01(\x0e29.workflowcontract.v1.CraftingSchema.Material.MaterialTypeB\f\xbaH\a\x82\x01\x04\x10\x01 \x00\x18\x01R\x04type\x12\x99\x01\n" +
 	"\x04name\x18\x02 \x01(\tB\x84\x01\xbaH\x7f\xba\x01|\n" +
@@ -2139,7 +2158,7 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\vskip_upload\x18\x06 \x01(\bR\n" +
 	"skipUpload\x12\xaa\x01\n" +
 	"\x05group\x18\a \x01(\tB\x93\x01\xbaH\x8f\x01\xba\x01\x8b\x01\n" +
-	"\x0egroup.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a=this == '' || this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x05group\"\x89\b\n" +
+	"\x0egroup.dns-1123\x12:must contain only lowercase letters, numbers, and hyphens.\x1a=this == '' || this.matches('^[a-z0-9]([-a-z0-9]*[a-z0-9])?$')R\x05group\"\x9a\b\n" +
 	"\fMaterialType\x12\x1d\n" +
 	"\x19MATERIAL_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
@@ -2191,7 +2210,8 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"\x10OVERSECURED_JSON\x10+\x12\x0e\n" +
 	"\n" +
 	"PITEST_XML\x10,\x12!\n" +
-	"\x1dCHAINLOOP_AI_SECURITY_CONTEXT\x10-:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
+	"\x1dCHAINLOOP_AI_SECURITY_CONTEXT\x10-\x12\x0f\n" +
+	"\vMSBUILD_LOG\x10.:\x02\x18\x01:\x02\x18\x01\"\xfb\x01\n" +
 	"\x10CraftingSchemaV2\x128\n" +
 	"\vapi_version\x18\x01 \x01(\tB\x17\xbaH\x14r\x12\n" +
 	"\x10chainloop.dev/v1R\n" +
@@ -2212,10 +2232,12 @@ const file_workflowcontract_v1_crafting_schema_proto_rawDesc = "" +
 	"Annotation\x12#\n" +
 	"\x04name\x18\x01 \x01(\tB\x0f\xbaH\fr\n" +
 	"2\b^[\\w-]+$R\x04name\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value\"\x98\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"\xba\x01\n" +
 	"\bPolicies\x12C\n" +
 	"\tmaterials\x18\x01 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\tmaterials\x12G\n" +
-	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\"\xaf\x05\n" +
+	"\vattestation\x18\x02 \x03(\v2%.workflowcontract.v1.PolicyAttachmentR\vattestation\x12\x17\n" +
+	"\x04gate\x18\x03 \x01(\bH\x00R\x04gate\x88\x01\x01B\a\n" +
+	"\x05_gate\"\xaf\x05\n" +
 	"\x10PolicyAttachment\x12\x1b\n" +
 	"\x03ref\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01H\x00R\x03ref\x129\n" +
 	"\bembedded\x18\x02 \x01(\v2\x1b.workflowcontract.v1.PolicyH\x00R\bembedded\x12R\n" +
@@ -2419,6 +2441,7 @@ func file_workflowcontract_v1_crafting_schema_proto_init() {
 	if File_workflowcontract_v1_crafting_schema_proto != nil {
 		return
 	}
+	file_workflowcontract_v1_crafting_schema_proto_msgTypes[4].OneofWrappers = []any{}
 	file_workflowcontract_v1_crafting_schema_proto_msgTypes[5].OneofWrappers = []any{
 		(*PolicyAttachment_Ref)(nil),
 		(*PolicyAttachment_Embedded)(nil),

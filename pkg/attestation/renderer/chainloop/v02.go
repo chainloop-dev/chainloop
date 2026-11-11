@@ -290,18 +290,19 @@ func (r *RendererV02) predicate() (*structpb.Struct, error) {
 		return nil, fmt.Errorf("error rendering policy evaluations: %w", err)
 	}
 
+	policiesEnforced := r.att.GetBlockOnPolicyViolation()
 	policyCheckBlockingStrategy := PolicyViolationBlockingStrategyAdvisory
-	if r.att.GetBlockOnPolicyViolation() {
+	if policiesEnforced {
 		policyCheckBlockingStrategy = PolicyViolationBlockingStrategyEnforced
 	}
 
 	// An attestation is blocked when:
 	// - any of the policies marked as gate has violations
-	// - or if there are any policy violations and the attestation is configured to be blocked on violations
+	// - or if there are any policy violations and the organization or the contract enforces policies
 	// In all cases, if the bypass flag is set, the attestation is not blocked
-	blocked := !r.att.GetBypassPolicyCheck() && (evalResult.hasGatedViolations || (evalResult.hasViolations && r.att.GetBlockOnPolicyViolation()))
+	blocked := !r.att.GetBypassPolicyCheck() && (evalResult.hasGatedViolations || (evalResult.hasViolations && policiesEnforced))
 
-	hasGates := evalResult.hasGates || policyCheckBlockingStrategy == PolicyViolationBlockingStrategyEnforced
+	hasGates := evalResult.hasGates || policiesEnforced
 
 	p := ProvenancePredicateV02{
 		ProvenancePredicateCommon:   predicateCommon(r.builder, r.att),

@@ -423,7 +423,7 @@ func (c *ExecClient) FilesAt(repoRoot, sha string, paths []string) (map[string][
 		if err != nil || size < 0 || size >= len(content) || content[size] != '\n' {
 			return nil, fmt.Errorf("invalid base blob size for %s at %s: %q", path, sha, fields[2])
 		}
-		if fields[1] == "blob" {
+		if fields[1] == plumbing.BlobObject.String() {
 			contents[path] = content[:size]
 		}
 		out = content[size+1:]

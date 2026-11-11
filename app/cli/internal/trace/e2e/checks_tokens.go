@@ -18,9 +18,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 )
 
@@ -40,6 +44,40 @@ func checkCacheTokenAccounting(s *Session) error {
 		if err != nil {
 			return err
 		}
+	case pi.Name:
+		// Pi raw_session contains only the selected branch. Read native fields
+		// independently of the provider parser; source totalTokens may include cache.
+		for _, raw := range d.RawSession["main"] {
+			var r struct {
+				Type    string `json:"type"`
+				Message struct {
+					Role  string                     `json:"role"`
+					Usage map[string]json.RawMessage `json:"usage"`
+				} `json:"message"`
+			}
+			if json.Unmarshal(raw, &r) != nil || r.Type != "message" || r.Message.Role != "assistant" {
+				continue
+			}
+			for _, field := range []struct {
+				name  string
+				total *int
+			}{
+				{"input", &want.InputTokens}, {"output", &want.OutputTokens},
+				{"cacheRead", &want.CacheReadInputTokens}, {"cacheWrite", &want.CacheCreationInputTokens},
+			} {
+				value, ok := new(big.Rat).SetString(string(r.Message.Usage[field.name]))
+				if !ok || value.Sign() < 0 || !value.IsInt() || !value.Num().IsInt64() {
+					continue
+				}
+				count := value.Num().Int64()
+				if count <= int64(int(^uint(0)>>1)-*field.total) {
+					*field.total += int(count)
+				}
+			}
+		}
+		if want.OutputTokens > int(^uint(0)>>1)-want.InputTokens {
+			return errors.New("Pi source input + output token total overflows")
+		}
 	case claude.Name:
 		for _, records := range d.RawSession {
 			for _, raw := range records {
@@ -57,6 +95,12 @@ func checkCacheTokenAccounting(s *Session) error {
 				}
 			}
 		}
+	case copilot.Name:
+		var err error
+		want, err = copilotSourceUsage(d.RawSession["main"])
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("%w: cache accounting source comparison is not implemented for %s", errNotCovered, d.Agent.Name)
 	}
@@ -73,6 +117,57 @@ func checkCacheTokenAccounting(s *Session) error {
 		return fmt.Errorf("stored token counts do not match source usage with cache separated: got %+v, want %+v", got, want)
 	}
 	return nil
+}
+
+// copilotSourceUsage sums the session.usage_record events of the Copilot event
+// log, one for each API call, independently of the provider parser. The
+// provider stores the session.shutdown totals, which Copilot computes from the
+// same calls, so the two must agree. Copilot input tokens include the cache
+// reads and writes. A record that Copilot wrote again for the same call
+// counts once; the latest copy wins, as in the provider.
+func copilotSourceUsage(records []json.RawMessage) (aicodingsession.Usage, error) {
+	type usage struct {
+		APICallID string `json:"apiCallId"`
+		Input     int    `json:"inputTokens"`
+		Output    int    `json:"outputTokens"`
+		Read      int    `json:"cacheReadTokens"`
+		Write     int    `json:"cacheWriteTokens"`
+	}
+	calls := map[string]usage{}
+	for i, raw := range records {
+		var r struct {
+			ID   string `json:"id"`
+			Type string `json:"type"`
+			Data struct {
+				Usage *usage `json:"usage"`
+			} `json:"data"`
+		}
+		if json.Unmarshal(raw, &r) != nil || r.Type != "session.usage_record" || r.Data.Usage == nil {
+			continue
+		}
+		// The stored transcript is redacted, and the redaction can replace
+		// each call ID with the same placeholder. Such an ID tells no calls
+		// apart, so the event ID is used.
+		key := r.Data.Usage.APICallID
+		if key == "" || strings.Contains(key, redactedPlaceholder) {
+			key = "event-" + r.ID
+		}
+		if key == "event-" {
+			key = fmt.Sprintf("record-%d", i)
+		}
+		calls[key] = *r.Data.Usage
+	}
+	if len(calls) == 0 {
+		return aicodingsession.Usage{}, errors.New("the Copilot event log has no source token usage")
+	}
+	var want aicodingsession.Usage
+	for _, u := range calls {
+		want.InputTokens += u.Input - u.Read - u.Write
+		want.OutputTokens += u.Output
+		want.CacheReadInputTokens += u.Read
+		want.CacheCreationInputTokens += u.Write
+	}
+	return want, nil
 }
 
 // sourceTokens keeps Codex's inclusive input until the source totals are known.

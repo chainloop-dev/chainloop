@@ -16,6 +16,7 @@
 package policies
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -23,6 +24,7 @@ import (
 	"testing"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -99,12 +101,32 @@ func TestResolveHTTPStatusHandling(t *testing.T) {
 				assert.NotErrorIs(t, err, ErrUnauthorized)
 				assert.NotErrorIs(t, err, ErrNotFound)
 				assert.Contains(t, err.Error(), fmt.Sprintf("got %d", tc.statusCode))
+
+				var statusErr *UnexpectedStatusError
+				require.ErrorAs(t, err, &statusErr)
+				assert.Equal(t, tc.statusCode, statusErr.StatusCode)
 			}
 			if tc.wantMsg != "" {
 				assert.Contains(t, err.Error(), tc.wantMsg)
 			}
+			if !errors.Is(tc.wantErr, ErrNotFound) {
+				assert.True(t, errorsx.HasStack(err), "a provider failure must record a stack")
+			}
 		})
 	}
+}
+
+func TestResolveTransportFailureRecordsStack(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	// Close the server so that the request fails in the transport.
+	server.Close()
+
+	provider := &PolicyProvider{name: "test", url: server.URL}
+
+	_, _, err := provider.Resolve("test-policy", "", ProviderAuthOpts{Token: "test-token"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "error executing policy request")
+	assert.True(t, errorsx.HasStack(err))
 }
 
 func TestResolveGroupHTTPStatusHandling(t *testing.T) {

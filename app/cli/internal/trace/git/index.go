@@ -101,7 +101,7 @@ func (c *ExecClient) IndexBlobs(repoRoot string, hashes map[string]string) (map[
 			return nil, fmt.Errorf("invalid staged blob header for %s", path)
 		}
 		fields := strings.Fields(string(header))
-		if len(fields) != 3 || fields[0] != hashes[path] || fields[1] != "blob" {
+		if len(fields) != 3 || fields[0] != hashes[path] || fields[1] != plumbing.BlobObject.String() {
 			return nil, fmt.Errorf("invalid staged blob header for %s: %q", path, header)
 		}
 		size, err := strconv.Atoi(fields[2])

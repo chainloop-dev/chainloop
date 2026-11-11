@@ -491,6 +491,8 @@ func Craft(ctx context.Context, materialSchema *schemaapi.CraftingSchema_Materia
 		crafter, err = NewCheckmarxCrafter(materialSchema, casBackend, logger)
 	case schemaapi.CraftingSchema_Material_OVERSECURED_JSON:
 		crafter, err = NewOversecuredCrafter(materialSchema, casBackend, logger)
+	case schemaapi.CraftingSchema_Material_MSBUILD_LOG:
+		crafter, err = NewMSBuildLogCrafter(materialSchema, casBackend, logger)
 	default:
 		return nil, fmt.Errorf("material of type %q not supported yet", materialSchema.Type)
 	}

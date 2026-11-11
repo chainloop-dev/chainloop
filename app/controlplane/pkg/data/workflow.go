@@ -33,6 +33,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/integrationattachment"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowcontract"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
 )
@@ -174,29 +175,21 @@ func (r *WorkflowRepo) Create(ctx context.Context, opts *biz.WorkflowCreateOpts)
 					} else {
 						return fmt.Errorf("failed to find contract: %w", err)
 					}
+				} else if err := checkContractProject(ctx, tx, contract.ID, opts.Project); err != nil {
+					// An existing contract with the default name must be usable from this project
+					return err
 				}
 			}
 
 			contractUUID = contract.ID
 		} else {
 			// We want to use an existing contract, let's make sure it's scoped to the project or org
-			existingContract, err := contractInOrg(ctx, r.data.DB, orgUUID, &contractUUID, nil)
-			if err != nil {
+			if _, err := contractInOrg(ctx, r.data.DB, orgUUID, &contractUUID, nil, biz.WithoutReferences()); err != nil {
 				return err
 			}
 
-			// Fail if it's scoped to a different project.
-			// We resolve the scoped project by UUID (including soft-deleted ones) to read its name,
-			// then compare that name against the target project. This handles the case where the
-			// original project was soft-deleted and recreated with the same name but a new UUID —
-			// the contract is still valid for a project with that name.
-			if existingContract.ScopedResourceID != uuid.Nil && existingContract.ScopedResourceType == biz.ContractScopeProject {
-				scopedProject, err := tx.Project.Query().
-					Where(project.ID(existingContract.ScopedResourceID)).
-					Only(ctx)
-				if err != nil || scopedProject.Name != opts.Project {
-					return biz.NewErrUnauthorizedStr(fmt.Sprintf("contract %q is scoped to a different project", opts.ContractName))
-				}
+			if err := checkContractProject(ctx, tx, contractUUID, opts.Project); err != nil {
+				return err
 			}
 		}
 
@@ -233,32 +226,74 @@ func (r *WorkflowRepo) Update(ctx context.Context, id uuid.UUID, opts *biz.Workf
 		opts = &biz.WorkflowUpdateOpts{}
 	}
 
-	req := r.data.DB.Workflow.UpdateOneID(id).
-		SetNillableTeam(opts.Team).
-		SetNillableDescription(opts.Description).
-		SetUpdatedAt(time.Now())
+	var wf *ent.Workflow
+	if err := WithTx(ctx, r.data.DB, func(tx *ent.Tx) error {
+		req := tx.Workflow.UpdateOneID(id).
+			SetNillableTeam(opts.Team).
+			SetNillableDescription(opts.Description).
+			SetUpdatedAt(time.Now())
 
-	// Update the contract if provided
-	if opts.ContractID != nil {
-		contractUUID, err := uuid.Parse(*opts.ContractID)
-		if err != nil {
-			return nil, err
+		// Update the contract if provided
+		if opts.ContractID != nil {
+			contractUUID, err := uuid.Parse(*opts.ContractID)
+			if err != nil {
+				return err
+			}
+
+			current, err := tx.Workflow.Query().Where(workflow.ID(id)).WithProject().Only(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to find workflow: %w", err)
+			}
+
+			if err := checkContractProject(ctx, tx, contractUUID, current.Edges.Project.Name); err != nil {
+				return err
+			}
+
+			req = req.SetContractID(contractUUID)
 		}
-		req = req.SetContractID(contractUUID)
-	}
 
-	wf, err := req.Save(ctx)
+		var err error
+		if wf, err = req.Save(ctx); err != nil {
+			if ent.IsConstraintError(err) {
+				return biz.NewErrAlreadyExists(err)
+			}
 
-	if err != nil {
-		if ent.IsConstraintError(err) {
-			return nil, biz.NewErrAlreadyExists(err)
+			return fmt.Errorf("failed to update workflow: %w", err)
 		}
 
-		return nil, fmt.Errorf("failed to update workflow: %w", err)
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 
 	// Reload the object to include the relations
 	return r.FindByID(ctx, wf.ID)
+}
+
+// checkContractProject fails when the contract is scoped to a project other than projectName.
+// It locks the contract for share, so a conversion of the same contract waits until the
+// workflow change completes, and the other way around (spec issue-3644, R-010 and D-008).
+//
+// We resolve the scoped project by UUID (including soft-deleted ones) to read its name, then
+// compare that name against the target project. This handles the case where the original
+// project was soft-deleted and recreated with the same name but a new UUID: the contract is
+// still valid for a project with that name.
+func checkContractProject(ctx context.Context, tx *ent.Tx, contractID uuid.UUID, projectName string) error {
+	contract, err := tx.WorkflowContract.Query().Where(workflowcontract.ID(contractID)).ForShare().Only(ctx)
+	if err != nil {
+		return fmt.Errorf("locking the contract: %w", err)
+	}
+
+	if contract.ScopedResourceID == uuid.Nil || contract.ScopedResourceType != biz.ContractScopeProject {
+		return nil
+	}
+
+	scopedProject, err := tx.Project.Query().Where(project.ID(contract.ScopedResourceID)).Only(ctx)
+	if err != nil || scopedProject.Name != projectName {
+		return biz.NewErrUnauthorizedStr(fmt.Sprintf("contract %q is scoped to a different project", contract.Name))
+	}
+
+	return nil
 }
 
 func (r *WorkflowRepo) List(ctx context.Context, orgID uuid.UUID, filter *biz.WorkflowListOpts, pagination *pagination.OffsetPaginationOpts) ([]*biz.Workflow, int, error) {

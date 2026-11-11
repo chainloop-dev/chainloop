@@ -47,6 +47,10 @@ type SessionRecord struct {
 	// CodexStorageRoot is the canonical Codex home validated while copying
 	// this session. Later pushes can refresh it without the original CODEX_HOME.
 	CodexStorageRoot string `json:"codex_storage_root,omitempty"`
+	// CopilotStorageRoot is the canonical Copilot session-state folder
+	// validated while copying this session. Later pushes can refresh it
+	// without the original COPILOT_HOME.
+	CopilotStorageRoot string `json:"copilot_storage_root,omitempty"`
 	// Checkouts lists the roots of the other checkouts that this session
 	// edited with a file tool, sorted. Shell hooks run in the session's own
 	// checkout, and they also snapshot these checkouts, so that a command
@@ -71,20 +75,23 @@ func (s *Store) SaveSessionRecord(rec *SessionRecord) error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(dir, sanitizeID(rec.SessionID)+".json"), data, 0600)
+	return os.WriteFile(s.sessionRecordPath(rec.SessionID), data, 0600)
+}
+
+// sessionRecordPath returns the path of the record of a session.
+func (s *Store) sessionRecordPath(sessionID string) string {
+	return filepath.Join(s.traceDirPath(), traceDirSessions, sanitizeID(sessionID)+sessionRecordExt)
 }
 
 // SessionRecordExists checks whether a session record file exists for the given session ID.
 func (s *Store) SessionRecordExists(sessionID string) bool {
-	path := filepath.Join(s.traceDirPath(), traceDirSessions, sanitizeID(sessionID)+".json")
-	_, err := os.Stat(path)
+	_, err := os.Stat(s.sessionRecordPath(sessionID))
 	return err == nil
 }
 
 // LoadSessionRecord reads the SessionRecord for sessionID. Returns nil, nil when not found.
 func (s *Store) LoadSessionRecord(sessionID string) (*SessionRecord, error) {
-	path := filepath.Join(s.traceDirPath(), traceDirSessions, sanitizeID(sessionID)+".json")
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(s.sessionRecordPath(sessionID))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil

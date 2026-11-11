@@ -31,7 +31,10 @@ export interface Attestation {
   head?: Commit;
   /** Policies that materials in this attestation were validated against */
   policyEvaluations: PolicyEvaluation[];
-  /** fail the attestation if policy evaluation fails */
+  /**
+   * fail the attestation if policy evaluation fails. Set at init when the
+   * organization or the workflow contract (policies.gate) enforces policies.
+   */
   blockOnPolicyViolation: boolean;
   /** bypass policy check */
   bypassPolicyCheck: boolean;
@@ -176,6 +179,10 @@ export interface Attestation_Auth {
   type: Attestation_Auth_AuthType;
   /** Identifier of the authentication (user ID, token ID, etc.) */
   id: string;
+  /** Name of the API token. Set only for AUTH_TYPE_API_TOKEN. */
+  name: string;
+  /** OIDC subject ("sub" claim) of the federated token. Set only for AUTH_TYPE_FEDERATED. */
+  subject: string;
 }
 
 export enum Attestation_Auth_AuthType {
@@ -2110,7 +2117,7 @@ export const Attestation_EnvVarsEntry = {
 };
 
 function createBaseAttestation_Auth(): Attestation_Auth {
-  return { type: 0, id: "" };
+  return { type: 0, id: "", name: "", subject: "" };
 }
 
 export const Attestation_Auth = {
@@ -2120,6 +2127,12 @@ export const Attestation_Auth = {
     }
     if (message.id !== "") {
       writer.uint32(18).string(message.id);
+    }
+    if (message.name !== "") {
+      writer.uint32(26).string(message.name);
+    }
+    if (message.subject !== "") {
+      writer.uint32(34).string(message.subject);
     }
     return writer;
   },
@@ -2145,6 +2158,20 @@ export const Attestation_Auth = {
 
           message.id = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.subject = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2158,6 +2185,8 @@ export const Attestation_Auth = {
     return {
       type: isSet(object.type) ? attestation_Auth_AuthTypeFromJSON(object.type) : 0,
       id: isSet(object.id) ? String(object.id) : "",
+      name: isSet(object.name) ? String(object.name) : "",
+      subject: isSet(object.subject) ? String(object.subject) : "",
     };
   },
 
@@ -2165,6 +2194,8 @@ export const Attestation_Auth = {
     const obj: any = {};
     message.type !== undefined && (obj.type = attestation_Auth_AuthTypeToJSON(message.type));
     message.id !== undefined && (obj.id = message.id);
+    message.name !== undefined && (obj.name = message.name);
+    message.subject !== undefined && (obj.subject = message.subject);
     return obj;
   },
 
@@ -2176,6 +2207,8 @@ export const Attestation_Auth = {
     const message = createBaseAttestation_Auth();
     message.type = object.type ?? 0;
     message.id = object.id ?? "";
+    message.name = object.name ?? "";
+    message.subject = object.subject ?? "";
     return message;
   },
 };

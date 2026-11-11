@@ -148,7 +148,8 @@ func TestCommitLifecycle_BashCommitBeforePostToolUseAddsSession(t *testing.T) {
 	attr := store.LoadAILineAttribution(sessionID)
 	require.Contains(t, attr.Files, "same-call.txt")
 	require.False(t, attr.Legacy["same-call.txt"], "same-call attribution must use the fingerprinted edit ledger")
-	require.Equal(t, 1, attr.GeneratedAdded)
+	added, _ := attr.GeneratedLines(nil)
+	require.Equal(t, 1, added)
 	require.Empty(t, attr.Pending, "the committed file must not stay pending after the Bash call ends")
 }
 

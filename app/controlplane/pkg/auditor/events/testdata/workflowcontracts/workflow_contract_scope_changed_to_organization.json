@@ -1,0 +1,24 @@
+{
+  "ActionType": "WorkflowContractScopeChanged",
+  "TargetType": "WorkflowContract",
+  "TargetID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorType": "USER",
+  "ActorID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "ActorEmail": "john@cyberdyne.io",
+  "ActorName": "John Connor",
+  "OrgID": "1089bb36-e27b-428b-8009-d015c8737c54",
+  "Description": "John Connor has moved the workflow contract test-contract from the project contract-project to the organization level",
+  "Info": {
+    "workflow_contract_id": "1089bb36-e27b-428b-8009-d015c8737c54",
+    "workflow_contract_name": "test-contract",
+    "old_scope": {
+      "type": "project",
+      "project_id": "3089bb36-e27b-428b-8009-d015c8737c56",
+      "project_name": "contract-project"
+    },
+    "new_scope": {
+      "type": "organization"
+    }
+  },
+  "Digest": "sha256:03dad56699514361bb331ed85e133cff0bc60d6841e3992660adc0e9b11a9c59"
+}

@@ -33,7 +33,15 @@ export interface WorkflowContractServiceUpdateRequest {
   name: string;
   /** Raw representation of the contract in json, yaml or cue */
   rawContract: Uint8Array;
-  description?: string | undefined;
+  description?:
+    | string
+    | undefined;
+  /** Converts the contract to a project-level contract of this project */
+  projectReference?:
+    | IdentityReference
+    | undefined;
+  /** Converts the contract to an organization-level contract. It must be true. */
+  organizationScoped?: boolean | undefined;
 }
 
 export interface WorkflowContractServiceUpdateResponse {
@@ -79,6 +87,13 @@ export interface WorkflowContractServiceApplyRequest {
   batchPolicyNames: string[];
   /** Same as batch_policy_names, for policy groups created/updated in the same batch. */
   batchPolicyGroupNames: string[];
+  /**
+   * Raw representation (json or yaml) of the policies created/updated in the same batch apply.
+   * Only used on dry runs, ignored on a real apply (which persists batch resources first).
+   * When present, the specs of batch-local references are used to validate their inputs and
+   * whether the attachment can apply to a material, as a real apply does.
+   */
+  batchPolicies: Uint8Array[];
 }
 
 export interface WorkflowContractServiceApplyResponse {
@@ -442,7 +457,13 @@ export const WorkflowContractServiceCreateResponse = {
 };
 
 function createBaseWorkflowContractServiceUpdateRequest(): WorkflowContractServiceUpdateRequest {
-  return { name: "", rawContract: new Uint8Array(0), description: undefined };
+  return {
+    name: "",
+    rawContract: new Uint8Array(0),
+    description: undefined,
+    projectReference: undefined,
+    organizationScoped: undefined,
+  };
 }
 
 export const WorkflowContractServiceUpdateRequest = {
@@ -455,6 +476,12 @@ export const WorkflowContractServiceUpdateRequest = {
     }
     if (message.description !== undefined) {
       writer.uint32(34).string(message.description);
+    }
+    if (message.projectReference !== undefined) {
+      IdentityReference.encode(message.projectReference, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.organizationScoped !== undefined) {
+      writer.uint32(56).bool(message.organizationScoped);
     }
     return writer;
   },
@@ -487,6 +514,20 @@ export const WorkflowContractServiceUpdateRequest = {
 
           message.description = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.projectReference = IdentityReference.decode(reader, reader.uint32());
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.organizationScoped = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -501,6 +542,10 @@ export const WorkflowContractServiceUpdateRequest = {
       name: isSet(object.name) ? String(object.name) : "",
       rawContract: isSet(object.rawContract) ? bytesFromBase64(object.rawContract) : new Uint8Array(0),
       description: isSet(object.description) ? String(object.description) : undefined,
+      projectReference: isSet(object.projectReference)
+        ? IdentityReference.fromJSON(object.projectReference)
+        : undefined,
+      organizationScoped: isSet(object.organizationScoped) ? Boolean(object.organizationScoped) : undefined,
     };
   },
 
@@ -510,6 +555,11 @@ export const WorkflowContractServiceUpdateRequest = {
     message.rawContract !== undefined &&
       (obj.rawContract = base64FromBytes(message.rawContract !== undefined ? message.rawContract : new Uint8Array(0)));
     message.description !== undefined && (obj.description = message.description);
+    message.projectReference !== undefined &&
+      (obj.projectReference = message.projectReference
+        ? IdentityReference.toJSON(message.projectReference)
+        : undefined);
+    message.organizationScoped !== undefined && (obj.organizationScoped = message.organizationScoped);
     return obj;
   },
 
@@ -526,6 +576,10 @@ export const WorkflowContractServiceUpdateRequest = {
     message.name = object.name ?? "";
     message.rawContract = object.rawContract ?? new Uint8Array(0);
     message.description = object.description ?? undefined;
+    message.projectReference = (object.projectReference !== undefined && object.projectReference !== null)
+      ? IdentityReference.fromPartial(object.projectReference)
+      : undefined;
+    message.organizationScoped = object.organizationScoped ?? undefined;
     return message;
   },
 };
@@ -1009,7 +1063,13 @@ export const WorkflowContractServiceDeleteResponse = {
 };
 
 function createBaseWorkflowContractServiceApplyRequest(): WorkflowContractServiceApplyRequest {
-  return { rawSchema: new Uint8Array(0), dryRun: false, batchPolicyNames: [], batchPolicyGroupNames: [] };
+  return {
+    rawSchema: new Uint8Array(0),
+    dryRun: false,
+    batchPolicyNames: [],
+    batchPolicyGroupNames: [],
+    batchPolicies: [],
+  };
 }
 
 export const WorkflowContractServiceApplyRequest = {
@@ -1025,6 +1085,9 @@ export const WorkflowContractServiceApplyRequest = {
     }
     for (const v of message.batchPolicyGroupNames) {
       writer.uint32(34).string(v!);
+    }
+    for (const v of message.batchPolicies) {
+      writer.uint32(42).bytes(v!);
     }
     return writer;
   },
@@ -1064,6 +1127,13 @@ export const WorkflowContractServiceApplyRequest = {
 
           message.batchPolicyGroupNames.push(reader.string());
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.batchPolicies.push(reader.bytes());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1083,6 +1153,9 @@ export const WorkflowContractServiceApplyRequest = {
       batchPolicyGroupNames: Array.isArray(object?.batchPolicyGroupNames)
         ? object.batchPolicyGroupNames.map((e: any) => String(e))
         : [],
+      batchPolicies: Array.isArray(object?.batchPolicies)
+        ? object.batchPolicies.map((e: any) => bytesFromBase64(e))
+        : [],
     };
   },
 
@@ -1101,6 +1174,11 @@ export const WorkflowContractServiceApplyRequest = {
     } else {
       obj.batchPolicyGroupNames = [];
     }
+    if (message.batchPolicies) {
+      obj.batchPolicies = message.batchPolicies.map((e) => base64FromBytes(e !== undefined ? e : new Uint8Array(0)));
+    } else {
+      obj.batchPolicies = [];
+    }
     return obj;
   },
 
@@ -1118,6 +1196,7 @@ export const WorkflowContractServiceApplyRequest = {
     message.dryRun = object.dryRun ?? false;
     message.batchPolicyNames = object.batchPolicyNames?.map((e) => e) || [];
     message.batchPolicyGroupNames = object.batchPolicyGroupNames?.map((e) => e) || [];
+    message.batchPolicies = object.batchPolicies?.map((e) => e) || [];
     return message;
   },
 };

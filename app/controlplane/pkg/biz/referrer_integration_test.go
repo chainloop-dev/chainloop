@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -59,7 +60,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsDependentAttestatio
 
 		err = s.Referrer.ExtractAndPersist(ctx, envelope, wantReferrerAtt, s.workflow1.ID.String())
 		s.NoError(err)
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.String(), "ATTESTATION", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.String(), "ATTESTATION", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		// It has a commit and an attestation
 		require.Len(s.T(), got.References, 2)
@@ -88,7 +89,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersistsConcurrency() {
 		}
 		wg.Wait()
 
-		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		s.Len(got.WorkflowIDs, 2)
 		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
@@ -151,21 +152,21 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	s.T().Run("it can store properly the first time", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow1.ID.String())
 		s.NoError(err)
-		prevStoredRef, _, err = s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
+		prevStoredRef, _, err = s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 	})
 
 	s.T().Run("and it's idempotent", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow1.ID.String())
 		s.NoError(err)
-		ref, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
+		ref, _, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		// Check it's the same referrer than previously retrieved, including timestamps
 		s.Equal(prevStoredRef, ref)
 	})
 
 	s.T().Run("contains all the info", func(t *testing.T) {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		// parent i.e attestation
 		s.Equal(wantReferrerAtt.Digest, got.Digest)
@@ -206,14 +207,13 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("can get sha1 digests too", func(t *testing.T) {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerCommit.Digest, "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerCommit.Digest, "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		s.Equal(wantReferrerCommit.Digest, got.Digest)
 	})
 
-	s.T().Run("can't be accessed by a second user in another org", func(t *testing.T) {
-		// the user2 has not access to org1
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user2.ID, nil)
+	s.T().Run("is not found in another org", func(_ *testing.T) {
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", []uuid.UUID{s.org2UUID}, nil, nil)
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
@@ -221,7 +221,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	s.T().Run("but another workflow can be attached", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
 		s.NoError(err)
-		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		require.Len(t, got.OrgIDs, 2)
 		s.Contains(got.OrgIDs, s.org1UUID)
@@ -230,23 +230,23 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		// and it's idempotent (no new orgs added)
 		err = s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
 		s.NoError(err)
-		got, _, err = s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
+		got, _, err = s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		require.Len(t, got.OrgIDs, 2)
 		s.Equal([]uuid.UUID{s.org2UUID, s.org1UUID}, got.OrgIDs)
 		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
 	})
 
-	s.T().Run("and now user2 has access to it since it has access to workflow2 in org2", func(t *testing.T) {
+	s.T().Run("and it is found in org2 once workflow2 attached it", func(t *testing.T) {
 		err := s.Referrer.ExtractAndPersist(ctx, envelope, h, s.workflow2.ID.String())
 		s.NoError(err)
-		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user2.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org2UUID}, nil, nil)
 		s.NoError(err)
 		require.Len(t, got.OrgIDs, 2)
 	})
 
 	s.T().Run("subject materials are returned connected to the attestation", func(t *testing.T) {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerContainerImage.Digest, "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerContainerImage.Digest, "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		// parent i.e attestation
 		s.Equal(wantReferrerContainerImage.Digest, got.Digest)
@@ -260,7 +260,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("non-subject materials also are connected to the attestation", func(t *testing.T) {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerSarif.Digest, "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		require.Len(t, got.References, 1)
 		s.Equal(wantReferrerAtt.Digest, got.References[0].Digest)
@@ -269,7 +269,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("or it does not exist", func(t *testing.T) {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
@@ -291,20 +291,20 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 		s.NoError(err)
 
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerSarif.Digest, "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.Nil(got)
 		s.ErrorContains(err, "present in 2 kinds")
 	})
 
 	s.T().Run("it should not fail on retrieval if we filter out by one kind", func(t *testing.T) {
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "SARIF", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerSarif.Digest, "SARIF", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		s.Equal(wantReferrerSarif.Digest, got.Digest)
 		s.Equal(true, got.Downloadable)
 		s.Equal("SARIF", got.Kind)
 
-		got, _, err = s.Referrer.GetFromRootUser(ctx, wantReferrerSarif.Digest, "ARTIFACT", s.user.ID, nil)
+		got, _, err = s.Referrer.GetFromRoot(ctx, wantReferrerSarif.Digest, "ARTIFACT", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		s.Equal(wantReferrerSarif.Digest, got.Digest)
 		s.Equal(true, got.Downloadable)
@@ -313,7 +313,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 
 	s.T().Run("now there should a container image pointing to two attestations", func(t *testing.T) {
 		// but retrieval should fail. In the future we will ask the user to provide the artifact type in these cases of ambiguity
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerContainerImage.Digest, "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerContainerImage.Digest, "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		// it should be referenced by two attestations since it's subject of both
 		require.Len(t, got.References, 2)
@@ -326,7 +326,7 @@ func (s *referrerIntegrationTestSuite) TestExtractAndPersists() {
 	})
 
 	s.T().Run("returns the associated workflow IDs", func(_ *testing.T) {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, wantReferrerAtt.Digest, "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, wantReferrerAtt.Digest, "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		s.Equal([]uuid.UUID{s.workflow2.ID, s.workflow1.ID}, got.WorkflowIDs)
 	})
@@ -390,7 +390,7 @@ func (s *referrerIntegrationTestSuite) TestPagination() {
 				require.NoError(t, err)
 			}
 
-			got, nextCursor, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, p)
+			got, nextCursor, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, p)
 			require.NoError(t, err)
 			require.Len(t, got.References, tc.wantCount)
 
@@ -411,7 +411,7 @@ func (s *referrerIntegrationTestSuite) TestPagination() {
 			p, err := pagination.NewCursor(cursor, 1)
 			require.NoError(t, err)
 
-			got, nextCursor, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, p)
+			got, nextCursor, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, p)
 			require.NoError(t, err)
 			require.Len(t, got.References, 1)
 
@@ -460,7 +460,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 	require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, run.ID, h.String(), false))
 
 	s.Run("attestation root is returned when project+version match", func() {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil, biz.WithProjectScope("test", "v1.0.0"))
+		got, _, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil, biz.WithProjectScope("test", "v1.0.0"))
 		s.NoError(err)
 		s.Require().NotNil(got)
 		s.Equal(h.String(), got.Digest)
@@ -469,19 +469,19 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 	})
 
 	s.Run("attestation root is not found for a different version", func() {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil, biz.WithProjectScope("test", "v9.9.9"))
+		got, _, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil, biz.WithProjectScope("test", "v9.9.9"))
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
 
 	s.Run("attestation root is not found for a different project", func() {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil, biz.WithProjectScope("does-not-exist", "v1.0.0"))
+		got, _, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil, biz.WithProjectScope("does-not-exist", "v1.0.0"))
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
 
 	s.Run("material root is returned when reachable from an in-version attestation", func() {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, nil, biz.WithProjectScope("test", "v1.0.0"))
+		got, _, err := s.Referrer.GetFromRoot(ctx, sbomDigest, "", []uuid.UUID{s.org1UUID}, nil, nil, biz.WithProjectScope("test", "v1.0.0"))
 		s.NoError(err)
 		s.Require().NotNil(got)
 		s.Equal(sbomDigest, got.Digest)
@@ -491,13 +491,13 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 	})
 
 	s.Run("material root is not found for a different version", func() {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, nil, biz.WithProjectScope("test", "v9.9.9"))
+		got, _, err := s.Referrer.GetFromRoot(ctx, sbomDigest, "", []uuid.UUID{s.org1UUID}, nil, nil, biz.WithProjectScope("test", "v9.9.9"))
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
 
 	s.Run("without the filter the referrer is returned regardless of version", func() {
-		got, _, err := s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil)
+		got, _, err := s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil)
 		s.NoError(err)
 		s.Require().NotNil(got)
 		s.Equal(h.String(), got.Digest)
@@ -515,19 +515,19 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 		require.NoError(s.T(), s.Repos.WorkflowRunRepo.SaveAttestationDigest(ctx, runV3.ID, newH, false))
 
 		// project_name only (empty version) → SBOM returned via its in-project attestation.
-		got, _, err := s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, nil, biz.WithProjectScope("test", ""))
+		got, _, err := s.Referrer.GetFromRoot(ctx, sbomDigest, "", []uuid.UUID{s.org1UUID}, nil, nil, biz.WithProjectScope("test", ""))
 		s.NoError(err)
 		s.Require().NotNil(got)
 		s.Equal(sbomDigest, got.Digest)
 
 		// Attestation root: returned when its digest belongs to any version of the project.
-		got, _, err = s.Referrer.GetFromRootUser(ctx, h.String(), "", s.user.ID, nil, biz.WithProjectScope("test", ""))
+		got, _, err = s.Referrer.GetFromRoot(ctx, h.String(), "", []uuid.UUID{s.org1UUID}, nil, nil, biz.WithProjectScope("test", ""))
 		s.NoError(err)
 		s.Require().NotNil(got)
 		s.Equal(h.String(), got.Digest)
 
 		// Unknown project still NotFound.
-		got, _, err = s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, nil, biz.WithProjectScope("does-not-exist", ""))
+		got, _, err = s.Referrer.GetFromRoot(ctx, sbomDigest, "", []uuid.UUID{s.org1UUID}, nil, nil, biz.WithProjectScope("does-not-exist", ""))
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
@@ -583,7 +583,7 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVersionFilter() {
 		// firstPage gate that allowed a cursor to bypass version scoping).
 		cursor, err := pagination.NewCursor(pagination.EncodeCursor(time.Now(), uuid.New()), 10)
 		require.NoError(s.T(), err)
-		got, _, err := s.Referrer.GetFromRootUser(ctx, sbomDigest, "", s.user.ID, cursor, biz.WithProjectScope("test", "v2.0.0"))
+		got, _, err := s.Referrer.GetFromRoot(ctx, sbomDigest, "", []uuid.UUID{s.org1UUID}, nil, cursor, biz.WithProjectScope("test", "v2.0.0"))
 		s.True(biz.IsNotFound(err))
 		s.Nil(got)
 	})
@@ -686,4 +686,90 @@ func (s *referrerIntegrationTestSuite) TestGetFromRootProjectVisibility() {
 		_, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{s.org1UUID, s.org2UUID}, crossOrg, nil)
 		s.Error(err)
 	})
+
+	s.Run("a referrer shared with a visible project of another organization does not", func() {
+		// The same attestation is also attached to a project in org2
+		require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, attDigest, s.workflow2.ID.String()))
+		// The visible list for org1 holds only the org2 project, as a flat list of the
+		// memberships of a user in several organizations does. The org1 project stays hidden.
+		polluted := map[biz.OrgID][]biz.ProjectID{s.org1UUID: {s.workflow2.ProjectID}}
+		_, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{s.org1UUID}, polluted, nil)
+		s.Error(err)
+
+		// In org2, the same project grants visibility
+		granted := map[biz.OrgID][]biz.ProjectID{s.org2UUID: {s.workflow2.ProjectID}}
+		got, _, err := s.Referrer.GetFromRoot(ctx, digest, "", []uuid.UUID{s.org2UUID}, granted, nil)
+		s.Require().NoError(err)
+		s.Equal(digest, got.Digest)
+	})
+}
+
+// A user discovers only in the given organization, and only with the project visibility
+// that the user has in that organization: a visible project in another organization must
+// not make a referrer of the given organization visible.
+func (s *referrerIntegrationTestSuite) TestGetFromRootUserSingleOrg() {
+	ctx := context.Background()
+	envelope, envBytes := testEnvelope(s.T(), "testdata/attestations/with-git-subject.json")
+	attDigest, _, err := v1.SHA256(bytes.NewReader(envBytes))
+	require.NoError(s.T(), err)
+	// The same attestation lives in a project of org1 and in a project of org2
+	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, attDigest, s.workflow1.ID.String()))
+	require.NoError(s.T(), s.Referrer.ExtractAndPersist(ctx, envelope, attDigest, s.workflow2.ID.String()))
+	digest := attDigest.String()
+
+	// A member with RBAC in both organizations who sees only the org2 project
+	rbacUser, err := s.User.UpsertByEmail(ctx, "rbac-user@test.com", nil)
+	require.NoError(s.T(), err)
+	_, err = s.Membership.Create(ctx, s.org1.ID, rbacUser.ID, biz.WithMembershipRole(authz.RoleOrgMember))
+	require.NoError(s.T(), err)
+	_, err = s.Membership.Create(ctx, s.org2.ID, rbacUser.ID, biz.WithMembershipRole(authz.RoleOrgMember), biz.WithCurrentMembership())
+	require.NoError(s.T(), err)
+	require.NoError(s.T(), s.Membership.SetProjectOwner(ctx, s.org2UUID, s.workflow2.ProjectID, uuid.MustParse(rbacUser.ID)))
+
+	testCases := []struct {
+		name      string
+		userID    string
+		orgID     uuid.UUID
+		wantFound bool
+	}{
+		{
+			name:      "a member of the organization",
+			userID:    s.user.ID,
+			orgID:     s.org1UUID,
+			wantFound: true,
+		},
+		{
+			// The org middleware rejects a non-member before discovery, as for any other
+			// operation. Only an instance admin gets here, and sees the whole organization.
+			name:      "an organization without a membership of the user",
+			userID:    s.user2.ID,
+			orgID:     s.org1UUID,
+			wantFound: true,
+		},
+		{
+			name:      "a visible project in the organization",
+			userID:    rbacUser.ID,
+			orgID:     s.org2UUID,
+			wantFound: true,
+		},
+		{
+			name:   "a visible project in another organization does not make it visible",
+			userID: rbacUser.ID,
+			orgID:  s.org1UUID,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			got, _, err := s.Referrer.GetFromRootUser(ctx, digest, "", tc.userID, tc.orgID, nil)
+			if !tc.wantFound {
+				s.True(biz.IsNotFound(err), "expected not found, got %v", err)
+				s.Nil(got)
+				return
+			}
+
+			s.Require().NoError(err)
+			s.Equal(digest, got.Digest)
+		})
+	}
 }

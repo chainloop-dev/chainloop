@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/chainloop-dev/chainloop/pkg/natsconn"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/nats-io/nats.go/jetstream"
@@ -85,7 +86,7 @@ func newPublisher(rc *natsconn.ReloadableConnection, logger log.Logger) *AuditLo
 func (p *AuditLogPublisher) initJetStream() error {
 	js, err := jetstream.New(p.rc.Conn)
 	if err != nil {
-		return fmt.Errorf("creating jetstream context: %w", err)
+		return errorsx.Errorf("creating jetstream context: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -96,7 +97,7 @@ func (p *AuditLogPublisher) initJetStream() error {
 		Subjects: []string{subjectName},
 		Replicas: p.rc.Replicas,
 	}); err != nil {
-		return fmt.Errorf("creating stream: %w", err)
+		return errorsx.Errorf("creating stream: %w", err)
 	}
 
 	p.logger.Infow("msg", "stream created or updated", "name", streamName, "subject", subjectName, "replicas", p.rc.Replicas)
@@ -124,5 +125,9 @@ func (p *AuditLogPublisher) Publish(data *EventPayload) error {
 	}
 
 	specificSubject := fmt.Sprintf("%s.%s.%s", baseSubjectName, strings.ToLower(string(data.Data.TargetType)), strings.ToLower(data.Data.ActionType))
-	return p.rc.Publish(specificSubject, jsonPayload)
+	if err := p.rc.Publish(specificSubject, jsonPayload); err != nil {
+		return errorsx.Errorf("publishing audit event to %s: %w", specificSubject, err)
+	}
+
+	return nil
 }

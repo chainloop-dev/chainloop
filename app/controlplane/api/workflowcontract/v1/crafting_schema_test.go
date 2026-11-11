@@ -359,6 +359,10 @@ func TestMaterialKindsExcludedFromAutoDetection(t *testing.T) {
 			name: "radamsa crashes accept almost any non-empty file",
 			kind: v1.CraftingSchema_Material_RADAMSA_CRASHES,
 		},
+		{
+			name: "build log probing parses whole logs of hundreds of megabytes",
+			kind: v1.CraftingSchema_Material_MSBUILD_LOG,
+		},
 	}
 
 	for _, tc := range testCases {

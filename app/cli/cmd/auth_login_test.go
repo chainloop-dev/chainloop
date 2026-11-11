@@ -23,10 +23,13 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	"github.com/chainloop-dev/chainloop/internal/oauth"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestAddCodeChallenge(t *testing.T) {
@@ -157,6 +160,64 @@ func TestLoginCallbackToken(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantToken, token)
+		})
+	}
+}
+
+func TestCheckAuthToken(t *testing.T) {
+	const token = "a-token"
+
+	testCases := []struct {
+		name      string
+		token     string
+		verifyErr error
+		wantErr   string
+		// whether the error renders as the CLI authentication message
+		wantAuthErr bool
+	}{
+		{
+			name:  "token accepted by the control plane",
+			token: token,
+		},
+		{
+			name:    "no token",
+			token:   "",
+			wantErr: "no token was entered",
+		},
+		{
+			name:        "token rejected by the control plane",
+			token:       token,
+			verifyErr:   status.Error(codes.Unauthenticated, "token is invalid"),
+			wantErr:     "verifying the token with the control plane",
+			wantAuthErr: true,
+		},
+		{
+			name:      "control plane error",
+			token:     token,
+			verifyErr: errors.New("user not found"),
+			wantErr:   "verifying the token with the control plane: user not found",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var verified bool
+			err := checkAuthToken(context.Background(), tc.token, func(_ context.Context, token string) error {
+				verified = true
+				assert.Equal(t, tc.token, token)
+				return tc.verifyErr
+			})
+
+			// Only a token that was entered goes to the control plane
+			assert.Equal(t, tc.token != "", verified)
+			if tc.wantErr != "" {
+				assert.ErrorContains(t, err, tc.wantErr)
+				_, isAuthErr := action.AuthErrorMessage(err)
+				assert.Equal(t, tc.wantAuthErr, isAuthErr)
+				return
+			}
+
+			assert.NoError(t, err)
 		})
 	}
 }

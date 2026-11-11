@@ -589,7 +589,7 @@ export const ReferrerItem_AnnotationsEntry = {
 };
 
 export interface ReferrerService {
-  /** DiscoverPrivate returns the referrer item for a given digest in the organizations of the logged-in user */
+  /** DiscoverPrivate returns the referrer item for a given digest in the current organization */
   DiscoverPrivate(
     request: DeepPartial<ReferrerServiceDiscoverPrivateRequest>,
     metadata?: grpc.Metadata,

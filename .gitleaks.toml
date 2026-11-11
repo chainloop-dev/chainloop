@@ -1,3 +1,5 @@
+# Allowlist for gitleaks and betterleaks. The managed secret-scan workflow runs
+# betterleaks from the repository root, which reads this file.
 title = "Gitleaks config"
 
 [extend]

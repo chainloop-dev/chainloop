@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	nsmtp "net/smtp"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/plugins/sdk/v1"
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/go-kratos/kratos/v2/log"
 )
 
@@ -204,7 +205,7 @@ func sendEmail(host string, port string, user, password, from, to, cc, subject, 
 	auth := nsmtp.PlainAuth("", user, password, host)
 	err := nsmtp.SendMail(host+":"+port, auth, from, []string{to}, []byte(message))
 	if err != nil {
-		return fmt.Errorf("error sending email: %w", err)
+		return errorsx.Errorf("error sending email: %w", err)
 	}
 
 	return nil

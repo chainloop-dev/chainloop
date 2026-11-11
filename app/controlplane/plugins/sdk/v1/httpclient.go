@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/chainloop-dev/chainloop/pkg/errorsx"
 	"github.com/chainloop-dev/chainloop/pkg/netguard"
 )
 
@@ -85,5 +86,31 @@ func NewHTTPClient(opts HTTPClientOptions) *http.Client {
 		netguard.RestrictTransport(transport)
 	}
 
-	return &http.Client{Timeout: opts.Timeout, Transport: transport}
+	return &http.Client{Timeout: opts.Timeout, Transport: &stackTransport{base: transport}}
+}
+
+// stackTransport records the call stack of the plugin code that sent a
+// request when the request fails, so Sentry groups a failed outbound call by
+// the code that made it and not by the place that reports the error.
+type stackTransport struct {
+	// base is the transport that sends the requests.
+	base http.RoundTripper
+}
+
+// RoundTrip sends req with the base transport and adds a stack to its error.
+func (t *stackTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	resp, err := t.base.RoundTrip(req)
+	if err != nil {
+		return nil, errorsx.WithStack(err)
+	}
+
+	return resp, nil
+}
+
+// CloseIdleConnections forwards to the base transport, so
+// http.Client.CloseIdleConnections still releases pooled connections.
+func (t *stackTransport) CloseIdleConnections() {
+	if c, ok := t.base.(interface{ CloseIdleConnections() }); ok {
+		c.CloseIdleConnections()
+	}
 }

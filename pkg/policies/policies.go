@@ -556,16 +556,10 @@ func (pv *PolicyVerifier) evaluatePolicyAttachment(ctx context.Context, attachme
 	}, nil
 }
 
+// policyAttachmentGate resolves whether a policy acts as a gate. Enforcement
+// only tightens: an explicit `gate: false` cannot relax an enforced default.
 func policyAttachmentGate(attachment *v1.PolicyAttachment, defaultGate bool) bool {
-	if attachment == nil {
-		return defaultGate
-	}
-
-	if attachment.Gate != nil {
-		return attachment.GetGate()
-	}
-
-	return defaultGate
+	return defaultGate || attachment.GetGate()
 }
 
 // ComputeArguments takes a list of arguments, and matches it against the expected inputs. It also applies a set of interpolations if needed.
@@ -1015,27 +1009,30 @@ func (pv *PolicyVerifier) shouldApplyPolicy(ctx context.Context, policyAtt *v1.P
 		return false, fmt.Errorf("failed to load policy attachment %q: %w", policyAtt.GetRef(), err)
 	}
 
-	materialType := material.GetMaterialType()
-	filteredName := policyAtt.GetSelector().GetName()
-	specTypes := getPolicyTypes(spec)
+	return attachmentApplies(getPolicyTypes(spec), policyAtt.GetSelector(), material.GetId(), material.GetMaterialType()), nil
+}
 
+// attachmentApplies is the pure applicability rule of shouldApplyPolicy, shared with
+// ValidateMaterialAttachment so that contract validation and evaluation can't drift.
+func attachmentApplies(specTypes []v1.CraftingSchema_Material_MaterialType, selector *v1.PolicyAttachment_MaterialSelector, materialName string, materialType v1.CraftingSchema_Material_MaterialType) bool {
 	// if spec has a type, and it's different to the material type, skip
 	if len(specTypes) > 0 && !slices.Contains(specTypes, materialType) {
-		// types don't match, continue
-		return false, nil
+		return false
 	}
 
-	if filteredName != "" && !nameMatches(filteredName, policyAtt.GetSelector().GetMatchMode(), material.GetId()) {
+	filteredName := selector.GetName()
+	if filteredName != "" && !nameMatches(filteredName, selector.GetMatchMode(), materialName) {
 		// a filter exists and doesn't match
-		return false, nil
+		return false
 	}
 
-	// no type nor name to match, we can't guess anything
-	if len(specTypes) == 0 && filteredName == "" {
-		return false, nil
-	}
+	return canMatchAnyMaterial(specTypes, selector)
+}
 
-	return true, nil
+// canMatchAnyMaterial reports whether an attachment has something to match materials on.
+// A policy without types and an attachment without a selector name can't match any material.
+func canMatchAnyMaterial(specTypes []v1.CraftingSchema_Material_MaterialType, selector *v1.PolicyAttachment_MaterialSelector) bool {
+	return len(specTypes) > 0 || selector.GetName() != ""
 }
 
 // nameMatches reports whether a material name satisfies a selector/group-material

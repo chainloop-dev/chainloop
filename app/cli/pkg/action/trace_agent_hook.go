@@ -473,8 +473,17 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 
 		heads := make(map[string]string)
 		// A checkout with no commit yet has no HEAD; its files count as new.
+		// It is saved with an empty HEAD, so that the post hook can tell it
+		// apart from a HEAD that was not saved.
+		heads[root] = ""
 		if sha, _, err := client.CommitHeadInfo(root); err == nil {
 			heads[root] = sha
+		}
+		reflogs := make(map[string]tracegit.ReflogPos)
+		if pos, err := tracegit.HeadReflogPos(root); err == nil {
+			reflogs[root] = pos
+		} else {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: HEAD reflog position failed")
 		}
 
 		if err := rootStore.SaveShellPreSignature(key, state.WorktreeSignatures{root: worktreeSig}); err != nil {
@@ -487,6 +496,9 @@ func captureWorktreeSnapshot(store *state.Store, repoRoot string, key state.Shel
 		}
 		if err := rootStore.SaveShellPreHeads(key, heads); err != nil {
 			log.Debug().Err(err).Str("root", root).Msg("pre-command: save HEAD commits failed")
+		}
+		if err := rootStore.SaveShellPreReflog(key, reflogs); err != nil {
+			log.Debug().Err(err).Str("root", root).Msg("pre-command: save HEAD reflog positions failed")
 		}
 	}
 }
@@ -938,20 +950,23 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 			log.Debug().Err(err).Str("root", root).Msg("post-command: no pre-command worktree signature")
 			continue
 		}
-		// A pre hook from an older CLI saved no HEAD. That case, and a heads
-		// file that cannot be read, fall back to the current HEAD.
+		// A pre hook from an older CLI saved no HEAD and no reflog position.
+		// That case, and a file that cannot be read, fall back to the current HEAD.
 		heads, err := rootStore.LoadShellPreHeads(key)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			log.Debug().Err(err).Str("root", root).Msg("post-command: cannot read pre-command HEAD commits; using the current HEAD")
 		}
+		reflogs, err := rootStore.LoadShellPreReflog(key)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			log.Debug().Err(err).Str("root", root).Msg("post-command: cannot read pre-command HEAD reflog positions")
+		}
 
 		for snapshotRoot, rootBefore := range before {
 			if sameDir(snapshotRoot, root) {
-				base := heads[snapshotRoot]
-				if base == "" {
-					base = "HEAD"
-				}
-				recordRootChanges(rootStore, root, base, rootBefore, key.SessionID, log)
+				var pre preCommand
+				pre.head, pre.hasHead = heads[snapshotRoot]
+				pre.reflogPos, pre.hasReflog = reflogs[snapshotRoot]
+				recordRootChanges(rootStore, root, pre, rootBefore, key.SessionID, log)
 				break
 			}
 		}
@@ -959,18 +974,42 @@ func recordCommandLineRanges(provider trace.Provider, input *trace.HookInput, st
 	}
 }
 
+// preCommand is the state of one checkout that the pre hook saved before a
+// shell command.
+type preCommand struct {
+	// head is the HEAD commit. It is empty for a checkout with no commit
+	// yet, and when the pre hook saved none.
+	head string
+	// hasHead is false when the pre hook saved no HEAD for the checkout: a
+	// pre hook from an older CLI, or a heads file that cannot be read.
+	hasHead bool
+	// reflogPos is the end of the HEAD reflog. hasReflog is false when the
+	// pre hook saved none.
+	reflogPos tracegit.ReflogPos
+	hasReflog bool
+}
+
 // recordRootChanges diffs the signature of one checkout captured before a
-// shell command against its current worktree, and records every
-// created/modified file and every deleted file as AI-attributed.
+// shell command against its current worktree, and records the lines that the
+// command wrote in each created, modified or deleted file as AI-attributed.
 //
 // The signature holds hashes, not content, so the content before the command
-// is not known. The file at base, the HEAD commit before the command, stands in
-// for it: lines the command did not touch are then not claimed, also when the
-// command commits its own change. Uncommitted lines are in the diff too. Those
-// that an earlier edit of the session recorded are left out (DropOpen); other
-// ones, such as uncommitted human lines, are claimed. An untracked file counts
-// as new.
-func recordRootChanges(store *state.Store, repoRoot, base string, before map[string]string, sessionID string, log zerolog.Logger) {
+// is not known. Two kinds of change stand in for what the command wrote:
+//
+//   - The commits that the command wrote itself (OwnCommits), each against the
+//     HEAD it replaced, so an amend counts only what it added.
+//   - The uncommitted lines: the worktree against the HEAD after the command.
+//
+// A command that moves HEAD to commits that it did not write, such as a
+// rebase, a pull, a merge, a checkout or a reset, brings in their content.
+// That content is in neither kind of change, so it is not claimed (PFM-8131).
+// When the reflog cannot tell the commits of the command apart, none of them
+// counts: missing lines are a smaller error than claiming upstream ones.
+//
+// Uncommitted lines that an earlier edit of the session recorded are left out
+// (DropOpen); other ones, such as uncommitted human lines, are claimed. An
+// untracked file counts as new.
+func recordRootChanges(store *state.Store, repoRoot string, pre preCommand, before map[string]string, sessionID string, log zerolog.Logger) {
 	client := tracegit.NewGitClient()
 	after, err := client.SnapshotWorktree(repoRoot)
 	if err != nil {
@@ -978,8 +1017,41 @@ func recordRootChanges(store *state.Store, repoRoot, base string, before map[str
 		return
 	}
 
-	atBase := func(relPath string) []byte {
-		content, err := client.FileAt(repoRoot, base, filepath.ToSlash(relPath))
+	// When the pre hook saved no HEAD, the HEAD after the command stands in,
+	// as before. A pre hook that saved an empty HEAD and a reflog position saw a
+	// checkout with no commit yet, so a HEAD now is a move, and the first
+	// commit can be the command's own.
+	head, moved := "HEAD", false
+	var own []tracegit.ReflogEntry
+	if pre.head != "" || (pre.hasHead && pre.hasReflog) {
+		if pre.head != "" {
+			head = pre.head
+		}
+		if sha, _, err := client.CommitHeadInfo(repoRoot); err == nil && sha != pre.head {
+			head, moved = sha, true
+			own = commandCommits(repoRoot, pre, sha, log)
+		}
+	}
+
+	// One git process serves every read of a file at a commit. Without one,
+	// each read starts its own processes.
+	blobs, err := tracegit.NewBlobReader(repoRoot)
+	if err != nil {
+		log.Debug().Err(err).Str("root", repoRoot).Msg("post-command: no batch reader; reading files one by one")
+	} else {
+		defer func() { _ = blobs.Close() }()
+	}
+	// A read that the batch reader cannot serve, such as a path with a
+	// newline or a git process that stopped, falls back to a read of its own:
+	// a file wrongly read as absent would count all its lines as new.
+	fileAt := func(rev, relPath string) []byte {
+		path := filepath.ToSlash(relPath)
+		if blobs != nil {
+			if content, err := blobs.FileAt(rev, path); err == nil {
+				return content
+			}
+		}
+		content, err := client.FileAt(repoRoot, rev, path)
 		if err != nil {
 			return nil
 		}
@@ -987,21 +1059,65 @@ func recordRootChanges(store *state.Store, repoRoot, base string, before map[str
 		return content
 	}
 
-	open := store.LoadAILineAttribution(sessionID).Open
-	record := func(relPath string, edit attribution.Edit) error {
-		edit = attribution.DropOpen(edit, open[relPath])
-		if err := store.RecordEdit(sessionID, relPath, editRecord(edit)); err != nil {
-			return err
+	// The paths that each own commit changed, so that a file is read only at
+	// the commits that touched it. nil when git cannot tell: every file is
+	// then read at that commit, and the diff finds the ones it did not touch.
+	ownPaths := make([]map[string]bool, len(own))
+	for i, c := range own {
+		if paths, err := tracegit.CommitPaths(repoRoot, c.Old, c.New); err == nil {
+			ownPaths[i] = paths
 		}
-		// Fingerprints intentionally ignore whitespace. Keep a legacy touch
-		// marker when a real line diff therefore has counts but no fingerprints,
-		// so binary CRLF changes still stay pending for a later commit.
-		if len(edit.Added) == 0 && len(edit.Removed) == 0 &&
-			(edit.AddedCount > 0 || edit.RemovedCount > 0) {
-			return store.RecordLineRanges(sessionID, relPath, nil)
+	}
+
+	open := store.LoadAILineAttribution(sessionID).Open
+	record := func(relPath string, content []byte) error {
+		recorded := false
+		write := func(edit attribution.Edit) error {
+			if recorded {
+				// The open lines include the edit just recorded for the file.
+				open = store.LoadAILineAttribution(sessionID).Open
+			}
+			edit = attribution.DropOpen(edit, open[relPath])
+			if err := store.RecordEdit(sessionID, relPath, editRecord(edit)); err != nil {
+				return err
+			}
+			recorded = true
+			// Keep whitespace-only changes pending even without fingerprints.
+			if len(edit.Added) == 0 && len(edit.Removed) == 0 &&
+				(edit.AddedCount > 0 || edit.RemovedCount > 0) {
+				return store.RecordLineRanges(sessionID, relPath, nil)
+			}
+
+			return nil
 		}
 
-		return nil
+		for i, c := range own {
+			if ownPaths[i] != nil && !ownPaths[i][filepath.ToSlash(relPath)] {
+				continue
+			}
+			if edit := attribution.ComputeEdit(fileAt(c.Old, relPath), fileAt(c.New, relPath)); edit.Changed {
+				if err := write(edit); err != nil {
+					return err
+				}
+			}
+		}
+
+		beforeContent := fileAt(head, relPath)
+		if _, existed := before[relPath]; !existed && !moved {
+			// A checkpoint can have committed a deletion before this new edit.
+			beforeContent = nil
+		}
+		edit := attribution.ComputeEdit(beforeContent, content)
+		// When HEAD did not move, ChangedPaths already proved the file changed,
+		// so record it even when the diff finds nothing (created empty, or
+		// restored to HEAD): the file is then AI-touched with zero lines, as a
+		// deletion-only edit. When HEAD moved, a file with no change of the
+		// command came in with the commits that HEAD moved to.
+		if !edit.Changed && (recorded || moved) {
+			return nil
+		}
+
+		return write(edit)
 	}
 
 	changed, deleted := attribution.ChangedPaths(before, after)
@@ -1010,29 +1126,36 @@ func recordRootChanges(store *state.Store, repoRoot, base string, before map[str
 		if err != nil {
 			continue
 		}
-		beforeContent := atBase(relPath)
-		if _, existed := before[relPath]; !existed {
-			// The call created this path after its latest checkpoint. HEAD can
-			// still hold the old file when that checkpoint staged and committed
-			// a deletion, so it is not the content before this new edit.
-			beforeContent = nil
-		}
-		// ChangedPaths already proved the file changed, so record it even when
-		// the diff finds nothing (created empty, or restored to base): the
-		// file is then AI-touched with zero lines, as a deletion-only edit.
-		if err := record(relPath, attribution.ComputeEdit(beforeContent, content)); err != nil {
+		if err := record(relPath, content); err != nil {
 			log.Debug().Err(err).Str("file", relPath).Msg("post-command: record line ranges failed")
 		}
 	}
 	for _, relPath := range deleted {
-		// The removed lines are the file at base, matching the file-writing
+		// The removed lines are the file at HEAD, matching the file-writing
 		// hook's treatment of deletions.
-		if err := record(relPath, attribution.ComputeEdit(atBase(relPath), nil)); err != nil {
+		if err := record(relPath, nil); err != nil {
 			log.Debug().Err(err).Str("file", relPath).Msg("post-command: record deletion failed")
 		}
 	}
 
-	log.Debug().Int("changed", len(changed)).Int("deleted", len(deleted)).Str("session_id", sessionID).Str("root", repoRoot).Msg("command line ranges recorded")
+	log.Debug().Int("changed", len(changed)).Int("deleted", len(deleted)).Int("own_commits", len(own)).Bool("head_moved", moved).Str("session_id", sessionID).Str("root", repoRoot).Msg("command line ranges recorded")
+}
+
+// commandCommits returns the commits that a shell command wrote itself, from
+// the HEAD reflog entries that it added. It returns nil when the pre hook saved
+// no reflog position or the reflog cannot be read.
+func commandCommits(repoRoot string, pre preCommand, newHead string, log zerolog.Logger) []tracegit.ReflogEntry {
+	if !pre.hasReflog {
+		return nil
+	}
+
+	entries, err := tracegit.HeadReflogSince(repoRoot, pre.reflogPos)
+	if err != nil {
+		log.Debug().Err(err).Str("root", repoRoot).Msg("post-command: cannot read the HEAD reflog; no commit of the command counts")
+		return nil
+	}
+
+	return attribution.OwnCommits(pre.head, newHead, entries)
 }
 
 // editRecord converts a computed edit into its ledger record.

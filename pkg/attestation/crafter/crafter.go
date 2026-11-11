@@ -511,12 +511,11 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 	// Generate Crafting state
 	craftingState := &api.CraftingState{
 		Attestation: &api.Attestation{
-			InitializedAt:          timestamppb.New(time.Now()),
-			Workflow:               opts.WfInfo,
-			RunnerType:             opts.Runner.ID(),
-			RunnerUrl:              opts.Runner.RunURI(),
-			Head:                   headCommitP,
-			BlockOnPolicyViolation: opts.BlockOnPolicyViolation,
+			InitializedAt: timestamppb.New(time.Now()),
+			Workflow:      opts.WfInfo,
+			RunnerType:    opts.Runner.ID(),
+			RunnerUrl:     opts.Runner.RunURI(),
+			Head:          headCommitP,
 			SigningOptions: &api.Attestation_SigningOptions{
 				TimestampAuthorityUrl: tsURL,
 				SigningCa:             caName,
@@ -556,6 +555,9 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			InputSchema: opts.SchemaV1,
 		}
 	}
+
+	// Enforcement only tightens: the contract can turn it on, but not off
+	craftingState.Attestation.BlockOnPolicyViolation = opts.BlockOnPolicyViolation || craftingState.GetPolicies().GetGate()
 
 	return craftingState, nil
 }

@@ -19,10 +19,13 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -110,10 +113,76 @@ func TestClaudeCacheComparisonDoesNotDeduplicate(t *testing.T) {
 func TestCacheAccountingNotCovered(t *testing.T) {
 	for _, s := range []*Session{
 		cacheSession("cursor"),
+		cacheSession(pi.Name, `{"type":"message","message":{"role":"assistant","usage":{"input":100,"output":50}}}`),
 		cacheSession(codex.Name, `{"type":"token_usage_record","payload":{"response_id":"a","usage":{"input_tokens":1000,"output_tokens":50}}}`),
 	} {
 		require.ErrorIs(t, checkCacheTokenAccounting(s), errNotCovered)
 	}
+}
+
+func TestPiCacheAccountingSourceComparison(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		change func(*aicodingsession.Data)
+	}{
+		{name: "native disjoint counters"},
+		{name: "inclusive total", change: func(d *aicodingsession.Data) { d.Usage.TotalTokens = 1050 }},
+		{name: "cache subtracted from base input", change: func(d *aicodingsession.Data) {
+			d.Usage.InputTokens = 0
+			d.Usage.TotalTokens = 50
+		}},
+		{name: "missing cache writes", change: func(d *aicodingsession.Data) { d.Usage.CacheCreationInputTokens = 0 }},
+		{name: "inflated consistent counts", change: func(d *aicodingsession.Data) {
+			d.Usage.InputTokens = 200
+			d.Usage.TotalTokens = 250
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			// Given: selected raw records include a continuation and non-assistant usage.
+			raw := `{"type":"message","message":{"role":"assistant","usage":{"input":50,"output":25,"cacheRead":400,"cacheWrite":50,"totalTokens":525}}}`
+			s := cacheSession(pi.Name, raw, raw,
+				`{"type":"message","message":{"role":"user","usage":{"input":999}}}`,
+				`{"type":"compaction","message":{"role":"assistant","usage":{"input":999}}}`)
+			if tc.change != nil {
+				tc.change(&s.Stored.Evidence.Data)
+			}
+			// When
+			err := checkCacheTokenAccounting(s)
+			// Then
+			if tc.change == nil {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				require.NotErrorIs(t, err, errNotCovered)
+			}
+		})
+	}
+}
+
+func TestPiCacheAccountingIgnoresEvidenceVersion(t *testing.T) {
+	// Given: Pi accounting comes from native usage, not the evidence version.
+	s := cacheSession(pi.Name,
+		`{"type":"message","message":{"role":"assistant","usage":{"input":100,"output":50,"cacheRead":800,"cacheWrite":100,"totalTokens":1050}}}`)
+	evidence(s).SchemaVersion = "v2"
+
+	// When
+	err := checkCacheTokenAccounting(s)
+
+	// Then
+	require.NoError(t, err)
+}
+
+func TestPiCacheAccountingSelectedBranchFixture(t *testing.T) {
+	// Given: stored evidence retains selected raw records with invalid usage,
+	// compaction, and both cache categories from the parser fixture.
+	raw, err := os.ReadFile("../pi/testdata/session-v3.golden.json")
+	require.NoError(t, err)
+	s := &Session{Stored: &StoredSession{}}
+	require.NoError(t, json.Unmarshal(raw, &s.Stored.Evidence))
+	// When
+	err = checkCacheTokenAccounting(s)
+	// Then
+	require.NoError(t, err)
 }
 
 func TestCacheAccountingCompactedSession(t *testing.T) {
@@ -152,5 +221,48 @@ func TestCacheAccountingCumulativeSources(t *testing.T) {
 	smallerLegacy := `{"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":500,"cached_input_tokens":400,"cache_write_input_tokens":50,"output_tokens":25}}}}`
 	for _, records := range [][]string{{native, smallerNative}, {legacy, smallerLegacy}} {
 		require.NoError(t, checkCacheTokenAccounting(cacheSession(codex.Name, records...)))
+	}
+}
+
+func TestCopilotCacheAccountingSourceComparison(t *testing.T) {
+	// Copilot input tokens include the cache reads and writes. Copilot can
+	// write the record of one API call again: the call counts once.
+	first := `{"type":"session.usage_record","data":{"usage":{"model":"m","apiCallId":"a","inputTokens":600,"outputTokens":20,"cacheReadTokens":500,"cacheWriteTokens":50}}}`
+	second := `{"type":"session.usage_record","data":{"usage":{"model":"m","apiCallId":"b","inputTokens":400,"outputTokens":30,"cacheReadTokens":300,"cacheWriteTokens":50}}}`
+	viewer := `{"type":"assistant","uuid":"x","message":{"role":"assistant","content":[]},"source_event":` + first + `}`
+
+	for _, tc := range []struct {
+		name    string
+		records []string
+		change  func(*aicodingsession.Usage)
+		wantErr string
+	}{
+		{name: "per-call records", records: []string{first, second}},
+		{name: "repeated record", records: []string{first, second, first}},
+		{name: "viewer line is not a record", records: []string{first, second, viewer}},
+		{
+			// The redaction replaces each call ID with the same placeholder.
+			// The event ID then tells the records apart.
+			name: "redacted call IDs",
+			records: []string{
+				strings.Replace(strings.Replace(first, `"apiCallId":"a"`, `"apiCallId":"[CHAINLOOP_TRACE_REDACTED:generic-api-key]"`, 1), `{"type"`, `{"id":"e1","type"`, 1),
+				strings.Replace(strings.Replace(second, `"apiCallId":"b"`, `"apiCallId":"[CHAINLOOP_TRACE_REDACTED:generic-api-key]"`, 1), `{"type"`, `{"id":"e2","type"`, 1),
+			},
+		},
+		{name: "cache counted as input", records: []string{first, second}, change: func(u *aicodingsession.Usage) { u.InputTokens = 1000; u.TotalTokens = 1050 }, wantErr: "do not match"},
+		{name: "no records", wantErr: "no source token usage"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := cacheSession(copilot.Name, tc.records...)
+			if tc.change != nil {
+				tc.change(s.Stored.Evidence.Data.Usage)
+			}
+			err := checkCacheTokenAccounting(s)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
 	}
 }
