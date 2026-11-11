@@ -19,10 +19,12 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials/aicodingsession"
 	"github.com/stretchr/testify/assert"
@@ -219,5 +221,48 @@ func TestCacheAccountingCumulativeSources(t *testing.T) {
 	smallerLegacy := `{"type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":500,"cached_input_tokens":400,"cache_write_input_tokens":50,"output_tokens":25}}}}`
 	for _, records := range [][]string{{native, smallerNative}, {legacy, smallerLegacy}} {
 		require.NoError(t, checkCacheTokenAccounting(cacheSession(codex.Name, records...)))
+	}
+}
+
+func TestCopilotCacheAccountingSourceComparison(t *testing.T) {
+	// Copilot input tokens include the cache reads and writes. Copilot can
+	// write the record of one API call again: the call counts once.
+	first := `{"type":"session.usage_record","data":{"usage":{"model":"m","apiCallId":"a","inputTokens":600,"outputTokens":20,"cacheReadTokens":500,"cacheWriteTokens":50}}}`
+	second := `{"type":"session.usage_record","data":{"usage":{"model":"m","apiCallId":"b","inputTokens":400,"outputTokens":30,"cacheReadTokens":300,"cacheWriteTokens":50}}}`
+	viewer := `{"type":"assistant","uuid":"x","message":{"role":"assistant","content":[]},"source_event":` + first + `}`
+
+	for _, tc := range []struct {
+		name    string
+		records []string
+		change  func(*aicodingsession.Usage)
+		wantErr string
+	}{
+		{name: "per-call records", records: []string{first, second}},
+		{name: "repeated record", records: []string{first, second, first}},
+		{name: "viewer line is not a record", records: []string{first, second, viewer}},
+		{
+			// The redaction replaces each call ID with the same placeholder.
+			// The event ID then tells the records apart.
+			name: "redacted call IDs",
+			records: []string{
+				strings.Replace(strings.Replace(first, `"apiCallId":"a"`, `"apiCallId":"[CHAINLOOP_TRACE_REDACTED:generic-api-key]"`, 1), `{"type"`, `{"id":"e1","type"`, 1),
+				strings.Replace(strings.Replace(second, `"apiCallId":"b"`, `"apiCallId":"[CHAINLOOP_TRACE_REDACTED:generic-api-key]"`, 1), `{"type"`, `{"id":"e2","type"`, 1),
+			},
+		},
+		{name: "cache counted as input", records: []string{first, second}, change: func(u *aicodingsession.Usage) { u.InputTokens = 1000; u.TotalTokens = 1050 }, wantErr: "do not match"},
+		{name: "no records", wantErr: "no source token usage"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := cacheSession(copilot.Name, tc.records...)
+			if tc.change != nil {
+				tc.change(s.Stored.Evidence.Data.Usage)
+			}
+			err := checkCacheTokenAccounting(s)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+		})
 	}
 }

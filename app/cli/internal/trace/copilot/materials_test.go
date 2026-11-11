@@ -81,6 +81,7 @@ func TestReplaceSpecCopies(t *testing.T) {
 	}{
 		{name: "full view", tool: toolView, args: map[string]any{"path": "/r/ticket.md"}, result: success(testSource), finder: pointer.FinderFileRead},
 		{name: "partial view", tool: toolView, args: map[string]any{"path": "/r/ticket.md", "view_range": []int{1, 1}}, result: success("# Task\n")},
+		{name: "ranged view of the whole file", tool: toolView, args: map[string]any{"path": "/r/ticket.md", "view_range": []int{1, -1}}, result: success(testSource)},
 		{name: "failed view", tool: toolView, args: map[string]any{"path": "/r/ticket.md"}, result: map[string]any{"success": false, "result": map[string]any{"content": testSource}}},
 		{name: "shell read", tool: toolBash, args: map[string]any{"command": "cat ticket.md"}, result: success(strings.TrimSuffix(testSource, "\n") + "\n<shellId: 0 completed with exit code 0>"), finder: pointer.FinderFileRead},
 		{name: "older shell envelope", tool: toolBash, args: map[string]any{"command": "cat ticket.md"}, result: success(testSource + "<exited with exit code 0>"), finder: pointer.FinderFileRead},
@@ -158,8 +159,20 @@ func TestReplaceHookCopies(t *testing.T) {
 			want: map[string]int{pointer.FinderFileWrite: 3},
 		},
 		{
+			// The hook payload can carry the patch of apply_patch in an
+			// object, as hooks.go reads it.
+			name: "patch creation in object form", tool: toolApplyPatch,
+			args:   map[string]any{"input": "*** Begin Patch\n*** Add File: ticket.md\n+# Task\n+\n+Build the requested feature.\n*** End Patch\n"},
+			result: success("Added 1 file(s)"), resultType: "success", text: "Added 1 file(s)",
+			want: map[string]int{pointer.FinderFileWrite: 3},
+		},
+		{
 			name: "failed view", tool: toolView, args: map[string]any{"path": "/r/ticket.md"},
 			result: map[string]any{"success": false, "result": map[string]any{"content": testSource}}, resultType: "failure", text: testSource,
+		},
+		{
+			name: "ranged view", tool: toolView, args: map[string]any{"path": "/r/ticket.md", "view_range": []int{1, -1}},
+			result: success(testSource), resultType: "success", text: testSource,
 		},
 	}
 	for _, tc := range tests {
@@ -207,6 +220,8 @@ func TestReplaceCombinedShellReads(t *testing.T) {
 	}{
 		{name: "two files", command: "cat docs/ticket.md && cat other.md", output: "?? x\n" + testSource + "other text\n" + envelope, want: true},
 		{name: "quoted path", command: "git status && cat 'docs/ticket.md'", output: "clean\n" + testSource + envelope, want: true},
+		{name: "several operands", command: "cat other.md docs/ticket.md", output: "other text\n" + testSource + envelope, want: true},
+		{name: "options before the operands", command: "cat -- other.md \"docs/ticket.md\" | tee /dev/null", output: "other text\n" + testSource + envelope, want: true},
 		{name: "source inside a line", command: "cat docs/ticket.md", output: "prefix " + testSource + envelope},
 		{name: "file not read with cat", command: "head -n 9 docs/ticket.md && echo", output: "x\n" + testSource + envelope},
 		{name: "failed command", command: "cat docs/ticket.md && false", output: "x\n" + testSource + "<shellId: 1 completed with exit code 1>"},
@@ -235,6 +250,57 @@ func TestReplaceCombinedShellReads(t *testing.T) {
 
 			New().ReplaceSpecCopies(raw, pointer.Sources{pointer.Digest([]byte(testSource)): testMaterial})
 			assert.Equal(t, after, toJSON(t, raw))
+		})
+	}
+}
+
+// TestCatCopiesPerCall checks that the cat of one shell call does not let the
+// output of another call, which read no file, be replaced.
+func TestCatCopiesPerCall(t *testing.T) {
+	repo := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "ticket.md"), []byte(testSource), 0o600))
+	start := toJSON(t, map[string]any{
+		"type": eventSessionStartRecord, "id": "s", "timestamp": "2026-04-07T21:00:00Z",
+		"data": map[string]any{"sessionId": testSessionID, "context": map[string]any{"cwd": repo}},
+	})
+	call := func(id, command, output string) []string {
+		request := toJSON(t, map[string]any{
+			"type": eventAssistantMessage, "id": "a-" + id, "timestamp": "2026-04-07T21:00:01Z",
+			"data": map[string]any{"toolRequests": []map[string]any{{"toolCallId": id, "name": toolBash, "arguments": map[string]any{"command": command}}}},
+		})
+		result := success(output)
+		result["toolCallId"] = id
+		complete := toJSON(t, map[string]any{"type": eventToolComplete, "id": "t-" + id, "timestamp": "2026-04-07T21:00:02Z", "data": result})
+		return []string{request, complete}
+	}
+	envelope := "<shellId: 1 completed with exit code 0>"
+	lines := append(call("c1", "git status && cat ticket.md", "clean\n"+testSource+envelope),
+		call("c2", "./generate.sh", "generated\n"+testSource+envelope)...)
+	d, err := parseLog(t, start+"\n"+strings.Join(lines, "\n")+"\n")
+	require.NoError(t, err)
+
+	report := New().ReplaceSpecCopies(d.RawSession, pointer.Sources{pointer.Digest([]byte(testSource)): testMaterial})
+	require.NotNil(t, report[pointer.FinderFileRead])
+	assert.Equal(t, 1, report[pointer.FinderFileRead].Replaced)
+	assert.Equal(t, 1, viewerPointers(t, d.RawSession["main"], testMaterial))
+	assert.Contains(t, toJSON(t, d.RawSession), "generated\\n# Task")
+}
+
+func TestCatPaths(t *testing.T) {
+	tests := []struct {
+		command string
+		want    []string
+	}{
+		{command: "cat a.md", want: []string{"a.md"}},
+		{command: "cat a.md b.md && cat 'c d.md'", want: []string{"a.md", "b.md", "c d.md"}},
+		{command: "cat -n -- \"a.md\" | head", want: []string{"a.md"}},
+		{command: "test \"$(cat x.txt)\" = y", want: []string{"x.txt"}},
+		{command: "cat <a.md; cat>b.md", want: nil},
+		{command: "concat a.md && bobcat b.md", want: nil},
+	}
+	for _, tc := range tests {
+		t.Run(tc.command, func(t *testing.T) {
+			assert.Equal(t, tc.want, catPaths(tc.command))
 		})
 	}
 }

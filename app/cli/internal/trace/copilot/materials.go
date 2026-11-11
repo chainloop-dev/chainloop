@@ -255,16 +255,17 @@ type streamCalls struct {
 	succeeded map[string]bool
 	// pasted holds the asset IDs of the images that the user attached.
 	pasted map[string]bool
-	// commands holds the shell commands of the stream.
-	commands []string
+	// args holds the arguments of each tool call ID.
+	args map[string]json.RawMessage
 	// cwd is the working folder of the session.
 	cwd string
-	// copies holds the sources that the shell commands read with cat.
-	copies sourceCopies
+	// copies holds, for each shell tool call ID, the sources that the
+	// command read with cat. Only the output of that call can hold them.
+	copies map[string]sourceCopies
 }
 
 func readStreamCalls(lines []json.RawMessage) streamCalls {
-	s := streamCalls{tools: map[string]string{}, succeeded: map[string]bool{}, pasted: map[string]bool{}}
+	s := streamCalls{tools: map[string]string{}, succeeded: map[string]bool{}, pasted: map[string]bool{}, args: map[string]json.RawMessage{}}
 	for _, line := range lines {
 		e, data, ok := nativeEvent(line)
 		if !ok {
@@ -290,11 +291,7 @@ func readStreamCalls(lines []json.RawMessage) streamCalls {
 			for _, r := range requests {
 				if r.ToolCallID != "" {
 					s.tools[r.ToolCallID] = r.Name
-				}
-				if slices.Contains(commandTools, r.Name) {
-					if command := jsonString(object(r.Arguments)["command"]); command != "" {
-						s.commands = append(s.commands, command)
-					}
+					s.args[r.ToolCallID] = r.Arguments
 				}
 			}
 		case eventToolComplete:
@@ -340,7 +337,7 @@ func (p *Provider) ReplaceSpecCopies(raw map[string][]json.RawMessage, sources p
 	}
 	for _, lines := range raw {
 		calls := readStreamCalls(lines)
-		calls.copies = commandSources(calls.commands, calls.cwd, sources)
+		calls.copies = commandSources(calls, sources)
 		images := storedImages(lines, calls.pasted, sources, report)
 		for i, line := range lines {
 			e, data, ok := nativeEvent(line)
@@ -465,11 +462,15 @@ func splitShellResult(content string) (string, int, bool) {
 // readReplacement returns what replaces the result text of a tool call that
 // holds copies of sources, and the number of copies. A full view of a source,
 // or a shell output that is exactly a source, becomes one pointer. A shell
-// output that holds sources that the stream read with cat becomes text and
-// pointer blocks.
-func readReplacement(tool, content string, calls streamCalls, sources pointer.Sources) (json.RawMessage, int) {
+// output that holds sources that the same command read with cat becomes text
+// and pointer blocks. A view with a line range is a partial read, so it stays
+// inline, also when the range covers the whole file.
+func readReplacement(tool string, args json.RawMessage, copies sourceCopies, content string, sources pointer.Sources) (json.RawMessage, int) {
 	switch {
 	case tool == viewTool:
+		if _, ranged := object(args)["view_range"]; ranged {
+			return nil, 0
+		}
 		if material, ok := sources[pointer.Digest([]byte(content))]; content != "" && ok {
 			return pointer.New(material), 1
 		}
@@ -486,7 +487,7 @@ func readReplacement(tool, content string, calls streamCalls, sources pointer.So
 		// The text before the status line keeps its last newline, so that a
 		// source at the end of the output ends at a line boundary. The status
 		// line stays after the blocks of the output.
-		if blocks, n := replaceTextCopies(content[:status], calls.copies); n > 0 {
+		if blocks, n := replaceTextCopies(content[:status], copies); n > 0 {
 			blocks = append(blocks, encodeJSON(trace.RawSessionTextBlock{Type: textBlock, Text: content[status:]}))
 			return encodeJSON(blocks), n
 		}
@@ -501,7 +502,7 @@ func replaceRead(data jsonObject, calls streamCalls, sources pointer.Sources, re
 	if result == nil || len(result[pointer.Marker]) > 0 || !calls.succeeded[id] {
 		return false
 	}
-	replacement, n := readReplacement(calls.tools[id], jsonString(result["content"]), calls, sources)
+	replacement, n := readReplacement(calls.tools[id], calls.args[id], calls.copies[id], jsonString(result["content"]), sources)
 	if n == 0 {
 		return false
 	}
@@ -524,22 +525,62 @@ type sourceCopies map[string]string
 // same limit as for a local spec source.
 const maxSourceBytes = 1 << 20
 
-// catPathPattern finds the files that a shell command reads with cat.
-var catPathPattern = regexp.MustCompile(`\bcat\s+(?:--\s+)?(?:"([^"\n]+)"|'([^'\n]+)'|([^\s"';&|()<>]+))`)
+// catCommand finds each cat command in a shell command line.
+var catCommand = regexp.MustCompile(`(?:^|[\s;&|()$` + "`" + `])cat(?:\s|$)`)
 
-// commandSources reads the files that the shell commands read with cat, and
-// returns those that are stored sources. The file is read at the push, so a
-// file that changed after the session matches no source and stays inline.
-func commandSources(commands []string, cwd string, sources pointer.Sources) sourceCopies {
-	copies := sourceCopies{}
-	for _, command := range commands {
-		for _, match := range catPathPattern.FindAllStringSubmatch(command, -1) {
-			path := match[1] + match[2] + match[3]
-			if !filepath.IsAbs(path) {
-				if !filepath.IsAbs(cwd) {
+// catPaths returns the file operands of each cat command in a shell command
+// line, in order. Options are skipped. An operand list ends at a shell
+// operator or a redirection.
+func catPaths(command string) []string {
+	var paths []string
+	for _, loc := range catCommand.FindAllStringIndex(command, -1) {
+		rest := command[loc[1]:]
+		for {
+			rest = strings.TrimLeft(rest, " \t")
+			if rest == "" || strings.ContainsRune(";&|()<>\n`", rune(rest[0])) {
+				break
+			}
+			var operand string
+			switch rest[0] {
+			case '"', '\'':
+				end := strings.IndexByte(rest[1:], rest[0])
+				if end < 0 {
+					rest = ""
 					continue
 				}
-				path = filepath.Join(cwd, path)
+				operand, rest = rest[1:end+1], rest[end+2:]
+			default:
+				end := strings.IndexAny(rest, " \t;&|()<>\n`\"'")
+				if end < 0 {
+					end = len(rest)
+				}
+				operand, rest = rest[:end], rest[end:]
+			}
+			if operand != "" && !strings.HasPrefix(operand, "-") {
+				paths = append(paths, operand)
+			}
+		}
+	}
+	return paths
+}
+
+// commandSources reads, for each shell tool call, the files that its command
+// read with cat, and keeps those that are stored sources. The file is read at
+// the push, so a file that changed after the session matches no source and
+// stays inline.
+func commandSources(calls streamCalls, sources pointer.Sources) map[string]sourceCopies {
+	all := map[string]sourceCopies{}
+	for id, tool := range calls.tools {
+		if !slices.Contains(commandTools, tool) {
+			continue
+		}
+		copies := sourceCopies{}
+		for _, path := range catPaths(jsonString(object(calls.args[id])["command"])) {
+			if !filepath.IsAbs(path) {
+				if !filepath.IsAbs(calls.cwd) {
+					continue
+				}
+				path = filepath.Join(calls.cwd, path)
 			}
 			data, ok := readSmallFile(path)
 			if !ok {
@@ -549,8 +590,11 @@ func commandSources(commands []string, cwd string, sources pointer.Sources) sour
 				copies[string(data)] = material
 			}
 		}
+		if len(copies) > 0 {
+			all[id] = copies
+		}
 	}
-	return copies
+	return all
 }
 
 // readSmallFile reads a regular, non-empty file of up to maxSourceBytes.
@@ -652,7 +696,9 @@ func replaceWriteArgs(tool string, args json.RawMessage, sources pointer.Sources
 		fields[pointer.Marker] = pointer.New(material)
 		args = encodeJSON(fields)
 	case toolApplyPatch:
-		path, content, ok := addedFile(jsonString(args))
+		// The patch is a JSON string, or an object with an input field, as
+		// ReadHookInput reads it.
+		path, content, ok := addedFile(patchText(args))
 		if !ok {
 			return nil, false
 		}
@@ -732,7 +778,7 @@ func replaceHookInput(data jsonObject, calls streamCalls, sources pointer.Source
 		}
 		result := object(input["toolResult"])
 		if result != nil && len(result[pointer.Marker]) == 0 {
-			if replacement, n := readReplacement(tool, jsonString(result["textResultForLlm"]), calls, sources); n > 0 {
+			if replacement, n := readReplacement(tool, input["toolArgs"], calls.copies[id], jsonString(result["textResultForLlm"]), sources); n > 0 {
 				res := report.Finder(pointer.FinderFileRead)
 				res.Replaced += n
 				res.BytesRemoved += len(result["textResultForLlm"])

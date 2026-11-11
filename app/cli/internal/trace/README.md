@@ -32,7 +32,7 @@ GitHub Copilot uses one provider for Copilot CLI and the Copilot agent in VS Cod
 
 The Copilot agent also runs the hooks in `.claude/settings.json`. The Claude Code provider ignores Copilot payloads, so a repository with both providers records a Copilot session once, under Copilot.
 
-Copilot CLI 1.0.109 with `gpt-6.1-sol` on an Azure OpenAI provider passed all 26 checked features of the end-to-end suite, skills tracking, spec source pointers and pasted image pointers included. The model-driven checks passed 3/3. The suite attaches the pasted image with `--attachment`. The Copilot agent in VS Code has no headless mode, so the suite does not run it, and the column shows the results of Copilot CLI. With a GPT model, Copilot edits files with `apply_patch`, which the provider records file by file, as for Codex. The welcome message was checked by hand: Copilot shows the progress line of the `sessionStart` hook in its timeline, and the suite cannot read it, because the headless output does not tell which hook wrote a line. The cells marked **No** are features that the provider does not implement.
+Copilot CLI 1.0.109 with `gpt-6.1-sol` on an Azure OpenAI provider passed all 27 checked features of the end-to-end suite, skills tracking, spec source pointers, pasted image pointers, and cache token accounting included. The model-driven checks passed 3/3. The suite attaches the pasted image with `--attachment`. The Copilot agent in VS Code has no headless mode, so the suite does not run it, and the column shows the results of Copilot CLI. With a GPT model, Copilot edits files with `apply_patch`, which the provider records file by file, as for Codex. The welcome message was checked by hand: Copilot shows the progress line of the `sessionStart` hook in its timeline, and the suite cannot read it, because the headless output does not tell which hook wrote a line. The cells marked **No** are features that the provider does not implement.
 
 ## Setup
 
@@ -57,7 +57,7 @@ What the session evidence holds about the conversation.
 |---------|---------------|-------------|--------|--------------|------------|---|---|---|
 | Transcript | The evidence holds the conversation (`raw_session`): the messages and the tool calls of the agent. | Yes | Yes | Partial | Partial | Yes | Yes | Yes |
 | Token usage and cost | The evidence holds the tokens that the session used and their cost in USD. | Yes | No | Yes | Yes | Yes | Yes | Yes |
-| Cache token accounting | Cache reads and writes stay in separate evidence fields. Base input and total exclude cache. The suite compares stored token counts with the raw usage records. | Unknown | No | Unknown | Unknown | Yes | Unknown | Unknown |
+| Cache token accounting | Cache reads and writes stay in separate evidence fields. Base input and total exclude cache. The suite compares stored token counts with the raw usage records. | Unknown | No | Unknown | Unknown | Yes | Unknown | Yes |
 | Model detection | The evidence names the primary model and the other models that the session used. | Yes | Partial | Yes | Yes | Yes | Yes | Yes |
 | Subagents | The evidence holds the conversations of the subagents, and their token usage, as part of the session. | Yes | No | No | No | No | No | No |
 | Missed session start | A session whose session-start hook did not fire is still recorded, from its first tool hook. | Yes | Unknown | Unknown | Yes | Yes | Unknown | Unknown |
@@ -75,7 +75,6 @@ Why not Yes:
 - **Subagents, Codex:** the initial provider records only the root session transcript. Child-session transcripts are not collected.
 - **Subagents, Cursor:** the provider does not read subagent conversations.
 - **Subagents, Copilot:** Copilot writes no separate child transcripts. The events of a subagent are in the log of the parent, and the session totals include their tokens, but the evidence has no subagent entries (spec issue-3800).
-- **Cache token accounting, Copilot:** the end-to-end check has no source comparison for the Copilot event log yet.
 - **Missed session start, Copilot:** the scenario needs hook messages that Copilot does not report in headless mode.
 - **Subagents, OpenCode:** a subagent runs in a child session with its own export. It is not part of the evidence of its parent session.
 - **Missed session start, Cursor and OpenCode 1.x:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
