@@ -202,7 +202,7 @@ func TestWriteTraceLocalNextSteps(t *testing.T) {
 	assert.Contains(t, got, chainloopYMLName)
 	assert.Contains(t, got, claudeSettings)
 	assert.Contains(t, got, filepath.Join(".pi", "extensions", "chainloop-trace.ts"))
-	assert.Contains(t, got, "--approve")
+	assert.NotContains(t, got, "--approve", "the summary has no per-agent notes")
 	assert.Contains(t, got, "writes the session evidence to disk")
 	assert.NotContains(t, got, "the push tells you where")
 	assert.Contains(t, got, traceDocsURL)

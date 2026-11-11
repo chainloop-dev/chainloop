@@ -47,6 +47,10 @@ type SessionRecord struct {
 	// CodexStorageRoot is the canonical Codex home validated while copying
 	// this session. Later pushes can refresh it without the original CODEX_HOME.
 	CodexStorageRoot string `json:"codex_storage_root,omitempty"`
+	// CopilotStorageRoot is the canonical Copilot session-state folder
+	// validated while copying this session. Later pushes can refresh it
+	// without the original COPILOT_HOME.
+	CopilotStorageRoot string `json:"copilot_storage_root,omitempty"`
 	// Checkouts lists the roots of the other checkouts that this session
 	// edited with a file tool, sorted. Shell hooks run in the session's own
 	// checkout, and they also snapshot these checkouts, so that a command

@@ -133,6 +133,7 @@ var harnesses = map[string]Harness{
 	"OpenCode 2":      &OpenCode{Major: "2"},
 	"Pi":              &Pi{},
 	"Codex":           &Codex{},
+	"Copilot":         &Copilot{},
 }
 
 // configuredHarnesses returns the adapters of the harnesses that the suite

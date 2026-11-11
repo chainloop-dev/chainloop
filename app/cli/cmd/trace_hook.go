@@ -22,6 +22,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
@@ -43,6 +44,7 @@ func newTraceHookCmd() *cobra.Command {
 		newTraceHookCursorCmd(),
 		newTraceHookOpenCodeCmd(),
 		newTraceHookCodexCmd(),
+		newTraceHookCopilotCmd(),
 		newTraceHookPiCmd(),
 	)
 
@@ -467,6 +469,25 @@ func newTraceHookCodexCmd() *cobra.Command {
 		{"pre-tool-use", "Snapshot files before a Codex tool", func(_ *cobra.Command, _ []string) error { return action.HandleAgentPreToolUse(codex.New(), logger) }},
 		{"post-tool-use", "Record changes after a Codex tool", func(_ *cobra.Command, _ []string) error { return action.HandleAgentPostToolUse(codex.New(), logger) }},
 		{"session-end", "Copy the completed Codex session", func(_ *cobra.Command, _ []string) error { return action.HandleAgentSessionEnd(codex.New(), logger) }},
+	}
+	for _, h := range handlers {
+		cmd.AddCommand(&cobra.Command{Use: h.name, Short: h.description, Args: cobra.NoArgs, Annotations: map[string]string{skipActionOptsInit: trueString}, RunE: func(cmd *cobra.Command, args []string) error { InitHookLogger(); return h.run(cmd, args) }})
+	}
+	return cmd
+}
+
+// newTraceHookCopilotCmd handles the hooks of the GitHub Copilot hook file.
+// There is no user-prompt-submit hook, because Copilot drops its output.
+func newTraceHookCopilotCmd() *cobra.Command {
+	cmd := &cobra.Command{Use: "copilot", Short: "Handle GitHub Copilot hook invocations"}
+	handlers := []struct {
+		name, description string
+		run               func(*cobra.Command, []string) error
+	}{
+		{"session-start", "Capture the Copilot session", func(cmd *cobra.Command, _ []string) error { return runAgentSessionStart(cmd, copilot.New()) }},
+		{"pre-tool-use", "Snapshot files before a Copilot tool", func(_ *cobra.Command, _ []string) error { return action.HandleAgentPreToolUse(copilot.New(), logger) }},
+		{"post-tool-use", "Record changes after a Copilot tool", func(_ *cobra.Command, _ []string) error { return action.HandleAgentPostToolUse(copilot.New(), logger) }},
+		{"session-end", "Copy the completed Copilot session", func(_ *cobra.Command, _ []string) error { return action.HandleAgentSessionEnd(copilot.New(), logger) }},
 	}
 	for _, h := range handlers {
 		cmd.AddCommand(&cobra.Command{Use: h.name, Short: h.description, Args: cobra.NoArgs, Annotations: map[string]string{skipActionOptsInit: trueString}, RunE: func(cmd *cobra.Command, args []string) error { InitHookLogger(); return h.run(cmd, args) }})

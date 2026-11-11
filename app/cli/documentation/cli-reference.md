@@ -3154,7 +3154,7 @@ named freely; the name is normalized to the lowercase, dash-separated form
 Chainloop stores. It then asks which harnesses to trace, with the ones the
 repository is already set up for ticked, or Claude Code on a first run; use
 space to tick more. Passing --org, --project or a harness flag
-(--claude, --cursor, --opencode, --pi, --codex) skips the matching question.
+(--claude, --cursor, --opencode, --pi, --codex, --copilot) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
 required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
@@ -3187,6 +3187,7 @@ Options
 --claude[=true|false]          install Claude Code hooks (default when no harness flag is set)
 --codex[=true|false]           install Codex hooks
 --contract string              workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
+--copilot[=true|false]         install GitHub Copilot hooks (Copilot CLI and VS Code)
 --cursor[=true|false]          install Cursor hooks
 -h, --help[=true|false]            help for init
 --local[=true|false]           set up local mode, with no control plane, login or workflow. The pre-push hook writes the session evidence to disk
@@ -3257,6 +3258,7 @@ Options
 --claude[=true|false]     install Claude Code hooks (default when no provider flag is set)
 --codex[=true|false]      install Codex hooks
 --contract string         workflow contract to attach when creating the workflow; it must already exist and be usable by the project (default: "chainloop-ai-coding-session" when the organization has it, an empty contract otherwise)
+--copilot[=true|false]    install GitHub Copilot hooks (Copilot CLI and VS Code)
 --cursor[=true|false]     install Cursor hooks
 -h, --help[=true|false]       help for run
 --local[=true|false]      store the session on disk, with no control plane, login or workflow

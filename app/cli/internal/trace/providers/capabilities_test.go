@@ -20,6 +20,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/claude"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/cursor"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
@@ -63,6 +64,7 @@ func TestSessionStartChannels(t *testing.T) {
 		},
 		{provider: codex.Name, wantBanner: true, wantInstruction: true, wantReminder: true, why: "Codex surfaces systemMessage and supports additionalContext at session start and user prompt"},
 		{provider: pi.Name, wantBanner: true, wantInstruction: true, wantReminder: true, why: "Pi shows banners in its UI and injects the session instruction and prompt reminder through the project extension"},
+		{provider: copilot.Name, wantBanner: true, wantInstruction: true, wantReminder: false, why: "Copilot shows the progress messages of a hook to the user, adds the additionalContext of sessionStart to the session, and drops the output of userPromptSubmitted"},
 	}
 
 	for _, tc := range testCases {
@@ -81,7 +83,7 @@ func TestSessionStartChannels(t *testing.T) {
 // without a decision recorded above, since the default zero value would
 // silently claim no support.
 func TestSessionStartChannelsCoverEveryProvider(t *testing.T) {
-	known := map[string]bool{claude.Name: true, cursor.Name: true, opencode.Name: true, codex.Name: true, pi.Name: true}
+	known := map[string]bool{claude.Name: true, cursor.Name: true, opencode.Name: true, codex.Name: true, pi.Name: true, copilot.Name: true}
 
 	for _, p := range All() {
 		assert.True(t, known[p.Name()], "provider %q has no session-start channel expectation", p.Name())

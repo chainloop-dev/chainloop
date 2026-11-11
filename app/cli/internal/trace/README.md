@@ -1,6 +1,6 @@
 # Chainloop Trace: agent support
 
-Chainloop Trace records the sessions of AI coding agents as `CHAINLOOP_AI_CODING_SESSION` evidence. Each agent is a provider in this package: `claude/`, `cursor/`, `opencode/`, `pi/` and `codex/`. The interfaces are in `provider.go`, and the registry is in `providers/`. To add a provider, follow [PROVIDERS.md](PROVIDERS.md). One provider covers OpenCode 1.x and OpenCode 2: it detects the version at runtime.
+Chainloop Trace records the sessions of AI coding agents as `CHAINLOOP_AI_CODING_SESSION` evidence. Each agent is a provider in this package: `claude/`, `cursor/`, `opencode/`, `pi/`, `codex/` and `copilot/`. The interfaces are in `provider.go`, and the registry is in `providers/`. To add a provider, follow [PROVIDERS.md](PROVIDERS.md). One provider covers OpenCode 1.x and OpenCode 2: it detects the version at runtime.
 
 This page lists the features of Trace, by area, and tells which agents support each one. **Keep it current.** When you add or change a provider, or add or change a feature of Trace, update this page in the same pull request.
 
@@ -28,15 +28,21 @@ In a linked Git worktree, Codex 0.163 reads project hooks from the primary check
 
 Codex evidence converts native messages, tool calls, and tool results to the message shape used by the existing session viewer. Text uses `message.content`, calls use `tool_use` blocks, and results use `tool_result` blocks with matching IDs. Each converted entry retains its event in `source_event`. Spec and pasted-image pointers replace copies in viewer messages, retained events, and supported native timeline records. Other native metadata stays unchanged. Codex regression and E2E checks require renderable messages. When tools are used, they also require a completed exchange with readable tool output. A nonempty native transcript alone does not pass. These checks apply to Codex; `raw_session` remains open in the shared evidence schema.
 
+GitHub Copilot uses one provider for Copilot CLI and the Copilot agent in VS Code (spec issue-3800). Both read the hook files in `.github/hooks/`, and Trace owns its own file there, `.github/hooks/chainloop-trace.json`. Run `chainloop trace init --copilot` or `chainloop trace run --local --copilot -- copilot …`. Copilot CLI loads the repository hooks only in a trusted folder: trust the repository when Copilot asks, or pass `--trust-folder` to a prompt-mode run. In a folder that is not trusted, Copilot skips the hooks and Trace records nothing. Trace does not support the older VS Code agent that GitHub calls the "Local" harness. Trace reads the session event log from `$COPILOT_HOME/session-state/<session>/events.jsonl` (default `~/.copilot`). Its format is not a stable Copilot interface. Token usage comes from the `session.shutdown` summary, which Copilot writes after the last hook, so the push reads it from a fresh copy. Without a summary, usage comes from the records of each call, or from the output tokens of each message, with a warning. Cost is an estimate from the embedded API prices, not the Copilot bill (subscription and premium requests). The Copilot hooks carry no tool call ID, so two tool calls on the same file at the same time share one snapshot (TRC-006).
+
+The Copilot agent also runs the hooks in `.claude/settings.json`. The Claude Code provider ignores Copilot payloads, so a repository with both providers records a Copilot session once, under Copilot.
+
+Copilot CLI 1.0.109 with `gpt-6.1-sol` on an Azure OpenAI provider passed all 26 checked features of the end-to-end suite, and the model-driven spec checks passed 3/3. The Copilot agent in VS Code has no headless mode, so the suite does not run it, and the column shows the results of Copilot CLI. With a GPT model, Copilot edits files with `apply_patch`, which the provider records file by file, as for Codex. The welcome message was checked by hand: Copilot shows the progress line of the `sessionStart` hook in its timeline, and the suite cannot read it, because the headless output does not tell which hook wrote a line. The cells marked **No** are features that the provider does not implement.
+
 ## Setup
 
 How Trace is added to a repository and to an agent.
 
-| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
-|---------|---------------|-------------|--------|--------------|------------|---|---|
-| Hook installation and deletion | `chainloop trace init` installs the hooks of the selected agent. A second init changes nothing. `chainloop trace uninstall` deletes only the Chainloop hooks and keeps the other hooks of the agent. | Yes | Yes | Unknown | Yes | Yes | Yes |
-| Trace run wrapper | `chainloop trace run -- <agent command>` gives the agent temporary hooks for one session. When the command exits, the configuration of the agent is the same as before. | Yes | Yes | Unknown | Yes | Yes | Yes |
-| More than one agent in one repository | Two agents initialized in the same repository record their sessions separately, and each commit names the sessions of the agent that made it. | Unknown | Unknown | Unknown | Unknown | Unknown | Unknown |
+| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex | Copilot |
+|---------|---------------|-------------|--------|--------------|------------|---|---|---|
+| Hook installation and deletion | `chainloop trace init` installs the hooks of the selected agent. A second init changes nothing. `chainloop trace uninstall` deletes only the Chainloop hooks and keeps the other hooks of the agent. | Yes | Yes | Unknown | Yes | Yes | Yes | Yes |
+| Trace run wrapper | `chainloop trace run -- <agent command>` gives the agent temporary hooks for one session. When the command exits, the configuration of the agent is the same as before. | Yes | Yes | Unknown | Yes | Yes | Yes | Yes |
+| More than one agent in one repository | Two agents initialized in the same repository record their sessions separately, and each commit names the sessions of the agent that made it. | Unknown | Unknown | Unknown | Unknown | Unknown | Unknown | Unknown |
 
 Why not Yes:
 
@@ -47,14 +53,14 @@ Why not Yes:
 
 What the session evidence holds about the conversation.
 
-| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
-|---------|---------------|-------------|--------|--------------|------------|---|---|
-| Transcript | The evidence holds the conversation (`raw_session`): the messages and the tool calls of the agent. | Yes | Yes | Partial | Partial | Yes | Yes |
-| Token usage and cost | The evidence holds the tokens that the session used and their cost in USD. | Yes | No | Yes | Yes | Yes | Yes |
-| Cache token accounting | Cache reads and writes stay in separate evidence fields. Base input and total exclude cache. The suite compares stored token counts with the raw usage records. | Unknown | No | Unknown | Unknown | Yes | Unknown |
-| Model detection | The evidence names the primary model and the other models that the session used. | Yes | Partial | Yes | Yes | Yes | Yes |
-| Subagents | The evidence holds the conversations of the subagents, and their token usage, as part of the session. | Yes | No | No | No | No | No |
-| Missed session start | A session whose session-start hook did not fire is still recorded, from its first tool hook. | Yes | Unknown | Unknown | Yes | Yes | Unknown |
+| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex | Copilot |
+|---------|---------------|-------------|--------|--------------|------------|---|---|---|
+| Transcript | The evidence holds the conversation (`raw_session`): the messages and the tool calls of the agent. | Yes | Yes | Partial | Partial | Yes | Yes | Yes |
+| Token usage and cost | The evidence holds the tokens that the session used and their cost in USD. | Yes | No | Yes | Yes | Yes | Yes | Yes |
+| Cache token accounting | Cache reads and writes stay in separate evidence fields. Base input and total exclude cache. The suite compares stored token counts with the raw usage records. | Unknown | No | Unknown | Unknown | Yes | Unknown | Unknown |
+| Model detection | The evidence names the primary model and the other models that the session used. | Yes | Partial | Yes | Yes | Yes | Yes | Yes |
+| Subagents | The evidence holds the conversations of the subagents, and their token usage, as part of the session. | Yes | No | No | No | No | No | No |
+| Missed session start | A session whose session-start hook did not fire is still recorded, from its first tool hook. | Yes | Unknown | Unknown | Yes | Yes | Unknown | Unknown |
 
 Why not Yes:
 
@@ -68,6 +74,9 @@ Why not Yes:
 - **Model detection, Cursor:** the primary model comes from the session-start hook. The transcript does not tell the models, so the evidence does not list the other models. In auto mode, the hook names the model `default`, not the model that ran.
 - **Subagents, Codex:** the initial provider records only the root session transcript. Child-session transcripts are not collected.
 - **Subagents, Cursor:** the provider does not read subagent conversations.
+- **Subagents, Copilot:** Copilot writes no separate child transcripts. The events of a subagent are in the log of the parent, and the session totals include their tokens, but the evidence has no subagent entries (spec issue-3800).
+- **Cache token accounting, Copilot:** the end-to-end check has no source comparison for the Copilot event log yet.
+- **Missed session start, Copilot:** the scenario needs hook messages that Copilot does not report in headless mode.
 - **Subagents, OpenCode:** a subagent runs in a child session with its own export. It is not part of the evidence of its parent session.
 - **Missed session start, Cursor and OpenCode 1.x:** not verified yet. The end-to-end suite finds the values (spec issue-3635).
 
@@ -77,16 +86,16 @@ The cache accounting check reuses the edit-and-commit session, so it adds no age
 
 Which lines of a commit the AI wrote.
 
-| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
-|---------|---------------|-------------|--------|--------------|------------|---|---|
-| Line attribution | Each changed line of a commit is attributed to the AI or to a human, from a snapshot of each file before and after the agent edits it. An added line is AI when its content matches a line that an agent edit of the session wrote. A line that a human changed is human, also when a later agent edit keeps it. A whitespace-only change keeps the owner of the line. A removed line is AI only when an agent edit removed it. In a commit of more than one session, a line that only another session wrote or removed counts for neither side in this session's evidence (spec issue-3639). | Yes | Partial | Yes | Yes | Yes | Yes |
-| Partial commits | A commit that holds only part of the AI lines of a file credits the session with those lines. The other AI lines stay pending, and the next commit with them is credited to the session too (spec issue-3639). | Yes | Partial | Yes | Yes | Yes | Yes |
-| Generated line counts | The trace state keeps the lines that each agent edit added and removed, also the lines that never reach a commit. The evidence reports the totals of the session in `ai_generated_lines_added` and `ai_generated_lines_removed`. Files that `.gitattributes` marks `linguist-generated` do not count, as in the other line counts. A session with no commit sends no evidence, so it reports no totals (spec issue-3639). | Yes | Partial | Yes | Yes | Yes | Yes |
-| Shell changes attribution | Changes that the agent makes with shell commands (for example `sed`) are attributed to the AI too, not only changes made with the file tools. | Partial | Partial | Partial | Partial | Yes | Partial |
-| Net contribution | The added lines of a session are the lines that its commits added and that are still in the commit that the push sends. A line that a later commit replaced does not count, and each line counts one time. The removed lines are the removals of the session's commits, less the lines that a commit of the session wrote. The line counts of each file are the sum of its AI and human lines, and a file that the session created stays created when a later commit of the session changes it (spec issue-3639, issue 3674). | Partial | Partial | Partial | Partial | Yes | Partial |
-| Session updates | A later commit that replaces lines of a session sends the evidence of the session again at the next push, with the new numbers. A commit in no session that replaces lines of a session joins it: the commit list of the session holds the commit, and its replacing lines count as human (spec issue-3639). | Partial | Partial | Partial | Partial | Yes | Partial |
-| Line ranges | The line ranges of each file are positions in the file at the commit that the push sends. They cover the lines of the session that are still there, and each range says if its lines are AI or human. The AI ranges hold as many lines as the net AI lines added, and the human ranges as many lines as the net human lines added. A file that the pushed commit no longer holds has no ranges. A range with no attribution is an AI range at edit time. Older CLIs write only these ranges. This CLI writes them for a file that it cannot blame at the pushed commit, and for a file with edits from before line fingerprints (spec issue-3639, line ranges). | Partial | Partial | Partial | Partial | Yes | Partial |
-| Renames and rewrites | The AI/human split survives a file rename, an amend, a rebase, a squash, and a cherry-pick. The lines match the trace state by content, and blame follows a renamed file to its lines from before the rename (spec issue-3639). | Partial | Partial | Partial | Partial | Yes | Partial |
+| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex | Copilot |
+|---------|---------------|-------------|--------|--------------|------------|---|---|---|
+| Line attribution | Each changed line of a commit is attributed to the AI or to a human, from a snapshot of each file before and after the agent edits it. An added line is AI when its content matches a line that an agent edit of the session wrote. A line that a human changed is human, also when a later agent edit keeps it. A whitespace-only change keeps the owner of the line. A removed line is AI only when an agent edit removed it. In a commit of more than one session, a line that only another session wrote or removed counts for neither side in this session's evidence (spec issue-3639). | Yes | Partial | Yes | Yes | Yes | Yes | Yes |
+| Partial commits | A commit that holds only part of the AI lines of a file credits the session with those lines. The other AI lines stay pending, and the next commit with them is credited to the session too (spec issue-3639). | Yes | Partial | Yes | Yes | Yes | Yes | Yes |
+| Generated line counts | The trace state keeps the lines that each agent edit added and removed, also the lines that never reach a commit. The evidence reports the totals of the session in `ai_generated_lines_added` and `ai_generated_lines_removed`. Files that `.gitattributes` marks `linguist-generated` do not count, as in the other line counts. A session with no commit sends no evidence, so it reports no totals (spec issue-3639). | Yes | Partial | Yes | Yes | Yes | Yes | Yes |
+| Shell changes attribution | Changes that the agent makes with shell commands (for example `sed`) are attributed to the AI too, not only changes made with the file tools. | Partial | Partial | Partial | Partial | Yes | Partial | Partial |
+| Net contribution | The added lines of a session are the lines that its commits added and that are still in the commit that the push sends. A line that a later commit replaced does not count, and each line counts one time. The removed lines are the removals of the session's commits, less the lines that a commit of the session wrote. The line counts of each file are the sum of its AI and human lines, and a file that the session created stays created when a later commit of the session changes it (spec issue-3639, issue 3674). | Partial | Partial | Partial | Partial | Yes | Partial | Partial |
+| Session updates | A later commit that replaces lines of a session sends the evidence of the session again at the next push, with the new numbers. A commit in no session that replaces lines of a session joins it: the commit list of the session holds the commit, and its replacing lines count as human (spec issue-3639). | Partial | Partial | Partial | Partial | Yes | Partial | Partial |
+| Line ranges | The line ranges of each file are positions in the file at the commit that the push sends. They cover the lines of the session that are still there, and each range says if its lines are AI or human. The AI ranges hold as many lines as the net AI lines added, and the human ranges as many lines as the net human lines added. A file that the pushed commit no longer holds has no ranges. A range with no attribution is an AI range at edit time. Older CLIs write only these ranges. This CLI writes them for a file that it cannot blame at the pushed commit, and for a file with edits from before line fingerprints (spec issue-3639, line ranges). | Partial | Partial | Partial | Partial | Yes | Partial | Partial |
+| Renames and rewrites | The AI/human split survives a file rename, an amend, a rebase, a squash, and a cherry-pick. The lines match the trace state by content, and blame follows a renamed file to its lines from before the rename (spec issue-3639). | Partial | Partial | Partial | Partial | Yes | Partial | Partial |
 
 Why not Yes:
 
@@ -94,6 +103,7 @@ Why not Yes:
 - **Net contribution and line ranges, all agents:** the push finds the last writer of each line with `git blame`. A later commit that only re-indents a line takes the line, because blame sees a change. For Cursor, the limits of line attribution apply too.
 - **Session updates, all agents:** the update works only in the clone where the work happened, while the CLI keeps the trace state of the session (30 days), and only when the commits of the session are on the branch that the push sends. The push reads only the commits that are not on the default branch of the remote (`origin/HEAD`, or else `origin/main` or `origin/master`). After the commits of a session are pushed to that branch, a later commit does not update the session.
 - **Renames and rewrites, all agents:** this works only in the clone where the work happened. Git finds a rename only when the file keeps at least half of its content. Two pushed commits can rename a file one after the other. A later change to the file under its middle name does not send the session again. A rename inside an amend or a squash of the session commit loses the AI lines: the new commit creates the file under its new name, so no line of it matches the trace state (issue 3686). The limits of session updates apply too. For Cursor, the limits of line attribution apply too.
+- **Shell changes attribution, Copilot:** Copilot CLI sends the pre-tool hook as a batch of calls. When one batch holds both a file tool and a shell tool, the provider snapshots only the files, so the changes of the shell command are not attributed. Real sessions did not show such a batch ([#3803](https://github.com/chainloop-dev/chainloop/issues/3803)).
 - **Shell changes attribution, all agents:** the hook before a shell command records only a hash of each file, not its content. The command's changes are the commits that it wrote itself, each against the `HEAD` it replaced, plus the worktree against the `HEAD` after the command. The `HEAD` reflog tells the command's own commits apart from moves to commits that it did not write, such as a rebase, a pull, a merge, a checkout or a reset: lines that such a move brings in do not count (PFM-8131). Both the files and the reftable ref storage are read. When the reflog is off, rewritten, or does not lead from the old `HEAD` to the new one, no commit of the command counts. Uncommitted lines that an earlier agent edit recorded are not recorded again, but uncommitted human lines of a file that the command changes count as AI.
 
 ## User experience
@@ -102,11 +112,11 @@ What the user sees in the agent.
 
 The Codex welcome message and session link after push were verified manually in the interactive CLI 0.163.0. Codex runs its session-start hook after the first user message, so the welcome message appears then. The local-mode E2E suite does not verify these interactive messages.
 
-| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
-|---------|---------------|-------------|--------|--------------|------------|---|---|
-| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No | Unknown | Yes |
-| Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop. | Yes | No | No | No | Unknown | Yes |
-| Credentials warning | At session start, in control-plane mode, the user is told when the control plane does not accept the CLI credentials (for example, an expired token), so the push will not upload the session. The hook uses the same check as `chainloop trace init`. An unreachable control plane, or a check that takes more than 2 seconds, shows no warning. | Yes | Partial | Partial | Partial | Unknown | Unknown |
+| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex | Copilot |
+|---------|---------------|-------------|--------|--------------|------------|---|---|---|
+| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No | Unknown | Yes | Yes |
+| Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop. | Yes | No | No | No | Unknown | Yes | Unknown |
+| Credentials warning | At session start, in control-plane mode, the user is told when the control plane does not accept the CLI credentials (for example, an expired token), so the push will not upload the session. The hook uses the same check as `chainloop trace init`. An unreachable control plane, or a check that takes more than 2 seconds, shows no warning. | Yes | Partial | Partial | Partial | Unknown | Unknown | Unknown |
 
 Why not Yes:
 
@@ -116,22 +126,23 @@ Why not Yes:
 - **Welcome message, Cursor and OpenCode:** the provider gives the session-start context to the model only. It has no channel that shows a message to the user at session start, so the welcome message is dropped.
 - **Credentials warning, Cursor and OpenCode:** the provider has no channel to the user at session start. The model is told to tell the user, so the warning depends on the model.
 - **Session link after push, Cursor:** the `postToolUse` hook runs after a shell command, but its response has no field that Cursor shows to the user. The link stays pending until it expires.
+- **Session link after push and credentials warning, Copilot:** these need a control plane, so the end-to-end suite does not cover them. The link and the warning go to the user as hook progress lines, the same channel as the welcome message. The link does not go to the model, so the user sees it one time.
 - **Session link after push, OpenCode:** the plugin hook fires after a shell command, but the response that shows a message to the user is not verified yet. The link stays pending until it expires.
 
 ## Specs and skills
 
 What the session was asked to build, and which skills it used.
 
-| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
-|---------|---------------|-------------|--------|--------------|------------|---|---|
-| Spec capture instruction | At session start, the agent is told to capture the specs of the session (tickets, documents, plans, images) in the spec folder. A plan is captured only when it comes from an external source or from the plan mode of the agent: an agreement in the chat is not a plan. A pasted image is not captured, also when the agent has a file path for it. The agent tells the user in one line when it captures a file. | Yes | Yes | Yes | Yes | Yes | Yes |
-| Spec capture reminder | At each user prompt, the agent is reminded to capture new or changed specs. | Yes | No | Yes | Yes | Yes | Unknown |
-| Local spec sources read at push | A capture whose source is a local file holds only a header and a placeholder. Each push reads the file and records its current content, so the evidence follows the edits of the file. Only a regular text file of up to 1 MiB is read. Otherwise the push keeps the body that the agent wrote, or drops the capture with a warning when there is no body (spec issue-3561). | Yes | Yes | Yes | Yes | Yes | Yes |
-| Spec source role, title, and description | Each captured spec source holds the role, the title, and the description that the agent wrote in its header (spec issue-3531). | Yes | Yes | Unknown | Yes | Yes | Yes |
-| HTML spec sources | A captured text spec source whose body is an HTML page (it starts with a doctype or an `html` element) is stored as an `.html` file that holds only the page, without the header. The annotations and the spec entry keep the values of the header. A body that only contains HTML tags stays as the agent wrote it (issue 3707). | Yes | Yes | Unknown | Yes | Yes | Unknown |
-| Skills tracking | The evidence lists the skills that the session used, with a copy of each skill as it ran. | Yes | No | Partial | Partial | Partial | Partial |
-| Spec source pointers | Exact copies of spec sources in the transcript (full file reads and file writes) are replaced with a pointer to the spec material, so the evidence does not hold the same content two or three times (spec issue-3556). This includes the copies of pasted images and spec sources in the `api-request-blob` records of a Claude Code transcript (issue 3654). | Yes | No | No | No | No | Partial |
-| Pasted image pointers | Each distinct image that the user pasted into the session, including images in prompts sent while the agent was busy, is stored once as an image spec entry, from the data in the transcript, with the title "Pasted image N" and no role. A repeated paste of the same image adds no entry. The inline image in the transcript is replaced with a pointer to that material. An image whose data cannot be decoded, or that the push could not store, stays inline, and the push continues. When the agent captured the same image, its entry is kept and no second entry is added (spec issue-3569). | Yes | No | No | No | No | Yes |
+| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex | Copilot |
+|---------|---------------|-------------|--------|--------------|------------|---|---|---|
+| Spec capture instruction | At session start, the agent is told to capture the specs of the session (tickets, documents, plans, images) in the spec folder. A plan is captured only when it comes from an external source or from the plan mode of the agent: an agreement in the chat is not a plan. A pasted image is not captured, also when the agent has a file path for it. The agent tells the user in one line when it captures a file. | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Spec capture reminder | At each user prompt, the agent is reminded to capture new or changed specs. | Yes | No | Yes | Yes | Yes | Unknown | No |
+| Local spec sources read at push | A capture whose source is a local file holds only a header and a placeholder. Each push reads the file and records its current content, so the evidence follows the edits of the file. Only a regular text file of up to 1 MiB is read. Otherwise the push keeps the body that the agent wrote, or drops the capture with a warning when there is no body (spec issue-3561). | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Spec source role, title, and description | Each captured spec source holds the role, the title, and the description that the agent wrote in its header (spec issue-3531). | Yes | Yes | Unknown | Yes | Yes | Yes | Yes |
+| HTML spec sources | A captured text spec source whose body is an HTML page (it starts with a doctype or an `html` element) is stored as an `.html` file that holds only the page, without the header. The annotations and the spec entry keep the values of the header. A body that only contains HTML tags stays as the agent wrote it (issue 3707). | Yes | Yes | Unknown | Yes | Yes | Unknown | Yes |
+| Skills tracking | The evidence lists the skills that the session used, with a copy of each skill as it ran. | Yes | No | Partial | Partial | Partial | Partial | No |
+| Spec source pointers | Exact copies of spec sources in the transcript (full file reads and file writes) are replaced with a pointer to the spec material, so the evidence does not hold the same content two or three times (spec issue-3556). This includes the copies of pasted images and spec sources in the `api-request-blob` records of a Claude Code transcript (issue 3654). | Yes | No | No | No | No | Partial | No |
+| Pasted image pointers | Each distinct image that the user pasted into the session, including images in prompts sent while the agent was busy, is stored once as an image spec entry, from the data in the transcript, with the title "Pasted image N" and no role. A repeated paste of the same image adds no entry. The inline image in the transcript is replaced with a pointer to that material. An image whose data cannot be decoded, or that the push could not store, stays inline, and the push continues. When the agent captured the same image, its entry is kept and no second entry is added (spec issue-3569). | Yes | No | No | No | No | Yes | No |
 
 Why not Yes:
 
@@ -144,6 +155,8 @@ Why not Yes:
 - **Spec source pointers, Codex:** supports exact text results, native shell envelopes, recognized code-mode JSON envelopes, and complete file creation through native patches or literal patches in code mode. A code-mode write must be a single awaited `tools.apply_patch` call, optionally wrapped in `text`, with a literal argument or an immediately preceding `const` literal. Stored source files read with `cat` can also match within combined command output and native file-change records. Mixed or computed patches, other scripts, arbitrary output wrappers, transformed content, and other unsupported formats remain inline, so the table remains Partial. Earlier live sessions demonstrated this limit when the model trimmed the source's trailing newline.
 - **Pasted image pointers, Codex:** extracts base64 image data URLs from user input, deduplicates their decoded bytes, and replaces stored copies in both viewer messages and retained events. Tool-result images are not pastes. Invalid data, remote URLs, and path-only image records remain inline.
 - **Skills tracking, Pi:** completed model `read` calls are tracked only for filesystem `SKILL.md` files in the current working directory's `.pi/skills`, `.agents/skills` from there through the Git root, Pi's user skill locations, or managed package installation trees. Reads elsewhere, including unconfigured `.claude/skills`, and reads with an explicit limit or starting after line 1 are not tracked. Managed package paths are recognized by their installation trees, not by reproducing Pi's enabled-resource catalog. Native `/skill:` expansions remain tracked on the selected root branch. Skill folders are snapshotted by the first following Trace hook; push-time fallback keeps the shared warning. Child streams and arbitrary shell reads are not tracked. Pi has no managed organization-root metadata, so unclassified external locations stay `unknown`. A manual Pi 1.3.0 check with `openai-codex/gpt-6.1-sol` loaded and reloaded a project skill and retained the original definition and supporting file after the source changed. The automated suite's pinned OpenRouter run remains blocked by an expired API key.
+- **Spec capture reminder, Copilot:** Copilot drops the output of the `userPromptSubmitted` hook, so the provider installs no prompt hook. The agent gets the session-start instruction only.
+- **Skills tracking, spec source pointers, and pasted image pointers, Copilot:** not implemented yet. They are the second milestone of spec issue-3800.
 - **Skills tracking, Cursor:** the provider does not track skills. The evidence has no skill entries, which means "not recorded", not "no skill used".
 - **Skills tracking, OpenCode:** only the skills that the model starts with the `skill` tool are counted. Skills that the user starts, and skills used in subagents, are not. A plugin installed by an earlier version does not send the skill folder for OpenCode 2: install the hooks again to update it.
 - **Spec source pointers, Cursor and OpenCode:** the provider has no finder for the copies in its transcript yet. For OpenCode, the rebuilt transcript holds no tool outputs, so only the write copies would apply.
@@ -153,11 +166,11 @@ Why not Yes:
 
 How the evidence is protected before it leaves the machine.
 
-| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
-|---------|---------------|-------------|--------|--------------|------------|---|---|
-| Secret redaction | Secrets in the session evidence and in the spec materials are replaced with a placeholder before upload. | Yes | Yes | Yes | Yes | Yes | Yes |
-| Media skipped by redaction | The secret redaction does not scan base64 media (images, PDFs) in the transcript, so it is faster and does not break the media. | Yes | Unknown | Not applicable | Not applicable | Yes | Yes |
-| Allow markers in redaction | A secret on a line that carries an inline `gitleaks:allow` or `betterleaks:allow` marker, such as a test fixture the agent read, is not redacted. The marker covers only its own line. | Yes | Yes | Yes | Yes | Yes | Yes |
+| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex | Copilot |
+|---------|---------------|-------------|--------|--------------|------------|---|---|---|
+| Secret redaction | Secrets in the session evidence and in the spec materials are replaced with a placeholder before upload. | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Media skipped by redaction | The secret redaction does not scan base64 media (images, PDFs) in the transcript, so it is faster and does not break the media. | Yes | Unknown | Not applicable | Not applicable | Yes | Yes | Yes |
+| Allow markers in redaction | A secret on a line that carries an inline `gitleaks:allow` or `betterleaks:allow` marker, such as a test fixture the agent read, is not redacted. The marker covers only its own line. | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 
 Why not Yes:
 
@@ -168,12 +181,16 @@ Why not Yes:
 
 How the sessions are linked to the commits and attested.
 
-| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex |
-|---------|---------------|-------------|--------|--------------|------------|---|---|
-| Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes | Yes | Yes |
-| Attestation at push | In the default control-plane storage mode, the `pre-push` hook attests the sessions of the pushed commits to the control plane. | Yes | Yes | Yes | Yes | Unknown | Unknown |
-| Local storage at push | In a repository with `traceStorage: LOCAL` in `.chainloop.yml`, the `pre-push` hook runs the same assembly as an attestation. It writes the session evidence set to the `local-sessions` folder of the trace directory and sends no attestation. It needs no control plane, login, or network. The stored set is equal to the upload of a push, except for the signature. A `statement.json` file indexes the set: the in-toto statement that a push would sign, with the `chainloop.dev/attestation/v0.2` predicate. It has no envelope and no signature, so it is not an attestation. `trace init --local` sets up the mode. `trace run --local` stores one wrapped session the same way, with no `.chainloop.yml` setting. Redaction is on by default. Set `CHAINLOOP_TRACE_NO_REDACT` to turn it off, for a trusted local store only (spec issue-3582). | Yes | Yes | Yes | Yes | Yes | Yes |
-| Shell commands in another checkout | A session can work in a checkout other than the one it started in through shell commands only, for example in a fresh clone. The checkout is found from the command text: the target of `cd` or `pushd`, the path of `git -C`, and the folder that `git clone` or `gh repo clone` creates. The git hooks are installed there and the session is recorded there, the same as for a file tool edit in that checkout. A clone gets the git hooks only after the command that created it, so a commit in that same command does not carry the session. For OpenCode, a plugin installed by an earlier version does not send the command text: install the hooks again to update it. | Yes | Partial | Yes | Yes | Yes | Yes |
+| Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex | Copilot |
+|---------|---------------|-------------|--------|--------------|------------|---|---|---|
+| Commit trailer | Each commit gets a `Chainloop-Trace-Sessions` trailer with the sessions that contributed to it. | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Attestation at push | In the default control-plane storage mode, the `pre-push` hook attests the sessions of the pushed commits to the control plane. | Yes | Yes | Yes | Yes | Unknown | Unknown | Unknown |
+| Local storage at push | In a repository with `traceStorage: LOCAL` in `.chainloop.yml`, the `pre-push` hook runs the same assembly as an attestation. It writes the session evidence set to the `local-sessions` folder of the trace directory and sends no attestation. It needs no control plane, login, or network. The stored set is equal to the upload of a push, except for the signature. A `statement.json` file indexes the set: the in-toto statement that a push would sign, with the `chainloop.dev/attestation/v0.2` predicate. It has no envelope and no signature, so it is not an attestation. `trace init --local` sets up the mode. `trace run --local` stores one wrapped session the same way, with no `.chainloop.yml` setting. Redaction is on by default. Set `CHAINLOOP_TRACE_NO_REDACT` to turn it off, for a trusted local store only (spec issue-3582). | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Shell commands in another checkout | A session can work in a checkout other than the one it started in through shell commands only, for example in a fresh clone. The checkout is found from the command text: the target of `cd` or `pushd`, the path of `git -C`, and the folder that `git clone` or `gh repo clone` creates. The git hooks are installed there and the session is recorded there, the same as for a file tool edit in that checkout. A clone gets the git hooks only after the command that created it, so a commit in that same command does not carry the session. For OpenCode, a plugin installed by an earlier version does not send the command text: install the hooks again to update it. | Yes | Partial | Yes | Yes | Yes | Yes | Yes |
+
+Why not Yes:
+
+- **Attestation at push, Copilot:** this check needs a control plane. The suite uses local storage only.
 
 ### Switching storage modes
 
@@ -200,19 +217,21 @@ Why not Yes:
 | Cursor | `.cursor/hooks.json` | Session start and end, `afterFileEdit`, and `preToolUse` and `postToolUse` for the `Shell` tool. The `preToolUse` hook always allows the command. The provider installs no prompt hook. |
 | Codex | `.codex/hooks.json` | `SessionStart`, `SessionEnd`, `UserPromptSubmit`, `PreToolUse` and `PostToolUse` for `Bash` and `apply_patch`. Patches use one snapshot per affected file, including both paths of a move. |
 | OpenCode | `.opencode/plugins/chainloop-trace.ts` | Session start and end, user prompt, and before and after each tool. One plugin covers both versions: `server()` for 1.x (1.3.4 or later) and `setup()` for 2. The provider picks the export command from `opencode --version`. |
+| Copilot | `.github/hooks/chainloop-trace.json` (a file that Trace owns) | `sessionStart`, `sessionEnd`, and `preToolUse` and `postToolUse`. File tools `create` and `edit` use one snapshot per file. Shell tools `bash` and `powershell` use the working-tree snapshot. No `userPromptSubmitted` hook, because Copilot drops its output, and no `agentStop` hook, because it fires at each turn. Copilot CLI and the Copilot agent in VS Code read the same file. |
 | Pi | `.pi/extensions/chainloop-trace.ts` | Session start and selected shutdown reasons, session-tree changes, every user prompt, and before and after the `write`, `edit` and `bash` tools. |
 
 All agents share the git hooks `commit-msg`, `post-commit` and `pre-push`.
 
 ## End-to-end tests
 
-The `e2e/` package checks the tables against real agents and models (spec issue-3635). It creates throwaway repositories and uses Trace in local storage mode. It currently runs the Claude Code, Cursor, OpenCode 2, Pi, and Codex columns.
+The `e2e/` package checks the tables against real agents and models (spec issue-3635). It creates throwaway repositories and uses Trace in local storage mode. It currently runs the Claude Code, Cursor, OpenCode 2, Pi, Codex, and Copilot columns.
 
 The harnesses run as follows:
 
 - OpenCode runs on a private server (`opencode run --standalone`) with `PWD` set to the workspace.
 - Cursor runs with `cursor-agent -p --output-format stream-json --force --trust` and an isolated `HOME`. Shell startup files restore the test CLI to the front of `PATH`, including after macOS `path_helper` runs. The isolated home has no stored login, so the run needs `CURSOR_API_KEY`. The headless CLI cannot attach a pasted image or report hook messages.
 - Pi runs with `pi -p --mode json --approve`.
+- Copilot runs with `copilot -p --trust-folder --allow-all-tools --no-ask-user` and an isolated `COPILOT_HOME`. The isolated home has no stored login, so the run needs a token with Copilot access in `COPILOT_GITHUB_TOKEN`, `GH_TOKEN` or `GITHUB_TOKEN`, or a model provider of your own in the `COPILOT_PROVIDER_*` variables. The headless CLI cannot attach a pasted image or report hook messages. The Copilot agent in VS Code has no headless mode, so a person checks it by hand.
 - Codex runs with `codex exec --json`, an isolated `CODEX_HOME`, no sandbox, and no hook trust prompt. The isolated configuration disables personal and bundled skills while keeping project skills available. For bundled OpenAI models on OpenRouter, the harness preserves native instructions and patch tools by aliasing the model metadata to OpenRouter's prefixed model ID.
 
 The configured OpenCode 2, Pi, and Codex models use OpenRouter and need `OPENROUTER_API_KEY`. A Codex model without the `openrouter/` prefix uses the default Codex provider and needs `CODEX_API_KEY`. The pinned Codex model is `openrouter/openai/gpt-6-luna`. GPT-5 Mini frequently ended the scripted task before committing and pushing, so it is not the default test model.
