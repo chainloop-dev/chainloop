@@ -218,6 +218,19 @@ func TestReadHookInput(t *testing.T) {
 			want:    trace.HookInput{SessionID: testHookSession, Cwd: cwd, ToolName: toolBash, Command: "go test"},
 		},
 		{
+			name:    "post tool, apply_patch with the patch as a string",
+			payload: `{"sessionId":"s-1","cwd":"/work/repo","toolCallId":"c1","toolName":"apply_patch","toolArgs":"*** Begin Patch\n*** Add File: /work/repo/greeting.txt\n+hello\n*** End Patch\n"}`,
+			want:    trace.HookInput{SessionID: testHookSession, Cwd: cwd, ToolName: toolApplyPatch, FilePath: "/work/repo/greeting.txt"},
+		},
+		{
+			name:    "pre tool, batched apply_patch over several files and a move",
+			payload: `{"sessionId":"s-1","cwd":"/work/repo","toolCalls":[{"id":"c1","name":"apply_patch","args":"*** Begin Patch\n*** Update File: src/a.go\n@@\n-a\n+b\n*** Delete File: old.txt\n*** Update File: b.go\n*** Move to: c.go\n*** End Patch\n"}]}`,
+			want: trace.HookInput{
+				SessionID: testHookSession, Cwd: cwd, ToolName: toolApplyPatch,
+				FilePaths: []string{"/work/repo/src/a.go", "/work/repo/old.txt", "/work/repo/b.go", "/work/repo/c.go"},
+			},
+		},
+		{
 			name:    "other tool",
 			payload: `{"sessionId":"s-1","cwd":"/work/repo","toolName":"view","toolArgs":{"path":"/work/repo/a.md"}}`,
 			want:    trace.HookInput{SessionID: testHookSession, Cwd: cwd, ToolName: "view"},
@@ -245,7 +258,7 @@ func TestReadHookInput(t *testing.T) {
 
 func TestToolLists(t *testing.T) {
 	p := New()
-	for _, tool := range []string{toolCreate, "edit"} {
+	for _, tool := range []string{toolCreate, "edit", toolApplyPatch} {
 		assert.True(t, p.IsFileWritingTool(tool), tool)
 		assert.False(t, p.IsCommandTool(tool), tool)
 	}

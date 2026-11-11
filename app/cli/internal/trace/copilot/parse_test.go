@@ -155,6 +155,12 @@ func TestParseSessionUsageSources(t *testing.T) {
 			wantOutput: 7, wantWarning: "only the output tokens", wantPrimary: testModel,
 		},
 		{
+			name: "model from each message",
+			events: `{"type":"assistant.message","data":{"model":"gpt-6.1-sol","content":"a","outputTokens":3}}
+{"type":"assistant.message","data":{"model":"gpt-6.1-sol","content":"b","outputTokens":4}}`,
+			wantOutput: 7, wantWarning: "only the output tokens", wantPrimary: "gpt-6.1-sol",
+		},
+		{
 			name:        "no usage",
 			events:      `{"type":"user.message","data":{"content":"hi"}}`,
 			wantNoUsage: true, wantWarning: "no token usage",
@@ -204,6 +210,21 @@ func TestParseSessionErrors(t *testing.T) {
 		_, err := New().ParseSession(t.Context(), &trace.ParseOpts{SessionDir: t.TempDir(), SessionID: testSessionID})
 		require.Error(t, err)
 	})
+}
+
+func TestToolInput(t *testing.T) {
+	cases := []struct {
+		name, args, want string
+	}{
+		{name: "object stays", args: `{"path":"a"}`, want: `{"path":"a"}`},
+		{name: "patch string is wrapped", args: `"*** Begin Patch"`, want: `{"input":"*** Begin Patch"}`},
+		{name: "null is wrapped", args: `null`, want: `{"input":null}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.JSONEq(t, tc.want, string(toolInput(json.RawMessage(tc.args))))
+		})
+	}
 }
 
 func TestEstimateCost(t *testing.T) {

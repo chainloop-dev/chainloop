@@ -48,7 +48,14 @@ const (
 
 // fileWritingTools is the single source of truth for Copilot tools that write
 // one file with a known path.
-var fileWritingTools = []string{"create", "edit"}
+//
+// create and edit are the file tools of Claude models. apply_patch is the
+// file tool of GPT models: its argument is the patch text, which can change
+// several files.
+var fileWritingTools = []string{"create", "edit", toolApplyPatch}
+
+// toolApplyPatch is the Copilot tool that applies a patch.
+const toolApplyPatch = "apply_patch"
 
 // commandTools are the Copilot tools that run a shell command. Their changes
 // are captured with a before and after working-tree snapshot.
@@ -263,9 +270,10 @@ func decodeToolArgs(raw json.RawMessage) toolArgs {
 
 // ReadHookInput reads a Copilot hook payload in either form.
 //
-// Copilot sends no tool call ID in its post-tool payload, so the input never
-// carries one: the pre and post hooks of a shell tool then share the
-// snapshot key of the session (TRC-006).
+// The pre-tool payload of a batch of calls cannot pair one call with its
+// post-tool payload, so the input never carries a tool call ID, also when
+// the post-tool payload has one. The pre and post hooks of a shell tool then
+// share the snapshot key of the session (TRC-006).
 func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	data, err := io.ReadAll(io.LimitReader(r, maxHookPayloadBytes+1))
 	if err != nil {
@@ -293,7 +301,7 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		if len(args) == 0 {
 			args = raw.ToolInput
 		}
-		p.setToolTarget(input, decodeToolArgs(args))
+		p.setToolTarget(input, args)
 		return input, nil
 	}
 
@@ -303,13 +311,69 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	return input, nil
 }
 
-func (p *Provider) setToolTarget(input *trace.HookInput, args toolArgs) {
+func (p *Provider) setToolTarget(input *trace.HookInput, args json.RawMessage) {
 	switch {
 	case p.IsFileWritingTool(input.ToolName):
-		input.FilePath = absPath(args.Path, input.Cwd)
+		setPaths(input, toolPaths(input.ToolName, args, input.Cwd))
 	case p.IsCommandTool(input.ToolName):
-		input.Command = args.Command
+		input.Command = decodeToolArgs(args).Command
 	}
+}
+
+// setPaths sets FilePath for one path, or FilePaths for several, so the
+// handlers snapshot each file of a tool that changes several files.
+func setPaths(input *trace.HookInput, paths []string) {
+	switch len(paths) {
+	case 0:
+	case 1:
+		input.FilePath = paths[0]
+	default:
+		input.FilePaths = paths
+	}
+}
+
+// toolPaths returns the absolute paths that a file tool writes.
+func toolPaths(tool string, args json.RawMessage, cwd string) []string {
+	if tool == toolApplyPatch {
+		return patchPaths(patchText(args), cwd)
+	}
+	if path := absPath(decodeToolArgs(args).Path, cwd); path != "" {
+		return []string{path}
+	}
+	return nil
+}
+
+// patchText returns the patch of an apply_patch call: a JSON string, or an
+// object with the patch in its input field.
+func patchText(args json.RawMessage) string {
+	var text string
+	if json.Unmarshal(args, &text) == nil {
+		return text
+	}
+	var object struct {
+		Input string `json:"input"`
+	}
+	_ = json.Unmarshal(args, &object)
+	return object.Input
+}
+
+// patchPaths lists the files of a patch, with both sides of a move, so that
+// a deletion and a new path are recorded too. It reads the same patch format
+// as the Codex provider.
+func patchPaths(patch, cwd string) []string {
+	var paths []string
+	for _, line := range strings.Split(patch, "\n") {
+		for _, prefix := range []string{"*** Add File: ", "*** Update File: ", "*** Delete File: ", "*** Move to: "} {
+			path, ok := strings.CutPrefix(strings.TrimRight(line, "\r"), prefix)
+			if !ok {
+				continue
+			}
+			if path = absPath(strings.TrimSpace(path), cwd); path != "" && !slices.Contains(paths, path) {
+				paths = append(paths, path)
+			}
+		}
+	}
+	return paths
 }
 
 // readToolCalls maps a batch of calls to one input. File tools win over a
@@ -324,18 +388,14 @@ func (p *Provider) readToolCalls(input *trace.HookInput, raw hookPayload) {
 		if input.ToolName == "" {
 			input.ToolName = call.Name
 		}
-		if path := absPath(decodeToolArgs(call.Args).Path, input.Cwd); path != "" && !slices.Contains(paths, path) {
-			paths = append(paths, path)
+		for _, path := range toolPaths(call.Name, call.Args, input.Cwd) {
+			if !slices.Contains(paths, path) {
+				paths = append(paths, path)
+			}
 		}
 	}
-	switch {
-	case len(paths) == 1:
-		input.FilePath = paths[0]
-		return
-	case len(paths) > 1:
-		input.FilePaths = paths
-		return
-	case input.ToolName != "":
+	if input.ToolName != "" {
+		setPaths(input, paths)
 		return
 	}
 

@@ -82,8 +82,9 @@ func parseCopilotVersion(out []byte) (string, error) {
 	return "", errors.New("copilot --version: no version in the output")
 }
 
-// Run implements Harness. It runs `copilot -p` and approves all tools,
-// because a headless run cannot answer a permission question.
+// Run implements Harness. It runs `copilot -p`, trusts the workspace, and
+// approves all tools, because a headless run cannot answer a trust or
+// permission question.
 //
 // COPILOT_HOME is a folder next to the workspace, so the configuration, the
 // user hooks and the sessions of the user who runs the suite do not load or
@@ -106,6 +107,10 @@ func (c *Copilot) Run(ctx context.Context, req RunRequest) (*RunOutput, error) {
 
 	args := []string{
 		"-p", req.Prompt,
+		// Copilot loads the repository hooks (.github/hooks) only for a
+		// trusted folder. The isolated COPILOT_HOME trusts no folder, so the
+		// run trusts the workspace for this one session.
+		"--trust-folder",
 		"--allow-all-tools",
 		"--no-ask-user",
 		flagModel, req.Model,

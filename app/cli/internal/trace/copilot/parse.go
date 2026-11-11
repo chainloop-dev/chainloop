@@ -99,6 +99,7 @@ type logEvent struct {
 type eventData struct {
 	SessionID      string `json:"sessionId"`
 	CopilotVersion string `json:"copilotVersion"`
+	SelectedModel  string `json:"selectedModel"`
 	NewModel       string `json:"newModel"`
 	Model          string `json:"model"`
 	Content        string `json:"content"`
@@ -249,6 +250,7 @@ func (p *logParser) consume(e logEvent, data eventData, line int) error {
 		if data.CopilotVersion != "" {
 			p.data.Agent.Version = data.CopilotVersion
 		}
+		p.noteModel(data.SelectedModel)
 	case eventModelChange:
 		p.noteModel(data.NewModel)
 	case eventUserMessage:
@@ -268,6 +270,8 @@ func (p *logParser) consume(e logEvent, data eventData, line int) error {
 }
 
 func (p *logParser) consumeAssistantMessage(e logEvent, data eventData) {
+	// Newer Copilot releases name the model on each message.
+	p.noteModel(data.Model)
 	if e.AgentID == "" {
 		p.data.Conversation.AssistantMessages++
 	}
@@ -428,6 +432,18 @@ func (p *logParser) finish() error {
 	return nil
 }
 
+// toolInput returns the arguments of a tool call as a JSON object, which the
+// session viewer expects. Arguments that are not an object, such as the
+// patch text of apply_patch, go in an input field, as for Codex.
+func toolInput(args json.RawMessage) json.RawMessage {
+	var object map[string]json.RawMessage
+	if len(args) == 0 || (json.Unmarshal(args, &object) == nil && object != nil) {
+		return args
+	}
+	wrapped, _ := json.Marshal(map[string]json.RawMessage{"input": args})
+	return wrapped
+}
+
 // rawEntry converts the messages and tool results to the shared line shape,
 // so the session viewer can show them, and keeps the native event in
 // source_event. Other events stay as Copilot wrote them.
@@ -455,7 +471,7 @@ func rawEntry(e logEvent, data eventData, raw json.RawMessage, line int) json.Ra
 			blocks = append(blocks, trace.RawSessionTextBlock{Type: "text", Text: data.Content})
 		}
 		for _, req := range data.ToolRequests {
-			blocks = append(blocks, trace.RawSessionToolUseBlock{Type: "tool_use", ID: req.ToolCallID, Name: req.Name, Input: req.Arguments})
+			blocks = append(blocks, trace.RawSessionToolUseBlock{Type: "tool_use", ID: req.ToolCallID, Name: req.Name, Input: toolInput(req.Arguments)})
 		}
 	case eventToolComplete:
 		entry.Type = trace.RoleUser

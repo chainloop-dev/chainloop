@@ -398,7 +398,7 @@ func writeTraceHarnessNotes(w io.Writer, installed []trace.Provider) {
 		case codex.Name:
 			fmt.Fprintln(w, "For Codex, review and trust the installed hooks in Codex before starting work.")
 		case copilot.Name:
-			fmt.Fprintln(w, "For Copilot, the hooks are in .github/hooks/chainloop-trace.json. Copilot CLI and the Copilot agent in VS Code both read it.")
+			fmt.Fprintln(w, "For Copilot, the hooks are in .github/hooks/chainloop-trace.json. Copilot CLI and the Copilot agent in VS Code both read it. Copilot CLI loads it only in a trusted folder: trust the repository when Copilot asks, or use --trust-folder for a prompt-mode run.")
 		case pi.Name:
 			fmt.Fprintln(w, "For Pi, review the project extension at .pi/extensions/chainloop-trace.ts before starting work. Interactive Pi asks to trust project files. Non-interactive runs need saved trust or --approve.")
 		}
