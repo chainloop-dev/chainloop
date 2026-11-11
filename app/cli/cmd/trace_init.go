@@ -29,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/codex"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/config"
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
 	tracegit "github.com/chainloop-dev/chainloop/app/cli/internal/trace/git"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/hooks"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
@@ -51,6 +52,7 @@ func newTraceInitCmd() *cobra.Command {
 		opencodeFlag  bool
 		piFlag        bool
 		codexFlag     bool
+		copilotFlag   bool
 	)
 
 	cmd := &cobra.Command{
@@ -76,7 +78,7 @@ named freely; the name is normalized to the lowercase, dash-separated form
 Chainloop stores. It then asks which harnesses to trace, with the ones the
 repository is already set up for ticked, or Claude Code on a first run; use
 space to tick more. Passing --org, --project or a harness flag
-(--claude, --cursor, --opencode, --pi, --codex) skips the matching question.
+(--claude, --cursor, --opencode, --pi, --codex, --copilot) skips the matching question.
 
 Nothing is asked in CI or when the output is redirected: there --project is
 required unless .chainloop.yml carries projectName. Set CHAINLOOP_NO_PROMPT to
@@ -159,7 +161,7 @@ cannot use them with --local. You can use --require-trace with --local.`,
 			// so every question is answered up front and an abort leaves the
 			// repository untouched.
 			selected, err := resolveTraceProviders(newNamingPrompter(os.LookupEnv),
-				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag, pi: piFlag, codex: codexFlag},
+				traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag, pi: piFlag, codex: codexFlag, copilot: copilotFlag},
 				traceInitCanPrompt(), func() []string { return configuredTraceProviders(repoRoot) })
 			if err != nil {
 				return stopIfAborted(err)
@@ -299,6 +301,7 @@ cannot use them with --local. You can use --require-trace with --local.`,
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
 	cmd.Flags().BoolVar(&piFlag, "pi", false, "install Pi extension")
 	cmd.Flags().BoolVar(&codexFlag, "codex", false, "install Codex hooks")
+	cmd.Flags().BoolVar(&copilotFlag, "copilot", false, "install GitHub Copilot hooks (Copilot CLI and VS Code)")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
 	return cmd
@@ -394,6 +397,8 @@ func writeTraceHarnessNotes(w io.Writer, installed []trace.Provider) {
 		switch p.Name() {
 		case codex.Name:
 			fmt.Fprintln(w, "For Codex, review and trust the installed hooks in Codex before starting work.")
+		case copilot.Name:
+			fmt.Fprintln(w, "For Copilot, the hooks are in .github/hooks/chainloop-trace.json. Copilot CLI and the Copilot agent in VS Code both read it.")
 		case pi.Name:
 			fmt.Fprintln(w, "For Pi, review the project extension at .pi/extensions/chainloop-trace.ts before starting work. Interactive Pi asks to trust project files. Non-interactive runs need saved trust or --approve.")
 		}

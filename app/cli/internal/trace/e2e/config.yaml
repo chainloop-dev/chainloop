@@ -34,6 +34,14 @@ harnesses:
     version: "0.163.0"
     models:
       - openrouter/openai/gpt-6-luna
+  # Copilot CLI runs with COPILOT_HOME next to the workspace, so it has no
+  # stored login: it needs a token with Copilot access in
+  # COPILOT_GITHUB_TOKEN, GH_TOKEN or GITHUB_TOKEN. The Copilot agent in VS
+  # Code has no headless mode, so the suite does not run it.
+  Copilot:
+    version: "1.0.82"
+    models:
+      - claude-haiku-4.5
 
 # Runs and pass threshold of a cell whose feature depends on the model
 # following an instruction (R-006, D-004). A cell of any other feature runs

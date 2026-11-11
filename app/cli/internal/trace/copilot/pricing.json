@@ -1,0 +1,229 @@
+{
+  "version": "2026-11-11",
+  "source": "The Claude Code and Codex price tables of this repository (Anthropic and OpenAI API list prices)",
+  "notes": "USD per million tokens. Copilot bills by subscription and premium requests, so this is an API-price estimate, not the Copilot bill. Model names are normalized: lowercase, no vendor prefix, dots replaced with dashes. Unknown models use the default with a warning.",
+  "default_model": "claude-sonnet-4-6",
+  "models": {
+    "claude-haiku-4-5": {
+      "input": 1.0,
+      "cached": 0.1,
+      "output": 5.0,
+      "cache_write": 1.25
+    },
+    "claude-opus-4": {
+      "input": 15.0,
+      "cached": 1.5,
+      "output": 75.0,
+      "cache_write": 18.75
+    },
+    "claude-opus-4-1": {
+      "input": 15.0,
+      "cached": 1.5,
+      "output": 75.0,
+      "cache_write": 18.75
+    },
+    "claude-opus-4-5": {
+      "input": 5.0,
+      "cached": 0.5,
+      "output": 25.0,
+      "cache_write": 6.25
+    },
+    "claude-opus-4-6": {
+      "input": 5.0,
+      "cached": 0.5,
+      "output": 25.0,
+      "cache_write": 6.25
+    },
+    "claude-opus-4-7": {
+      "input": 5.0,
+      "cached": 0.5,
+      "output": 25.0,
+      "cache_write": 6.25
+    },
+    "claude-opus-4-8": {
+      "input": 5.0,
+      "cached": 0.5,
+      "output": 25.0,
+      "cache_write": 6.25
+    },
+    "claude-opus-5": {
+      "input": 5.0,
+      "cached": 0.5,
+      "output": 25.0,
+      "cache_write": 6.25
+    },
+    "claude-opus-5-5": {
+      "input": 4.0,
+      "cached": 0.2,
+      "output": 20.0,
+      "cache_write": 5.0
+    },
+    "claude-sonnet-4": {
+      "input": 3.0,
+      "cached": 0.3,
+      "output": 15.0,
+      "cache_write": 3.75
+    },
+    "claude-sonnet-4-5": {
+      "input": 3.0,
+      "cached": 0.3,
+      "output": 15.0,
+      "cache_write": 3.75
+    },
+    "claude-sonnet-4-6": {
+      "input": 3.0,
+      "cached": 0.3,
+      "output": 15.0,
+      "cache_write": 3.75
+    },
+    "claude-sonnet-5": {
+      "input": 2.0,
+      "cached": 0.2,
+      "output": 10.0,
+      "cache_write": 2.5
+    },
+    "claude-sonnet-5-5": {
+      "input": 2.0,
+      "cached": 0.2,
+      "output": 10.0,
+      "cache_write": 2.5
+    },
+    "gpt-4-1": {
+      "input": 2.0,
+      "cached": 0.5,
+      "output": 8.0
+    },
+    "gpt-4-1-mini": {
+      "input": 0.4,
+      "cached": 0.1,
+      "output": 1.6
+    },
+    "gpt-4-1-nano": {
+      "input": 0.1,
+      "cached": 0.025,
+      "output": 0.4
+    },
+    "gpt-4o": {
+      "input": 2.5,
+      "cached": 1.25,
+      "output": 10.0
+    },
+    "gpt-4o-mini": {
+      "input": 0.15,
+      "cached": 0.075,
+      "output": 0.6
+    },
+    "gpt-5": {
+      "input": 1.25,
+      "cached": 0.125,
+      "output": 10.0
+    },
+    "gpt-5-1": {
+      "input": 1.25,
+      "cached": 0.125,
+      "output": 10.0
+    },
+    "gpt-5-2": {
+      "input": 1.75,
+      "cached": 0.175,
+      "output": 14.0
+    },
+    "gpt-5-3-codex": {
+      "input": 1.75,
+      "cached": 0.175,
+      "output": 14
+    },
+    "gpt-5-4": {
+      "input": 2.5,
+      "cached": 0.25,
+      "output": 15.0
+    },
+    "gpt-5-4-mini": {
+      "input": 0.75,
+      "cached": 0.075,
+      "output": 4.5
+    },
+    "gpt-5-4-nano": {
+      "input": 0.2,
+      "cached": 0.02,
+      "output": 1.25
+    },
+    "gpt-5-5": {
+      "input": 5.0,
+      "cached": 0.5,
+      "output": 30.0
+    },
+    "gpt-5-6-luna": {
+      "input": 0.2,
+      "cached": 0.02,
+      "output": 1.2,
+      "cache_write": 0.25
+    },
+    "gpt-5-6-sol": {
+      "input": 4.0,
+      "cached": 0.4,
+      "output": 20.0,
+      "cache_write": 5.0
+    },
+    "gpt-5-6-terra": {
+      "input": 2.0,
+      "cached": 0.2,
+      "output": 12.0,
+      "cache_write": 2.5
+    },
+    "gpt-5-mini": {
+      "input": 0.25,
+      "cached": 0.025,
+      "output": 2.0
+    },
+    "gpt-5-nano": {
+      "input": 0.05,
+      "cached": 0.005,
+      "output": 0.4
+    },
+    "gpt-6-1-sol": {
+      "input": 2.0,
+      "cached": 0.1,
+      "output": 10.0,
+      "cache_write": 2.5
+    },
+    "gpt-6-astra": {
+      "input": 10.0,
+      "cached": 1.0,
+      "output": 50.0,
+      "cache_write": 12.5
+    },
+    "gpt-6-luna": {
+      "input": 0.1,
+      "cached": 0.01,
+      "output": 0.5,
+      "cache_write": 0.125
+    },
+    "gpt-6-sol": {
+      "input": 2.0,
+      "cached": 0.2,
+      "output": 10.0,
+      "cache_write": 2.5
+    },
+    "o1": {
+      "input": 15.0,
+      "cached": 7.5,
+      "output": 60.0
+    },
+    "o3": {
+      "input": 2.0,
+      "cached": 0.5,
+      "output": 8.0
+    },
+    "o3-mini": {
+      "input": 1.1,
+      "cached": 0.55,
+      "output": 4.4
+    },
+    "o4-mini": {
+      "input": 1.1,
+      "cached": 0.275,
+      "output": 4.4
+    }
+  }
+}

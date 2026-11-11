@@ -66,6 +66,7 @@ func newTraceRunCmd() *cobra.Command {
 		opencodeFlag bool
 		piFlag       bool
 		codexFlag    bool
+		copilotFlag  bool
 	)
 
 	cmd := &cobra.Command{
@@ -167,7 +168,7 @@ func newTraceRunCmd() *cobra.Command {
 			return action.TraceRun(cmd.Context(), logger, action.TraceRunOpts{
 				Store:            store,
 				RepoRoot:         repoRoot,
-				Providers:        traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag, pi: piFlag, codex: codexFlag}.namesOrDefault(),
+				Providers:        traceProviderFlags{claude: claudeFlag, cursor: cursorFlag, opencode: opencodeFlag, pi: piFlag, codex: codexFlag, copilot: copilotFlag}.namesOrDefault(),
 				Command:          args,
 				ProjectName:      projectFlag,
 				Organization:     organization,
@@ -191,6 +192,7 @@ func newTraceRunCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&cursorFlag, "cursor", false, "install Cursor hooks")
 	cmd.Flags().BoolVar(&piFlag, "pi", false, "install Pi extension")
 	cmd.Flags().BoolVar(&codexFlag, "codex", false, "install Codex hooks")
+	cmd.Flags().BoolVar(&copilotFlag, "copilot", false, "install GitHub Copilot hooks (Copilot CLI and VS Code)")
 	cmd.Flags().BoolVar(&opencodeFlag, "opencode", false, "install opencode hooks")
 
 	// project and workflow are not required in local mode, so the check is done

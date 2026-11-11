@@ -208,6 +208,11 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 			Command  string `json:"command"`
 		} `json:"tool_input"`
 		CursorVersion string `json:"cursor_version"`
+		// Timestamp and SessionIDCamel are in the payloads of the GitHub
+		// Copilot agent, which also runs these hooks. Claude Code sends
+		// neither.
+		Timestamp      json.RawMessage `json:"timestamp"`
+		SessionIDCamel string          `json:"sessionId"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, err
@@ -223,6 +228,13 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		return &trace.HookInput{}, nil
 	}
 
+	// The GitHub Copilot agent runs the hooks of .claude/settings.json too.
+	// Its sessions belong to the copilot provider, so a Copilot payload
+	// yields an empty input and the session is recorded once.
+	if isCopilotPayload(raw.Timestamp, raw.SessionIDCamel, raw.TranscriptPath) {
+		return &trace.HookInput{}, nil
+	}
+
 	input := raw.HookInput
 	if raw.ToolInput.FilePath != "" {
 		input.FilePath = raw.ToolInput.FilePath
@@ -231,6 +243,30 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	input.ToolFailed = input.HookEventName == eventPostToolUseFailure
 
 	return &input, nil
+}
+
+// isCopilotPayload reports whether the GitHub Copilot agent sent the payload.
+// Copilot puts a timestamp on each payload and can send a camelCase session
+// ID, and its transcript is an events.jsonl file in a session-state folder.
+// Claude Code sends none of these. A timestamp counts only when the payload
+// does not name a Claude Code transcript, so that a timestamp that a later
+// Claude Code release adds does not hide its sessions.
+func isCopilotPayload(timestamp json.RawMessage, sessionIDCamel, transcriptPath string) bool {
+	if sessionIDCamel != "" {
+		return true
+	}
+	if filepath.Base(transcriptPath) == "events.jsonl" &&
+		filepath.Base(filepath.Dir(filepath.Dir(transcriptPath))) == "session-state" {
+		return true
+	}
+	return len(timestamp) > 0 && !isClaudeTranscript(transcriptPath)
+}
+
+// isClaudeTranscript reports whether path is a session transcript in the
+// Claude Code projects folder.
+func isClaudeTranscript(path string) bool {
+	return filepath.Ext(path) == ".jsonl" &&
+		filepath.Base(filepath.Dir(filepath.Dir(path))) == "projects"
 }
 
 func addHookEntry(hooks map[string]any, event, command, matcher string) bool {

@@ -22,6 +22,7 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/opencode"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
@@ -328,15 +329,15 @@ func TestWriteTraceNextSteps(t *testing.T) {
 		},
 		{
 			name:      "every harness",
-			providers: []string{providerClaudeCode, "cursor", opencode.Name, pi.Name, "codex"},
+			providers: []string{providerClaudeCode, "cursor", opencode.Name, pi.Name, "codex", copilot.Name},
 			// Named in full: ".opencode" alone would pass on any file under that
 			// directory, so it would not catch the plugin being renamed.
 			wantFiles: []string{
 				chainloopYMLName, claudeSettings, ".cursor/hooks.json",
 				".opencode/plugins/chainloop-trace.ts", ".pi/extensions/chainloop-trace.ts",
-				".codex/hooks.json",
+				".codex/hooks.json", ".github/hooks/chainloop-trace.json",
 			},
-			wantHarnesses: "claude-code, cursor, opencode, pi or codex",
+			wantHarnesses: "claude-code, cursor, opencode, pi, codex or copilot",
 		},
 	}
 
@@ -355,6 +356,9 @@ func TestWriteTraceNextSteps(t *testing.T) {
 			assert.Contains(t, got, traceDocsURL)
 			if slices.Contains(tc.providers, pi.Name) {
 				assert.Contains(t, got, "--approve")
+			}
+			if slices.Contains(tc.providers, copilot.Name) {
+				assert.Contains(t, got, "For Copilot")
 			}
 		})
 	}

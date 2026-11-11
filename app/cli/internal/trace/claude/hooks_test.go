@@ -342,6 +342,55 @@ func TestReadHookInput(t *testing.T) {
 		assert.Empty(t, input.SessionID, "Cursor-relayed events must yield an empty input")
 		assert.Empty(t, input.FilePath)
 	})
+
+	// The GitHub Copilot agent also runs the hooks of .claude/settings.json.
+	// Its payloads must yield an empty input, so the copilot provider owns
+	// the session and it is recorded once (spec issue-3800 R-003).
+	copilotPayloads := []struct {
+		name    string
+		payload string
+	}{
+		{
+			name:    "snake_case form with a timestamp",
+			payload: `{"session_id":"s-1","hook_event_name":"PreToolUse","timestamp":"2026-04-08T15:04:05.000Z","cwd":"/repo","tool_name":"Write","tool_input":{"file_path":"/repo/README.md"}}`,
+		},
+		{
+			name:    "snake_case form with a numeric timestamp",
+			payload: `{"session_id":"s-1","hook_event_name":"PostToolUse","timestamp":1775596074872,"tool_name":"Bash","tool_input":{"command":"ls"}}`,
+		},
+		{
+			name:    "camelCase session ID",
+			payload: `{"sessionId":"s-1","session_id":"s-1","hook_event_name":"SessionStart"}`,
+		},
+		{
+			name:    "Copilot transcript path",
+			payload: `{"session_id":"s-1","hook_event_name":"Stop","transcript_path":"/home/u/.copilot/session-state/s-1/events.jsonl"}`,
+		},
+	}
+	for _, tc := range copilotPayloads {
+		t.Run("bails on Copilot payloads: "+tc.name, func(t *testing.T) {
+			input, err := provider.ReadHookInput(bytes.NewBufferString(tc.payload))
+			require.NoError(t, err)
+			assert.Empty(t, input.SessionID, "Copilot events must yield an empty input")
+			assert.Empty(t, input.FilePath)
+			assert.Empty(t, input.Command)
+		})
+	}
+
+	t.Run("keeps a Claude Code payload with a timestamp", func(t *testing.T) {
+		r := bytes.NewBufferString(`{"session_id":"s-1","hook_event_name":"PreToolUse","timestamp":"2026-04-08T15:04:05.000Z","transcript_path":"/home/u/.claude/projects/-repo/s-1.jsonl","tool_name":"Write","tool_input":{"file_path":"/repo/README.md"}}`)
+		input, err := provider.ReadHookInput(r)
+		require.NoError(t, err)
+		assert.Equal(t, "s-1", input.SessionID)
+	})
+
+	t.Run("keeps a Claude Code payload", func(t *testing.T) {
+		r := bytes.NewBufferString(`{"session_id":"s-1","hook_event_name":"PreToolUse","transcript_path":"/home/u/.claude/projects/-repo/s-1.jsonl","cwd":"/repo","tool_name":"Write","tool_input":{"file_path":"/repo/README.md"}}`)
+		input, err := provider.ReadHookInput(r)
+		require.NoError(t, err)
+		assert.Equal(t, "s-1", input.SessionID)
+		assert.Equal(t, "/repo/README.md", input.FilePath)
+	})
 }
 
 func TestIsFileWritingTool(t *testing.T) {

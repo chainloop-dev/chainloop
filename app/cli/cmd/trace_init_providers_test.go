@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/copilot"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/pi"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/providers"
 
@@ -208,10 +209,20 @@ func TestTraceProviderFlags(t *testing.T) {
 	})
 
 	t.Run("names follow the registry order, not the flag order", func(t *testing.T) {
-		f := traceProviderFlags{codex: true, pi: true, claude: true}
+		f := traceProviderFlags{copilot: true, codex: true, pi: true, claude: true}
 		assert.True(t, f.any())
-		assert.Equal(t, []string{providerClaudeCode, pi.Name, "codex"}, f.names())
+		assert.Equal(t, []string{providerClaudeCode, pi.Name, "codex", copilot.Name}, f.names())
 	})
+	t.Run("copilot flag", func(t *testing.T) {
+		f := traceProviderFlags{copilot: true}
+		assert.True(t, f.any())
+		assert.Equal(t, []string{copilot.Name}, f.namesOrDefault())
+	})
+}
+
+func TestTraceCommandsExposeCopilotFlag(t *testing.T) {
+	assert.NotNil(t, newTraceInitCmd().Flags().Lookup(copilot.Name))
+	assert.NotNil(t, newTraceRunCmd().Flags().Lookup(copilot.Name))
 }
 
 func TestTraceCommandsExposePiFlag(t *testing.T) {
