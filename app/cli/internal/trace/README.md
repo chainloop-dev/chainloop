@@ -32,7 +32,7 @@ GitHub Copilot uses one provider for Copilot CLI and the Copilot agent in VS Cod
 
 The Copilot agent also runs the hooks in `.claude/settings.json`. The Claude Code provider ignores Copilot payloads, so a repository with both providers records a Copilot session once, under Copilot.
 
-Copilot CLI 1.0.109 with `gpt-6.1-sol` on an Azure OpenAI provider passed all 26 checked features of the end-to-end suite, and the model-driven spec checks passed 3/3. The Copilot agent in VS Code has no headless mode, so the suite does not run it, and the column shows the results of Copilot CLI. With a GPT model, Copilot edits files with `apply_patch`, which the provider records file by file, as for Codex. The cells marked **No** are features that the provider does not implement.
+Copilot CLI 1.0.109 with `gpt-6.1-sol` on an Azure OpenAI provider passed all 26 checked features of the end-to-end suite, and the model-driven spec checks passed 3/3. The Copilot agent in VS Code has no headless mode, so the suite does not run it, and the column shows the results of Copilot CLI. With a GPT model, Copilot edits files with `apply_patch`, which the provider records file by file, as for Codex. The welcome message was checked by hand: Copilot shows the progress line of the `sessionStart` hook in its timeline, and the suite cannot read it, because the headless output does not tell which hook wrote a line. The cells marked **No** are features that the provider does not implement.
 
 ## Setup
 
@@ -114,7 +114,7 @@ The Codex welcome message and session link after push were verified manually in 
 
 | Feature | What it means | Claude Code | Cursor | OpenCode 1.x | OpenCode 2 | Pi | Codex | Copilot |
 |---------|---------------|-------------|--------|--------------|------------|---|---|---|
-| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No | Unknown | Yes | No |
+| Welcome message | At session start, the user sees a message that tells that Chainloop records the session, and where the evidence goes: the Chainloop project, or the on-disk path in local mode (spec issue-3582). | Yes | No | No | No | Unknown | Yes | Yes |
 | Session link after push | After a `git push` that the agent runs, the user sees a link to the session in Chainloop. | Yes | No | No | No | Unknown | Yes | Unknown |
 | Credentials warning | At session start, in control-plane mode, the user is told when the control plane does not accept the CLI credentials (for example, an expired token), so the push will not upload the session. The hook uses the same check as `chainloop trace init`. An unreachable control plane, or a check that takes more than 2 seconds, shows no warning. | Yes | Partial | Partial | Partial | Unknown | Unknown | Unknown |
 
@@ -126,8 +126,7 @@ Why not Yes:
 - **Welcome message, Cursor and OpenCode:** the provider gives the session-start context to the model only. It has no channel that shows a message to the user at session start, so the welcome message is dropped.
 - **Credentials warning, Cursor and OpenCode:** the provider has no channel to the user at session start. The model is told to tell the user, so the warning depends on the model.
 - **Session link after push, Cursor:** the `postToolUse` hook runs after a shell command, but its response has no field that Cursor shows to the user. The link stays pending until it expires.
-- **Welcome message, Copilot:** Copilot documents no session-start output that it shows to the user. The provider gives the session-start context to the model only.
-- **Session link after push and credentials warning, Copilot:** not verified yet. The link goes in the `additionalContext` of the `postToolUse` response, which the model reads. The credentials warning goes in the session-start instruction, so it depends on the model.
+- **Session link after push and credentials warning, Copilot:** these need a control plane, so the end-to-end suite does not cover them. The link and the warning go to the user as hook progress lines, the same channel as the welcome message, and the link also goes to the model in `additionalContext`.
 - **Session link after push, OpenCode:** the plugin hook fires after a shell command, but the response that shows a message to the user is not verified yet. The link stays pending until it expires.
 
 ## Specs and skills

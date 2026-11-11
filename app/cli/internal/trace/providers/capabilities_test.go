@@ -64,7 +64,7 @@ func TestSessionStartChannels(t *testing.T) {
 		},
 		{provider: codex.Name, wantBanner: true, wantInstruction: true, wantReminder: true, why: "Codex surfaces systemMessage and supports additionalContext at session start and user prompt"},
 		{provider: pi.Name, wantBanner: true, wantInstruction: true, wantReminder: true, why: "Pi shows banners in its UI and injects the session instruction and prompt reminder through the project extension"},
-		{provider: copilot.Name, wantBanner: false, wantInstruction: true, wantReminder: false, why: "Copilot adds the additionalContext of sessionStart to the session, documents no session-start output for the user, and drops the output of userPromptSubmitted"},
+		{provider: copilot.Name, wantBanner: true, wantInstruction: true, wantReminder: false, why: "Copilot shows the progress messages of a hook to the user, adds the additionalContext of sessionStart to the session, and drops the output of userPromptSubmitted"},
 	}
 
 	for _, tc := range testCases {

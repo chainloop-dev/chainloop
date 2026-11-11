@@ -102,9 +102,9 @@ func (p *Provider) IsCommandTool(toolName string) bool {
 	return slices.Contains(commandTools, toolName)
 }
 
-// SupportsSessionStartBanner is false: Copilot documents no session-start
-// output that it shows to the user.
-func (p *Provider) SupportsSessionStartBanner() bool { return false }
+// SupportsSessionStartBanner is true: Copilot shows the progress messages of a
+// hook to the user.
+func (p *Provider) SupportsSessionStartBanner() bool { return true }
 
 // SupportsSessionStartInstruction is true: Copilot adds the additionalContext
 // of a sessionStart hook to the session.
@@ -114,36 +114,53 @@ func (p *Provider) SupportsSessionStartInstruction() bool { return true }
 // userPromptSubmitted command hook.
 func (p *Provider) SupportsPromptReminder() bool { return false }
 
-// AnnounceSessionStart gives the instruction to the model.
+// AnnounceSessionStart shows the banner to the user and gives the
+// instruction to the model.
 func (p *Provider) AnnounceSessionStart(msg trace.SessionStartMessage) error {
-	return p.writeContext(msg.Instruction)
+	return p.writeResponse(msg.Banner, msg.Instruction)
 }
 
 // AnnouncePromptSubmit does nothing: Copilot drops the output of the hook.
 func (p *Provider) AnnouncePromptSubmit(string) error { return nil }
 
-// AnnounceToUser adds the message to the result of the tool, so the model
-// sees it in the same turn and tells the user.
+// AnnounceToUser shows the message to the user, and adds it to the result of
+// the tool, so that the model can repeat it in the same turn.
 func (p *Provider) AnnounceToUser(msg string) error {
 	if msg == "" {
 		return nil
 	}
-	return p.writeContext("Tell the user the following, including any link verbatim: " + msg)
+	return p.writeResponse(msg, "Tell the user the following, including any link verbatim: "+msg)
 }
 
-// hookResponse is the output of a sessionStart or postToolUse hook.
+// progressMessage is a line that Copilot shows to the user, before the final
+// output of a hook. It does not change the output.
+type progressMessage struct {
+	Type    string `json:"type"`
+	Message string `json:"message"`
+}
+
+// hookResponse is the final output of a sessionStart or postToolUse hook.
 type hookResponse struct {
 	AdditionalContext string `json:"additionalContext"`
 }
 
-// writeContext writes one JSON document, or nothing for an empty context.
-func (p *Provider) writeContext(context string) error {
-	if context == "" {
-		return nil
-	}
+// writeResponse writes the message for the user as a progress line, then the
+// context for the model as the final JSON document. Each is one line, and an
+// empty one is left out. Copilot reads only the last document as the output
+// of the hook.
+func (p *Provider) writeResponse(userMessage, context string) error {
 	out := p.out
 	if out == nil {
 		out = os.Stdout
 	}
-	return json.NewEncoder(out).Encode(hookResponse{AdditionalContext: context})
+	enc := json.NewEncoder(out)
+	if userMessage != "" {
+		if err := enc.Encode(progressMessage{Type: "progress", Message: userMessage}); err != nil {
+			return err
+		}
+	}
+	if context == "" {
+		return nil
+	}
+	return enc.Encode(hookResponse{AdditionalContext: context})
 }

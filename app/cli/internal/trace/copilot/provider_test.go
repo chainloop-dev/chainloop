@@ -168,15 +168,34 @@ func TestAnnounce(t *testing.T) {
 		want string
 	}{
 		{
-			name: "session start instruction",
+			name: "session start banner and instruction",
 			run: func(p *Provider) error {
 				return p.AnnounceSessionStart(trace.SessionStartMessage{Banner: "banner", Instruction: "capture the spec"})
+			},
+			want: `{"type":"progress","message":"banner"}` + "\n" + `{"additionalContext":"capture the spec"}` + "\n",
+		},
+		{
+			name: "session start banner only",
+			run:  func(p *Provider) error { return p.AnnounceSessionStart(trace.SessionStartMessage{Banner: "banner"}) },
+			want: `{"type":"progress","message":"banner"}` + "\n",
+		},
+		{
+			name: "session start instruction only",
+			run: func(p *Provider) error {
+				return p.AnnounceSessionStart(trace.SessionStartMessage{Instruction: "capture the spec"})
 			},
 			want: `{"additionalContext":"capture the spec"}` + "\n",
 		},
 		{
-			name: "session start with no instruction",
-			run:  func(p *Provider) error { return p.AnnounceSessionStart(trace.SessionStartMessage{Banner: "banner"}) },
+			name: "multi-line banner stays one progress line",
+			run: func(p *Provider) error {
+				return p.AnnounceSessionStart(trace.SessionStartMessage{Banner: "line 1\nline 2"})
+			},
+			want: `{"type":"progress","message":"line 1\nline 2"}` + "\n",
+		},
+		{
+			name: "empty session start",
+			run:  func(p *Provider) error { return p.AnnounceSessionStart(trace.SessionStartMessage{}) },
 		},
 		{
 			name: "prompt reminder is dropped",
@@ -185,7 +204,8 @@ func TestAnnounce(t *testing.T) {
 		{
 			name: "announce to user",
 			run:  func(p *Provider) error { return p.AnnounceToUser("https://example.com/s") },
-			want: `{"additionalContext":"Tell the user the following, including any link verbatim: https://example.com/s"}` + "\n",
+			want: `{"type":"progress","message":"https://example.com/s"}` + "\n" +
+				`{"additionalContext":"Tell the user the following, including any link verbatim: https://example.com/s"}` + "\n",
 		},
 		{
 			name: "empty announce",
@@ -202,7 +222,7 @@ func TestAnnounce(t *testing.T) {
 	}
 
 	p := New()
-	assert.False(t, p.SupportsSessionStartBanner())
+	assert.True(t, p.SupportsSessionStartBanner())
 	assert.True(t, p.SupportsSessionStartInstruction())
 	assert.False(t, p.SupportsPromptReminder())
 }

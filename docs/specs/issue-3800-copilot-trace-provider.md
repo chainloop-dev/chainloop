@@ -72,7 +72,7 @@ Trace MUST parse its private copy of the session transcript. Copying MUST check 
 
 ### R-007: Session instructions
 
-Trace MUST send the spec capture instructions at session start. After a push, Trace MUST give the session link to the model through the post-tool channel, so that the model tells the user. Each hook response MUST be one JSON document at most, and an empty message MUST produce no output.
+At session start, Trace MUST show the user a banner that says that Trace records the session. Trace MUST also send the spec capture instructions to the model. After a push, Trace MUST show the session link to the user and give it to the model, through the post-tool channel. The message for the user MUST be a progress line, which Copilot shows to the user. Each hook response MUST have at most one output document after it, and an empty message MUST produce no output.
 
 ### R-008: Skills used during the session
 
