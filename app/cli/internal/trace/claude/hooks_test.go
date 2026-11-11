@@ -358,6 +358,24 @@ func TestReadHookInput(t *testing.T) {
 			name:    "snake_case form with a numeric timestamp",
 			payload: `{"session_id":"s-1","hook_event_name":"PostToolUse","timestamp":1775596074872,"tool_name":"Bash","tool_input":{"command":"ls"}}`,
 		},
+		// The shapes below are real payloads of Copilot CLI 1.0.109, captured
+		// from the hooks of .claude/settings.json, with the paths shortened.
+		{
+			name:    "Copilot CLI session start",
+			payload: `{"hook_event_name":"SessionStart","session_id":"9869f5f4-d4a3-4049-a047-94714272d2d0","timestamp":"2026-11-11T01:00:08.528Z","cwd":"/repo","source":"new","initial_prompt":"Create a file"}`,
+		},
+		{
+			name:    "Copilot CLI prompt",
+			payload: `{"hook_event_name":"UserPromptSubmit","session_id":"9869f5f4-d4a3-4049-a047-94714272d2d0","timestamp":"2026-11-11T01:00:08.548Z","cwd":"/repo","prompt":"Create a file"}`,
+		},
+		{
+			name:    "Copilot CLI shell tool",
+			payload: `{"hook_event_name":"PreToolUse","session_id":"9869f5f4-d4a3-4049-a047-94714272d2d0","timestamp":"2026-11-11T01:00:16.243Z","cwd":"/repo","tool_use_id":"call_1","tool_name":"Bash","tool_input":{"command":"cat a.txt","description":"Print a.txt"}}`,
+		},
+		{
+			name:    "Copilot CLI session end",
+			payload: `{"hook_event_name":"SessionEnd","session_id":"9869f5f4-d4a3-4049-a047-94714272d2d0","timestamp":"2026-11-11T01:00:18.446Z","cwd":"/repo","reason":"complete"}`,
+		},
 		{
 			name:    "camelCase session ID",
 			payload: `{"sessionId":"s-1","session_id":"s-1","hook_event_name":"SessionStart"}`,
@@ -376,6 +394,16 @@ func TestReadHookInput(t *testing.T) {
 			assert.Empty(t, input.Command)
 		})
 	}
+
+	t.Run("records nothing for a Copilot patch edit", func(t *testing.T) {
+		// Copilot names apply_patch Edit and sends the patch text as the tool
+		// input, which the Claude Code payload cannot hold.
+		r := bytes.NewBufferString(`{"hook_event_name":"PreToolUse","session_id":"9869f5f4-d4a3-4049-a047-94714272d2d0","timestamp":"2026-11-11T01:00:12.362Z","cwd":"/repo","tool_use_id":"custom_call_1","tool_name":"Edit","tool_input":"*** Begin Patch\n*** Add File: a.txt\n+hi\n*** End Patch\n"}`)
+		input, err := provider.ReadHookInput(r)
+		if err == nil {
+			assert.Empty(t, input.SessionID)
+		}
+	})
 
 	t.Run("keeps a Claude Code payload with a timestamp", func(t *testing.T) {
 		r := bytes.NewBufferString(`{"session_id":"s-1","hook_event_name":"PreToolUse","timestamp":"2026-04-08T15:04:05.000Z","transcript_path":"/home/u/.claude/projects/-repo/s-1.jsonl","tool_name":"Write","tool_input":{"file_path":"/repo/README.md"}}`)
