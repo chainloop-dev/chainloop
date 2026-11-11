@@ -16,6 +16,7 @@
 package claude
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -235,12 +236,17 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		return &trace.HookInput{}, nil
 	}
 
-	// A tool input that is not an object has no file path and no command.
+	// A tool input that is not an object has no file path and no command. An
+	// object with fields of the wrong type is bad input.
 	var toolInput struct {
 		FilePath string `json:"file_path"`
 		Command  string `json:"command"`
 	}
-	_ = json.Unmarshal(raw.ToolInput, &toolInput)
+	if bytes.HasPrefix(bytes.TrimSpace(raw.ToolInput), []byte("{")) {
+		if err := json.Unmarshal(raw.ToolInput, &toolInput); err != nil {
+			return nil, err
+		}
+	}
 
 	input := raw.HookInput
 	if toolInput.FilePath != "" {

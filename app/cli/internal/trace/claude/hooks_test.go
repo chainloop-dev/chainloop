@@ -404,6 +404,12 @@ func TestReadHookInput(t *testing.T) {
 		assert.Empty(t, input.SessionID)
 	})
 
+	t.Run("an object tool input with a wrong field type is an error", func(t *testing.T) {
+		r := bytes.NewBufferString(`{"session_id":"s-1","hook_event_name":"PreToolUse","tool_name":"Write","tool_input":{"file_path":42}}`)
+		_, err := provider.ReadHookInput(r)
+		require.Error(t, err)
+	})
+
 	t.Run("a tool input that is not an object gives an empty file path", func(t *testing.T) {
 		r := bytes.NewBufferString(`{"session_id":"s-1","hook_event_name":"PreToolUse","tool_name":"Write","tool_input":"text"}`)
 		input, err := provider.ReadHookInput(r)
