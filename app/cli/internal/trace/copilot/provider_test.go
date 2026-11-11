@@ -19,7 +19,9 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace"
 	"github.com/chainloop-dev/chainloop/app/cli/internal/trace/state"
@@ -136,6 +138,22 @@ func TestCopySessionData(t *testing.T) {
 		err := p.CopySessionData(store, trace.SessionLocation{SessionID: testSessionID})
 		require.ErrorIs(t, err, errOutsideStorage)
 		assert.Nil(t, copied(t, store))
+	})
+
+	t.Run("a FIFO at the log path is rejected without blocking", func(t *testing.T) {
+		root := copilotHome(t, "")
+		dir := filepath.Join(root, testSessionID)
+		require.NoError(t, os.MkdirAll(dir, 0o755))
+		require.NoError(t, syscall.Mkfifo(filepath.Join(dir, eventsFile), 0o600))
+
+		done := make(chan error, 1)
+		go func() { done <- p.CopySessionData(newStore(t), trace.SessionLocation{SessionID: testSessionID}) }()
+		select {
+		case err := <-done:
+			require.Error(t, err)
+		case <-time.After(5 * time.Second):
+			require.FailNow(t, "CopySessionData blocked on a FIFO")
+		}
 	})
 
 	t.Run("invalid session ID", func(t *testing.T) {

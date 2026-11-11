@@ -81,6 +81,18 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 		return err
 	}
 
+	// Check the file type before the open: opening a FIFO blocks.
+	info, err := os.Stat(resolved)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if !info.Mode().IsRegular() {
+		return errors.New("copy Copilot session: transcript is not a regular file")
+	}
+
 	src, err := os.Open(resolved)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -89,18 +101,14 @@ func (p *Provider) CopySessionData(store *state.Store, loc trace.SessionLocation
 		return err
 	}
 	defer src.Close()
-	info, err := src.Stat()
-	if err != nil {
-		return err
-	}
-	if !info.Mode().IsRegular() {
-		return errors.New("copy Copilot session: transcript is not a regular file")
-	}
 
 	// The session.start record, not the path, owns the session identity.
 	scanner := bufio.NewScanner(src)
 	scanner.Buffer(make([]byte, 64*1024), maxHookPayloadBytes)
 	if !scanner.Scan() {
+		if err := scanner.Err(); err != nil {
+			return fmt.Errorf("copy Copilot session: read session.start: %w", err)
+		}
 		// Copilot writes session.start first. An empty log is not yet a session.
 		return nil
 	}

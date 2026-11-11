@@ -36,6 +36,18 @@ func TestTraceHookPiCommands(t *testing.T) {
 	}
 }
 
+// TestTraceHookCopilotCommands pins the subcommand names that the Copilot hook
+// file calls, so a renamed command cannot break recording without notice.
+func TestTraceHookCopilotCommands(t *testing.T) {
+	root := newTraceHookCmd()
+	for _, name := range []string{"session-start", "pre-tool-use", "post-tool-use", "session-end"} {
+		command, args, err := root.Find([]string{"copilot", name})
+		require.NoError(t, err)
+		assert.Equal(t, name, command.Name())
+		assert.Empty(t, args)
+	}
+}
+
 func TestApplyPrePushPolicy(t *testing.T) {
 	failure := errors.New("setup failed")
 	prePush := newTraceHookGitPrePushCmd()

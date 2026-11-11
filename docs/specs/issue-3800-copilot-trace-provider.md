@@ -41,6 +41,7 @@ Chainloop Trace supports developers who use GitHub Copilot as their coding agent
 - Non-goal: Support the older VS Code agent that GitHub calls the "Local" harness. It has a different hook parser and different transcript storage. Follow-up: a new ticket, if users ask for it.
 - Non-goal: Trace sessions of the Copilot cloud coding agent. It runs in GitHub Actions, not on the computer of the developer, and no developer push follows it.
 - Non-goal: Record subagents as separate entries in the evidence. Copilot writes no separate child transcripts. The hooks still attribute the edits of a subagent. Follow-up: a new ticket.
+- Non-goal: Record Copilot sessions on Windows. The hook file has POSIX shell commands only, as for Claude Code and Cursor. Follow-up: [#3802](https://github.com/chainloop-dev/chainloop/issues/3802).
 - Non-goal: Change the evidence schema, the control-plane APIs, or the default provider.
 
 ## Requirements
@@ -71,7 +72,7 @@ Trace MUST parse its private copy of the session transcript. Copying MUST check 
 
 ### R-007: Session instructions
 
-Trace MUST send the spec capture instructions at session start. After a push, Trace MUST show the session link through the post-tool channel. Each hook response MUST be one JSON document at most, and an empty message MUST produce no output.
+Trace MUST send the spec capture instructions at session start. After a push, Trace MUST give the session link to the model through the post-tool channel, so that the model tells the user. Each hook response MUST be one JSON document at most, and an empty message MUST produce no output.
 
 ### R-008: Skills used during the session
 
@@ -96,7 +97,7 @@ The end-to-end suite MUST have a Copilot column, run with Copilot CLI. A person 
 
 The developer runs Trace initialization and selects Copilot. Trace writes its own hook file into the repository hook folder of Copilot. The developer then works in Copilot CLI or in VS Code. Copilot sends session, prompt, tool, and stop events to the Trace hooks.
 
-Each hook detects the payload form. Copilot CLI sends camel-case fields. The VS Code form adds an event name and snake-case fields. It has one stop event for the end of a turn and for the end of a session. Trace maps both forms to the same session lifecycle. It snapshots files before the file tools, and snapshots the working tree around shell commands.
+The event name in a hook file selects the payload form. Trace registers the camel-case event names, so Copilot CLI and VS Code send camel-case fields to the Trace hooks. The hooks that Copilot runs from the Claude Code settings get the VS Code compatible form, with snake-case fields and Pascal-case event names. Trace accepts both forms, and maps them to the same session lifecycle. It snapshots files before the file tools, and snapshots the working tree around shell commands.
 
 Copilot keeps each session as a JSON Lines event log in its user folder. Trace copies the log into private storage at session boundaries and again before evidence assembly. Copilot writes the token totals after the last hook returns, so the copy at push time holds them. The parser keeps the native records, and derives the conversation, tools, models, and token usage.
 
@@ -134,7 +135,7 @@ Trace writes its own file in the Copilot hook folder. Each hook in it carries th
 
 ## Open Questions
 
-- [ ] **Does the Copilot agent in VS Code write the same session event log as Copilot CLI?** Proposed: yes. GitHub says that the hosts share the agent and its hooks. Milestone 1 checks this. If the log is different, VS Code sessions keep their hooks and attribution. Trace then gives a warning about the transcript, and a follow-up ticket adds a parser. This fallback supersedes the VS Code part of R-004 and changes the first goal.
+- [ ] **Does the Copilot agent in VS Code write the same session event log as Copilot CLI?** Proposed: yes. GitHub says that the hosts share the agent and its hooks. Milestone 1 checks this. If the log is different, VS Code sessions keep their hooks and attribution. Trace then gives a warning about the transcript, and a follow-up ticket adds a parser. This fallback supersedes the VS Code parts of R-001, R-004, R-006, R-008, and R-009, and changes the first goal.
 
 ## Milestones
 
