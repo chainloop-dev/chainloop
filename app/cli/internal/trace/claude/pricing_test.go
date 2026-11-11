@@ -56,10 +56,13 @@ func TestPricingModelRates(t *testing.T) {
 		model string
 		want  modelPricing
 	}{
+		{"claude-fable-5-2", modelPricing{Input: 8.00, Output: 40.00, CacheWrite: 10.00, CacheWrite1h: 16.00, CacheRead: 0.20}},
+		{"claude-mythos-5-2", modelPricing{Input: 8.00, Output: 40.00, CacheWrite: 10.00, CacheWrite1h: 16.00, CacheRead: 0.20}},
 		{"claude-fable-5-1", modelPricing{Input: 10.00, Output: 50.00, CacheWrite: 12.50, CacheWrite1h: 20.00, CacheRead: 0.25}},
 		{"claude-mythos-5-1", modelPricing{Input: 10.00, Output: 50.00, CacheWrite: 12.50, CacheWrite1h: 20.00, CacheRead: 0.25}},
 		{"claude-opus-5-5", modelPricing{Input: 4.00, Output: 20.00, CacheWrite: 5.00, CacheWrite1h: 8.00, CacheRead: 0.20}},
-		{"claude-sonnet-5-5", modelPricing{Input: 2.00, Output: 10.00, CacheWrite: 2.50, CacheWrite1h: 4.00, CacheRead: 0.20}},
+		{"claude-sonnet-5-5", modelPricing{Input: 2.00, Output: 10.00, CacheWrite: 2.50, CacheWrite1h: 4.00, CacheRead: 0.10}},
+		{"claude-haiku-5-5", modelPricing{Input: 0.10, Output: 0.50, CacheWrite: 0.125, CacheWrite1h: 0.20, CacheRead: 0.01}},
 	}
 
 	for _, tc := range testCases {
