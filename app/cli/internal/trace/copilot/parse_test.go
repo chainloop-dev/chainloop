@@ -219,6 +219,7 @@ func TestToolInput(t *testing.T) {
 		{name: "object stays", args: `{"path":"a"}`, want: `{"path":"a"}`},
 		{name: "patch string is wrapped", args: `"*** Begin Patch"`, want: `{"input":"*** Begin Patch"}`},
 		{name: "null is wrapped", args: `null`, want: `{"input":null}`},
+		{name: "no arguments give an empty object", args: ``, want: `{}`},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

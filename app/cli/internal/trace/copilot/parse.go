@@ -436,8 +436,11 @@ func (p *logParser) finish() error {
 // session viewer expects. Arguments that are not an object, such as the
 // patch text of apply_patch, go in an input field, as for Codex.
 func toolInput(args json.RawMessage) json.RawMessage {
+	if len(args) == 0 {
+		return json.RawMessage(`{}`)
+	}
 	var object map[string]json.RawMessage
-	if len(args) == 0 || (json.Unmarshal(args, &object) == nil && object != nil) {
+	if json.Unmarshal(args, &object) == nil && object != nil {
 		return args
 	}
 	wrapped, _ := json.Marshal(map[string]json.RawMessage{"input": args})
