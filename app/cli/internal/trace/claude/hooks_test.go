@@ -400,9 +400,16 @@ func TestReadHookInput(t *testing.T) {
 		// input, which the Claude Code payload cannot hold.
 		r := bytes.NewBufferString(`{"hook_event_name":"PreToolUse","session_id":"9869f5f4-d4a3-4049-a047-94714272d2d0","timestamp":"2026-11-11T01:00:12.362Z","cwd":"/repo","tool_use_id":"custom_call_1","tool_name":"Edit","tool_input":"*** Begin Patch\n*** Add File: a.txt\n+hi\n*** End Patch\n"}`)
 		input, err := provider.ReadHookInput(r)
-		if err == nil {
-			assert.Empty(t, input.SessionID)
-		}
+		require.NoError(t, err, "a Copilot payload is skipped quietly, not reported as bad input")
+		assert.Empty(t, input.SessionID)
+	})
+
+	t.Run("a tool input that is not an object gives an empty file path", func(t *testing.T) {
+		r := bytes.NewBufferString(`{"session_id":"s-1","hook_event_name":"PreToolUse","tool_name":"Write","tool_input":"text"}`)
+		input, err := provider.ReadHookInput(r)
+		require.NoError(t, err)
+		assert.Equal(t, "s-1", input.SessionID)
+		assert.Empty(t, input.FilePath)
 	})
 
 	t.Run("keeps a Claude Code payload with a timestamp", func(t *testing.T) {

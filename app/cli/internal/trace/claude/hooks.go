@@ -203,11 +203,11 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 	// Cursor-relayed events without a second pass.
 	var raw struct {
 		trace.HookInput
-		ToolInput struct {
-			FilePath string `json:"file_path"`
-			Command  string `json:"command"`
-		} `json:"tool_input"`
-		CursorVersion string `json:"cursor_version"`
+		// ToolInput is decoded after the checks for other agents below: the
+		// GitHub Copilot agent sends the patch text of its edit tool as a
+		// string here.
+		ToolInput     json.RawMessage `json:"tool_input"`
+		CursorVersion string          `json:"cursor_version"`
 		// Timestamp and SessionIDCamel are in the payloads of the GitHub
 		// Copilot agent, which also runs these hooks. Claude Code sends
 		// neither.
@@ -235,11 +235,18 @@ func (p *Provider) ReadHookInput(r io.Reader) (*trace.HookInput, error) {
 		return &trace.HookInput{}, nil
 	}
 
-	input := raw.HookInput
-	if raw.ToolInput.FilePath != "" {
-		input.FilePath = raw.ToolInput.FilePath
+	// A tool input that is not an object has no file path and no command.
+	var toolInput struct {
+		FilePath string `json:"file_path"`
+		Command  string `json:"command"`
 	}
-	input.Command = raw.ToolInput.Command
+	_ = json.Unmarshal(raw.ToolInput, &toolInput)
+
+	input := raw.HookInput
+	if toolInput.FilePath != "" {
+		input.FilePath = toolInput.FilePath
+	}
+	input.Command = toolInput.Command
 	input.ToolFailed = input.HookEventName == eventPostToolUseFailure
 
 	return &input, nil
