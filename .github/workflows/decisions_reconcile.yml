@@ -2,7 +2,8 @@
 # Reconcile of the Current Decisions pages (docs/decisions/)
 # =============================================================================
 # Runs the `eng-adr reconcile` skill of chainloop-dev/brain with Claude Code.
-# Runs on weekdays, and on a manual start. When the pages change, it opens or updates one draft PR.
+# Runs on weekdays, and on a manual start. When the pages change, a scheduled run opens or updates one draft PR.
+# A manual run is a dry run: it uploads the diff and the PR body as an artifact.
 #
 # The skill runs in its scheduled mode: it asks no questions, writes only the
 # changes that need no person, and lists the open questions in the PR body.
@@ -37,17 +38,9 @@ on:
   schedule:
     # 05:00 UTC, Monday to Friday.
     - cron: "0 5 * * 1-5"
+  # No inputs: user parameters must not change the build output (Checkov CKV_GHA_7, SLSA). A manual run is a
+  # dry run of all areas.
   workflow_dispatch:
-    inputs:
-      area:
-        description: "Reconcile only this area. Leave blank for all areas."
-        required: false
-        type: string
-      dry_run:
-        description: "Do not open a PR. Upload the diff and the PR body as an artifact. Clear it to open the PR."
-        required: false
-        default: true
-        type: boolean
 
 permissions: {}
 
@@ -60,8 +53,8 @@ env:
   # in place of the numeric App ID to sign the app JWT, so it goes in the app-id input.
   CHAINLOOP_ENG_APP_CLIENT_ID: Iv23liu5FUQ9TuCCdxpP
   PR_BRANCH: decisions-reconcile-scheduled
-  # A scheduled run opens a PR. A manual run opens a PR only when dry_run is cleared.
-  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+  # A scheduled run opens a PR. A manual run does not open a PR: it uploads the diff and the PR body as an artifact.
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
 
 jobs:
   reconcile:
@@ -131,7 +124,6 @@ jobs:
       - name: Prepare reconcile run
         id: prepare
         env:
-          AREA: ${{ inputs.area }}
           OUT_DIR: ${{ runner.temp }}/decisions
         run: |
           mkdir -p "$OUT_DIR"
@@ -139,7 +131,7 @@ jobs:
           {
             echo "prompt<<PROMPT_EOF"
             cat <<EOF
-          /br:eng-adr reconcile ${AREA}
+          /br:eng-adr reconcile
 
           This is an unattended run in GitHub Actions. Follow the scheduled-run rules of the skill: ask no questions,
           write the changes that need no person, and list each open question in the PR body.
