@@ -2,8 +2,7 @@
 # Reconcile of the Current Decisions pages (docs/decisions/)
 # =============================================================================
 # Runs the `eng-adr reconcile` skill of chainloop-dev/brain with Claude Code.
-# Runs on weekdays, and on a manual start. When the pages change, a scheduled run opens or updates one draft PR.
-# A manual run is a dry run: it uploads the diff and the PR body as an artifact.
+# Runs on weekdays, and on a manual start. When the pages change, it opens or updates one draft PR.
 #
 # The skill runs in its scheduled mode: it asks no questions, writes only the
 # changes that need no person, and lists the open questions in the PR body.
@@ -38,9 +37,22 @@ on:
   schedule:
     # 05:00 UTC, Monday to Friday.
     - cron: "0 5 * * 1-5"
-  # No inputs: user parameters must not change the build output (Checkov CKV_GHA_7, SLSA). A manual run is a
-  # dry run of all areas.
   workflow_dispatch:
+    # The inputs only narrow the reconcile to one area and choose a dry run. They do not change what a build
+    # produces: this workflow builds no artifact, and only users with write access can start it. "area" reaches
+    # the script through env, and "Prepare reconcile run" accepts only the page name of an area in the index, so
+    # no free text reaches Claude's prompt.
+    # checkov:skip=CKV_GHA_7:The inputs select the reconcile scope and a dry run; the workflow builds no artifact.
+    inputs:
+      area:
+        description: "Reconcile only this area: the page name of the area in docs/decisions/README.md, for example artifact-cas. Leave blank for all areas."
+        required: false
+        type: string
+      dry_run:
+        description: "Do not open a PR. Upload the diff and the PR body as an artifact. Clear it to open the PR."
+        required: false
+        default: true
+        type: boolean
 
 permissions: {}
 
@@ -53,8 +65,8 @@ env:
   # in place of the numeric App ID to sign the app JWT, so it goes in the app-id input.
   CHAINLOOP_ENG_APP_CLIENT_ID: Iv23liu5FUQ9TuCCdxpP
   PR_BRANCH: decisions-reconcile-scheduled
-  # A scheduled run opens a PR. A manual run does not open a PR: it uploads the diff and the PR body as an artifact.
-  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+  # A scheduled run opens a PR. A manual run opens a PR only when dry_run is cleared.
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
 
 jobs:
   reconcile:
@@ -124,14 +136,28 @@ jobs:
       - name: Prepare reconcile run
         id: prepare
         env:
+          AREA: ${{ inputs.area }}
           OUT_DIR: ${{ runner.temp }}/decisions
         run: |
+          fail() { echo "::error::$1"; exit 1; }
           mkdir -p "$OUT_DIR"
+
+          # The area goes into Claude's prompt. Accept only the page name of an area in the index, and pass the
+          # area name from the index, never the input text.
+          AREA_NAME=""
+          if [ -n "$AREA" ]; then
+            [[ "$AREA" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || fail "area: use the page name of an area, for example artifact-cas."
+            AREA_NAME=$(awk -v page="**Page:** [${AREA}.md]" \
+              '/^### /{name=substr($0,5)} index($0,page)>0 && name!=""{print name; exit}' \
+              docs/decisions/README.md)
+            [ -n "$AREA_NAME" ] || fail "area: docs/decisions/README.md has no area with the page ${AREA}.md."
+            echo "Area: ${AREA_NAME}"
+          fi
 
           {
             echo "prompt<<PROMPT_EOF"
             cat <<EOF
-          /br:eng-adr reconcile
+          /br:eng-adr reconcile ${AREA_NAME}
 
           This is an unattended run in GitHub Actions. Follow the scheduled-run rules of the skill: ask no questions,
           write the changes that need no person, and list each open question in the PR body.
