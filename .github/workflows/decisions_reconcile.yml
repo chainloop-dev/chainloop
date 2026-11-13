@@ -38,9 +38,14 @@ on:
     # 05:00 UTC, Monday to Friday.
     - cron: "0 5 * * 1-5"
   workflow_dispatch:
+    # The inputs only narrow the reconcile to one area and choose a dry run. They do not change what a build
+    # produces: this workflow builds no artifact, and only users with write access can start it. "area" reaches
+    # the script through env, and "Prepare reconcile run" accepts only the page name of an area in the index, so
+    # no free text reaches Claude's prompt.
+    # checkov:skip=CKV_GHA_7:The inputs select the reconcile scope and a dry run; the workflow builds no artifact.
     inputs:
       area:
-        description: "Reconcile only this area. Leave blank for all areas."
+        description: "Reconcile only this area: the page name of the area in docs/decisions/README.md, for example artifact-cas. Leave blank for all areas."
         required: false
         type: string
       dry_run:
@@ -134,12 +139,25 @@ jobs:
           AREA: ${{ inputs.area }}
           OUT_DIR: ${{ runner.temp }}/decisions
         run: |
+          fail() { echo "::error::$1"; exit 1; }
           mkdir -p "$OUT_DIR"
+
+          # The area goes into Claude's prompt. Accept only the page name of an area in the index, and pass the
+          # area name from the index, never the input text.
+          AREA_NAME=""
+          if [ -n "$AREA" ]; then
+            [[ "$AREA" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]] || fail "area: use the page name of an area, for example artifact-cas."
+            AREA_NAME=$(awk -v page="**Page:** [${AREA}.md]" \
+              '/^### /{name=substr($0,5)} index($0,page)>0 && name!=""{print name; exit}' \
+              docs/decisions/README.md)
+            [ -n "$AREA_NAME" ] || fail "area: docs/decisions/README.md has no area with the page ${AREA}.md."
+            echo "Area: ${AREA_NAME}"
+          fi
 
           {
             echo "prompt<<PROMPT_EOF"
             cat <<EOF
-          /br:eng-adr reconcile ${AREA}
+          /br:eng-adr reconcile ${AREA_NAME}
 
           This is an unattended run in GitHub Actions. Follow the scheduled-run rules of the skill: ask no questions,
           write the changes that need no person, and list each open question in the PR body.
