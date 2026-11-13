@@ -28,6 +28,7 @@ func TestNormalizedUsagePricing(t *testing.T) {
 	}{
 		{"separate cache write price", "gpt-6.1-sol", 0.00103},
 		{"cache writes at input price", "gpt-5-mini", 0.00017},
+		{"gpt-6.1-terra", "gpt-6.1-terra", 0.000515},
 		{"provider prefix", "openai/gpt-6.1-sol", 0.00103},
 		{"date pinned model", "gpt-6.1-sol-2026-10-21", 0.00103},
 	} {

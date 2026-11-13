@@ -238,6 +238,10 @@ func TestEstimateCost(t *testing.T) {
 		{model: "claude-sonnet-4.6", want: 3 + 15 + 0.3},
 		{model: "anthropic/claude-sonnet-4.6", want: 3 + 15 + 0.3},
 		{model: testModel, want: 2.5 + 15 + 0.25},
+		{model: "claude-fable-5.2", want: 8 + 40 + 0.2},
+		{model: "claude-sonnet-5.5", want: 2 + 10 + 0.1},
+		{model: "claude-haiku-5.5", want: 0.1 + 0.5 + 0.01},
+		{model: "gpt-6.1-terra", want: 1 + 5 + 0.05},
 		{model: "some-new-model", want: 3 + 15 + 0.3, wantWarning: true},
 	}
 	for _, tc := range cases {
