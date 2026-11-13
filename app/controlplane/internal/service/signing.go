@@ -20,6 +20,7 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/internal/usercontext"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/go-kratos/kratos/v2/errors"
 )
@@ -46,7 +47,16 @@ func (s *SigningService) GenerateSigningCert(ctx context.Context, req *v1.Genera
 		return nil, errors.Unauthorized("missing org", "authentication data is required")
 	}
 
-	certs, err := s.signing.CreateSigningCert(ctx, ra.OrgID, req.GetCertificateSigningRequest())
+	var opts []biz.SigningCertOption
+	if req.GetSandboxIdentityIssuer() {
+		if err := s.authorizeSandboxIdentityIssuer(ctx); err != nil {
+			return nil, err
+		}
+
+		opts = append(opts, biz.WithSandboxIdentityMark())
+	}
+
+	certs, err := s.signing.CreateSigningCert(ctx, ra.OrgID, req.GetCertificateSigningRequest(), opts...)
 	if err != nil {
 		return nil, handleUseCaseErr(ctx, err, s.log)
 	}
@@ -67,4 +77,24 @@ func (s *SigningService) GetTrustedRoot(ctx context.Context, _ *v1.GetTrustedRoo
 		resp.TimestampAuthorities[k] = &v1.CertificateChain{Certificates: v}
 	}
 	return resp, nil
+}
+
+// authorizeSandboxIdentityIssuer checks that the caller holds the dedicated permission to get a
+// certificate that can sign a sandbox identity. Only a system API token of the platform holds it.
+func (s *SigningService) authorizeSandboxIdentityIssuer(ctx context.Context) error {
+	forbidden := errors.Forbidden("forbidden", "not allowed to issue a sandbox identity")
+
+	sub := usercontext.CurrentAuthzSubject(ctx)
+	if sub == "" || s.authz == nil {
+		return forbidden
+	}
+
+	ok, err := s.authz.Enforce(ctx, sub, authz.PolicySandboxIdentityIssue)
+	if err != nil {
+		return handleUseCaseErr(ctx, err, s.log)
+	} else if !ok {
+		return forbidden
+	}
+
+	return nil
 }

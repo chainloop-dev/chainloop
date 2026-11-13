@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -40,8 +40,11 @@ const (
 type GenerateSigningCertRequest struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	CertificateSigningRequest []byte                 `protobuf:"bytes,1,opt,name=certificate_signing_request,json=certificateSigningRequest,proto3" json:"certificate_signing_request,omitempty"`
-	unknownFields             protoimpl.UnknownFields
-	sizeCache                 protoimpl.SizeCache
+	// Request a certificate that can sign the identity of a Chainloop sandbox.
+	// Only a caller with the dedicated permission gets it, other callers are denied.
+	SandboxIdentityIssuer bool `protobuf:"varint,2,opt,name=sandbox_identity_issuer,json=sandboxIdentityIssuer,proto3" json:"sandbox_identity_issuer,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *GenerateSigningCertRequest) Reset() {
@@ -79,6 +82,13 @@ func (x *GenerateSigningCertRequest) GetCertificateSigningRequest() []byte {
 		return x.CertificateSigningRequest
 	}
 	return nil
+}
+
+func (x *GenerateSigningCertRequest) GetSandboxIdentityIssuer() bool {
+	if x != nil {
+		return x.SandboxIdentityIssuer
+	}
+	return false
 }
 
 type GenerateSigningCertResponse struct {
@@ -265,9 +275,10 @@ var File_controlplane_v1_signing_proto protoreflect.FileDescriptor
 
 const file_controlplane_v1_signing_proto_rawDesc = "" +
 	"\n" +
-	"\x1dcontrolplane/v1/signing.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\"e\n" +
+	"\x1dcontrolplane/v1/signing.proto\x12\x0fcontrolplane.v1\x1a\x1bbuf/validate/validate.proto\"\x9d\x01\n" +
 	"\x1aGenerateSigningCertRequest\x12G\n" +
-	"\x1bcertificate_signing_request\x18\x01 \x01(\fB\a\xbaH\x04z\x02\x10\x01R\x19certificateSigningRequest\"V\n" +
+	"\x1bcertificate_signing_request\x18\x01 \x01(\fB\a\xbaH\x04z\x02\x10\x01R\x19certificateSigningRequest\x126\n" +
+	"\x17sandbox_identity_issuer\x18\x02 \x01(\bR\x15sandboxIdentityIssuer\"V\n" +
 	"\x1bGenerateSigningCertResponse\x127\n" +
 	"\x05chain\x18\x01 \x01(\v2!.controlplane.v1.CertificateChainR\x05chain\"6\n" +
 	"\x10CertificateChain\x12\"\n" +

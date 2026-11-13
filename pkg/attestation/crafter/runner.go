@@ -26,6 +26,7 @@ import (
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/sandboxidentity"
 	"github.com/rs/zerolog"
 )
 
@@ -68,6 +69,17 @@ type SupportedRunner interface {
 
 	FederatedToken() string
 }
+
+// IdentityRunner is a runner that proves its identity with a token that the Chainloop platform
+// signs. The runner is authenticated only after the token verifies.
+type IdentityRunner interface {
+	// IdentityToken returns the identity token of the run, if any
+	IdentityToken() string
+	// SetVerifiedIdentity sets the identity after it verified
+	SetVerifiedIdentity(id *sandboxidentity.Identity)
+}
+
+var _ IdentityRunner = (*runners.ChainloopSandbox)(nil)
 
 type RunnerM map[schemaapi.CraftingSchema_Runner_RunnerType]SupportedRunner
 

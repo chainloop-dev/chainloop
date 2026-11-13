@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,6 +29,9 @@ service SigningService {
 
 message GenerateSigningCertRequest {
   bytes certificate_signing_request = 1 [(buf.validate.field).bytes.min_len = 1];
+  // Request a certificate that can sign the identity of a Chainloop sandbox.
+  // Only a caller with the dedicated permission gets it, other callers are denied.
+  bool sandbox_identity_issuer = 2;
 }
 
 message GenerateSigningCertResponse {
