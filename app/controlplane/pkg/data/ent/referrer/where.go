@@ -345,6 +345,52 @@ func HasWorkflowsWith(preds ...predicate.Workflow) predicate.Referrer {
 	})
 }
 
+// HasReferredByEdges applies the HasEdge predicate on the "referred_by_edges" edge.
+func HasReferredByEdges() predicate.Referrer {
+	return predicate.Referrer(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ReferredByEdgesTable, ReferredByEdgesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasReferredByEdgesWith applies the HasEdge predicate on the "referred_by_edges" edge with a given conditions (other predicates).
+func HasReferredByEdgesWith(preds ...predicate.ReferrerReference) predicate.Referrer {
+	return predicate.Referrer(func(s *sql.Selector) {
+		step := newReferredByEdgesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasReferenceEdges applies the HasEdge predicate on the "reference_edges" edge.
+func HasReferenceEdges() predicate.Referrer {
+	return predicate.Referrer(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, ReferenceEdgesTable, ReferenceEdgesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasReferenceEdgesWith applies the HasEdge predicate on the "reference_edges" edge with a given conditions (other predicates).
+func HasReferenceEdgesWith(preds ...predicate.ReferrerReference) predicate.Referrer {
+	return predicate.Referrer(func(s *sql.Selector) {
+		step := newReferenceEdgesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Referrer) predicate.Referrer {
 	return predicate.Referrer(sql.AndPredicates(predicates...))

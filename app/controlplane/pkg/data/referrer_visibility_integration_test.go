@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrerreference"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
@@ -206,18 +207,26 @@ func (s *referrerVisibilityIntegrationTestSuite) TestMatchesTheGeneratedPredicat
 		s.NotEmpty(handWritten, "the fixture must exercise this, not pass by returning nothing")
 	})
 
-	// doGet applies the filter to root.QueryReferences(), a different query shape where the
-	// selector is already joined through the references table.
-	s.Run("behaves the same when traversing references", func() {
+	// doGet's pages and its project membership check read the reference rows of the root and apply
+	// the filter to the referenced referrer inside a correlated EXISTS.
+	s.Run("behaves the same inside the references page query", func() {
 		orgs := []uuid.UUID{s.orgAllowed, s.orgOther}
-		root := s.Data.DB.Referrer.GetX(ctx, s.liveInAllowed)
+		referenced := func(p predicate.Referrer) []uuid.UUID {
+			rows := s.Data.DB.ReferrerReference.Query().
+				Where(
+					referrerreference.ReferrerID(s.liveInAllowed),
+					referrerreference.HasReferredByWith(p),
+				).
+				AllX(ctx)
+			ids := make([]uuid.UUID, 0, len(rows))
+			for _, row := range rows {
+				ids = append(ids, row.ReferredByID)
+			}
+			return sortIDs(ids)
+		}
 
-		generated, err := root.QueryReferences().Where(generatedVisibilityPredicate(orgs)).IDs(ctx)
-		s.Require().NoError(err)
-		handWritten, err := root.QueryReferences().Where(data.ReferrerVisibleToOrgsForTest(orgs)).Unique(false).IDs(ctx)
-		s.Require().NoError(err)
-
-		s.Equal(sortIDs(generated), sortIDs(handWritten))
+		handWritten := referenced(data.ReferrerVisibleToOrgsForTest(orgs))
+		s.Equal(referenced(generatedVisibilityPredicate(orgs)), handWritten)
 		s.NotEmpty(handWritten, "the fixture must exercise this, not pass by returning nothing")
 	})
 }

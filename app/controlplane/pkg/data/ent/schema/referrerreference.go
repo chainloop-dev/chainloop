@@ -1,0 +1,93 @@
+//
+// Copyright 2026 The Chainloop Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package schema
+
+import (
+	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
+	"github.com/google/uuid"
+)
+
+// currentTimestamp is the SQL default for timestamp columns that the database fills in.
+const currentTimestamp = "CURRENT_TIMESTAMP"
+
+// ReferrerReference is the edge schema of the references between referrers. A row says that
+// referrer_id references referred_by_id.
+type ReferrerReference struct {
+	ent.Schema
+}
+
+func (ReferrerReference) Fields() []ent.Field {
+	return []ent.Field{
+		field.UUID("referrer_id", uuid.UUID{}).Immutable(),
+		field.UUID("referred_by_id", uuid.UUID{}).Immutable(),
+		// The creation time of the referenced referrer (referred_by_id), copied so that the
+		// references of a referrer can be read newest first from an index. There is no Go default,
+		// so a create must set it. The database default covers writers outside Ent's create, such
+		// as the previous release during an upgrade, with the time the reference was stored.
+		field.Time("created_at").
+			Immutable().
+			Annotations(&entsql.Annotation{Default: currentTimestamp}),
+		// The organization of the attestation whose ingestion stored the reference, so that a
+		// caller can page over the references stored in its own organizations only. NULL means
+		// that the organization is not known, or that the reference was stored by attestations in
+		// more than one organization: such a reference is read in every organization, subject to
+		// the visibility check. A value is only ever replaced with NULL, never with another
+		// organization.
+		field.UUID("organization_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
+	}
+}
+
+func (ReferrerReference) Annotations() []schema.Annotation {
+	return []schema.Annotation{
+		field.ID("referrer_id", "referred_by_id"),
+		entsql.Annotation{Table: "referrer_references"},
+	}
+}
+
+func (ReferrerReference) Edges() []ent.Edge {
+	return []ent.Edge{
+		edge.To("referrer", Referrer.Type).
+			Required().
+			Unique().
+			Immutable().
+			Field("referrer_id").
+			Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+		edge.To("referred_by", Referrer.Type).
+			Required().
+			Unique().
+			Immutable().
+			Field("referred_by_id").
+			Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
+	}
+}
+
+func (ReferrerReference) Indexes() []ent.Index {
+	return []ent.Index{
+		// A page of the references of a referrer in one organization (or with no known
+		// organization), newest first, in index order.
+		// The generated name is longer than the 63 characters PostgreSQL keeps, so it is set here.
+		index.Fields("referrer_id", "organization_id", "created_at", "referred_by_id").
+			StorageKey("referrerreference_referrer_id_organization_id_created_at").
+			Annotations(entsql.DescColumns("created_at", "referred_by_id")),
+	}
+}

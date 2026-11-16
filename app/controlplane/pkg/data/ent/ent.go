@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrerreference"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
@@ -108,6 +109,7 @@ func checkColumn(t, c string) error {
 			project.Table:                 project.ValidColumn,
 			projectversion.Table:          projectversion.ValidColumn,
 			referrer.Table:                referrer.ValidColumn,
+			referrerreference.Table:       referrerreference.ValidColumn,
 			robotaccount.Table:            robotaccount.ValidColumn,
 			user.Table:                    user.ValidColumn,
 			workflow.Table:                workflow.ValidColumn,

@@ -31,6 +31,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrerreference"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/robotaccount"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/user"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
@@ -74,6 +75,8 @@ type Client struct {
 	ProjectVersion *ProjectVersionClient
 	// Referrer is the client for interacting with the Referrer builders.
 	Referrer *ReferrerClient
+	// ReferrerReference is the client for interacting with the ReferrerReference builders.
+	ReferrerReference *ReferrerReferenceClient
 	// RobotAccount is the client for interacting with the RobotAccount builders.
 	RobotAccount *RobotAccountClient
 	// User is the client for interacting with the User builders.
@@ -112,6 +115,7 @@ func (c *Client) init() {
 	c.Project = NewProjectClient(c.config)
 	c.ProjectVersion = NewProjectVersionClient(c.config)
 	c.Referrer = NewReferrerClient(c.config)
+	c.ReferrerReference = NewReferrerReferenceClient(c.config)
 	c.RobotAccount = NewRobotAccountClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.Workflow = NewWorkflowClient(c.config)
@@ -225,6 +229,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Project:                 NewProjectClient(cfg),
 		ProjectVersion:          NewProjectVersionClient(cfg),
 		Referrer:                NewReferrerClient(cfg),
+		ReferrerReference:       NewReferrerReferenceClient(cfg),
 		RobotAccount:            NewRobotAccountClient(cfg),
 		User:                    NewUserClient(cfg),
 		Workflow:                NewWorkflowClient(cfg),
@@ -265,6 +270,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Project:                 NewProjectClient(cfg),
 		ProjectVersion:          NewProjectVersionClient(cfg),
 		Referrer:                NewReferrerClient(cfg),
+		ReferrerReference:       NewReferrerReferenceClient(cfg),
 		RobotAccount:            NewRobotAccountClient(cfg),
 		User:                    NewUserClient(cfg),
 		Workflow:                NewWorkflowClient(cfg),
@@ -303,8 +309,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.APIToken, c.Attestation, c.CASBackend, c.CASMapping, c.Group,
 		c.GroupMembership, c.Integration, c.IntegrationAttachment, c.LoginHandoff,
 		c.Membership, c.OrgInvitation, c.Organization, c.Project, c.ProjectVersion,
-		c.Referrer, c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
-		c.WorkflowContractVersion, c.WorkflowRun,
+		c.Referrer, c.ReferrerReference, c.RobotAccount, c.User, c.Workflow,
+		c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
 	} {
 		n.Use(hooks...)
 	}
@@ -317,8 +323,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.APIToken, c.Attestation, c.CASBackend, c.CASMapping, c.Group,
 		c.GroupMembership, c.Integration, c.IntegrationAttachment, c.LoginHandoff,
 		c.Membership, c.OrgInvitation, c.Organization, c.Project, c.ProjectVersion,
-		c.Referrer, c.RobotAccount, c.User, c.Workflow, c.WorkflowContract,
-		c.WorkflowContractVersion, c.WorkflowRun,
+		c.Referrer, c.ReferrerReference, c.RobotAccount, c.User, c.Workflow,
+		c.WorkflowContract, c.WorkflowContractVersion, c.WorkflowRun,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -357,6 +363,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ProjectVersion.mutate(ctx, m)
 	case *ReferrerMutation:
 		return c.Referrer.mutate(ctx, m)
+	case *ReferrerReferenceMutation:
+		return c.ReferrerReference.mutate(ctx, m)
 	case *RobotAccountMutation:
 		return c.RobotAccount.mutate(ctx, m)
 	case *UserMutation:
@@ -3000,6 +3008,38 @@ func (c *ReferrerClient) QueryWorkflows(_m *Referrer) *WorkflowQuery {
 	return query
 }
 
+// QueryReferredByEdges queries the referred_by_edges edge of a Referrer.
+func (c *ReferrerClient) QueryReferredByEdges(_m *Referrer) *ReferrerReferenceQuery {
+	query := (&ReferrerReferenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(referrer.Table, referrer.FieldID, id),
+			sqlgraph.To(referrerreference.Table, referrerreference.ReferredByColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, referrer.ReferredByEdgesTable, referrer.ReferredByEdgesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReferenceEdges queries the reference_edges edge of a Referrer.
+func (c *ReferrerClient) QueryReferenceEdges(_m *Referrer) *ReferrerReferenceQuery {
+	query := (&ReferrerReferenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(referrer.Table, referrer.FieldID, id),
+			sqlgraph.To(referrerreference.Table, referrerreference.ReferrerColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, referrer.ReferenceEdgesTable, referrer.ReferenceEdgesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ReferrerClient) Hooks() []Hook {
 	return c.hooks.Referrer
@@ -3022,6 +3062,122 @@ func (c *ReferrerClient) mutate(ctx context.Context, m *ReferrerMutation) (Value
 		return (&ReferrerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Referrer mutation op: %q", m.Op())
+	}
+}
+
+// ReferrerReferenceClient is a client for the ReferrerReference schema.
+type ReferrerReferenceClient struct {
+	config
+}
+
+// NewReferrerReferenceClient returns a client for the ReferrerReference from the given config.
+func NewReferrerReferenceClient(c config) *ReferrerReferenceClient {
+	return &ReferrerReferenceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `referrerreference.Hooks(f(g(h())))`.
+func (c *ReferrerReferenceClient) Use(hooks ...Hook) {
+	c.hooks.ReferrerReference = append(c.hooks.ReferrerReference, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `referrerreference.Intercept(f(g(h())))`.
+func (c *ReferrerReferenceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ReferrerReference = append(c.inters.ReferrerReference, interceptors...)
+}
+
+// Create returns a builder for creating a ReferrerReference entity.
+func (c *ReferrerReferenceClient) Create() *ReferrerReferenceCreate {
+	mutation := newReferrerReferenceMutation(c.config, OpCreate)
+	return &ReferrerReferenceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ReferrerReference entities.
+func (c *ReferrerReferenceClient) CreateBulk(builders ...*ReferrerReferenceCreate) *ReferrerReferenceCreateBulk {
+	return &ReferrerReferenceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ReferrerReferenceClient) MapCreateBulk(slice any, setFunc func(*ReferrerReferenceCreate, int)) *ReferrerReferenceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ReferrerReferenceCreateBulk{err: fmt.Errorf("calling to ReferrerReferenceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ReferrerReferenceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ReferrerReferenceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ReferrerReference.
+func (c *ReferrerReferenceClient) Update() *ReferrerReferenceUpdate {
+	mutation := newReferrerReferenceMutation(c.config, OpUpdate)
+	return &ReferrerReferenceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReferrerReferenceClient) UpdateOne(_m *ReferrerReference) *ReferrerReferenceUpdateOne {
+	mutation := newReferrerReferenceMutation(c.config, OpUpdateOne)
+	mutation.referrer = &_m.ReferrerID
+	mutation.referred_by = &_m.ReferredByID
+	return &ReferrerReferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ReferrerReference.
+func (c *ReferrerReferenceClient) Delete() *ReferrerReferenceDelete {
+	mutation := newReferrerReferenceMutation(c.config, OpDelete)
+	return &ReferrerReferenceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Query returns a query builder for ReferrerReference.
+func (c *ReferrerReferenceClient) Query() *ReferrerReferenceQuery {
+	return &ReferrerReferenceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeReferrerReference},
+		inters: c.Interceptors(),
+	}
+}
+
+// QueryReferrer queries the referrer edge of a ReferrerReference.
+func (c *ReferrerReferenceClient) QueryReferrer(_m *ReferrerReference) *ReferrerQuery {
+	return c.Query().
+		Where(referrerreference.ReferrerID(_m.ReferrerID), referrerreference.ReferredByID(_m.ReferredByID)).
+		QueryReferrer()
+}
+
+// QueryReferredBy queries the referred_by edge of a ReferrerReference.
+func (c *ReferrerReferenceClient) QueryReferredBy(_m *ReferrerReference) *ReferrerQuery {
+	return c.Query().
+		Where(referrerreference.ReferrerID(_m.ReferrerID), referrerreference.ReferredByID(_m.ReferredByID)).
+		QueryReferredBy()
+}
+
+// Hooks returns the client hooks.
+func (c *ReferrerReferenceClient) Hooks() []Hook {
+	return c.hooks.ReferrerReference
+}
+
+// Interceptors returns the client interceptors.
+func (c *ReferrerReferenceClient) Interceptors() []Interceptor {
+	return c.inters.ReferrerReference
+}
+
+func (c *ReferrerReferenceClient) mutate(ctx context.Context, m *ReferrerReferenceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ReferrerReferenceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ReferrerReferenceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ReferrerReferenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ReferrerReferenceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ReferrerReference mutation op: %q", m.Op())
 	}
 }
 
@@ -4164,13 +4320,15 @@ type (
 	hooks struct {
 		APIToken, Attestation, CASBackend, CASMapping, Group, GroupMembership,
 		Integration, IntegrationAttachment, LoginHandoff, Membership, OrgInvitation,
-		Organization, Project, ProjectVersion, Referrer, RobotAccount, User, Workflow,
-		WorkflowContract, WorkflowContractVersion, WorkflowRun []ent.Hook
+		Organization, Project, ProjectVersion, Referrer, ReferrerReference,
+		RobotAccount, User, Workflow, WorkflowContract, WorkflowContractVersion,
+		WorkflowRun []ent.Hook
 	}
 	inters struct {
 		APIToken, Attestation, CASBackend, CASMapping, Group, GroupMembership,
 		Integration, IntegrationAttachment, LoginHandoff, Membership, OrgInvitation,
-		Organization, Project, ProjectVersion, Referrer, RobotAccount, User, Workflow,
-		WorkflowContract, WorkflowContractVersion, WorkflowRun []ent.Interceptor
+		Organization, Project, ProjectVersion, Referrer, ReferrerReference,
+		RobotAccount, User, Workflow, WorkflowContract, WorkflowContractVersion,
+		WorkflowRun []ent.Interceptor
 	}
 )

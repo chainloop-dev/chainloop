@@ -618,6 +618,47 @@ var (
 			},
 		},
 	}
+	// ReferrerReferencesColumns holds the columns for the "referrer_references" table.
+	ReferrerReferencesColumns = []*schema.Column{
+		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "organization_id", Type: field.TypeUUID, Nullable: true},
+		{Name: "referrer_id", Type: field.TypeUUID},
+		{Name: "referred_by_id", Type: field.TypeUUID},
+	}
+	// ReferrerReferencesTable holds the schema information for the "referrer_references" table.
+	ReferrerReferencesTable = &schema.Table{
+		Name:       "referrer_references",
+		Columns:    ReferrerReferencesColumns,
+		PrimaryKey: []*schema.Column{ReferrerReferencesColumns[2], ReferrerReferencesColumns[3]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "referrer_references_referrers_referrer",
+				Columns:    []*schema.Column{ReferrerReferencesColumns[2]},
+				RefColumns: []*schema.Column{ReferrersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "referrer_references_referrers_referred_by",
+				Columns:    []*schema.Column{ReferrerReferencesColumns[3]},
+				RefColumns: []*schema.Column{ReferrersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "referrerreference_referrer_id_organization_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{ReferrerReferencesColumns[2], ReferrerReferencesColumns[1], ReferrerReferencesColumns[0], ReferrerReferencesColumns[3]},
+				Annotation: &entsql.IndexAnnotation{
+					DescColumns: map[string]bool{
+						ReferrerReferencesColumns[0].Name: true,
+
+						ReferrerReferencesColumns[3].Name: true,
+					},
+				},
+			},
+		},
+	}
 	// RobotAccountsColumns holds the columns for the "robot_accounts" table.
 	RobotAccountsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -954,31 +995,6 @@ var (
 			},
 		},
 	}
-	// ReferrerReferencesColumns holds the columns for the "referrer_references" table.
-	ReferrerReferencesColumns = []*schema.Column{
-		{Name: "referrer_id", Type: field.TypeUUID},
-		{Name: "referred_by_id", Type: field.TypeUUID},
-	}
-	// ReferrerReferencesTable holds the schema information for the "referrer_references" table.
-	ReferrerReferencesTable = &schema.Table{
-		Name:       "referrer_references",
-		Columns:    ReferrerReferencesColumns,
-		PrimaryKey: []*schema.Column{ReferrerReferencesColumns[0], ReferrerReferencesColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "referrer_references_referrer_id",
-				Columns:    []*schema.Column{ReferrerReferencesColumns[0]},
-				RefColumns: []*schema.Column{ReferrersColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "referrer_references_referred_by_id",
-				Columns:    []*schema.Column{ReferrerReferencesColumns[1]},
-				RefColumns: []*schema.Column{ReferrersColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// ReferrerWorkflowsColumns holds the columns for the "referrer_workflows" table.
 	ReferrerWorkflowsColumns = []*schema.Column{
 		{Name: "referrer_id", Type: field.TypeUUID},
@@ -1046,13 +1062,13 @@ var (
 		ProjectsTable,
 		ProjectVersionsTable,
 		ReferrersTable,
+		ReferrerReferencesTable,
 		RobotAccountsTable,
 		UsersTable,
 		WorkflowsTable,
 		WorkflowContractsTable,
 		WorkflowContractVersionsTable,
 		WorkflowRunsTable,
-		ReferrerReferencesTable,
 		ReferrerWorkflowsTable,
 		WorkflowRunCasBackendsTable,
 	}
@@ -1081,6 +1097,11 @@ func init() {
 	OrgInvitationsTable.ForeignKeys[1].RefTable = UsersTable
 	ProjectsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	ProjectVersionsTable.ForeignKeys[0].RefTable = ProjectsTable
+	ReferrerReferencesTable.ForeignKeys[0].RefTable = ReferrersTable
+	ReferrerReferencesTable.ForeignKeys[1].RefTable = ReferrersTable
+	ReferrerReferencesTable.Annotation = &entsql.Annotation{
+		Table: "referrer_references",
+	}
 	RobotAccountsTable.ForeignKeys[0].RefTable = WorkflowsTable
 	WorkflowsTable.ForeignKeys[0].RefTable = OrganizationsTable
 	WorkflowsTable.ForeignKeys[1].RefTable = ProjectsTable
@@ -1092,8 +1113,6 @@ func init() {
 	WorkflowRunsTable.ForeignKeys[1].RefTable = ProjectVersionsTable
 	WorkflowRunsTable.ForeignKeys[2].RefTable = WorkflowsTable
 	WorkflowRunsTable.ForeignKeys[3].RefTable = WorkflowContractVersionsTable
-	ReferrerReferencesTable.ForeignKeys[0].RefTable = ReferrersTable
-	ReferrerReferencesTable.ForeignKeys[1].RefTable = ReferrersTable
 	ReferrerWorkflowsTable.ForeignKeys[0].RefTable = ReferrersTable
 	ReferrerWorkflowsTable.ForeignKeys[1].RefTable = WorkflowsTable
 	WorkflowRunCasBackendsTable.ForeignKeys[0].RefTable = WorkflowRunsTable

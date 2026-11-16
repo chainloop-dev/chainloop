@@ -45,9 +45,13 @@ type ReferrerEdges struct {
 	References []*Referrer `json:"references,omitempty"`
 	// Workflows holds the value of the workflows edge.
 	Workflows []*Workflow `json:"workflows,omitempty"`
+	// ReferredByEdges holds the value of the referred_by_edges edge.
+	ReferredByEdges []*ReferrerReference `json:"referred_by_edges,omitempty"`
+	// ReferenceEdges holds the value of the reference_edges edge.
+	ReferenceEdges []*ReferrerReference `json:"reference_edges,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [5]bool
 }
 
 // ReferredByOrErr returns the ReferredBy value or an error if the edge
@@ -75,6 +79,24 @@ func (e ReferrerEdges) WorkflowsOrErr() ([]*Workflow, error) {
 		return e.Workflows, nil
 	}
 	return nil, &NotLoadedError{edge: "workflows"}
+}
+
+// ReferredByEdgesOrErr returns the ReferredByEdges value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReferrerEdges) ReferredByEdgesOrErr() ([]*ReferrerReference, error) {
+	if e.loadedTypes[3] {
+		return e.ReferredByEdges, nil
+	}
+	return nil, &NotLoadedError{edge: "referred_by_edges"}
+}
+
+// ReferenceEdgesOrErr returns the ReferenceEdges value or an error if the edge
+// was not loaded in eager-loading.
+func (e ReferrerEdges) ReferenceEdgesOrErr() ([]*ReferrerReference, error) {
+	if e.loadedTypes[4] {
+		return e.ReferenceEdges, nil
+	}
+	return nil, &NotLoadedError{edge: "reference_edges"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -179,6 +201,16 @@ func (_m *Referrer) QueryReferences() *ReferrerQuery {
 // QueryWorkflows queries the "workflows" edge of the Referrer entity.
 func (_m *Referrer) QueryWorkflows() *WorkflowQuery {
 	return NewReferrerClient(_m.config).QueryWorkflows(_m)
+}
+
+// QueryReferredByEdges queries the "referred_by_edges" edge of the Referrer entity.
+func (_m *Referrer) QueryReferredByEdges() *ReferrerReferenceQuery {
+	return NewReferrerClient(_m.config).QueryReferredByEdges(_m)
+}
+
+// QueryReferenceEdges queries the "reference_edges" edge of the Referrer entity.
+func (_m *Referrer) QueryReferenceEdges() *ReferrerReferenceQuery {
+	return NewReferrerClient(_m.config).QueryReferenceEdges(_m)
 }
 
 // Update returns a builder for updating this Referrer.
