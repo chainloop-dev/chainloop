@@ -129,7 +129,7 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 		}
 
 		// Create workflow run
-		p, err = tx.WorkflowRun.Create().
+		create := tx.WorkflowRun.Create().
 			SetWorkflowID(opts.WorkflowID).
 			SetOrganizationID(wf.OrganizationID).
 			SetVersionID(version.ID).
@@ -138,8 +138,14 @@ func (r *WorkflowRunRepo) Create(ctx context.Context, opts *biz.WorkflowRunRepoC
 			SetRunnerType(opts.RunnerType).
 			AddCasBackendIDs(opts.Backends...).
 			SetContractRevisionLatest(opts.LatestRevision).
-			SetContractRevisionUsed(opts.UsedRevision).
-			Save(ctx)
+			SetContractRevisionUsed(opts.UsedRevision)
+
+		// Leave the column NULL for runs without a sandbox identity, ent would store a JSON null
+		if opts.SandboxIdentity != nil {
+			create.SetSandboxIdentity(opts.SandboxIdentity)
+		}
+
+		p, err = create.Save(ctx)
 		if err != nil {
 			return err
 		}
@@ -580,6 +586,7 @@ func entWrToBizWr(ctx context.Context, wr *ent.WorkflowRun) (*biz.WorkflowRun, e
 		ContractRevisionLatest: wr.ContractRevisionLatest,
 		HasPolicyViolations:    wr.HasPolicyViolations,
 		PolicyStatus:           entWrPolicySummary(wr),
+		SandboxIdentity:        wr.SandboxIdentity,
 		Attestation: &biz.Attestation{
 			Digest: wr.AttestationDigest,
 		},

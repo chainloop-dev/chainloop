@@ -27,6 +27,10 @@
       "description": "Optional flag to require that the project version already exists",
       "type": "boolean"
     },
+    "^(sandbox_identity)$": {
+      "description": "Optional identity token that the Chainloop platform gives to a Chainloop sandbox.\n The control plane verifies it only for the CHAINLOOP_SANDBOX runner.",
+      "type": "string"
+    },
     "^(use_latest_version)$": {
       "description": "Use the latest project version instead of specifying one explicitly.\n Mutually exclusive with project_version.",
       "type": "boolean"
@@ -85,6 +89,10 @@
           "type": "integer"
         }
       ]
+    },
+    "sandboxIdentity": {
+      "description": "Optional identity token that the Chainloop platform gives to a Chainloop sandbox.\n The control plane verifies it only for the CHAINLOOP_SANDBOX runner.",
+      "type": "string"
     },
     "useLatestVersion": {
       "description": "Use the latest project version instead of specifying one explicitly.\n Mutually exclusive with project_version.",

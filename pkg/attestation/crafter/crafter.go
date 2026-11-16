@@ -278,7 +278,17 @@ func (c *Crafter) initCraftingStateFile(ctx context.Context, opts *InitOpts) err
 
 	c.Logger.Debug().Str("state", c.stateManager.Info(ctx, opts.AttestationID)).Msg("created state file")
 
-	return c.LoadCraftingState(ctx, opts.AttestationID)
+	if err := c.LoadCraftingState(ctx, opts.AttestationID); err != nil {
+		return err
+	}
+
+	// Loading the state makes a new runner. Keep the runner of the init when it can carry a
+	// verified identity, because only the init sets it, and the runner info is resolved next.
+	if _, ok := opts.Runner.(IdentityRunner); ok && opts.Runner.ID() == c.Runner.ID() {
+		c.Runner = opts.Runner
+	}
+
+	return nil
 }
 
 // Reset removes the current crafting state

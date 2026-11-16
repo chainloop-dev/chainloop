@@ -71,6 +71,22 @@ func IsOrgLevelTokenPolicy(p *authz.Policy) bool {
 	})
 }
 
+// checkSandboxIdentityPolicy refuses the permission to issue a sandbox identity to a token that is
+// not a system token. Only the platform mints system tokens.
+func checkSandboxIdentityPolicy(policies []*authz.Policy, isSystem bool) error {
+	if isSystem {
+		return nil
+	}
+
+	if slices.ContainsFunc(policies, func(p *authz.Policy) bool {
+		return p != nil && p.Resource == authz.PolicySandboxIdentityIssue.Resource && p.Action == authz.PolicySandboxIdentityIssue.Action
+	}) {
+		return NewErrValidationStr("only a system token can hold the permission to issue a sandbox identity")
+	}
+
+	return nil
+}
+
 // defaultAuthzPolicies are granted to every token regardless of scope, so each entry must be safe
 // for a caller confined to a single project. Org-wide capabilities go in orgLevelTokenPolicies.
 var defaultAuthzPolicies = []*authz.Policy{
@@ -501,6 +517,10 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	policies := options.policies
 	if policies == nil {
 		policies = uc.DefaultAuthzPolicies
+	}
+
+	if err := checkSandboxIdentityPolicy(policies, options.isSystem); err != nil {
+		return nil, err
 	}
 
 	// A product token's policies come only from the platform, in-process: the refusals below

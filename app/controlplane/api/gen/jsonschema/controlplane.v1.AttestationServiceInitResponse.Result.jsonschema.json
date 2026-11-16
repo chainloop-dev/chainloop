@@ -18,6 +18,10 @@
       },
       "type": "array"
     },
+    "^(sandbox_identity)$": {
+      "$ref": "controlplane.v1.AttestationServiceInitResponse.SandboxIdentityResult.jsonschema.json",
+      "description": "The result of the verification of the sandbox identity, when the request has one"
+    },
     "^(signing_options)$": {
       "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.jsonschema.json",
       "description": "Signing options"
@@ -53,6 +57,10 @@
         "type": "string"
       },
       "type": "array"
+    },
+    "sandboxIdentity": {
+      "$ref": "controlplane.v1.AttestationServiceInitResponse.SandboxIdentityResult.jsonschema.json",
+      "description": "The result of the verification of the sandbox identity, when the request has one"
     },
     "signingOptions": {
       "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.jsonschema.json",

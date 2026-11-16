@@ -133,6 +133,9 @@ message AttestationServiceInitRequest {
   // false: skip latest promotion.
   // Mutually exclusive with use_latest_version.
   optional bool mark_as_latest = 9;
+  // Optional identity token that the Chainloop platform gives to a Chainloop sandbox.
+  // The control plane verifies it only for the CHAINLOOP_SANDBOX runner.
+  string sandbox_identity = 10;
 }
 
 message AttestationServiceInitResponse {
@@ -154,6 +157,15 @@ message AttestationServiceInitResponse {
     bool enable_ai_agent_collector = 8;
     // Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation
     bool skip_runner_env_vars = 9;
+    // The result of the verification of the sandbox identity, when the request has one
+    SandboxIdentityResult sandbox_identity = 10;
+  }
+
+  message SandboxIdentityResult {
+    // Whether the control plane verified the identity and recorded it on the workflow run
+    bool verified = 1;
+    // Why the identity did not verify
+    string reason = 2;
   }
 
   message SigningOptions {
