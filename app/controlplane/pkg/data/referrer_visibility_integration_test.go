@@ -207,23 +207,8 @@ func (s *referrerVisibilityIntegrationTestSuite) TestMatchesTheGeneratedPredicat
 		s.NotEmpty(handWritten, "the fixture must exercise this, not pass by returning nothing")
 	})
 
-	// doGet's project membership check applies the filter to root.QueryReferences(), a different
-	// query shape where the selector is already joined through the references table.
-	s.Run("behaves the same when traversing references", func() {
-		orgs := []uuid.UUID{s.orgAllowed, s.orgOther}
-		root := s.Data.DB.Referrer.GetX(ctx, s.liveInAllowed)
-
-		generated, err := root.QueryReferences().Where(generatedVisibilityPredicate(orgs)).IDs(ctx)
-		s.Require().NoError(err)
-		handWritten, err := root.QueryReferences().Where(data.ReferrerVisibleToOrgsForTest(orgs)).Unique(false).IDs(ctx)
-		s.Require().NoError(err)
-
-		s.Equal(sortIDs(generated), sortIDs(handWritten))
-		s.NotEmpty(handWritten, "the fixture must exercise this, not pass by returning nothing")
-	})
-
-	// doGet pages over the reference rows of the root and applies the filter to the referenced
-	// referrer inside a correlated EXISTS, a third query shape.
+	// doGet's pages and its project membership check read the reference rows of the root and apply
+	// the filter to the referenced referrer inside a correlated EXISTS.
 	s.Run("behaves the same inside the references page query", func() {
 		orgs := []uuid.UUID{s.orgAllowed, s.orgOther}
 		referenced := func(p predicate.Referrer) []uuid.UUID {

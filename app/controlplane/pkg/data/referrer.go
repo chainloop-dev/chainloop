@@ -130,11 +130,13 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 		// was stored in the same one. If an attestation in another organization stores it again,
 		// for example the same attestation pushed to a run in another organization, the reference
 		// belongs to both: it loses its organization, so that it is read in every organization.
+		// A reference with no organization is left as it is, so storing it again writes nothing.
+		storedOrg := referrerreference.Table + "." + referrerreference.FieldOrganizationID
 		if err := r.data.DB.ReferrerReference.CreateBulk(references...).
 			OnConflict(
 				sql.ConflictColumns(referrerreference.FieldReferrerID, referrerreference.FieldReferredByID),
-				sql.UpdateWhere(sql.ExprP(fmt.Sprintf("%s.%s IS DISTINCT FROM excluded.%s",
-					referrerreference.Table, referrerreference.FieldOrganizationID, referrerreference.FieldOrganizationID))),
+				sql.UpdateWhere(sql.ExprP(fmt.Sprintf("%s IS NOT NULL AND %s IS DISTINCT FROM excluded.%s",
+					storedOrg, storedOrg, referrerreference.FieldOrganizationID))),
 			).
 			Update(func(u *ent.ReferrerReferenceUpsert) { u.ClearOrganizationID() }).
 			Exec(ctx); err != nil {
@@ -468,6 +470,11 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	// Add the references to the result
 	for _, row := range rows {
 		reference := row.Edges.ReferredBy
+		// A referrer deleted since the page was read is left out. It still counts for the cursor
+		// above, so the next page starts after it.
+		if reference == nil {
+			continue
+		}
 		// Call recursively the function — pagination only applies to the first level
 		ref, _, err := r.doGet(ctx, reference, allowedOrgs, visibleProjectsMap, projectPred, nil, level+1)
 		if err != nil && !biz.IsErrUnauthorized(err) {
@@ -485,11 +492,17 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 	// absence from the page alone (a later page can be empty simply because we paged past the
 	// results), so we run a pagination-independent existence check before rejecting the root.
 	if projectFilterActive && level == 0 && root.Kind != biz.ReferrerAttestationType && len(res.References) == 0 {
-		inProject, err := root.QueryReferences().
+		// It reads the same references as the pages: those stored in the allowed organizations,
+		// or with no organization.
+		inProject, err := r.data.DB.ReferrerReference.Query().
 			Where(
-				referrer.KindEQ(biz.ReferrerAttestationType),
-				projectPred,
-				referrerVisibleToOrgs(allowedOrgs),
+				referrerreference.ReferrerID(root.ID),
+				referenceStoredInOrgs(allowedOrgs),
+				referrerreference.HasReferredByWith(
+					referrer.KindEQ(biz.ReferrerAttestationType),
+					projectPred,
+					referrerVisibleToOrgs(allowedOrgs),
+				),
 			).
 			Exist(ctx)
 		if err != nil {
@@ -504,7 +517,8 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 }
 
 // referencesPage returns up to p.Limit+1 references of the root, newest first, with the referenced
-// referrer and its workflows loaded. The extra row tells the caller that there is a next page.
+// referrer and its workflows loaded on the first p.Limit. The extra row tells the caller that there
+// is a next page. A row whose referrer was deleted in between has no referrer loaded.
 //
 // The rows carry the creation time of the referrer they point to and the organization that stored
 // them, and the index on (referrer_id, organization_id, created_at DESC, referred_by_id DESC)
@@ -522,12 +536,10 @@ func (r *ReferrerRepo) referencesPage(ctx context.Context, rootID uuid.UUID, all
 
 	ranges := make([]predicate.ReferrerReference, 0, len(allowedOrgs)+1)
 	ranges = append(ranges, referrerreference.OrganizationIDIsNil())
-	seenOrgs := make(map[uuid.UUID]bool, len(allowedOrgs))
-	for _, orgID := range allowedOrgs {
-		if seenOrgs[orgID] {
-			continue
-		}
-		seenOrgs[orgID] = true
+	// One range per distinct organization, or a reference would be returned twice
+	for _, orgID := range slices.Compact(slices.SortedFunc(slices.Values(allowedOrgs), func(a, b uuid.UUID) int {
+		return bytes.Compare(a[:], b[:])
+	})) {
 		ranges = append(ranges, referrerreference.OrganizationID(orgID))
 	}
 
@@ -576,9 +588,11 @@ func (r *ReferrerRepo) referencesPage(ctx context.Context, rootID uuid.UUID, all
 		return rows, nil
 	}
 
-	// Load the referenced referrers of the page and their workflows in one query
-	ids := make([]uuid.UUID, 0, len(rows))
-	for _, row := range rows {
+	// Load the referenced referrers of the page and their workflows in one query. The extra row
+	// only tells that there is a next page, so it is not loaded.
+	visible := rows[:min(len(rows), p.Limit)]
+	ids := make([]uuid.UUID, 0, len(visible))
+	for _, row := range visible {
 		ids = append(ids, row.ReferredByID)
 	}
 	referenced, err := r.data.DB.Referrer.Query().Where(referrer.IDIn(ids...)).WithWorkflows().All(ctx)
@@ -590,16 +604,21 @@ func (r *ReferrerRepo) referencesPage(ctx context.Context, rootID uuid.UUID, all
 		byID[ref.ID] = ref
 	}
 
-	page := make([]*ent.ReferrerReference, 0, len(rows))
-	for _, row := range rows {
-		// A referrer deleted since the first query is left out, as it would be from a single query
-		if ref, ok := byID[row.ReferredByID]; ok {
-			row.Edges.ReferredBy = ref
-			page = append(page, row)
-		}
+	// A referrer deleted since the first query is not found, and its row keeps no referrer
+	for _, row := range visible {
+		row.Edges.ReferredBy = byID[row.ReferredByID]
 	}
 
-	return page, nil
+	return rows, nil
+}
+
+// referenceStoredInOrgs matches a reference stored in one of the given organizations, or with no
+// organization, which means that it can belong to any of them.
+func referenceStoredInOrgs(orgIDs []uuid.UUID) predicate.ReferrerReference {
+	return referrerreference.Or(
+		referrerreference.OrganizationIDIsNil(),
+		referrerreference.OrganizationIDIn(orgIDs...),
+	)
 }
 
 // isReferrerVisible reports whether the referrer, attached to the given projects of each organization,

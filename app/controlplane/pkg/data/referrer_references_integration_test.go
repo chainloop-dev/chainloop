@@ -17,7 +17,6 @@ package data_test
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"os"
 	"slices"
@@ -125,13 +124,23 @@ func (s *referrerReferencesIntegrationTestSuite) saveAttestation(digest string, 
 	s.Require().NoError(s.Repos.Referrer.Save(context.Background(), referrers, wfID))
 }
 
-func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoresTheReferencedCreationTime() {
+// idOf returns the ID of the referrer with the given digest.
+func (s *referrerReferencesIntegrationTestSuite) idOf(digest string) uuid.UUID {
+	s.T().Helper()
+	return s.Data.DB.Referrer.Query().Where(referrer.Digest(digest)).OnlyIDX(context.Background())
+}
+
+func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoredColumns() {
 	ctx := context.Background()
 	client := s.Data.DB
 
 	createdAt := make(map[uuid.UUID]int64)
 	for _, r := range client.Referrer.Query().AllX(ctx) {
 		createdAt[r.ID] = r.CreatedAt.UnixMicro()
+	}
+	orgOf := make(map[uuid.UUID]uuid.UUID)
+	for _, att := range s.attestations {
+		orgOf[s.idOf(att.digest)] = att.org
 	}
 
 	refs := client.ReferrerReference.Query().AllX(ctx)
@@ -142,22 +151,7 @@ func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoresTheReference
 		// still carry the material's own creation time, not the time the reference was stored.
 		s.Equal(createdAt[ref.ReferredByID], ref.CreatedAt.UnixMicro(),
 			"reference %s -> %s", ref.ReferrerID, ref.ReferredByID)
-	}
-}
 
-func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoresTheWriterOrganization() {
-	ctx := context.Background()
-	client := s.Data.DB
-
-	orgOf := make(map[uuid.UUID]uuid.UUID)
-	for _, att := range s.attestations {
-		id := client.Referrer.Query().Where(referrer.Digest(att.digest)).OnlyIDX(ctx)
-		orgOf[id] = att.org
-	}
-
-	refs := client.ReferrerReference.Query().AllX(ctx)
-	s.Require().Len(refs, 2*len(s.attestations))
-	for _, ref := range refs {
 		// one end of each reference is the attestation that stored it
 		org, ok := orgOf[ref.ReferrerID]
 		if !ok {
@@ -178,7 +172,7 @@ func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoredFromTwoOrgan
 	s.Require().Equal(s.orgA, first.org)
 	s.saveAttestation(first.digest, s.wfB)
 
-	firstID := client.Referrer.Query().Where(referrer.Digest(first.digest)).OnlyIDX(ctx)
+	firstID := s.idOf(first.digest)
 	for _, ref := range client.ReferrerReference.Query().AllX(ctx) {
 		if ref.ReferrerID == firstID || ref.ReferredByID == firstID {
 			s.Nil(ref.OrganizationID, "reference %s -> %s", ref.ReferrerID, ref.ReferredByID)
@@ -189,7 +183,7 @@ func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoredFromTwoOrgan
 
 	// Storing it again in the same organization leaves the references as they are
 	s.saveAttestation(s.attestations[1].digest, s.wfB)
-	secondID := client.Referrer.Query().Where(referrer.Digest(s.attestations[1].digest)).OnlyIDX(ctx)
+	secondID := s.idOf(s.attestations[1].digest)
 	for _, ref := range client.ReferrerReference.Query().AllX(ctx) {
 		if ref.ReferrerID == secondID || ref.ReferredByID == secondID {
 			s.Require().NotNil(ref.OrganizationID)
@@ -254,17 +248,14 @@ func (s *referrerReferencesIntegrationTestSuite) TestBackfillMatchesTheStoredOrg
 	}
 	stored := snapshot()
 
-	db, err := sql.Open("pgx", s.DB.ConnectionString(s.T()))
+	_, err := s.Data.SQLDB.ExecContext(ctx, `UPDATE referrer_references SET organization_id = NULL, created_at = $1`, time.Now())
 	s.Require().NoError(err)
-	defer db.Close()
-	_, err = db.ExecContext(ctx, `UPDATE referrer_references SET organization_id = NULL, created_at = $1`, time.Now())
-	s.Require().NoError(err)
-	_, err = db.ExecContext(ctx, s.backfillStatement())
+	_, err = s.Data.SQLDB.ExecContext(ctx, s.backfillStatement())
 	s.Require().NoError(err)
 	backfilled := snapshot()
 
-	materialID := client.Referrer.Query().Where(referrer.Digest(s.materialDigest)).OnlyIDX(ctx)
-	fromAID := client.Referrer.Query().Where(referrer.Digest(fromA.digest)).OnlyIDX(ctx)
+	materialID := s.idOf(s.materialDigest)
+	fromAID := s.idOf(fromA.digest)
 	s.Require().Len(backfilled, len(stored))
 	for k, want := range stored {
 		got := backfilled[k]
