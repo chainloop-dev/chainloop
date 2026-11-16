@@ -312,6 +312,41 @@ func TestRedactSkipsMedia(t *testing.T) {
 	}
 }
 
+// TestRedactSkipsCopilotCallIDs covers the apiCallId of a GitHub Copilot model
+// call. A value of its base64 shape is kept, although generic-api-key matches
+// it. Any other value under the key is still scanned.
+func TestRedactSkipsCopilotCallIDs(t *testing.T) {
+	callID := strings.Repeat("q3Rk8vLm2+Zx7Pw4Tn9sYbHc1/Fd6Gj0Ue5Ai8Ko2WsVb3Nq7", 10)
+
+	session := func(id string) []byte {
+		var evidence Evidence
+		require.NoError(t, json.Unmarshal(readFixture(t, "../testdata/ai-coding-session-minimal.json"), &evidence))
+		evidence.Data.RawSession = map[string][]json.RawMessage{"main": {
+			json.RawMessage(`{"type":"assistant.usage","data":{"model":"m","apiCallId":"` + id + `"},"source_event":{"data":{"apiCallId":"` + id + `"}}}`),
+		}}
+		doc, err := json.Marshal(evidence)
+		require.NoError(t, err)
+		return doc
+	}
+
+	scanner, err := redaction.DefaultScanner()
+	require.NoError(t, err)
+	_, report, err := redaction.New(scanner, redaction.WithPathFilter(eligible)).Redact(context.Background(), session(callID))
+	require.NoError(t, err)
+	require.True(t, report.Changed(), "the ruleset must match the id, or this case tests nothing")
+
+	doc := session(callID)
+	got, report, err := Redact(context.Background(), doc)
+	require.NoError(t, err)
+	assert.False(t, report.Changed(), "replaced by %v", report.RuleIDs())
+	assert.Equal(t, doc, got)
+
+	got, report, err = Redact(context.Background(), session(fixtureGitHubPAT))
+	require.NoError(t, err)
+	assert.True(t, report.Changed())
+	assert.NotContains(t, string(got), fixtureGitHubPAT)
+}
+
 func TestRedactIsIdempotent(t *testing.T) {
 	in := readFixture(t, "testdata/session-with-secrets.json")
 

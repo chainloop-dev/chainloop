@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/internal/redaction"
@@ -88,7 +89,7 @@ func Redact(ctx context.Context, evidence []byte) ([]byte, *redaction.Report, er
 		return nil, nil, fmt.Errorf("initialising the secret scanner: %w", err)
 	}
 
-	redacted, report, err := redaction.New(scanner, redaction.WithPathFilter(eligible), redaction.WithOpaque(isMedia), redaction.WithAllowMarkers()).Redact(ctx, evidence)
+	redacted, report, err := redaction.New(scanner, redaction.WithPathFilter(eligible), redaction.WithOpaque(isOpaque), redaction.WithAllowMarkers()).Redact(ctx, evidence)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -128,14 +129,18 @@ func eligible(path string) bool {
 	return true
 }
 
-// isMedia reports whether obj[key] is base64 media in the transcript.
-// Redaction does not scan it: the scan is slow, its matches are false, and a
-// rewrite breaks the media. The shapes are the ones of the transcripts the
-// CLI records, which other agents also follow:
+// isOpaque reports whether obj[key] is opaque data in the transcript: base64
+// media, or an id that an agent records. Redaction does not scan it: the scan
+// is slow, its matches are false, and a rewrite breaks the media or the id.
+// The shapes are the ones of the transcripts the CLI records:
 //   - the data of a base64 source block, {"type":"base64","data":...};
 //   - the base64 copy of a file in the metadata of a Claude Code tool result,
-//     next to its media type, {"base64":...,"type":"image/png"}.
-func isMedia(path string, obj map[string]any, key string) bool {
+//     next to its media type, {"base64":...,"type":"image/png"};
+//   - the apiCallId of a model call in a GitHub Copilot transcript, a long
+//     base64 id that generic-api-key matches because the key name holds "api".
+//     Only a value of that shape is opaque, so any other value under the key
+//     is still scanned.
+func isOpaque(path string, obj map[string]any, key string) bool {
 	if !strings.HasPrefix(path, "/data/raw_session/") {
 		return false
 	}
@@ -146,10 +151,17 @@ func isMedia(path string, obj map[string]any, key string) bool {
 	case "base64":
 		mediaType, _ := obj["type"].(string)
 		return strings.Contains(mediaType, "/")
+	case "apiCallId":
+		id, _ := obj[key].(string)
+		return copilotCallID.MatchString(id)
 	}
 
 	return false
 }
+
+// copilotCallID is the shape of the apiCallId that GitHub Copilot records: 500
+// characters of standard base64 in the transcripts seen so far.
+var copilotCallID = regexp.MustCompile(`^[A-Za-z0-9+/]{100,}={0,2}$`)
 
 // matchPath compares a slash-separated path against a pattern in which "*"
 // stands for exactly one segment.
