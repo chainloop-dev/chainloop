@@ -26,7 +26,9 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrerreference"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/suite"
@@ -283,6 +285,34 @@ func (s *referrerReferencesIntegrationTestSuite) backfillStatement() string {
 	}
 	s.Require().Fail("the migration has no backfill statement")
 	return ""
+}
+
+// The organization of a reference only narrows what a page reads. A reference with no
+// organization, or with the caller's organization, is still returned only when the caller can see
+// the referrer it points to.
+func (s *referrerReferencesIntegrationTestSuite) TestOrganizationNeverGrantsVisibility() {
+	ctx := context.Background()
+	client := s.Data.DB
+
+	// Two attestations visible in organization B only, referenced from the shared material
+	onlyInB := func(n int) *ent.Referrer {
+		return client.Referrer.Create().SetDigest(fmt.Sprintf("sha256:%064d", n)).
+			SetKind(biz.ReferrerAttestationType).SetDownloadable(true).AddWorkflowIDs(s.wfB).SaveX(ctx)
+	}
+	withNoOrg, withOrgA := onlyInB(200), onlyInB(201)
+	materialID := s.idOf(s.materialDigest)
+	client.Referrer.UpdateOneID(materialID).AddReferenceIDs(withNoOrg.ID, withOrgA.ID).ExecX(ctx)
+	// One reference has no organization, the other claims organization A
+	client.ReferrerReference.Update().
+		Where(referrerreference.ReferrerID(materialID), referrerreference.ReferredByID(withOrgA.ID)).
+		SetOrganizationID(s.orgA).ExecX(ctx)
+
+	got, _ := s.collectPages([]uuid.UUID{s.orgA}, 2)
+	s.Equal(s.newestFirst(s.orgA), got, "organization A must not see referrers of organization B")
+
+	got, _ = s.collectPages([]uuid.UUID{s.orgB}, 2)
+	s.Contains(got, withNoOrg.Digest, "a reference with no organization is read in organization B")
+	s.NotContains(got, withOrgA.Digest, "a reference stored in organization A is not read in organization B")
 }
 
 func (s *referrerReferencesIntegrationTestSuite) TestPagesNewestFirst() {
