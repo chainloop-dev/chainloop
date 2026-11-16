@@ -277,6 +277,12 @@ func TestRedactSkipsMedia(t *testing.T) {
 			wantMedia: true,
 		},
 		{
+			// Not media, but opaque in the same way: a Copilot model call id.
+			name:      "copilot model call id",
+			entry:     `{"type":"assistant.usage","data":{"model":"m","apiCallId":"` + media + `"},"source_event":{"data":{"apiCallId":"` + media + `"}}}`,
+			wantMedia: true,
+		},
+		{
 			name:  "text field named data is still scanned",
 			entry: `{"type":"user","message":{"role":"user","content":[{"type":"text","data":"` + media + `"}]}}`,
 		},

@@ -33,6 +33,14 @@ regexTarget = "match"
 regexes = ['''\bSHA256:[A-Za-z0-9+/]{43}(?:[\x60'"\s;]|\\[nr])?$''']
 
 [[allowlists]]
+description = "Issue tracker keys, such as the Jira key in the arguments of a Jira tool call"
+targetRules = ["generic-api-key"]
+# A key such as {"issueIdOrKey": "PROJ-1234"} has the shape of a keyword and a
+# value, and a long project key passes the entropy threshold. A Jira project key
+# has at most 10 characters by default.
+regexes = ['''^[A-Z][A-Z0-9_]{1,9}-[0-9]+$''']
+
+[[allowlists]]
 description = "Code expressions, test durations and the bare key word, which are not password values"
 targetRules = ["generic-password"]
 # The scanned text is JSON-encoded, so a match of this rule can run on through
@@ -53,6 +61,29 @@ regexes = [
     '''(?i)^(?:password|passwd|pwd)(?:\\+[nrt].*)?$''',
     # The duration of a Go test, as in "--- PASS: TestPassword: (0.01s)".
     '''^\([0-9]+(?:\.[0-9]+)?(?:ns|us|µs|ms|s|m|h)\)(?:\\+[nrt].*)?$''',
+]
+
+[[allowlists]]
+description = "A variable that names a credential, such as Password: registryPassword in code"
+targetRules = ["generic-password"]
+regexTarget = "match"
+# The default rule drops unquoted values in code files, but it reads the file
+# type from a path that the scanned document does not have. Only an unquoted
+# value shaped like a code identifier is kept: a camelCase or snake_case name
+# that holds a credential word, or the bare word secret or token that a code
+# delimiter ends, as in "user, password = secret, secret". A quoted value, and a
+# plain word such as supersecret in a config file or a command line, are still
+# redacted. "key" is not a credential word here, because passwords such as
+# "monkey" hold it.
+regexes = [
+    # camelCase with the credential word inside: registryPassword, githubToken.
+    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}[a-z][A-Za-z0-9]*(?:Passw|Pwd|Secret|Token|Cred)[A-Za-z0-9]*(?:\\+[nrt].*|[ \t]*[,;)}\]]?|[ \t]+(?:#|//|/\*|--).*)$''',
+    # camelCase that starts with the credential word: secretValue, tokenFile.
+    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}(?:passw|pwd|secret|token|cred)[a-z0-9]*[A-Z][A-Za-z0-9]*(?:\\+[nrt].*|[ \t]*[,;)}\]]?|[ \t]+(?:#|//|/\*|--).*)$''',
+    # snake_case with the credential word as one part: db_password, client_secret.
+    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}[a-z0-9_]*(?:_(?:passw|pwd|secret|token|cred)|(?:passw|pwd|secret|token|cred)[a-z0-9]*_)[a-z0-9_]*(?:\\+[nrt].*|[ \t]*[,;)}\]]?|[ \t]+(?:#|//|/\*|--).*)$''',
+    # The bare word secret or token, ended by a code delimiter.
+    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}(?:secret|token)[ \t]*[,;)}\]]$''',
 ]
 
 [[allowlists]]

@@ -40,6 +40,11 @@ const (
 	// sampleSSHFingerprint is the unpadded base64 of a SHA-256 hash, as
 	// OpenSSH prints the fingerprint of a public key after SHA256:
 	sampleSSHFingerprint = "q3Rk8vLm2+Zx7Pw4" + "Tn9sYbHc1/Fd6Gj0" + "Ue5Ai8Ko2Ws"
+	// sampleIssueKey is a Jira key with a project key long enough to pass the
+	// entropy threshold of generic-api-key.
+	sampleIssueKey = "FOOBARQUIX" + "-8172"
+	// sampleLetterPassword is a password of letters only.
+	sampleLetterPassword = "correcthorse" + "batterystaple"
 
 	ruleGenericAPIKey = "generic-api-key"
 	ruleGitHubPAT     = "github-pat"
@@ -162,6 +167,31 @@ func TestRulesConfigKeepsNonSecrets(t *testing.T) {
 			name:            "rsa key fingerprint of a commit signature",
 			text:            "Good \"git\" signature for " + sampleEmail + " with RSA key SHA256:" + sampleSSHFingerprint + "\n",
 			wantDefaultRule: ruleGenericAPIKey,
+		},
+		{
+			name:            "jira key in the arguments of a tool call",
+			text:            "issueIdOrKey: " + sampleIssueKey + "\n",
+			wantDefaultRule: ruleGenericAPIKey,
+		},
+		{
+			name:            "variable as the value of a password field in go code",
+			text:            "\tpublish(Options{\n\t\tRegistryUsername: registryUser, RegistryPassword: registryPassword,\n\t})\n",
+			wantDefaultRule: genericPasswordRuleID,
+		},
+		{
+			name:            "variable assigned to a password in a test",
+			text:            "if tc.auth {\n\tuser, password = secret, secret\n}\n",
+			wantDefaultRule: genericPasswordRuleID,
+		},
+		{
+			name:            "snake_case variable as the value of a password field",
+			text:            "\tconn.Password = db_password\n",
+			wantDefaultRule: genericPasswordRuleID,
+		},
+		{
+			name:            "camelCase variable that starts with the credential word",
+			text:            "\tcfg.Password = secretValue;\n",
+			wantDefaultRule: genericPasswordRuleID,
 		},
 	}
 
@@ -350,6 +380,58 @@ func TestRulesConfigStillRedactsSecrets(t *testing.T) {
 			secret:   samplePassword,
 			wantRule: ruleCredentialURI,
 		},
+		{
+			name:     "api key in the field of an issue key",
+			text:     "issueIdOrKey: " + sampleAPIKey + "\n",
+			secret:   sampleAPIKey,
+			wantRule: ruleGenericAPIKey,
+		},
+		{
+			name:     "issue key shape with a project key longer than jira allows",
+			text:     "access_token: " + "QWXZPLMNBVKJ" + "-8172\n",
+			secret:   "QWXZPLMNBVKJ" + "-8172",
+			wantRule: ruleGenericAPIKey,
+		},
+		{
+			name:     "unquoted password with digits in go code",
+			text:     "\t\tRegistryUsername: registryUser, RegistryPassword: " + samplePassword + ",\n",
+			secret:   samplePassword,
+			wantRule: genericPasswordRuleID,
+			keep:     "registryUser",
+		},
+		{
+			// The value names a credential, which the allowlist keeps only
+			// when it is unquoted.
+			name:     "quoted password of letters only",
+			text:     "user: " + sampleEmail + "\npassword: 'supersecret" + "value'\n",
+			secret:   "supersecret" + "value",
+			wantRule: genericPasswordRuleID,
+		},
+		{
+			name:     "unquoted password of letters only in a config file",
+			text:     "host: db.internal\nuser: " + sampleEmail + "\npassword: " + sampleLetterPassword + "\n",
+			secret:   sampleLetterPassword,
+			wantRule: genericPasswordRuleID,
+		},
+		{
+			name:     "unquoted password of letters only in a command line",
+			text:     "--password=" + sampleLetterPassword + " --image=example.com/app\n",
+			secret:   sampleLetterPassword,
+			wantRule: genericPasswordRuleID,
+		},
+		{
+			// It holds a credential word, but it is not shaped like a variable.
+			name:     "weak password that holds a credential word in a config file",
+			text:     "host: db.internal\nuser: " + sampleEmail + "\npassword: super" + "secret\n",
+			secret:   "super" + "secret",
+			wantRule: genericPasswordRuleID,
+		},
+		{
+			name:     "plain word as a password flag followed by another flag",
+			text:     "--username=env:REG_USER --password=" + "secret --image=example.com/app\n",
+			secret:   "=secret",
+			wantRule: genericPasswordRuleID,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -407,4 +489,34 @@ func TestRedactAllowMarkerWithDefaultRules(t *testing.T) {
 	assert.Contains(t, got, "export GITHUB_TOKEN=[CHAINLOOP_TRACE_REDACTED:github-pat]\n")
 	assert.Equal(t, map[string]int{ruleGitHubPAT: 1}, report.Allowed)
 	assert.Equal(t, map[string]int{ruleGitHubPAT: 1}, report.ByRule)
+}
+
+// TestRedactKeepsIssueKeyInSessionDocument covers a Jira key in an AI coding
+// session. A match in the arguments of a tool call used to replace every copy
+// of the key, which included the title and the URI of the spec entry.
+func TestRedactKeepsIssueKeyInSessionDocument(t *testing.T) {
+	scanner, err := DefaultScanner()
+	require.NoError(t, err)
+
+	doc, err := json.Marshal(map[string]any{"data": map[string]any{
+		"raw_session": map[string]any{"main": []any{
+			map[string]any{"type": "tool_use", "input": map[string]any{"issueIdOrKey": sampleIssueKey}},
+			map[string]any{"type": "tool_result", "content": `{"key":"` + sampleIssueKey + `","summary":"Add retries to the upload step"}`},
+		}},
+		"spec": []any{map[string]any{
+			"kind":  "ticket",
+			"title": sampleIssueKey + ": Add retries to the upload step",
+			"uri":   "https://example.atlassian.net/browse/" + sampleIssueKey,
+		}},
+	}})
+	require.NoError(t, err)
+
+	_, report, err := New(defaultRulesScanner(t)).Redact(context.Background(), doc)
+	require.NoError(t, err)
+	require.Contains(t, report.RuleIDs(), ruleGenericAPIKey, "the default ruleset must replace the key, or this case tests nothing")
+
+	got, report, err := New(scanner).Redact(context.Background(), doc)
+	require.NoError(t, err)
+	assert.Equal(t, doc, got)
+	assert.False(t, report.Changed(), "replaced by %v", report.RuleIDs())
 }
