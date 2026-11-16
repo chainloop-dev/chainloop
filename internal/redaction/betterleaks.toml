@@ -71,17 +71,17 @@ regexTarget = "match"
 # type from a path that the scanned document does not have. Only an unquoted
 # value shaped like a code identifier is kept: a camelCase or snake_case name
 # that holds a credential word, or the bare word secret or token that a code
-# delimiter ends, as in "user, password = secret, secret". A quoted value, and a
-# plain word such as supersecret in a config file or a command line, are still
-# redacted. "key" is not a credential word here, because passwords such as
-# "monkey" hold it.
+# delimiter ends, as in "user, password = secret, secret". A quoted value, a
+# value with a digit such as abcToken123, and a plain word such as supersecret
+# in a config file or a command line, are still redacted. "key" is not a
+# credential word here, because passwords such as "monkey" hold it.
 regexes = [
     # camelCase with the credential word inside: registryPassword, githubToken.
-    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}[a-z][A-Za-z0-9]*(?:Passw|Pwd|Secret|Token|Cred)[A-Za-z0-9]*(?:\\+[nrt].*|[ \t]*[,;)}\]]?|[ \t]+(?:#|//|/\*|--).*)$''',
+    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}[a-z][A-Za-z]*(?:Passw|Pwd|Secret|Token|Cred)[A-Za-z]*(?:\\+[nrt].*|[ \t]*[,;)}\]]?|[ \t]+(?:#|//|/\*|--).*)$''',
     # camelCase that starts with the credential word: secretValue, tokenFile.
-    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}(?:passw|pwd|secret|token|cred)[a-z0-9]*[A-Z][A-Za-z0-9]*(?:\\+[nrt].*|[ \t]*[,;)}\]]?|[ \t]+(?:#|//|/\*|--).*)$''',
+    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}(?:passw|pwd|secret|token|cred)[a-z]*[A-Z][A-Za-z]*(?:\\+[nrt].*|[ \t]*[,;)}\]]?|[ \t]+(?:#|//|/\*|--).*)$''',
     # snake_case with the credential word as one part: db_password, client_secret.
-    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}[a-z0-9_]*(?:_(?:passw|pwd|secret|token|cred)|(?:passw|pwd|secret|token|cred)[a-z0-9]*_)[a-z0-9_]*(?:\\+[nrt].*|[ \t]*[,;)}\]]?|[ \t]+(?:#|//|/\*|--).*)$''',
+    '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}[a-z_]*(?:_(?:passw|pwd|secret|token|cred)|(?:passw|pwd|secret|token|cred)[a-z]*_)[a-z_]*(?:\\+[nrt].*|[ \t]*[,;)}\]]?|[ \t]+(?:#|//|/\*|--).*)$''',
     # The bare word secret or token, ended by a code delimiter.
     '''^(?i:passw(?:or)?d|psw|[_.-]pw)\b[ \t]{0,3}(?:=>|:=|=|:)[ \t]{0,5}(?:secret|token)[ \t]*[,;)}\]]$''',
 ]

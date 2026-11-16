@@ -427,6 +427,18 @@ func TestRulesConfigStillRedactsSecrets(t *testing.T) {
 			wantRule: genericPasswordRuleID,
 		},
 		{
+			name:     "camelCase value with a digit",
+			text:     "user: " + sampleEmail + "\npassword: abcToken" + "123\n",
+			secret:   "abcToken" + "123",
+			wantRule: genericPasswordRuleID,
+		},
+		{
+			name:     "snake_case value with a digit",
+			text:     "\tconn.Password = db_password" + "2024\n",
+			secret:   "db_password" + "2024",
+			wantRule: genericPasswordRuleID,
+		},
+		{
 			name:     "plain word as a password flag followed by another flag",
 			text:     "--username=env:REG_USER --password=" + "secret --image=example.com/app\n",
 			secret:   "=secret",
