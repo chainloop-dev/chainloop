@@ -25,6 +25,9 @@ import (
 	"github.com/google/uuid"
 )
 
+// currentTimestamp is the SQL default for timestamp columns that the database fills in.
+const currentTimestamp = "CURRENT_TIMESTAMP"
+
 // ReferrerReference is the edge schema of the references between referrers. A row says that
 // referrer_id references referred_by_id.
 type ReferrerReference struct {
@@ -41,7 +44,7 @@ func (ReferrerReference) Fields() []ent.Field {
 		// as the previous release during an upgrade, with the time the reference was stored.
 		field.Time("created_at").
 			Immutable().
-			Annotations(&entsql.Annotation{Default: "CURRENT_TIMESTAMP"}),
+			Annotations(&entsql.Annotation{Default: currentTimestamp}),
 	}
 }
 
