@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/chainloop-dev/chainloop/internal/redaction"
@@ -137,6 +138,8 @@ func eligible(path string) bool {
 //     next to its media type, {"base64":...,"type":"image/png"};
 //   - the apiCallId of a model call in a GitHub Copilot transcript, a long
 //     base64 id that generic-api-key matches because the key name holds "api".
+//     Only a value of that shape is opaque, so any other value under the key
+//     is still scanned.
 func isOpaque(path string, obj map[string]any, key string) bool {
 	if !strings.HasPrefix(path, "/data/raw_session/") {
 		return false
@@ -149,11 +152,16 @@ func isOpaque(path string, obj map[string]any, key string) bool {
 		mediaType, _ := obj["type"].(string)
 		return strings.Contains(mediaType, "/")
 	case "apiCallId":
-		return true
+		id, _ := obj[key].(string)
+		return copilotCallID.MatchString(id)
 	}
 
 	return false
 }
+
+// copilotCallID is the shape of the apiCallId that GitHub Copilot records: 500
+// characters of standard base64 in the transcripts seen so far.
+var copilotCallID = regexp.MustCompile(`^[A-Za-z0-9+/]{100,}={0,2}$`)
 
 // matchPath compares a slash-separated path against a pattern in which "*"
 // stands for exactly one segment.
