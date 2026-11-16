@@ -35,5 +35,5 @@ WHERE "b"."referrer_id" = "rr"."referrer_id" AND "b"."referred_by_id" = "rr"."re
   AND ("rr"."created_at" <> "b"."created_at" OR "rr"."organization_id" IS DISTINCT FROM "b"."organization_id");
 ANALYZE "referrer_references";
 
--- Create index "referrerreference_referrer_id_organization_id_created_at_referred_by_id" to table: "referrer_references"
-CREATE INDEX CONCURRENTLY "referrerreference_referrer_id_organization_id_created_at_referred_by_id" ON "referrer_references" ("referrer_id", "organization_id", "created_at" DESC, "referred_by_id" DESC);
+-- Create index "referrerreference_referrer_id_organization_id_created_at" to table: "referrer_references"
+CREATE INDEX CONCURRENTLY "referrerreference_referrer_id_organization_id_created_at" ON "referrer_references" ("referrer_id", "organization_id", "created_at" DESC, "referred_by_id" DESC);

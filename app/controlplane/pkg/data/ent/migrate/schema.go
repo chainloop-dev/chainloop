@@ -646,7 +646,7 @@ var (
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "referrerreference_referrer_id_organization_id_created_at_referred_by_id",
+				Name:    "referrerreference_referrer_id_organization_id_created_at",
 				Unique:  false,
 				Columns: []*schema.Column{ReferrerReferencesColumns[2], ReferrerReferencesColumns[1], ReferrerReferencesColumns[0], ReferrerReferencesColumns[3]},
 				Annotation: &entsql.IndexAnnotation{

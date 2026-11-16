@@ -85,7 +85,9 @@ func (ReferrerReference) Indexes() []ent.Index {
 	return []ent.Index{
 		// A page of the references of a referrer in one organization (or with no known
 		// organization), newest first, in index order.
+		// The generated name is longer than the 63 characters PostgreSQL keeps, so it is set here.
 		index.Fields("referrer_id", "organization_id", "created_at", "referred_by_id").
+			StorageKey("referrerreference_referrer_id_organization_id_created_at").
 			Annotations(entsql.DescColumns("created_at", "referred_by_id")),
 	}
 }
