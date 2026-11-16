@@ -26,6 +26,11 @@ func CreatedAt(v time.Time) predicate.ReferrerReference {
 	return predicate.ReferrerReference(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// OrganizationID applies equality check predicate on the "organization_id" field. It's identical to OrganizationIDEQ.
+func OrganizationID(v uuid.UUID) predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldEQ(FieldOrganizationID, v))
+}
+
 // ReferrerIDEQ applies the EQ predicate on the "referrer_id" field.
 func ReferrerIDEQ(v uuid.UUID) predicate.ReferrerReference {
 	return predicate.ReferrerReference(sql.FieldEQ(FieldReferrerID, v))
@@ -104,6 +109,56 @@ func CreatedAtLT(v time.Time) predicate.ReferrerReference {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.ReferrerReference {
 	return predicate.ReferrerReference(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// OrganizationIDEQ applies the EQ predicate on the "organization_id" field.
+func OrganizationIDEQ(v uuid.UUID) predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDNEQ applies the NEQ predicate on the "organization_id" field.
+func OrganizationIDNEQ(v uuid.UUID) predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldNEQ(FieldOrganizationID, v))
+}
+
+// OrganizationIDIn applies the In predicate on the "organization_id" field.
+func OrganizationIDIn(vs ...uuid.UUID) predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDNotIn applies the NotIn predicate on the "organization_id" field.
+func OrganizationIDNotIn(vs ...uuid.UUID) predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldNotIn(FieldOrganizationID, vs...))
+}
+
+// OrganizationIDGT applies the GT predicate on the "organization_id" field.
+func OrganizationIDGT(v uuid.UUID) predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldGT(FieldOrganizationID, v))
+}
+
+// OrganizationIDGTE applies the GTE predicate on the "organization_id" field.
+func OrganizationIDGTE(v uuid.UUID) predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldGTE(FieldOrganizationID, v))
+}
+
+// OrganizationIDLT applies the LT predicate on the "organization_id" field.
+func OrganizationIDLT(v uuid.UUID) predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldLT(FieldOrganizationID, v))
+}
+
+// OrganizationIDLTE applies the LTE predicate on the "organization_id" field.
+func OrganizationIDLTE(v uuid.UUID) predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldLTE(FieldOrganizationID, v))
+}
+
+// OrganizationIDIsNil applies the IsNil predicate on the "organization_id" field.
+func OrganizationIDIsNil() predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldIsNull(FieldOrganizationID))
+}
+
+// OrganizationIDNotNil applies the NotNil predicate on the "organization_id" field.
+func OrganizationIDNotNil() predicate.ReferrerReference {
+	return predicate.ReferrerReference(sql.FieldNotNull(FieldOrganizationID))
 }
 
 // HasReferrer applies the HasEdge predicate on the "referrer" edge.

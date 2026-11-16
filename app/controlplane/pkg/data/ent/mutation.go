@@ -14770,6 +14770,7 @@ type ReferrerReferenceMutation struct {
 	op                 Op
 	typ                string
 	created_at         *time.Time
+	organization_id    *uuid.UUID
 	clearedFields      map[string]struct{}
 	referrer           *uuid.UUID
 	clearedreferrer    bool
@@ -14875,6 +14876,38 @@ func (m *ReferrerReferenceMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (m *ReferrerReferenceMutation) SetOrganizationID(u uuid.UUID) {
+	m.organization_id = &u
+}
+
+// OrganizationID returns the value of the "organization_id" field in the mutation.
+func (m *ReferrerReferenceMutation) OrganizationID() (r uuid.UUID, exists bool) {
+	v := m.organization_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (m *ReferrerReferenceMutation) ClearOrganizationID() {
+	m.organization_id = nil
+	m.clearedFields[referrerreference.FieldOrganizationID] = struct{}{}
+}
+
+// OrganizationIDCleared returns if the "organization_id" field was cleared in this mutation.
+func (m *ReferrerReferenceMutation) OrganizationIDCleared() bool {
+	_, ok := m.clearedFields[referrerreference.FieldOrganizationID]
+	return ok
+}
+
+// ResetOrganizationID resets all changes to the "organization_id" field.
+func (m *ReferrerReferenceMutation) ResetOrganizationID() {
+	m.organization_id = nil
+	delete(m.clearedFields, referrerreference.FieldOrganizationID)
+}
+
 // ClearReferrer clears the "referrer" edge to the Referrer entity.
 func (m *ReferrerReferenceMutation) ClearReferrer() {
 	m.clearedreferrer = true
@@ -14963,7 +14996,7 @@ func (m *ReferrerReferenceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ReferrerReferenceMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.referrer != nil {
 		fields = append(fields, referrerreference.FieldReferrerID)
 	}
@@ -14972,6 +15005,9 @@ func (m *ReferrerReferenceMutation) Fields() []string {
 	}
 	if m.created_at != nil {
 		fields = append(fields, referrerreference.FieldCreatedAt)
+	}
+	if m.organization_id != nil {
+		fields = append(fields, referrerreference.FieldOrganizationID)
 	}
 	return fields
 }
@@ -14987,6 +15023,8 @@ func (m *ReferrerReferenceMutation) Field(name string) (ent.Value, bool) {
 		return m.ReferredByID()
 	case referrerreference.FieldCreatedAt:
 		return m.CreatedAt()
+	case referrerreference.FieldOrganizationID:
+		return m.OrganizationID()
 	}
 	return nil, false
 }
@@ -15024,6 +15062,13 @@ func (m *ReferrerReferenceMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetCreatedAt(v)
 		return nil
+	case referrerreference.FieldOrganizationID:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOrganizationID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ReferrerReference field %s", name)
 }
@@ -15053,7 +15098,11 @@ func (m *ReferrerReferenceMutation) AddField(name string, value ent.Value) error
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *ReferrerReferenceMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(referrerreference.FieldOrganizationID) {
+		fields = append(fields, referrerreference.FieldOrganizationID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -15066,6 +15115,11 @@ func (m *ReferrerReferenceMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *ReferrerReferenceMutation) ClearField(name string) error {
+	switch name {
+	case referrerreference.FieldOrganizationID:
+		m.ClearOrganizationID()
+		return nil
+	}
 	return fmt.Errorf("unknown ReferrerReference nullable field %s", name)
 }
 
@@ -15081,6 +15135,9 @@ func (m *ReferrerReferenceMutation) ResetField(name string) error {
 		return nil
 	case referrerreference.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case referrerreference.FieldOrganizationID:
+		m.ResetOrganizationID()
 		return nil
 	}
 	return fmt.Errorf("unknown ReferrerReference field %s", name)

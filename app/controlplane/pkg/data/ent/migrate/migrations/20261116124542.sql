@@ -5,3 +5,5 @@ ALTER TABLE "referrer_references" RENAME CONSTRAINT "referrer_references_referre
 ALTER TABLE "referrer_references" RENAME CONSTRAINT "referrer_references_referrer_id" TO "referrer_references_referrers_referrer";
 -- A non-volatile default does not rewrite the table, so the lock is held only briefly.
 ALTER TABLE "referrer_references" ADD COLUMN "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP;
+-- A nullable column with no default only changes the catalog.
+ALTER TABLE "referrer_references" ADD COLUMN "organization_id" uuid NULL;

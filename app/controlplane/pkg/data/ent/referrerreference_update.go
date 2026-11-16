@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrerreference"
+	"github.com/google/uuid"
 )
 
 // ReferrerReferenceUpdate is the builder for updating ReferrerReference entities.
@@ -25,6 +26,26 @@ type ReferrerReferenceUpdate struct {
 // Where appends a list predicates to the ReferrerReferenceUpdate builder.
 func (_u *ReferrerReferenceUpdate) Where(ps ...predicate.ReferrerReference) *ReferrerReferenceUpdate {
 	_u.mutation.Where(ps...)
+	return _u
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (_u *ReferrerReferenceUpdate) SetOrganizationID(v uuid.UUID) *ReferrerReferenceUpdate {
+	_u.mutation.SetOrganizationID(v)
+	return _u
+}
+
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (_u *ReferrerReferenceUpdate) SetNillableOrganizationID(v *uuid.UUID) *ReferrerReferenceUpdate {
+	if v != nil {
+		_u.SetOrganizationID(*v)
+	}
+	return _u
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (_u *ReferrerReferenceUpdate) ClearOrganizationID() *ReferrerReferenceUpdate {
+	_u.mutation.ClearOrganizationID()
 	return _u
 }
 
@@ -89,6 +110,12 @@ func (_u *ReferrerReferenceUpdate) sqlSave(ctx context.Context) (_node int, err 
 			}
 		}
 	}
+	if value, ok := _u.mutation.OrganizationID(); ok {
+		_spec.SetField(referrerreference.FieldOrganizationID, field.TypeUUID, value)
+	}
+	if _u.mutation.OrganizationIDCleared() {
+		_spec.ClearField(referrerreference.FieldOrganizationID, field.TypeUUID)
+	}
 	_spec.AddModifiers(_u.modifiers...)
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -109,6 +136,26 @@ type ReferrerReferenceUpdateOne struct {
 	hooks     []Hook
 	mutation  *ReferrerReferenceMutation
 	modifiers []func(*sql.UpdateBuilder)
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (_u *ReferrerReferenceUpdateOne) SetOrganizationID(v uuid.UUID) *ReferrerReferenceUpdateOne {
+	_u.mutation.SetOrganizationID(v)
+	return _u
+}
+
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (_u *ReferrerReferenceUpdateOne) SetNillableOrganizationID(v *uuid.UUID) *ReferrerReferenceUpdateOne {
+	if v != nil {
+		_u.SetOrganizationID(*v)
+	}
+	return _u
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (_u *ReferrerReferenceUpdateOne) ClearOrganizationID() *ReferrerReferenceUpdateOne {
+	_u.mutation.ClearOrganizationID()
+	return _u
 }
 
 // Mutation returns the ReferrerReferenceMutation object of the builder.
@@ -203,6 +250,12 @@ func (_u *ReferrerReferenceUpdateOne) sqlSave(ctx context.Context) (_node *Refer
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := _u.mutation.OrganizationID(); ok {
+		_spec.SetField(referrerreference.FieldOrganizationID, field.TypeUUID, value)
+	}
+	if _u.mutation.OrganizationIDCleared() {
+		_spec.ClearField(referrerreference.FieldOrganizationID, field.TypeUUID)
 	}
 	_spec.AddModifiers(_u.modifiers...)
 	_node = &ReferrerReference{config: _u.config}

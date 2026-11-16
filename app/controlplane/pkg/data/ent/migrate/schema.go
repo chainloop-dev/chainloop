@@ -621,6 +621,7 @@ var (
 	// ReferrerReferencesColumns holds the columns for the "referrer_references" table.
 	ReferrerReferencesColumns = []*schema.Column{
 		{Name: "created_at", Type: field.TypeTime, Default: "CURRENT_TIMESTAMP"},
+		{Name: "organization_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "referrer_id", Type: field.TypeUUID},
 		{Name: "referred_by_id", Type: field.TypeUUID},
 	}
@@ -628,31 +629,31 @@ var (
 	ReferrerReferencesTable = &schema.Table{
 		Name:       "referrer_references",
 		Columns:    ReferrerReferencesColumns,
-		PrimaryKey: []*schema.Column{ReferrerReferencesColumns[1], ReferrerReferencesColumns[2]},
+		PrimaryKey: []*schema.Column{ReferrerReferencesColumns[2], ReferrerReferencesColumns[3]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "referrer_references_referrers_referrer",
-				Columns:    []*schema.Column{ReferrerReferencesColumns[1]},
+				Columns:    []*schema.Column{ReferrerReferencesColumns[2]},
 				RefColumns: []*schema.Column{ReferrersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 			{
 				Symbol:     "referrer_references_referrers_referred_by",
-				Columns:    []*schema.Column{ReferrerReferencesColumns[2]},
+				Columns:    []*schema.Column{ReferrerReferencesColumns[3]},
 				RefColumns: []*schema.Column{ReferrersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "referrerreference_referrer_id_created_at_referred_by_id",
+				Name:    "referrerreference_referrer_id_organization_id_created_at_referred_by_id",
 				Unique:  false,
-				Columns: []*schema.Column{ReferrerReferencesColumns[1], ReferrerReferencesColumns[0], ReferrerReferencesColumns[2]},
+				Columns: []*schema.Column{ReferrerReferencesColumns[2], ReferrerReferencesColumns[1], ReferrerReferencesColumns[0], ReferrerReferencesColumns[3]},
 				Annotation: &entsql.IndexAnnotation{
 					DescColumns: map[string]bool{
 						ReferrerReferencesColumns[0].Name: true,
 
-						ReferrerReferencesColumns[2].Name: true,
+						ReferrerReferencesColumns[3].Name: true,
 					},
 				},
 			},

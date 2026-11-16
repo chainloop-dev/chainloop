@@ -23,6 +23,8 @@ type ReferrerReference struct {
 	ReferredByID uuid.UUID `json:"referred_by_id,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
+	// OrganizationID holds the value of the "organization_id" field.
+	OrganizationID *uuid.UUID `json:"organization_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ReferrerReferenceQuery when eager-loading is set.
 	Edges        ReferrerReferenceEdges `json:"edges"`
@@ -67,6 +69,8 @@ func (*ReferrerReference) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case referrerreference.FieldOrganizationID:
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		case referrerreference.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
 		case referrerreference.FieldReferrerID, referrerreference.FieldReferredByID:
@@ -103,6 +107,13 @@ func (_m *ReferrerReference) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				_m.CreatedAt = value.Time
+			}
+		case referrerreference.FieldOrganizationID:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field organization_id", values[i])
+			} else if value.Valid {
+				_m.OrganizationID = new(uuid.UUID)
+				*_m.OrganizationID = *value.S.(*uuid.UUID)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -157,6 +168,11 @@ func (_m *ReferrerReference) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(_m.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
+	if v := _m.OrganizationID; v != nil {
+		builder.WriteString("organization_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

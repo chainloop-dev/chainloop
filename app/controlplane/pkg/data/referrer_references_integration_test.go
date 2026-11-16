@@ -17,9 +17,13 @@ package data_test
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"os"
 	"slices"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
@@ -41,6 +45,7 @@ type referrerReferencesIntegrationTestSuite struct {
 	testhelpers.UseCasesEachTestSuite
 
 	orgA, orgB uuid.UUID
+	wfA, wfB   uuid.UUID
 	// the material every attestation references
 	materialDigest string
 	// the attestations in storage order, oldest first
@@ -80,29 +85,44 @@ func (s *referrerReferencesIntegrationTestSuite) SetupTest() {
 		return uuid.MustParse(org.ID), wf.ID
 	}
 
-	var wfA, wfB uuid.UUID
-	s.orgA, wfA = newWorkflow()
-	s.orgB, wfB = newWorkflow()
+	s.orgA, s.wfA = newWorkflow()
+	s.orgB, s.wfB = newWorkflow()
 	s.materialDigest = fmt.Sprintf("sha256:%064d", 0)
 
 	store := func(orgID, wfID uuid.UUID) {
 		digest := fmt.Sprintf("sha256:%064d", len(s.attestations)+1)
-		att := &biz.Referrer{Digest: digest, Kind: biz.ReferrerAttestationType, Downloadable: true}
-		material := &biz.Referrer{Digest: s.materialDigest, Kind: sharedMaterialKind, Downloadable: true}
-		// both directions, as the attestation extraction stores them
-		att.References = []*biz.Referrer{{Digest: material.Digest, Kind: material.Kind}}
-		material.References = []*biz.Referrer{{Digest: att.Digest, Kind: att.Kind}}
-		s.Require().NoError(s.Repos.Referrer.Save(ctx, []*biz.Referrer{att, material}, wfID))
+		s.saveAttestation(digest, wfID)
 		s.attestations = append(s.attestations, storedAttestation{digest: digest, org: orgID})
 	}
 
 	// Interleave the organizations so that the newest-first order mixes them.
 	for range 3 {
-		store(s.orgA, wfA)
-		store(s.orgB, wfB)
+		store(s.orgA, s.wfA)
+		store(s.orgB, s.wfB)
 	}
-	store(s.orgA, wfA)
-	store(s.orgA, wfA)
+	store(s.orgA, s.wfA)
+	store(s.orgA, s.wfA)
+}
+
+// saveAttestation stores an attestation of the shared material in the given workflow, as the
+// attestation extraction does, with any other attestations as materials.
+func (s *referrerReferencesIntegrationTestSuite) saveAttestation(digest string, wfID uuid.UUID, attestationMaterials ...string) {
+	s.T().Helper()
+	att := &biz.Referrer{Digest: digest, Kind: biz.ReferrerAttestationType, Downloadable: true}
+	material := &biz.Referrer{Digest: s.materialDigest, Kind: sharedMaterialKind, Downloadable: true}
+	// both directions, as the attestation extraction stores them
+	att.References = []*biz.Referrer{{Digest: material.Digest, Kind: material.Kind}}
+	material.References = []*biz.Referrer{{Digest: att.Digest, Kind: att.Kind}}
+	referrers := make([]*biz.Referrer, 0, 2+len(attestationMaterials))
+	referrers = append(referrers, att, material)
+	for _, d := range attestationMaterials {
+		att.References = append(att.References, &biz.Referrer{Digest: d, Kind: biz.ReferrerAttestationType})
+		referrers = append(referrers, &biz.Referrer{
+			Digest: d, Kind: biz.ReferrerAttestationType, Downloadable: true,
+			References: []*biz.Referrer{{Digest: att.Digest, Kind: att.Kind}},
+		})
+	}
+	s.Require().NoError(s.Repos.Referrer.Save(context.Background(), referrers, wfID))
 }
 
 func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoresTheReferencedCreationTime() {
@@ -123,6 +143,155 @@ func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoresTheReference
 		s.Equal(createdAt[ref.ReferredByID], ref.CreatedAt.UnixMicro(),
 			"reference %s -> %s", ref.ReferrerID, ref.ReferredByID)
 	}
+}
+
+func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoresTheWriterOrganization() {
+	ctx := context.Background()
+	client := s.Data.DB
+
+	orgOf := make(map[uuid.UUID]uuid.UUID)
+	for _, att := range s.attestations {
+		id := client.Referrer.Query().Where(referrer.Digest(att.digest)).OnlyIDX(ctx)
+		orgOf[id] = att.org
+	}
+
+	refs := client.ReferrerReference.Query().AllX(ctx)
+	s.Require().Len(refs, 2*len(s.attestations))
+	for _, ref := range refs {
+		// one end of each reference is the attestation that stored it
+		org, ok := orgOf[ref.ReferrerID]
+		if !ok {
+			org = orgOf[ref.ReferredByID]
+		}
+		s.Require().NotNil(ref.OrganizationID, "reference %s -> %s", ref.ReferrerID, ref.ReferredByID)
+		s.Equal(org, *ref.OrganizationID, "reference %s -> %s", ref.ReferrerID, ref.ReferredByID)
+	}
+}
+
+// The same attestation can be stored again in a run of another organization. Its references then
+// belong to both organizations: they lose their organization and are read in both.
+func (s *referrerReferencesIntegrationTestSuite) TestReferenceStoredFromTwoOrganizations() {
+	ctx := context.Background()
+	client := s.Data.DB
+
+	first := s.attestations[0]
+	s.Require().Equal(s.orgA, first.org)
+	s.saveAttestation(first.digest, s.wfB)
+
+	firstID := client.Referrer.Query().Where(referrer.Digest(first.digest)).OnlyIDX(ctx)
+	for _, ref := range client.ReferrerReference.Query().AllX(ctx) {
+		if ref.ReferrerID == firstID || ref.ReferredByID == firstID {
+			s.Nil(ref.OrganizationID, "reference %s -> %s", ref.ReferrerID, ref.ReferredByID)
+		} else {
+			s.NotNil(ref.OrganizationID, "reference %s -> %s", ref.ReferrerID, ref.ReferredByID)
+		}
+	}
+
+	// Storing it again in the same organization leaves the references as they are
+	s.saveAttestation(s.attestations[1].digest, s.wfB)
+	secondID := client.Referrer.Query().Where(referrer.Digest(s.attestations[1].digest)).OnlyIDX(ctx)
+	for _, ref := range client.ReferrerReference.Query().AllX(ctx) {
+		if ref.ReferrerID == secondID || ref.ReferredByID == secondID {
+			s.Require().NotNil(ref.OrganizationID)
+			s.Equal(s.orgB, *ref.OrganizationID)
+		}
+	}
+
+	// The first attestation is now read in both organizations, in its place in the order
+	got, _ := s.collectPages([]uuid.UUID{s.orgB}, 2)
+	s.Equal(append(s.newestFirst(s.orgB), first.digest), got)
+	got, _ = s.collectPages([]uuid.UUID{s.orgA}, 2)
+	s.Equal(s.newestFirst(s.orgA), got)
+	got, _ = s.collectPages([]uuid.UUID{s.orgA, s.orgB}, 3)
+	s.Equal(s.newestFirst(s.orgA, s.orgB), got)
+}
+
+// An attestation can be a material of an attestation in another organization. That links it to
+// the other organization too, but the references that its own organization stored stay there:
+// the other organization reads it only through the references that its own attestation stored.
+func (s *referrerReferencesIntegrationTestSuite) TestAttestationMaterialFromAnotherOrganization() {
+	fromA := s.attestations[0]
+	s.Require().Equal(s.orgA, fromA.org)
+
+	inB := fmt.Sprintf("sha256:%064d", 100)
+	s.saveAttestation(inB, s.wfB, fromA.digest)
+
+	// Through the shared material, organization B reads its own attestations only
+	got, _ := s.collectPages([]uuid.UUID{s.orgB}, 20)
+	s.Equal(append([]string{inB}, s.newestFirst(s.orgB)...), got)
+
+	// Through its own attestation, organization B reads the attestation of organization A
+	got, _ = s.collectPagesFrom(inB, []uuid.UUID{s.orgB}, 20)
+	s.ElementsMatch([]string{s.materialDigest, fromA.digest}, got)
+}
+
+// The migration fills in the organization of the existing references from the organizations both
+// ends belong to, since nothing recorded which attestation stored them. It must give what storing
+// them gives, or NULL where it cannot tell: NULL is read in every organization, so it never hides
+// a reference.
+func (s *referrerReferencesIntegrationTestSuite) TestBackfillMatchesTheStoredOrganization() {
+	ctx := context.Background()
+	client := s.Data.DB
+
+	// Add the cases that link a referrer to more than one organization
+	repushed := s.attestations[0]
+	s.saveAttestation(repushed.digest, s.wfB)
+	fromA := s.attestations[2]
+	s.Require().Equal(s.orgA, fromA.org)
+	s.saveAttestation(fmt.Sprintf("sha256:%064d", 100), s.wfB, fromA.digest)
+
+	type key struct{ from, to uuid.UUID }
+	type value struct {
+		org       *uuid.UUID
+		createdAt int64
+	}
+	snapshot := func() map[key]value {
+		out := make(map[key]value)
+		for _, ref := range client.ReferrerReference.Query().AllX(ctx) {
+			out[key{ref.ReferrerID, ref.ReferredByID}] = value{ref.OrganizationID, ref.CreatedAt.UnixMicro()}
+		}
+		return out
+	}
+	stored := snapshot()
+
+	db, err := sql.Open("pgx", s.DB.ConnectionString(s.T()))
+	s.Require().NoError(err)
+	defer db.Close()
+	_, err = db.ExecContext(ctx, `UPDATE referrer_references SET organization_id = NULL, created_at = $1`, time.Now())
+	s.Require().NoError(err)
+	_, err = db.ExecContext(ctx, s.backfillStatement())
+	s.Require().NoError(err)
+	backfilled := snapshot()
+
+	materialID := client.Referrer.Query().Where(referrer.Digest(s.materialDigest)).OnlyIDX(ctx)
+	fromAID := client.Referrer.Query().Where(referrer.Digest(fromA.digest)).OnlyIDX(ctx)
+	s.Require().Len(backfilled, len(stored))
+	for k, want := range stored {
+		got := backfilled[k]
+		s.Equal(want.createdAt, got.createdAt, "reference %s -> %s", k.from, k.to)
+		if (k == key{materialID, fromAID}) || (k == key{fromAID, materialID}) {
+			// Organization A stored these, but both ends are now in both organizations, so the
+			// migration cannot tell which one did.
+			s.Require().NotNil(want.org)
+			s.Nil(got.org, "reference %s -> %s", k.from, k.to)
+			continue
+		}
+		s.Equal(want.org, got.org, "reference %s -> %s", k.from, k.to)
+	}
+}
+
+// backfillStatement returns the UPDATE of the migration that fills in the reference columns.
+func (s *referrerReferencesIntegrationTestSuite) backfillStatement() string {
+	s.T().Helper()
+	migration, err := os.ReadFile("ent/migrate/migrations/20261116124543.sql")
+	s.Require().NoError(err)
+	for _, statement := range strings.Split(string(migration), ";\n") {
+		if strings.Contains(statement, "UPDATE \"referrer_references\"") {
+			return statement
+		}
+	}
+	s.Require().Fail("the migration has no backfill statement")
+	return ""
 }
 
 func (s *referrerReferencesIntegrationTestSuite) TestPagesNewestFirst() {
@@ -169,6 +338,11 @@ func (s *referrerReferencesIntegrationTestSuite) TestReferenceWithoutExplicitCre
 // collectPages follows the cursor from the shared material and returns the attestation digests
 // in the order they were returned, and the number of pages read.
 func (s *referrerReferencesIntegrationTestSuite) collectPages(orgs []uuid.UUID, limit int) ([]string, int) {
+	return s.collectPagesFrom(s.materialDigest, orgs, limit)
+}
+
+// collectPagesFrom follows the cursor from the given root.
+func (s *referrerReferencesIntegrationTestSuite) collectPagesFrom(root string, orgs []uuid.UUID, limit int) ([]string, int) {
 	s.T().Helper()
 	ctx := context.Background()
 
@@ -177,7 +351,7 @@ func (s *referrerReferencesIntegrationTestSuite) collectPages(orgs []uuid.UUID, 
 	for pages < 20 {
 		p, err := pagination.NewCursor(cursor, limit)
 		s.Require().NoError(err)
-		got, next, err := s.Repos.Referrer.GetFromRoot(ctx, s.materialDigest, orgs, p)
+		got, next, err := s.Repos.Referrer.GetFromRoot(ctx, root, orgs, p)
 		s.Require().NoError(err)
 		s.Require().NotNil(got)
 		pages++

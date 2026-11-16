@@ -45,6 +45,15 @@ func (ReferrerReference) Fields() []ent.Field {
 		field.Time("created_at").
 			Immutable().
 			Annotations(&entsql.Annotation{Default: currentTimestamp}),
+		// The organization of the attestation whose ingestion stored the reference, so that a
+		// caller can page over the references stored in its own organizations only. NULL means
+		// that the organization is not known, or that the reference was stored by attestations in
+		// more than one organization: such a reference is read in every organization, subject to
+		// the visibility check. A value is only ever replaced with NULL, never with another
+		// organization.
+		field.UUID("organization_id", uuid.UUID{}).
+			Optional().
+			Nillable(),
 	}
 }
 
@@ -74,8 +83,9 @@ func (ReferrerReference) Edges() []ent.Edge {
 
 func (ReferrerReference) Indexes() []ent.Index {
 	return []ent.Index{
-		// A page of the references of a referrer, newest first, in index order.
-		index.Fields("referrer_id", "created_at", "referred_by_id").
+		// A page of the references of a referrer in one organization (or with no known
+		// organization), newest first, in index order.
+		index.Fields("referrer_id", "organization_id", "created_at", "referred_by_id").
 			Annotations(entsql.DescColumns("created_at", "referred_by_id")),
 	}
 }

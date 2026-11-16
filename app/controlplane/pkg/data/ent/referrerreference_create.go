@@ -42,6 +42,20 @@ func (_c *ReferrerReferenceCreate) SetCreatedAt(v time.Time) *ReferrerReferenceC
 	return _c
 }
 
+// SetOrganizationID sets the "organization_id" field.
+func (_c *ReferrerReferenceCreate) SetOrganizationID(v uuid.UUID) *ReferrerReferenceCreate {
+	_c.mutation.SetOrganizationID(v)
+	return _c
+}
+
+// SetNillableOrganizationID sets the "organization_id" field if the given value is not nil.
+func (_c *ReferrerReferenceCreate) SetNillableOrganizationID(v *uuid.UUID) *ReferrerReferenceCreate {
+	if v != nil {
+		_c.SetOrganizationID(*v)
+	}
+	return _c
+}
+
 // SetReferrer sets the "referrer" edge to the Referrer entity.
 func (_c *ReferrerReferenceCreate) SetReferrer(v *Referrer) *ReferrerReferenceCreate {
 	return _c.SetReferrerID(v.ID)
@@ -127,6 +141,10 @@ func (_c *ReferrerReferenceCreate) createSpec() (*ReferrerReference, *sqlgraph.C
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(referrerreference.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := _c.mutation.OrganizationID(); ok {
+		_spec.SetField(referrerreference.FieldOrganizationID, field.TypeUUID, value)
+		_node.OrganizationID = &value
 	}
 	if nodes := _c.mutation.ReferrerIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -214,6 +232,24 @@ type (
 	}
 )
 
+// SetOrganizationID sets the "organization_id" field.
+func (u *ReferrerReferenceUpsert) SetOrganizationID(v uuid.UUID) *ReferrerReferenceUpsert {
+	u.Set(referrerreference.FieldOrganizationID, v)
+	return u
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *ReferrerReferenceUpsert) UpdateOrganizationID() *ReferrerReferenceUpsert {
+	u.SetExcluded(referrerreference.FieldOrganizationID)
+	return u
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (u *ReferrerReferenceUpsert) ClearOrganizationID() *ReferrerReferenceUpsert {
+	u.SetNull(referrerreference.FieldOrganizationID)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -263,6 +299,27 @@ func (u *ReferrerReferenceUpsertOne) Update(set func(*ReferrerReferenceUpsert)) 
 		set(&ReferrerReferenceUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *ReferrerReferenceUpsertOne) SetOrganizationID(v uuid.UUID) *ReferrerReferenceUpsertOne {
+	return u.Update(func(s *ReferrerReferenceUpsert) {
+		s.SetOrganizationID(v)
+	})
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *ReferrerReferenceUpsertOne) UpdateOrganizationID() *ReferrerReferenceUpsertOne {
+	return u.Update(func(s *ReferrerReferenceUpsert) {
+		s.UpdateOrganizationID()
+	})
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (u *ReferrerReferenceUpsertOne) ClearOrganizationID() *ReferrerReferenceUpsertOne {
+	return u.Update(func(s *ReferrerReferenceUpsert) {
+		s.ClearOrganizationID()
+	})
 }
 
 // Exec executes the query.
@@ -456,6 +513,27 @@ func (u *ReferrerReferenceUpsertBulk) Update(set func(*ReferrerReferenceUpsert))
 		set(&ReferrerReferenceUpsert{UpdateSet: update})
 	}))
 	return u
+}
+
+// SetOrganizationID sets the "organization_id" field.
+func (u *ReferrerReferenceUpsertBulk) SetOrganizationID(v uuid.UUID) *ReferrerReferenceUpsertBulk {
+	return u.Update(func(s *ReferrerReferenceUpsert) {
+		s.SetOrganizationID(v)
+	})
+}
+
+// UpdateOrganizationID sets the "organization_id" field to the value that was provided on create.
+func (u *ReferrerReferenceUpsertBulk) UpdateOrganizationID() *ReferrerReferenceUpsertBulk {
+	return u.Update(func(s *ReferrerReferenceUpsert) {
+		s.UpdateOrganizationID()
+	})
+}
+
+// ClearOrganizationID clears the value of the "organization_id" field.
+func (u *ReferrerReferenceUpsertBulk) ClearOrganizationID() *ReferrerReferenceUpsertBulk {
+	return u.Update(func(s *ReferrerReferenceUpsert) {
+		s.ClearOrganizationID()
+	})
 }
 
 // Exec executes the query.

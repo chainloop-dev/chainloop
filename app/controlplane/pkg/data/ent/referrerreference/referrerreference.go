@@ -16,6 +16,8 @@ const (
 	FieldReferredByID = "referred_by_id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldOrganizationID holds the string denoting the organization_id field in the database.
+	FieldOrganizationID = "organization_id"
 	// EdgeReferrer holds the string denoting the referrer edge name in mutations.
 	EdgeReferrer = "referrer"
 	// EdgeReferredBy holds the string denoting the referred_by edge name in mutations.
@@ -45,6 +47,7 @@ var Columns = []string{
 	FieldReferrerID,
 	FieldReferredByID,
 	FieldCreatedAt,
+	FieldOrganizationID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -73,6 +76,11 @@ func ByReferredByID(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByOrganizationID orders the results by the organization_id field.
+func ByOrganizationID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrganizationID, opts...).ToFunc()
 }
 
 // ByReferrerField orders the results by referrer field.
