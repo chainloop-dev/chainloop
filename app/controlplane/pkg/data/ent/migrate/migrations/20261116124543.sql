@@ -7,4 +7,4 @@ UPDATE "referrer_references" AS "rr" SET "created_at" = "r"."created_at" FROM "r
 ANALYZE "referrer_references";
 
 -- Create index "referrerreference_referrer_id_created_at_referred_by_id" to table: "referrer_references"
-CREATE INDEX CONCURRENTLY IF NOT EXISTS "referrerreference_referrer_id_created_at_referred_by_id" ON "referrer_references" ("referrer_id", "created_at" DESC, "referred_by_id" DESC);
+CREATE INDEX CONCURRENTLY "referrerreference_referrer_id_created_at_referred_by_id" ON "referrer_references" ("referrer_id", "created_at" DESC, "referred_by_id" DESC);
