@@ -16,6 +16,7 @@
 package action
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,6 +29,43 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestTraceRunRefusesUserLevelRoot covers both ways `trace run` can end up
+// with the home directory as its root: run outside a git repository with the
+// working directory at $HOME, and a git repository rooted at $HOME. Either
+// way the agent hooks would land in the user-level configuration and load in
+// every session, so the run must fail before anything is installed.
+func TestTraceRunRefusesUserLevelRoot(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+
+	run := func(t *testing.T, store *state.Store) {
+		t.Helper()
+		err := TraceRun(context.Background(), zerolog.Nop(), TraceRunOpts{
+			Store:     store,
+			RepoRoot:  home,
+			Providers: []string{"claude-code"},
+			Command:   []string{"true"},
+			Local:     true,
+		})
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "user-level directory")
+	}
+
+	t.Run("no git repository, working directory at home", func(t *testing.T) {
+		run(t, state.NewOutOfTreeStore(filepath.Join(t.TempDir(), "state")))
+	})
+
+	t.Run("git repository rooted at home", func(t *testing.T) {
+		run(t, state.NewGitStore(filepath.Join(home, ".git")))
+	})
+
+	// Nothing was written to the home directory in either case.
+	_, err := os.Stat(filepath.Join(home, ".claude", "settings.json"))
+	assert.True(t, os.IsNotExist(err), "no agent hooks may be installed under home")
+	_, err = os.Stat(filepath.Join(home, ".git", "chainloop-trace"))
+	assert.True(t, os.IsNotExist(err), "no trace state may be created under home")
+}
 
 func TestTraceRunOwnsState(t *testing.T) {
 	t.Run("clean repo", func(t *testing.T) {
