@@ -42,6 +42,8 @@ type Tx struct {
 	ProjectVersion *ProjectVersionClient
 	// Referrer is the client for interacting with the Referrer builders.
 	Referrer *ReferrerClient
+	// ReferrerReference is the client for interacting with the ReferrerReference builders.
+	ReferrerReference *ReferrerReferenceClient
 	// RobotAccount is the client for interacting with the RobotAccount builders.
 	RobotAccount *RobotAccountClient
 	// User is the client for interacting with the User builders.
@@ -200,6 +202,7 @@ func (tx *Tx) init() {
 	tx.Project = NewProjectClient(tx.config)
 	tx.ProjectVersion = NewProjectVersionClient(tx.config)
 	tx.Referrer = NewReferrerClient(tx.config)
+	tx.ReferrerReference = NewReferrerReferenceClient(tx.config)
 	tx.RobotAccount = NewRobotAccountClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 	tx.Workflow = NewWorkflowClient(tx.config)

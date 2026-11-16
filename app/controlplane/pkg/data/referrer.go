@@ -27,6 +27,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/project"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/projectversion"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrerreference"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflowrun"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
@@ -52,7 +53,8 @@ func NewReferrerRepo(data *Data, wfRepo biz.WorkflowRepo, logger log.Logger) biz
 	}
 }
 
-type storedReferrerMap map[string]uuid.UUID
+// storedReferrerMap holds the ID and creation time of each stored referrer, by MapID.
+type storedReferrerMap map[string]*ent.Referrer
 
 func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, workflowID uuid.UUID) (err error) {
 	ctx, span := otelx.Start(ctx, referrerRepoTracer, "ReferrerRepo.Save")
@@ -81,39 +83,45 @@ func (r *ReferrerRepo) Save(ctx context.Context, referrers []*biz.Referrer, work
 			return fmt.Errorf("failed to create referrer: %w", err)
 		}
 
-		storedRef, err := r.data.DB.Referrer.Query().Select(referrer.FieldID).Where(referrer.ID(storedID)).First(ctx)
+		storedRef, err := r.data.DB.Referrer.Query().Select(referrer.FieldID, referrer.FieldCreatedAt).Where(referrer.ID(storedID)).First(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to load referrer: %w", err)
-		} else if storedRef == nil {
 			return fmt.Errorf("failed to load referrer: %w", err)
 		}
 
 		// Store it in the map
-		storedMap[ref.MapID()] = storedRef.ID
+		storedMap[ref.MapID()] = storedRef
 	}
 
 	// 2 - define the relationship between referrers
 	for _, parentRef := range referrers {
 		// This is the current item stored in DB
-		storedReferrer := storedMap[parentRef.MapID()]
+		parent := storedMap[parentRef.MapID()]
 		// Iterate on the items it refers to (references)
-		var references []uuid.UUID
+		references := make([]*ent.ReferrerReferenceCreate, 0, len(parentRef.References))
 		for _, ref := range parentRef.References {
 			// and find it in the DB
-			storedReference, ok := storedMap[ref.MapID()]
+			target, ok := storedMap[ref.MapID()]
 			if !ok {
 				return fmt.Errorf("referrer %v not found", ref)
 			}
 
-			references = append(references, storedReference)
+			// The reference carries the creation time of the referrer it points to, so that the
+			// references of a referrer can be paged newest first from an index.
+			references = append(references, r.data.DB.ReferrerReference.Create().
+				SetReferrerID(parent.ID).
+				SetReferredByID(target.ID).
+				SetCreatedAt(target.CreatedAt))
 		}
 
 		if len(references) == 0 {
 			continue
 		}
 
-		// Create the relationship
-		if err := r.data.DB.Referrer.UpdateOneID(storedReferrer).AddReferenceIDs(references...).Exec(ctx); err != nil {
+		// Create the relationship. A reference that exists already is left as it is.
+		if err := r.data.DB.ReferrerReference.CreateBulk(references...).
+			OnConflictColumns(referrerreference.FieldReferrerID, referrerreference.FieldReferredByID).
+			DoNothing().
+			Exec(ctx); err != nil {
 			return fmt.Errorf("failed to create referrer relationship: %w", err)
 		}
 	}
@@ -428,48 +436,50 @@ func (r *ReferrerRepo) doGet(ctx context.Context, root *ent.Referrer, allowedOrg
 		p = &pagination.CursorOptions{Limit: pagination.DefaultCursorLimit}
 	}
 
-	// Sort references by creation date and ID in descending order for deterministic pagination
-	q := root.QueryReferences().Where(predicateReferrer...).WithWorkflows().
-		// Ent adds a DISTINCT to any traversal by default, because an edge query can multiply
-		// rows. This one cannot: the join table is keyed on (referrer_id, referred_by_id), so a
-		// fixed root matches each referrer at most once, and the selected columns include the
-		// primary key, so there is nothing to collapse. Every predicate above is a semi-join
-		// (EXISTS, IN) or a scalar comparison.
-		//
-		// Any predicate added here must stay join-free. A join would return a reference twice,
-		// which consumes a slot in the page and leaves the cursor on the wrong row, so references
-		// are skipped rather than repeated. sql.OrPredicates applies each predicate to this same
-		// selector, so a joining predicate inside an Or leaks its join here while its WHERE is
-		// OR-ed away.
-		Unique(false).
-		Order(referrer.ByCreatedAt(sql.OrderDesc())).
-		Order(referrer.ByID(sql.OrderDesc())).
+	// Page over the reference rows of the root, newest first. The rows carry the creation time of
+	// the referrer they point to, and the index on (referrer_id, created_at DESC, referred_by_id
+	// DESC) returns them in page order, so the database stops after the page instead of sorting
+	// every reference of the root. A material shared by many attestations has tens of thousands.
+	// The referenced referrer is checked against the predicates row by row, in that order:
+	// HasReferredByWith renders a correlated EXISTS, which keeps the query on that index and
+	// returns each reference once.
+	q := r.data.DB.ReferrerReference.Query().
+		Where(
+			referrerreference.ReferrerID(root.ID),
+			referrerreference.HasReferredByWith(predicateReferrer...),
+		).
+		WithReferredBy(func(q *ent.ReferrerQuery) { q.WithWorkflows() }).
+		Order(
+			referrerreference.ByCreatedAt(sql.OrderDesc()),
+			referrerreference.ByReferredByID(sql.OrderDesc()),
+		).
 		Limit(p.Limit + 1) // fetch limit+1 to detect next page
 
 	if p.Cursor != nil {
 		q = q.Where(func(s *sql.Selector) {
 			s.Where(sql.CompositeLT(
-				[]string{s.C(referrer.FieldCreatedAt), s.C(referrer.FieldID)},
+				[]string{s.C(referrerreference.FieldCreatedAt), s.C(referrerreference.FieldReferredByID)},
 				p.Cursor.Timestamp, p.Cursor.ID,
 			))
 		})
 	}
 
-	refs, err := q.All(ctx)
+	rows, err := q.All(ctx)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to query references: %w", err)
 	}
 
 	// Determine if there is a next page and encode the cursor
 	var nextCursor string
-	if len(refs) > p.Limit {
-		lastVisible := refs[p.Limit-1]
-		nextCursor = pagination.EncodeCursor(lastVisible.CreatedAt, lastVisible.ID)
-		refs = refs[:p.Limit]
+	if len(rows) > p.Limit {
+		lastVisible := rows[p.Limit-1]
+		nextCursor = pagination.EncodeCursor(lastVisible.CreatedAt, lastVisible.ReferredByID)
+		rows = rows[:p.Limit]
 	}
 
 	// Add the references to the result
-	for _, reference := range refs {
+	for _, row := range rows {
+		reference := row.Edges.ReferredBy
 		// Call recursively the function — pagination only applies to the first level
 		ref, _, err := r.doGet(ctx, reference, allowedOrgs, visibleProjectsMap, projectPred, nil, level+1)
 		if err != nil && !biz.IsErrUnauthorized(err) {

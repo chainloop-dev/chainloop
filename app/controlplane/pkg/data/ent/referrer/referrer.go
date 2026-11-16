@@ -33,6 +33,10 @@ const (
 	EdgeReferences = "references"
 	// EdgeWorkflows holds the string denoting the workflows edge name in mutations.
 	EdgeWorkflows = "workflows"
+	// EdgeReferredByEdges holds the string denoting the referred_by_edges edge name in mutations.
+	EdgeReferredByEdges = "referred_by_edges"
+	// EdgeReferenceEdges holds the string denoting the reference_edges edge name in mutations.
+	EdgeReferenceEdges = "reference_edges"
 	// Table holds the table name of the referrer in the database.
 	Table = "referrers"
 	// ReferredByTable is the table that holds the referred_by relation/edge. The primary key declared below.
@@ -44,6 +48,20 @@ const (
 	// WorkflowsInverseTable is the table name for the Workflow entity.
 	// It exists in this package in order to avoid circular dependency with the "workflow" package.
 	WorkflowsInverseTable = "workflows"
+	// ReferredByEdgesTable is the table that holds the referred_by_edges relation/edge.
+	ReferredByEdgesTable = "referrer_references"
+	// ReferredByEdgesInverseTable is the table name for the ReferrerReference entity.
+	// It exists in this package in order to avoid circular dependency with the "referrerreference" package.
+	ReferredByEdgesInverseTable = "referrer_references"
+	// ReferredByEdgesColumn is the table column denoting the referred_by_edges relation/edge.
+	ReferredByEdgesColumn = "referred_by_id"
+	// ReferenceEdgesTable is the table that holds the reference_edges relation/edge.
+	ReferenceEdgesTable = "referrer_references"
+	// ReferenceEdgesInverseTable is the table name for the ReferrerReference entity.
+	// It exists in this package in order to avoid circular dependency with the "referrerreference" package.
+	ReferenceEdgesInverseTable = "referrer_references"
+	// ReferenceEdgesColumn is the table column denoting the reference_edges relation/edge.
+	ReferenceEdgesColumn = "referrer_id"
 )
 
 // Columns holds all SQL columns for referrer fields.
@@ -155,6 +173,34 @@ func ByWorkflows(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newWorkflowsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByReferredByEdgesCount orders the results by referred_by_edges count.
+func ByReferredByEdgesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newReferredByEdgesStep(), opts...)
+	}
+}
+
+// ByReferredByEdges orders the results by referred_by_edges terms.
+func ByReferredByEdges(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newReferredByEdgesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByReferenceEdgesCount orders the results by reference_edges count.
+func ByReferenceEdgesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newReferenceEdgesStep(), opts...)
+	}
+}
+
+// ByReferenceEdges orders the results by reference_edges terms.
+func ByReferenceEdges(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newReferenceEdgesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newReferredByStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -174,5 +220,19 @@ func newWorkflowsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(WorkflowsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2M, false, WorkflowsTable, WorkflowsPrimaryKey...),
+	)
+}
+func newReferredByEdgesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ReferredByEdgesInverseTable, ReferredByEdgesColumn),
+		sqlgraph.Edge(sqlgraph.O2M, true, ReferredByEdgesTable, ReferredByEdgesColumn),
+	)
+}
+func newReferenceEdgesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ReferenceEdgesInverseTable, ReferenceEdgesColumn),
+		sqlgraph.Edge(sqlgraph.O2M, true, ReferenceEdgesTable, ReferenceEdgesColumn),
 	)
 }

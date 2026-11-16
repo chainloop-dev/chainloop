@@ -206,8 +206,8 @@ func (s *referrerVisibilityIntegrationTestSuite) TestMatchesTheGeneratedPredicat
 		s.NotEmpty(handWritten, "the fixture must exercise this, not pass by returning nothing")
 	})
 
-	// doGet applies the filter to root.QueryReferences(), a different query shape where the
-	// selector is already joined through the references table.
+	// doGet's project membership check applies the filter to root.QueryReferences(), a different
+	// query shape where the selector is already joined through the references table.
 	s.Run("behaves the same when traversing references", func() {
 		orgs := []uuid.UUID{s.orgAllowed, s.orgOther}
 		root := s.Data.DB.Referrer.GetX(ctx, s.liveInAllowed)

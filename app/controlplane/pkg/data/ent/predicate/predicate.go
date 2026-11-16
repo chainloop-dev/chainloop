@@ -51,6 +51,9 @@ type ProjectVersion func(*sql.Selector)
 // Referrer is the predicate function for referrer builders.
 type Referrer func(*sql.Selector)
 
+// ReferrerReference is the predicate function for referrerreference builders.
+type ReferrerReference func(*sql.Selector)
+
 // RobotAccount is the predicate function for robotaccount builders.
 type RobotAccount func(*sql.Selector)
 

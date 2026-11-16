@@ -15,6 +15,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/predicate"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrer"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/referrerreference"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/workflow"
 	"github.com/google/uuid"
 )
@@ -22,14 +23,16 @@ import (
 // ReferrerQuery is the builder for querying Referrer entities.
 type ReferrerQuery struct {
 	config
-	ctx            *QueryContext
-	order          []referrer.OrderOption
-	inters         []Interceptor
-	predicates     []predicate.Referrer
-	withReferredBy *ReferrerQuery
-	withReferences *ReferrerQuery
-	withWorkflows  *WorkflowQuery
-	modifiers      []func(*sql.Selector)
+	ctx                 *QueryContext
+	order               []referrer.OrderOption
+	inters              []Interceptor
+	predicates          []predicate.Referrer
+	withReferredBy      *ReferrerQuery
+	withReferences      *ReferrerQuery
+	withWorkflows       *WorkflowQuery
+	withReferredByEdges *ReferrerReferenceQuery
+	withReferenceEdges  *ReferrerReferenceQuery
+	modifiers           []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -125,6 +128,50 @@ func (_q *ReferrerQuery) QueryWorkflows() *WorkflowQuery {
 			sqlgraph.From(referrer.Table, referrer.FieldID, selector),
 			sqlgraph.To(workflow.Table, workflow.FieldID),
 			sqlgraph.Edge(sqlgraph.M2M, false, referrer.WorkflowsTable, referrer.WorkflowsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReferredByEdges chains the current query on the "referred_by_edges" edge.
+func (_q *ReferrerQuery) QueryReferredByEdges() *ReferrerReferenceQuery {
+	query := (&ReferrerReferenceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(referrer.Table, referrer.FieldID, selector),
+			sqlgraph.To(referrerreference.Table, referrerreference.ReferredByColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, referrer.ReferredByEdgesTable, referrer.ReferredByEdgesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReferenceEdges chains the current query on the "reference_edges" edge.
+func (_q *ReferrerQuery) QueryReferenceEdges() *ReferrerReferenceQuery {
+	query := (&ReferrerReferenceClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(referrer.Table, referrer.FieldID, selector),
+			sqlgraph.To(referrerreference.Table, referrerreference.ReferrerColumn),
+			sqlgraph.Edge(sqlgraph.O2M, true, referrer.ReferenceEdgesTable, referrer.ReferenceEdgesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -319,14 +366,16 @@ func (_q *ReferrerQuery) Clone() *ReferrerQuery {
 		return nil
 	}
 	return &ReferrerQuery{
-		config:         _q.config,
-		ctx:            _q.ctx.Clone(),
-		order:          append([]referrer.OrderOption{}, _q.order...),
-		inters:         append([]Interceptor{}, _q.inters...),
-		predicates:     append([]predicate.Referrer{}, _q.predicates...),
-		withReferredBy: _q.withReferredBy.Clone(),
-		withReferences: _q.withReferences.Clone(),
-		withWorkflows:  _q.withWorkflows.Clone(),
+		config:              _q.config,
+		ctx:                 _q.ctx.Clone(),
+		order:               append([]referrer.OrderOption{}, _q.order...),
+		inters:              append([]Interceptor{}, _q.inters...),
+		predicates:          append([]predicate.Referrer{}, _q.predicates...),
+		withReferredBy:      _q.withReferredBy.Clone(),
+		withReferences:      _q.withReferences.Clone(),
+		withWorkflows:       _q.withWorkflows.Clone(),
+		withReferredByEdges: _q.withReferredByEdges.Clone(),
+		withReferenceEdges:  _q.withReferenceEdges.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -364,6 +413,28 @@ func (_q *ReferrerQuery) WithWorkflows(opts ...func(*WorkflowQuery)) *ReferrerQu
 		opt(query)
 	}
 	_q.withWorkflows = query
+	return _q
+}
+
+// WithReferredByEdges tells the query-builder to eager-load the nodes that are connected to
+// the "referred_by_edges" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ReferrerQuery) WithReferredByEdges(opts ...func(*ReferrerReferenceQuery)) *ReferrerQuery {
+	query := (&ReferrerReferenceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withReferredByEdges = query
+	return _q
+}
+
+// WithReferenceEdges tells the query-builder to eager-load the nodes that are connected to
+// the "reference_edges" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ReferrerQuery) WithReferenceEdges(opts ...func(*ReferrerReferenceQuery)) *ReferrerQuery {
+	query := (&ReferrerReferenceClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withReferenceEdges = query
 	return _q
 }
 
@@ -445,10 +516,12 @@ func (_q *ReferrerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ref
 	var (
 		nodes       = []*Referrer{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [5]bool{
 			_q.withReferredBy != nil,
 			_q.withReferences != nil,
 			_q.withWorkflows != nil,
+			_q.withReferredByEdges != nil,
+			_q.withReferenceEdges != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -490,6 +563,20 @@ func (_q *ReferrerQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Ref
 		if err := _q.loadWorkflows(ctx, query, nodes,
 			func(n *Referrer) { n.Edges.Workflows = []*Workflow{} },
 			func(n *Referrer, e *Workflow) { n.Edges.Workflows = append(n.Edges.Workflows, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withReferredByEdges; query != nil {
+		if err := _q.loadReferredByEdges(ctx, query, nodes,
+			func(n *Referrer) { n.Edges.ReferredByEdges = []*ReferrerReference{} },
+			func(n *Referrer, e *ReferrerReference) { n.Edges.ReferredByEdges = append(n.Edges.ReferredByEdges, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withReferenceEdges; query != nil {
+		if err := _q.loadReferenceEdges(ctx, query, nodes,
+			func(n *Referrer) { n.Edges.ReferenceEdges = []*ReferrerReference{} },
+			func(n *Referrer, e *ReferrerReference) { n.Edges.ReferenceEdges = append(n.Edges.ReferenceEdges, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -676,6 +763,66 @@ func (_q *ReferrerQuery) loadWorkflows(ctx context.Context, query *WorkflowQuery
 		for kn := range nodes {
 			assign(kn, n)
 		}
+	}
+	return nil
+}
+func (_q *ReferrerQuery) loadReferredByEdges(ctx context.Context, query *ReferrerReferenceQuery, nodes []*Referrer, init func(*Referrer), assign func(*Referrer, *ReferrerReference)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Referrer)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(referrerreference.FieldReferredByID)
+	}
+	query.Where(predicate.ReferrerReference(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(referrer.ReferredByEdgesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ReferredByID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "referred_by_id" returned %v for node %v`, fk, n)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *ReferrerQuery) loadReferenceEdges(ctx context.Context, query *ReferrerReferenceQuery, nodes []*Referrer, init func(*Referrer), assign func(*Referrer, *ReferrerReference)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Referrer)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(referrerreference.FieldReferrerID)
+	}
+	query.Where(predicate.ReferrerReference(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(referrer.ReferenceEdgesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ReferrerID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "referrer_id" returned %v for node %v`, fk, n)
+		}
+		assign(node, n)
 	}
 	return nil
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,7 +50,8 @@ func (Referrer) Fields() []ent.Field {
 func (Referrer) Edges() []ent.Edge {
 	return []ent.Edge{
 		// M2M referrer can refer to itself via references
-		edge.To("references", Referrer.Type).From("referred_by").Immutable(),
+		edge.To("references", Referrer.Type).Through("reference_edges", ReferrerReference.Type).
+			From("referred_by").Through("referred_by_edges", ReferrerReference.Type).Immutable(),
 		// M2M. referrer can be part of multiple workflows
 		edge.To("workflows", Workflow.Type).Annotations(entsql.Annotation{OnDelete: entsql.Cascade}),
 	}

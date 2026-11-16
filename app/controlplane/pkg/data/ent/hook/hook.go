@@ -189,6 +189,18 @@ func (f ReferrerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, er
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReferrerMutation", m)
 }
 
+// The ReferrerReferenceFunc type is an adapter to allow the use of ordinary
+// function as ReferrerReference mutator.
+type ReferrerReferenceFunc func(context.Context, *ent.ReferrerReferenceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReferrerReferenceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ReferrerReferenceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReferrerReferenceMutation", m)
+}
+
 // The RobotAccountFunc type is an adapter to allow the use of ordinary
 // function as RobotAccount mutator.
 type RobotAccountFunc func(context.Context, *ent.RobotAccountMutation) (ent.Value, error)
