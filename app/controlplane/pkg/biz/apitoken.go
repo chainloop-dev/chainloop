@@ -497,9 +497,11 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		return nil, err
 	}
 
-	// Use provided policies if present, otherwise use defaults
+	// Explicit policies are stored as given, whatever the scope. Only a token created without
+	// them gets the defaults, plus the organization-level policies when it is organization-wide.
 	policies := options.policies
-	if policies == nil {
+	explicitPolicies := policies != nil
+	if !explicitPolicies {
 		policies = uc.DefaultAuthzPolicies
 	}
 
@@ -522,7 +524,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 	}
 
 	// Concat, not append: policies may alias the shared defaultAuthzPolicies slice.
-	if *scope == authz.ResourceTypeOrganization {
+	if *scope == authz.ResourceTypeOrganization && !explicitPolicies {
 		policies = slices.Concat(policies, orgLevelTokenPolicies)
 	}
 
