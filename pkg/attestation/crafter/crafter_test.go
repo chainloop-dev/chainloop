@@ -1434,3 +1434,107 @@ func loadSchemaV2(path string) (*schemaapi.CraftingSchemaV2, error) {
 
 	return schema, nil
 }
+
+func (s *crafterSuite) TestAddMaterialDuplicateName() {
+	const (
+		contractFree  = "contract-free"
+		fromContract  = "from-contract"
+		autoDetected  = "auto-detected"
+		duplicateName = "non-functional-test"
+	)
+
+	testCases := []struct {
+		name     string
+		contract string
+		// method selects the crafter add method to use
+		method       string
+		materialName string
+		replace      bool
+		wantErr      bool
+	}{
+		{
+			name:         "contract free, duplicate name fails",
+			contract:     "testdata/contracts/empty_generic.yaml",
+			method:       contractFree,
+			materialName: duplicateName,
+			wantErr:      true,
+		},
+		{
+			name:         "contract free, duplicate name with replace overwrites",
+			contract:     "testdata/contracts/empty_generic.yaml",
+			method:       contractFree,
+			materialName: duplicateName,
+			replace:      true,
+		},
+		{
+			name:         "auto detected, duplicate name fails",
+			contract:     "testdata/contracts/empty_generic.yaml",
+			method:       autoDetected,
+			materialName: duplicateName,
+			wantErr:      true,
+		},
+		{
+			name:         "auto detected, duplicate name with replace overwrites",
+			contract:     "testdata/contracts/empty_generic.yaml",
+			method:       autoDetected,
+			materialName: duplicateName,
+			replace:      true,
+		},
+		{
+			name:         "from contract, duplicate name fails",
+			contract:     "testdata/contracts/with_material_annotations.yaml",
+			method:       fromContract,
+			materialName: "string",
+			wantErr:      true,
+		},
+		{
+			name:         "from contract, duplicate name with replace overwrites",
+			contract:     "testdata/contracts/with_material_annotations.yaml",
+			method:       fromContract,
+			materialName: "string",
+			replace:      true,
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			ctx := context.Background()
+			// STRING materials are stored inline, so nothing is uploaded
+			backend := &casclient.CASBackend{Uploader: mUploader.NewUploader(s.T())}
+
+			c, err := newInitializedCrafter(s.T(), tc.contract, &v1.WorkflowMetadata{}, false, "", runners.NewGeneric())
+			require.NoError(s.T(), err)
+
+			add := func(value string, opts ...crafter.AddOpt) (*v1.Attestation_Material, error) {
+				switch tc.method {
+				case fromContract:
+					return c.AddMaterialFromContract(ctx, "", tc.materialName, value, backend, nil, opts...)
+				case autoDetected:
+					return c.AddMaterialContactFreeWithAutoDetectedKind(ctx, "", tc.materialName, value, backend, nil, opts...)
+				default:
+					return c.AddMaterialContractFree(ctx, "", schemaapi.CraftingSchema_Material_STRING.String(), tc.materialName, value, backend, nil, opts...)
+				}
+			}
+
+			_, err = add("first-value")
+			require.NoError(s.T(), err)
+
+			_, err = add("second-value", crafter.WithReplace(tc.replace))
+
+			got := c.CraftingState.Attestation.Materials[tc.materialName]
+			require.NotNil(s.T(), got)
+
+			if tc.wantErr {
+				require.Error(s.T(), err)
+				assert.ErrorIs(s.T(), err, crafter.ErrMaterialAlreadyExists)
+				assert.Contains(s.T(), err.Error(), tc.materialName)
+				// the first material is kept
+				assert.Equal(s.T(), "first-value", got.GetString_().GetValue())
+				return
+			}
+
+			require.NoError(s.T(), err)
+			assert.Equal(s.T(), "second-value", got.GetString_().GetValue())
+		})
+	}
+}

@@ -51,6 +51,9 @@ type AttestationAddOpts struct {
 	// MaxExtractSize limits the total uncompressed bytes extracted from an archive.
 	// Zero defaults to materials.DefaultArchiveLimits().MaxTotalSize.
 	MaxExtractSize int64
+	// Replace overwrites a material that already exists in the attestation
+	// with the same name. Without it, adding such a material fails.
+	Replace bool
 }
 
 type newCrafterOpts struct {
@@ -67,6 +70,7 @@ type AttestationAdd struct {
 	localStatePath     string
 	maxExtractEntries  int
 	maxExtractSize     int64
+	replace            bool
 	*newCrafterOpts
 }
 
@@ -103,10 +107,20 @@ func NewAttestationAdd(cfg *AttestationAddOpts) (*AttestationAdd, error) {
 		localStatePath:     cfg.LocalStatePath,
 		maxExtractEntries:  maxEntries,
 		maxExtractSize:     maxSize,
+		replace:            cfg.Replace,
 	}, nil
 }
 
 var ErrAttestationNotInitialized = errors.New("attestation not yet initialized")
+
+// withMaterialExistsHint tells the user how to solve a duplicate material name.
+func withMaterialExistsHint(err error) error {
+	if errors.Is(err, crafter.ErrMaterialAlreadyExists) {
+		return fmt.Errorf("%w: use a different --name, or pass --replace to overwrite it", err)
+	}
+
+	return err
+}
 
 func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialName, materialValue, materialType string, annotations map[string]string, policyInputFiles []*PolicyInputFromFile, policyInputs []*PolicyInput) ([]*AttestationStatusMaterial, error) {
 	// initialize the crafter. If attestation-id is provided we assume the attestation is performed using remote state
@@ -158,7 +172,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	// 2. If materialName is not empty, check if the material is in the contract. If it is, add material from contract
 	// 2.1. If materialType is empty, try to guess the material kind with auto-detected kind and materialName
 	// 3. If materialType is not empty, add material contract free with materialType and materialName
-	addOpts := runtimeInputAddOpts(runtimeInputs)
+	addOpts := materialAddOpts(runtimeInputs, action.replace)
 
 	// Explode path: --kind set, value is a (non-archive-native) archive.
 	format, err := shouldExplode(materialType, materialValue)
@@ -196,10 +210,9 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	switch {
 	case materialName == "" && materialType == "":
 		mt, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, "", materialValue, casBackend, annotations, addOpts...)
-		if err != nil {
-			return nil, fmt.Errorf("adding material: %w", err)
+		if err == nil {
+			action.Logger.Info().Str("kind", mt.MaterialType.String()).Msg("material kind detected")
 		}
-		action.Logger.Info().Str("kind", mt.MaterialType.String()).Msg("material kind detected")
 	case materialName != "":
 		switch {
 		// If the material is in the contract, add it from the contract
@@ -208,10 +221,9 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 		// If the material is not in the contract and the materialType is not provided, add material contract free with auto-detected kind, guessing the kind
 		case materialType == "":
 			mt, err = crafter.AddMaterialContactFreeWithAutoDetectedKind(ctx, attestationID, materialName, materialValue, casBackend, annotations, addOpts...)
-			if err != nil {
-				return nil, fmt.Errorf("adding material: %w", err)
+			if err == nil {
+				action.Logger.Info().Str("kind", mt.MaterialType.String()).Msg("material kind detected")
 			}
-			action.Logger.Info().Str("kind", mt.MaterialType.String()).Msg("material kind detected")
 		// If the material is not in the contract and has a materialType, add material contract free with the provided materialType
 		default:
 			mt, err = crafter.AddMaterialContractFree(ctx, attestationID, materialType, materialName, materialValue, casBackend, annotations, addOpts...)
@@ -221,7 +233,7 @@ func (action *AttestationAdd) Run(ctx context.Context, attestationID, materialNa
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("adding material: %w", err)
+		return nil, fmt.Errorf("adding material: %w", withMaterialExistsHint(err))
 	}
 
 	// Record each source file as an EVIDENCE material, cross-linked to the
@@ -252,15 +264,18 @@ func shouldExplode(materialType, value string) (materials.ArchiveFormat, error) 
 	return materials.DetectArchive(value)
 }
 
-// runtimeInputAddOpts wraps the runtime inputs as crafter add options, or
-// returns nil when there are none. Defined at package scope so it can name the
-// crafter package type (the Run method shadows it with a local variable).
-func runtimeInputAddOpts(runtimeInputs *policies.RuntimeInputs) []crafter.AddOpt {
+// materialAddOpts builds the crafter add options: whether a material with the
+// same name can be replaced, plus the runtime inputs when there are any.
+// Defined at package scope so it can name the crafter package (the Run method
+// shadows it with a local variable).
+func materialAddOpts(runtimeInputs *policies.RuntimeInputs, replace bool) []crafter.AddOpt {
+	opts := make([]crafter.AddOpt, 0, 2)
+	opts = append(opts, crafter.WithReplace(replace))
 	if runtimeInputs == nil || (len(runtimeInputs.Global) == 0 && len(runtimeInputs.Scoped) == 0 &&
 		len(runtimeInputs.GlobalOverride) == 0 && len(runtimeInputs.ScopedOverride) == 0) {
-		return nil
+		return opts
 	}
-	return []crafter.AddOpt{crafter.WithRuntimeInputs(runtimeInputs)}
+	return append(opts, crafter.WithRuntimeInputs(runtimeInputs))
 }
 
 // withSourceArchiveEvidence extends opts so an archive explode also records the
@@ -355,8 +370,9 @@ func (action *AttestationAdd) addPolicyInputEvidence(ctx context.Context, c *cra
 			materials.AnnotationPolicyInput:        pif.Input,
 		}
 
-		if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_EVIDENCE.String(), names[i], pif.File, casBackend, annotations); err != nil {
-			return fmt.Errorf("adding evidence material %q: %w", names[i], err)
+		// The evidence of a replaced material replaces its previous evidence too.
+		if _, err := c.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_EVIDENCE.String(), names[i], pif.File, casBackend, annotations, crafter.WithReplace(action.replace)); err != nil {
+			return fmt.Errorf("adding evidence material %q: %w", names[i], withMaterialExistsHint(err))
 		}
 	}
 

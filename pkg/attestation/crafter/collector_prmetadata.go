@@ -75,7 +75,7 @@ func (c *PRMetadataCollector) Collect(ctx context.Context, cr *Crafter, attestat
 	}
 	defer os.Remove(tmpFile)
 
-	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), materialName, tmpFile, casBackend, nil); err != nil {
+	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_PR_INFO.String(), materialName, tmpFile, casBackend, nil, WithReplace(true)); err != nil {
 		return fmt.Errorf("adding PR/MR metadata material: %w", err)
 	}
 
