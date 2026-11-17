@@ -1192,11 +1192,29 @@ func (s *apiTokenTestSuite) TestExplicitPoliciesAreNotWidenedForScopedTokens() {
 	ctx := context.Background()
 	explicit := []*authz.Policy{authz.PolicyWorkflowRunRead}
 
-	scoped, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID,
-		biz.APITokenWithPolicies(explicit),
-		biz.APITokenWithScope(authz.ResourceTypeProduct, biz.ToPtr(uuid.New())), biz.APITokenWithProjectIDs(nil))
-	s.Require().NoError(err)
-	s.ElementsMatch(explicit, scoped.Policies)
+	testCases := []struct {
+		name string
+		opts []biz.APITokenCreateOpt
+	}{
+		{name: "organization-scoped token"},
+		{name: "project-scoped token", opts: []biz.APITokenCreateOpt{biz.APITokenWithProject(s.p1)}},
+		{
+			name: "product-scoped token",
+			opts: []biz.APITokenCreateOpt{
+				biz.APITokenWithScope(authz.ResourceTypeProduct, biz.ToPtr(uuid.New())),
+				biz.APITokenWithProjectIDs(nil),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			opts := append([]biz.APITokenCreateOpt{biz.APITokenWithPolicies(explicit)}, tc.opts...)
+			token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, opts...)
+			s.Require().NoError(err)
+			s.ElementsMatch(explicit, token.Policies)
+		})
+	}
 }
 
 // A product token is created with the projects it reaches, stored deduplicated and sorted.
