@@ -27,6 +27,8 @@ updates:
     labels:
       - "dependencies"
       - "go"
+      - "automated"
+      - "skip-ai-session"
     commit-message:
       prefix: "chore(deps)"
 
@@ -54,5 +56,7 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+      - "automated"
+      - "skip-ai-session"
     commit-message:
       prefix: "chore(deps)"
