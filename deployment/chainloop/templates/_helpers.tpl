@@ -330,13 +330,26 @@ null
 {{- end -}}
 
 {{/*
+"true" when the clients use the shared control plane and CAS endpoints.
+Only an explicit false opts in: `helm upgrade --reuse-values` from an older chart leaves the key unset.
+*/}}
+{{- define "chainloop.sharedEndpoints.enabled" -}}
+{{- ternary "true" "false" (eq (toString .Values.useLegacyGRPCEndpoints) "false") -}}
+{{- end -}}
+
+{{/*
 External gRPC URL the controlplane API can be reached at
 This endpoint is used by the CLI to connect via gRPC
+It uses the shared endpoint when useLegacyGRPCEndpoints is false, else the deprecated gRPC-only endpoint
 NOTE: Load balancer service type is not supported
 */}}
 {{- define "chainloop.controlplane.external_grpc_url" -}}
 {{- $service := .Values.controlplane.serviceAPI }}
 {{- $ingress := .Values.controlplane.ingressAPI }}
+{{- if eq (include "chainloop.sharedEndpoints.enabled" .) "true" }}
+{{- $service = .Values.controlplane.service }}
+{{- $ingress = .Values.controlplane.ingress }}
+{{- end }}
 
 {{- if (and $ingress $ingress.enabled $ingress.hostname) }}
 {{- printf "%s:%s" $ingress.hostname (ternary "443" "80" $ingress.tls) }}
@@ -437,11 +450,16 @@ NOTE: Load balancer service type is not supported
 {{/*
 External gRPC URL the CAS API can be reached at
 This endpoint is used by the CLI to connect via gRPC
+It uses the shared endpoint when useLegacyGRPCEndpoints is false, else the deprecated gRPC-only endpoint
 NOTE: Load balancer service type is not supported
 */}}
 {{- define "chainloop.cas.external_grpc_url" -}}
 {{- $service := .Values.cas.serviceAPI }}
 {{- $ingress := .Values.cas.ingressAPI }}
+{{- if eq (include "chainloop.sharedEndpoints.enabled" .) "true" }}
+{{- $service = .Values.cas.service }}
+{{- $ingress = .Values.cas.ingress }}
+{{- end }}
 
 {{- if (and $ingress $ingress.enabled $ingress.hostname) }}
 {{- printf "%s:%s" $ingress.hostname (ternary "443" "80" $ingress.tls) }}

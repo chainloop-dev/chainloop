@@ -243,8 +243,9 @@ or as shown before, provide them as imperative inputs during Helm Install/Upgrad
 
 The control plane ingress serves HTTP, gRPC-Web, and native gRPC on the same hostname.
 Its HTTP server routes each request, so these protocols can share an upstream HTTP/2 connection.
-The existing gRPC ingress stays available. Existing clients can keep their current endpoints.
+The existing gRPC ingress stays available, but it is deprecated. Existing clients can keep their current endpoints.
 To test the shared endpoint, point a gRPC client to the control plane HTTP hostname on port 443.
+To move the clients to the shared endpoints, see [Move to the shared control plane and CAS endpoints](#move-to-the-shared-control-plane-and-cas-endpoints).
 The CAS shared endpoint mirrors the control plane (spec D-020): one standard HTTP listener dispatches each request, and native gRPC reaches the native transport through an in-process reverse proxy. `cas.ingress` is one catch-all route on the same hostname — one path `/` with an HTTP/2 (gRPC) upstream — so ByteStream uploads and downloads, browser downloads, and status probes share one Service port and one certificate, including mixed requests on one upstream connection.
 
 The chart selects gRPC transport annotations from the pod TLS configuration. You can override them under `cas.ingress.annotations`. The upload body-size annotations keep their existing defaults.
@@ -364,6 +365,41 @@ cas:
 ```
 
 Remember, once you have set up your domain, make sure you use the [CLI pointing](#configure-chainloop-cli-to-point-to-your-instance) to it instead of the defaults.
+
+### Move to the shared control plane and CAS endpoints
+
+The control plane and the CAS each have two endpoints:
+
+| Endpoint | Values | Serves | Status |
+|---|---|---|---|
+| Shared | `controlplane.ingress`, `controlplane.service`, `cas.ingress`, `cas.service` | HTTP and native gRPC on one hostname. The control plane also serves gRPC-Web. | Recommended |
+| gRPC-only | `controlplane.ingressAPI`, `controlplane.serviceAPI`, `cas.ingressAPI`, `cas.serviceAPI` | Native gRPC | Deprecated |
+
+Both endpoints need HTTP/2 on the full path from a gRPC client to the pod. If a load balancer or proxy changes the connection to HTTP/1.1, native gRPC clients such as the `chainloop` CLI fail. The chart sets the HTTP/2 upstream annotations for the NGINX and Traefik controllers. For other controllers and for load balancers in front of the cluster, enable HTTP/2 yourself.
+
+The `useLegacyGRPCEndpoints` value selects the endpoints that the clients use: the control plane connection to the CAS, and the CLI configuration that the release notes show. The default is `true`: the clients use the deprecated gRPC-only endpoints, as in earlier chart versions. A later release changes the default to `false`. We recommend that you move to the shared endpoints before that release.
+
+To move to the shared endpoints, do these steps:
+
+1. Enable `controlplane.ingress` and `cas.ingress`, if you expose Chainloop through an Ingress. See [Enable a custom domain with TLS](#enable-a-custom-domain-with-tls).
+2. Make sure that the shared hostnames support HTTP/2 from the client to the pod.
+3. Set this value at the top level of your values file:
+
+   ```yaml
+   useLegacyGRPCEndpoints: false
+   ```
+
+4. Reconfigure each CLI that is already installed. An installed CLI keeps its saved addresses:
+
+   ```bash
+   chainloop config save \
+     --control-plane cp.example.com:443 \
+     --artifact-cas cas.example.com:443
+   ```
+
+The chart continues to create the deprecated gRPC-only endpoints in both modes, so CLIs that you did not reconfigure continue to work. A later release removes them.
+
+Only an explicit `false` selects the shared endpoints. If the value is not set, for example after `helm upgrade --reuse-values` from an older chart, the clients use the deprecated endpoints.
 
 ### Connect to an external PostgreSQL database
 
@@ -542,7 +578,7 @@ Google Cloud has a [managed Prometheus offering](https://cloud.google.com/stackd
 
 ### Configure Chainloop CLI to point to your instance
 
-Once you have your instance of Chainloop deployed, you need to configure the [CLI](https://github.com/chainloop-dev/chainloop/releases) to point to both the CAS and the Control plane gRPC APIs like this.
+Once you have your instance of Chainloop deployed, you need to configure the [CLI](https://github.com/chainloop-dev/chainloop/releases) to point to both the CAS and the Control plane gRPC APIs like this. The release notes of the chart show this command with the endpoints that `useLegacyGRPCEndpoints` selects. See [Move to the shared control plane and CAS endpoints](#move-to-the-shared-control-plane-and-cas-endpoints).
 
 ```bash
 chainloop config save \
@@ -575,12 +611,13 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 
 ### Global parameters
 
-| Name                                                  | Description                                                                                                                                                                                                                                                                                                                                                         | Value   |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `global.imageRegistry`                                | Global Docker image registry                                                                                                                                                                                                                                                                                                                                        | `""`    |
-| `global.imagePullSecrets`                             | Global Docker registry secret names as an array                                                                                                                                                                                                                                                                                                                     | `[]`    |
-| `global.compatibility.openshift.adaptSecurityContext` | Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation) | `auto`  |
-| `development`                                         | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases                                                                                                                                                                                              | `false` |
+| Name                                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                   | Value   |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `global.imageRegistry`                                | Global Docker image registry                                                                                                                                                                                                                                                                                                                                                                                                  | `""`    |
+| `global.imagePullSecrets`                             | Global Docker registry secret names as an array                                                                                                                                                                                                                                                                                                                                                                               | `[]`    |
+| `global.compatibility.openshift.adaptSecurityContext` | Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)                                                           | `auto`  |
+| `development`                                         | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases                                                                                                                                                                                                                                                        | `false` |
+| `useLegacyGRPCEndpoints`                              | Give the clients the deprecated gRPC-only control plane and CAS endpoints (`ingressAPI`, `serviceAPI`) instead of the shared endpoints (`ingress`, `service`). This applies to the control plane connection to the CAS and to the CLI configuration in the release notes. Set it to false to use the shared endpoints. A later release changes the default to false. The chart creates the deprecated endpoints in both modes | `true`  |
 
 ### Common parameters
 
@@ -682,60 +719,60 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 
 ### Control Plane Networking
 
-| Name                                               | Description                                                                                                                      | Value                    |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `controlplane.service.type`                        | Service type                                                                                                                     | `ClusterIP`              |
-| `controlplane.service.ports.http`                  | controlplane service HTTP port                                                                                                   | `80`                     |
-| `controlplane.service.ports.https`                 | controlplane service HTTPS port                                                                                                  | `443`                    |
-| `controlplane.service.nodePorts.http`              | Node port for HTTP                                                                                                               | `""`                     |
-| `controlplane.service.nodePorts.https`             | Node port for HTTPS                                                                                                              | `""`                     |
-| `controlplane.service.clusterIP`                   | controlplane service Cluster IP                                                                                                  | `""`                     |
-| `controlplane.service.loadBalancerIP`              | controlplane service Load Balancer IP                                                                                            | `""`                     |
-| `controlplane.service.loadBalancerSourceRanges`    | controlplane service Load Balancer sources                                                                                       | `[]`                     |
-| `controlplane.service.externalTrafficPolicy`       | controlplane service external traffic policy                                                                                     | `Cluster`                |
-| `controlplane.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c or HTTPS to match shared listener TLS. | See values.yaml          |
-| `controlplane.service.extraPorts`                  | Extra ports to expose in controlplane service (normally used with the `sidecars` value)                                          | `[]`                     |
-| `controlplane.service.sessionAffinity`             | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
-| `controlplane.service.sessionAffinityConfig`       | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
-| `controlplane.serviceAPI.type`                     | Service type                                                                                                                     | `ClusterIP`              |
-| `controlplane.serviceAPI.ports.http`               | controlplane service HTTP port                                                                                                   | `80`                     |
-| `controlplane.serviceAPI.ports.https`              | controlplane service HTTPS port                                                                                                  | `443`                    |
-| `controlplane.serviceAPI.nodePorts.http`           | Node port for HTTP                                                                                                               | `""`                     |
-| `controlplane.serviceAPI.nodePorts.https`          | Node port for HTTPS                                                                                                              | `""`                     |
-| `controlplane.serviceAPI.clusterIP`                | controlplane service Cluster IP                                                                                                  | `""`                     |
-| `controlplane.serviceAPI.loadBalancerIP`           | controlplane service Load Balancer IP                                                                                            | `""`                     |
-| `controlplane.serviceAPI.loadBalancerSourceRanges` | controlplane service Load Balancer sources                                                                                       | `[]`                     |
-| `controlplane.serviceAPI.externalTrafficPolicy`    | controlplane service external traffic policy                                                                                     | `Cluster`                |
-| `controlplane.serviceAPI.annotations`              | Additional custom annotations for controlplane service                                                                           |                          |
-| `controlplane.serviceAPI.extraPorts`               | Extra ports to expose in controlplane service (normally used with the `sidecars` value)                                          | `[]`                     |
-| `controlplane.serviceAPI.sessionAffinity`          | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
-| `controlplane.serviceAPI.sessionAffinityConfig`    | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
-| `controlplane.ingress.enabled`                     | Enable the shared HTTP, gRPC-Web and native gRPC ingress for controlplane                                                          | `false`                  |
-| `controlplane.ingress.pathType`                    | Ingress path type                                                                                                                | `ImplementationSpecific` |
-| `controlplane.ingress.hostname`                    | Default host for the ingress record                                                                                              | `cp.dev.local`           |
-| `controlplane.ingress.ingressClassName`            | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
-| `controlplane.ingress.path`                        | Default path for the ingress record                                                                                              | `/`                      |
-| `controlplane.ingress.annotations`                 | Annotations for the shared ingress. NGINX uses HTTP/2 upstream. Add cert-manager annotations here.                                   | See values.yaml          |
-| `controlplane.ingress.tls`                         | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
-| `controlplane.ingress.selfSigned`                  | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
-| `controlplane.ingress.extraHosts`                  | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
-| `controlplane.ingress.extraPaths`                  | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
-| `controlplane.ingress.extraTls`                    | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
-| `controlplane.ingress.secrets`                     | Custom TLS certificates as secrets                                                                                               | `[]`                     |
-| `controlplane.ingress.extraRules`                  | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
-| `controlplane.ingressAPI.enabled`                  | Enable ingress record generation for controlplane                                                                                | `false`                  |
-| `controlplane.ingressAPI.pathType`                 | Ingress path type                                                                                                                | `ImplementationSpecific` |
-| `controlplane.ingressAPI.hostname`                 | Default host for the ingress record                                                                                              | `api.cp.dev.local`       |
-| `controlplane.ingressAPI.ingressClassName`         | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
-| `controlplane.ingressAPI.path`                     | Default path for the ingress record                                                                                              | `/`                      |
-| `controlplane.ingressAPI.annotations`              | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. |                          |
-| `controlplane.ingressAPI.tls`                      | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
-| `controlplane.ingressAPI.selfSigned`               | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
-| `controlplane.ingressAPI.extraHosts`               | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
-| `controlplane.ingressAPI.extraPaths`               | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
-| `controlplane.ingressAPI.extraTls`                 | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
-| `controlplane.ingressAPI.secrets`                  | Custom TLS certificates as secrets                                                                                               | `[]`                     |
-| `controlplane.ingressAPI.extraRules`               | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
+| Name                                               | Description                                                                                                                               | Value                    |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `controlplane.service.type`                        | Service type                                                                                                                              | `ClusterIP`              |
+| `controlplane.service.ports.http`                  | controlplane service HTTP port                                                                                                            | `80`                     |
+| `controlplane.service.ports.https`                 | controlplane service HTTPS port                                                                                                           | `443`                    |
+| `controlplane.service.nodePorts.http`              | Node port for HTTP                                                                                                                        | `""`                     |
+| `controlplane.service.nodePorts.https`             | Node port for HTTPS                                                                                                                       | `""`                     |
+| `controlplane.service.clusterIP`                   | controlplane service Cluster IP                                                                                                           | `""`                     |
+| `controlplane.service.loadBalancerIP`              | controlplane service Load Balancer IP                                                                                                     | `""`                     |
+| `controlplane.service.loadBalancerSourceRanges`    | controlplane service Load Balancer sources                                                                                                | `[]`                     |
+| `controlplane.service.externalTrafficPolicy`       | controlplane service external traffic policy                                                                                              | `Cluster`                |
+| `controlplane.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c or HTTPS to match shared listener TLS.                                 | See values.yaml          |
+| `controlplane.service.extraPorts`                  | Extra ports to expose in controlplane service (normally used with the `sidecars` value)                                                   | `[]`                     |
+| `controlplane.service.sessionAffinity`             | Control where client requests go, to the same pod or round-robin                                                                          | `None`                   |
+| `controlplane.service.sessionAffinityConfig`       | Additional settings for the sessionAffinity                                                                                               | `{}`                     |
+| `controlplane.serviceAPI.type`                     | Deprecated gRPC-only Service type. Use the shared `controlplane.service` and set `useLegacyGRPCEndpoints` to false                        | `ClusterIP`              |
+| `controlplane.serviceAPI.ports.http`               | controlplane service HTTP port                                                                                                            | `80`                     |
+| `controlplane.serviceAPI.ports.https`              | controlplane service HTTPS port                                                                                                           | `443`                    |
+| `controlplane.serviceAPI.nodePorts.http`           | Node port for HTTP                                                                                                                        | `""`                     |
+| `controlplane.serviceAPI.nodePorts.https`          | Node port for HTTPS                                                                                                                       | `""`                     |
+| `controlplane.serviceAPI.clusterIP`                | controlplane service Cluster IP                                                                                                           | `""`                     |
+| `controlplane.serviceAPI.loadBalancerIP`           | controlplane service Load Balancer IP                                                                                                     | `""`                     |
+| `controlplane.serviceAPI.loadBalancerSourceRanges` | controlplane service Load Balancer sources                                                                                                | `[]`                     |
+| `controlplane.serviceAPI.externalTrafficPolicy`    | controlplane service external traffic policy                                                                                              | `Cluster`                |
+| `controlplane.serviceAPI.annotations`              | Additional custom annotations for controlplane service                                                                                    |                          |
+| `controlplane.serviceAPI.extraPorts`               | Extra ports to expose in controlplane service (normally used with the `sidecars` value)                                                   | `[]`                     |
+| `controlplane.serviceAPI.sessionAffinity`          | Control where client requests go, to the same pod or round-robin                                                                          | `None`                   |
+| `controlplane.serviceAPI.sessionAffinityConfig`    | Additional settings for the sessionAffinity                                                                                               | `{}`                     |
+| `controlplane.ingress.enabled`                     | Enable the shared HTTP, gRPC-Web and native gRPC ingress for controlplane                                                                 | `false`                  |
+| `controlplane.ingress.pathType`                    | Ingress path type                                                                                                                         | `ImplementationSpecific` |
+| `controlplane.ingress.hostname`                    | Default host for the ingress record                                                                                                       | `cp.dev.local`           |
+| `controlplane.ingress.ingressClassName`            | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                             | `""`                     |
+| `controlplane.ingress.path`                        | Default path for the ingress record                                                                                                       | `/`                      |
+| `controlplane.ingress.annotations`                 | Annotations for the shared ingress. NGINX uses HTTP/2 upstream. Add cert-manager annotations here.                                        | See values.yaml          |
+| `controlplane.ingress.tls`                         | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                                | `false`                  |
+| `controlplane.ingress.selfSigned`                  | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                              | `false`                  |
+| `controlplane.ingress.extraHosts`                  | An array with additional hostname(s) to be covered with the ingress record                                                                | `[]`                     |
+| `controlplane.ingress.extraPaths`                  | An array with additional arbitrary paths that may need to be added to the ingress under the main host                                     | `[]`                     |
+| `controlplane.ingress.extraTls`                    | TLS configuration for additional hostname(s) to be covered with this ingress record                                                       | `[]`                     |
+| `controlplane.ingress.secrets`                     | Custom TLS certificates as secrets                                                                                                        | `[]`                     |
+| `controlplane.ingress.extraRules`                  | Additional rules to be covered with this ingress record                                                                                   | `[]`                     |
+| `controlplane.ingressAPI.enabled`                  | Enable the deprecated gRPC-only ingress for controlplane. Use the shared `controlplane.ingress` and set `useLegacyGRPCEndpoints` to false | `false`                  |
+| `controlplane.ingressAPI.pathType`                 | Ingress path type                                                                                                                         | `ImplementationSpecific` |
+| `controlplane.ingressAPI.hostname`                 | Default host for the ingress record                                                                                                       | `api.cp.dev.local`       |
+| `controlplane.ingressAPI.ingressClassName`         | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                             | `""`                     |
+| `controlplane.ingressAPI.path`                     | Default path for the ingress record                                                                                                       | `/`                      |
+| `controlplane.ingressAPI.annotations`              | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations.          |                          |
+| `controlplane.ingressAPI.tls`                      | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                                | `false`                  |
+| `controlplane.ingressAPI.selfSigned`               | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                              | `false`                  |
+| `controlplane.ingressAPI.extraHosts`               | An array with additional hostname(s) to be covered with the ingress record                                                                | `[]`                     |
+| `controlplane.ingressAPI.extraPaths`               | An array with additional arbitrary paths that may need to be added to the ingress under the main host                                     | `[]`                     |
+| `controlplane.ingressAPI.extraTls`                 | TLS configuration for additional hostname(s) to be covered with this ingress record                                                       | `[]`                     |
+| `controlplane.ingressAPI.secrets`                  | Custom TLS certificates as secrets                                                                                                        | `[]`                     |
+| `controlplane.ingressAPI.extraRules`               | Additional rules to be covered with this ingress record                                                                                   | `[]`                     |
 
 ### Controlplane Misc
 
@@ -875,11 +912,11 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.service.loadBalancerIP`              | cas service Load Balancer IP                                                                                                     | `""`                     |
 | `cas.service.loadBalancerSourceRanges`    | cas service Load Balancer sources                                                                                                | `[]`                     |
 | `cas.service.externalTrafficPolicy`       | cas service external traffic policy                                                                                              | `Cluster`                |
-| `cas.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c or HTTPS to match shared listener TLS. | See values.yaml          |
+| `cas.service.annotations`                 | Annotations for the shared HTTP and gRPC service. Traefik uses h2c or HTTPS to match shared listener TLS.                        | See values.yaml          |
 | `cas.service.extraPorts`                  | Extra ports to expose in cas service (normally used with the `sidecars` value)                                                   | `[]`                     |
 | `cas.service.sessionAffinity`             | Control where client requests go, to the same pod or round-robin                                                                 | `None`                   |
 | `cas.service.sessionAffinityConfig`       | Additional settings for the sessionAffinity                                                                                      | `{}`                     |
-| `cas.serviceAPI.type`                     | Service type                                                                                                                     | `ClusterIP`              |
+| `cas.serviceAPI.type`                     | Deprecated gRPC-only Service type. Use the shared `cas.service` and set `useLegacyGRPCEndpoints` to false                        | `ClusterIP`              |
 | `cas.serviceAPI.ports.http`               | cas service HTTP port                                                                                                            | `80`                     |
 | `cas.serviceAPI.ports.https`              | cas service HTTPS port                                                                                                           | `443`                    |
 | `cas.serviceAPI.nodePorts.http`           | Node port for HTTP                                                                                                               | `""`                     |
@@ -897,7 +934,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.ingress.hostname`                    | Default host for the ingress record                                                                                              | `cas.dev.local`          |
 | `cas.ingress.ingressClassName`            | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
 | `cas.ingress.path`                        | Default path for the ingress record                                                                                              | `/`                      |
-| `cas.ingress.annotations`                 | Annotations for the shared CAS ingress: HTTP/2 (gRPC) upstream plus the upload body limits. | See values.yaml          |
+| `cas.ingress.annotations`                 | Annotations for the shared CAS ingress: HTTP/2 (gRPC) upstream plus the upload body limits.                                      | See values.yaml          |
 | `cas.ingress.tls`                         | Enable TLS configuration for the host defined at `controlplane.ingress.hostname` parameter                                       | `false`                  |
 | `cas.ingress.selfSigned`                  | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
 | `cas.ingress.extraHosts`                  | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
@@ -905,7 +942,7 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 | `cas.ingress.extraTls`                    | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
 | `cas.ingress.secrets`                     | Custom TLS certificates as secrets                                                                                               | `[]`                     |
 | `cas.ingress.extraRules`                  | Additional rules to be covered with this ingress record                                                                          | `[]`                     |
-| `cas.ingressAPI.enabled`                  | Enable ingress record generation for controlplane                                                                                | `false`                  |
+| `cas.ingressAPI.enabled`                  | Enable the deprecated gRPC-only ingress for CAS. Use the shared `cas.ingress` and set `useLegacyGRPCEndpoints` to false          | `false`                  |
 | `cas.ingressAPI.pathType`                 | Ingress path type                                                                                                                | `ImplementationSpecific` |
 | `cas.ingressAPI.hostname`                 | Default host for the ingress record                                                                                              | `api.cas.dev.local`      |
 | `cas.ingressAPI.ingressClassName`         | IngressClass that will be be used to implement the Ingress (Kubernetes 1.18+)                                                    | `""`                     |
