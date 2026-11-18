@@ -17,6 +17,30 @@ Compatibility with the following Ingress Controllers has been verified, other co
 - [Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/)
 - [Traefik](https://doc.traefik.io/traefik/providers/kubernetes-ingress/)
 
+The Ingress Controller, and every load balancer in front of it, must support HTTP/2 for the endpoints in [Exposed endpoints](#exposed-endpoints).
+
+### Exposed endpoints
+
+Chainloop needs two public endpoints. You set each hostname in the chart values. The examples use `chainloop.example`.
+
+| Hostname | Service | Chart values | Requires HTTP/2 |
+|---|---|---|---|
+| `cp.chainloop.example` | Control plane | `controlplane.ingress`, `controlplane.service` | Yes |
+| `cas.chainloop.example` | Artifact CAS | `cas.ingress`, `cas.service` | Yes |
+
+Each endpoint serves HTTP and native gRPC. The control plane endpoint also serves gRPC-Web. The endpoints also accept HTTP/1.1 for browser and plain HTTP calls. Native gRPC calls on them need HTTP/2.
+
+HTTP/2 must stay in place on the full path from a gRPC client to the pod. If a load balancer or proxy changes the connection to HTTP/1.1, native gRPC clients such as the `chainloop` CLI fail. The chart sets the HTTP/2 upstream annotations for the NGINX and Traefik controllers. For other controllers and for load balancers in front of the cluster, enable HTTP/2 yourself.
+
+The chart also creates two deprecated gRPC-only endpoints. By default (`useLegacyGRPCEndpoints: true`), the clients still use them. These endpoints also need HTTP/2:
+
+| Hostname | Service | Chart values | Status |
+|---|---|---|---|
+| `api.cp.chainloop.example` | Control plane, gRPC only | `controlplane.ingressAPI`, `controlplane.serviceAPI` | Deprecated |
+| `api.cas.chainloop.example` | Artifact CAS, gRPC only | `cas.ingressAPI`, `cas.serviceAPI` | Deprecated |
+
+The chart creates these two endpoints in both modes, so existing CLI installations continue to work. To move the clients to the shared endpoints, see [Migrate to the shared control plane and CAS endpoints](#migrate-to-the-shared-control-plane-and-cas-endpoints).
+
 ## TL;DR
 
 Deploy Chainloop in [development mode](#development) by running
@@ -195,6 +219,56 @@ helm dt unwrap chainloop-1.77.0.wrap.tgz oci://chainloop.azurecr.io --yes
 # 🎉  Helm chart unwrapped successfully: You can use it now by running "helm install oci://chainloop.azurecr.io/chart/chainloop --generate-name"
 ```
 
+## Upgrading
+
+### Migrate to the shared control plane and CAS endpoints
+
+#### What changes
+
+Earlier versions of Chainloop exposed the control plane API and the CAS API on separate gRPC-only endpoints, for example `api.cp.<domain>` and `api.cas.<domain>`. These endpoints are deprecated. The `controlplane` and `cas` `ingressAPI` and `serviceAPI` settings are also deprecated.
+
+Chainloop now uses one shared endpoint for each service, for example `cp.<domain>` and `cas.<domain>`. Each shared endpoint serves HTTP and native gRPC. See [Exposed endpoints](#exposed-endpoints).
+
+To keep compatibility with existing deployments, the top-level value `useLegacyGRPCEndpoints` selects the endpoints that the clients use. The clients are the control plane connection to the CAS, and the `chainloop config save` command in the release notes:
+
+- `true` (default for now): the clients use the deprecated gRPC-only endpoints (`ingressAPI`, `serviceAPI`). The behavior of your deployment does not change.
+- `false`: the clients use the shared endpoints (`ingress`, `service`).
+
+A future chart release changes the default to `false`. A later release removes the deprecated gRPC-only endpoints.
+
+The chart continues to create the deprecated endpoints with both values. CLIs that you did not reconfigure continue to work.
+
+You have two options when you upgrade an existing deployment.
+
+#### Option 1: Migrate to the shared endpoints (recommended)
+
+We recommend that you migrate before the default changes. Do these steps:
+
+1. Enable the shared endpoints. If you use an Ingress, set `controlplane.ingress` and `cas.ingress` with their hostnames and TLS settings. `cas.ingress` is disabled by default. See [Enable a custom domain with TLS](#enable-a-custom-domain-with-tls).
+2. Make sure that HTTP/2 works on the full path from the client to the pod for `cp.<domain>` and `cas.<domain>`. This includes all load balancers. If one hop changes the connection to HTTP/1.1, native gRPC clients such as the CLI fail.
+3. If your values file sets custom annotations in `controlplane.ingressAPI.annotations` or `cas.ingressAPI.annotations`, move them to `controlplane.ingress.annotations` and `cas.ingress.annotations`.
+4. Set `useLegacyGRPCEndpoints: false` at the top level of your values file. Then upgrade the release:
+
+   ```yaml
+   useLegacyGRPCEndpoints: false
+   ```
+
+5. Reconfigure each CLI that is already installed. An installed CLI keeps its saved addresses:
+
+   ```bash
+   chainloop config save --control-plane cp.<domain>:443 --artifact-cas cas.<domain>:443
+   ```
+
+#### Option 2: Enable the compatibility mode
+
+If you cannot migrate now, set `useLegacyGRPCEndpoints: true` explicitly at the top level of your values file:
+
+```yaml
+useLegacyGRPCEndpoints: true
+```
+
+With this setting, the future change of the default does not change the endpoints of your clients. Migrate to the shared endpoints before a chart release removes the deprecated gRPC-only endpoints.
+
 ## How to guides
 
 ### CAS upload speeds are slow, what can I do?
@@ -245,7 +319,7 @@ The control plane ingress serves HTTP, gRPC-Web, and native gRPC on the same hos
 Its HTTP server routes each request, so these protocols can share an upstream HTTP/2 connection.
 The existing gRPC ingress stays available, but it is deprecated. Existing clients can keep their current endpoints.
 To test the shared endpoint, point a gRPC client to the control plane HTTP hostname on port 443.
-To move the clients to the shared endpoints, see [Move to the shared control plane and CAS endpoints](#move-to-the-shared-control-plane-and-cas-endpoints).
+To move the clients to the shared endpoints, see [Migrate to the shared control plane and CAS endpoints](#migrate-to-the-shared-control-plane-and-cas-endpoints).
 The CAS shared endpoint mirrors the control plane (spec D-020): one standard HTTP listener dispatches each request, and native gRPC reaches the native transport through an in-process reverse proxy. `cas.ingress` is one catch-all route on the same hostname — one path `/` with an HTTP/2 (gRPC) upstream — so ByteStream uploads and downloads, browser downloads, and status probes share one Service port and one certificate, including mixed requests on one upstream connection.
 
 The chart selects gRPC transport annotations from the pod TLS configuration. You can override them under `cas.ingress.annotations`. The upload body-size annotations keep their existing defaults.
@@ -365,41 +439,6 @@ cas:
 ```
 
 Remember, once you have set up your domain, make sure you use the [CLI pointing](#configure-chainloop-cli-to-point-to-your-instance) to it instead of the defaults.
-
-### Move to the shared control plane and CAS endpoints
-
-The control plane and the CAS each have two endpoints:
-
-| Endpoint | Values | Serves | Status |
-|---|---|---|---|
-| Shared | `controlplane.ingress`, `controlplane.service`, `cas.ingress`, `cas.service` | HTTP and native gRPC on one hostname. The control plane also serves gRPC-Web. | Recommended |
-| gRPC-only | `controlplane.ingressAPI`, `controlplane.serviceAPI`, `cas.ingressAPI`, `cas.serviceAPI` | Native gRPC | Deprecated |
-
-Both endpoints need HTTP/2 on the full path from a gRPC client to the pod. If a load balancer or proxy changes the connection to HTTP/1.1, native gRPC clients such as the `chainloop` CLI fail. The chart sets the HTTP/2 upstream annotations for the NGINX and Traefik controllers. For other controllers and for load balancers in front of the cluster, enable HTTP/2 yourself.
-
-The `useLegacyGRPCEndpoints` value selects the endpoints that the clients use: the control plane connection to the CAS, and the CLI configuration that the release notes show. The default is `true`: the clients use the deprecated gRPC-only endpoints, as in earlier chart versions. A later release changes the default to `false`. We recommend that you move to the shared endpoints before that release.
-
-To move to the shared endpoints, do these steps:
-
-1. Enable `controlplane.ingress` and `cas.ingress`, if you expose Chainloop through an Ingress. See [Enable a custom domain with TLS](#enable-a-custom-domain-with-tls).
-2. Make sure that the shared hostnames support HTTP/2 from the client to the pod.
-3. Set this value at the top level of your values file:
-
-   ```yaml
-   useLegacyGRPCEndpoints: false
-   ```
-
-4. Reconfigure each CLI that is already installed. An installed CLI keeps its saved addresses:
-
-   ```bash
-   chainloop config save \
-     --control-plane cp.example.com:443 \
-     --artifact-cas cas.example.com:443
-   ```
-
-The chart continues to create the deprecated gRPC-only endpoints in both modes, so CLIs that you did not reconfigure continue to work. A later release removes them.
-
-Only an explicit `false` selects the shared endpoints. If the value is not set, for example after `helm upgrade --reuse-values` from an older chart, the clients use the deprecated endpoints.
 
 ### Connect to an external PostgreSQL database
 
@@ -578,7 +617,7 @@ Google Cloud has a [managed Prometheus offering](https://cloud.google.com/stackd
 
 ### Configure Chainloop CLI to point to your instance
 
-Once you have your instance of Chainloop deployed, you need to configure the [CLI](https://github.com/chainloop-dev/chainloop/releases) to point to both the CAS and the Control plane gRPC APIs like this. The release notes of the chart show this command with the endpoints that `useLegacyGRPCEndpoints` selects. See [Move to the shared control plane and CAS endpoints](#move-to-the-shared-control-plane-and-cas-endpoints).
+Once you have your instance of Chainloop deployed, you need to configure the [CLI](https://github.com/chainloop-dev/chainloop/releases) to point to both the CAS and the Control plane gRPC APIs like this. The release notes of the chart show this command with the endpoints that `useLegacyGRPCEndpoints` selects. See [Migrate to the shared control plane and CAS endpoints](#migrate-to-the-shared-control-plane-and-cas-endpoints).
 
 ```bash
 chainloop config save \
