@@ -11,18 +11,34 @@ APP VERSION: {{ .Chart.AppVersion  }}
 {{- $cpGrpcURL := include "chainloop.controlplane.external_grpc_url" . }}
 {{- $casGrpcURL := include "chainloop.cas.external_grpc_url" . }}
 
+{{- /* useLegacyGRPCEndpoints selects the deprecated gRPC-only endpoints (*-api) or the shared endpoints */ -}}
+{{- $shared := eq (include "chainloop.sharedEndpoints.enabled" .) "true" }}
+
 {{- $cpSvcType := .Values.controlplane.serviceAPI.type }}
 {{- $cpSvcPort := .Values.controlplane.serviceAPI.ports.http }}
 {{- $cpSvcName := printf "%s-api" (include "chainloop.controlplane.fullname" .) }}
+{{- $cpIngress := .Values.controlplane.ingressAPI }}
 
 {{- $casSvcType := .Values.cas.serviceAPI.type }}
 {{- $casSvcPort := .Values.cas.serviceAPI.ports.http }}
 {{- $casSvcName := printf "%s-api" (include "chainloop.cas.fullname" .) }}
+{{- $casIngress := .Values.cas.ingressAPI }}
+
+{{- if $shared }}
+{{- $cpSvcType = .Values.controlplane.service.type }}
+{{- $cpSvcPort = coalesce .Values.controlplane.service.port .Values.controlplane.service.ports.http }}
+{{- $cpSvcName = include "chainloop.controlplane.fullname" . }}
+{{- $cpIngress = .Values.controlplane.ingress }}
+{{- $casSvcType = .Values.cas.service.type }}
+{{- $casSvcPort = coalesce .Values.cas.service.port .Values.cas.service.ports.http }}
+{{- $casSvcName = include "chainloop.cas.fullname" . }}
+{{- $casIngress = .Values.cas.ingress }}
+{{- end }}
 
 {{- $namespace := include "common.names.namespace" . }}
 
-{{- $cpHasTLS := or (and .Values.controlplane.ingressAPI.enabled .Values.controlplane.ingressAPI.tls) (ne (.Values.controlplane.tls.existingSecret | default "") "") }}
-{{- $casHasTLS := or (and .Values.cas.ingressAPI.enabled .Values.cas.ingressAPI.tls) (ne (.Values.cas.tls.existingSecret | default "") "") }}
+{{- $cpHasTLS := or (and $cpIngress.enabled $cpIngress.tls) (ne (.Values.controlplane.tls.existingSecret | default "") "") }}
+{{- $casHasTLS := or (and $casIngress.enabled $casIngress.tls) (ne (.Values.cas.tls.existingSecret | default "") "") }}
 {{- $insecure := not (and $cpHasTLS $casHasTLS) }}
 
 {{- if and (ne $cpGrpcURL "") (ne $casGrpcURL "") }}

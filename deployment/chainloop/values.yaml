@@ -33,6 +33,10 @@ global:
 ##
 development: false
 
+## @param useLegacyGRPCEndpoints Give the clients the deprecated gRPC-only control plane and CAS endpoints (`ingressAPI`, `serviceAPI`) instead of the shared endpoints (`ingress`, `service`). This applies to the control plane connection to the CAS and to the CLI configuration in the install notes (NOTES.txt). Set it to false to use the shared endpoints. A later release changes the default to false. The chart keeps the deprecated Services in both modes
+##
+useLegacyGRPCEndpoints: true
+
 ## @section Common parameters
 ##
 ## @param kubeVersion Override Kubernetes version
@@ -375,7 +379,7 @@ controlplane:
       annotations: {}
 
   serviceAPI:
-    ## @param controlplane.serviceAPI.type Service type
+    ## @param controlplane.serviceAPI.type Deprecated gRPC-only Service type. Use the shared `controlplane.service` and set `useLegacyGRPCEndpoints` to false
     type: ClusterIP
 
     ## @param controlplane.serviceAPI.ports.http controlplane service HTTP port
@@ -540,7 +544,7 @@ controlplane:
 
   ## ref: http://kubernetes.io/docs/user-guide/ingress/
   ingressAPI:
-    ## @param controlplane.ingressAPI.enabled Enable ingress record generation for controlplane
+    ## @param controlplane.ingressAPI.enabled Enable the deprecated gRPC-only ingress for controlplane. Use the shared `controlplane.ingress` and set `useLegacyGRPCEndpoints` to false
     ##
     enabled: false
     ## @param controlplane.ingressAPI.pathType Ingress path type
@@ -1159,7 +1163,7 @@ cas:
       annotations: {}
 
   serviceAPI:
-    ## @param cas.serviceAPI.type Service type
+    ## @param cas.serviceAPI.type Deprecated gRPC-only Service type. Use the shared `cas.service` and set `useLegacyGRPCEndpoints` to false
     type: ClusterIP
 
     ## @param cas.serviceAPI.ports.http cas service HTTP port
@@ -1338,7 +1342,7 @@ cas:
 
   ## ref: http://kubernetes.io/docs/user-guide/ingress/
   ingressAPI:
-    ## @param cas.ingressAPI.enabled Enable ingress record generation for controlplane
+    ## @param cas.ingressAPI.enabled Enable the deprecated gRPC-only ingress for CAS. Use the shared `cas.ingress` and set `useLegacyGRPCEndpoints` to false
     ##
     enabled: false
     ## @param cas.ingressAPI.pathType Ingress path type
