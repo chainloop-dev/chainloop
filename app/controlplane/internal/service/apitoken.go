@@ -134,6 +134,8 @@ func mapTokenScope(scope pb.APITokenServiceListRequest_Scope) authz.ResourceType
 		return authz.ResourceTypeProject
 	case pb.APITokenServiceListRequest_SCOPE_GLOBAL:
 		return authz.ResourceTypeOrganization
+	case pb.APITokenServiceListRequest_SCOPE_PRODUCT:
+		return authz.ResourceTypeProduct
 	}
 
 	return ""

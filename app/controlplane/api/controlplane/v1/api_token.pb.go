@@ -44,6 +44,8 @@ const (
 	APITokenServiceListRequest_SCOPE_UNSPECIFIED APITokenServiceListRequest_Scope = 0
 	APITokenServiceListRequest_SCOPE_PROJECT     APITokenServiceListRequest_Scope = 1
 	APITokenServiceListRequest_SCOPE_GLOBAL      APITokenServiceListRequest_Scope = 2
+	// Tokens confined to the projects of a product.
+	APITokenServiceListRequest_SCOPE_PRODUCT APITokenServiceListRequest_Scope = 3
 )
 
 // Enum value maps for APITokenServiceListRequest_Scope.
@@ -52,11 +54,13 @@ var (
 		0: "SCOPE_UNSPECIFIED",
 		1: "SCOPE_PROJECT",
 		2: "SCOPE_GLOBAL",
+		3: "SCOPE_PRODUCT",
 	}
 	APITokenServiceListRequest_Scope_value = map[string]int32{
 		"SCOPE_UNSPECIFIED": 0,
 		"SCOPE_PROJECT":     1,
 		"SCOPE_GLOBAL":      2,
+		"SCOPE_PRODUCT":     3,
 	}
 )
 
@@ -526,16 +530,17 @@ const file_controlplane_v1_api_token_proto_rawDesc = "" +
 	"\x03jwt\x18\x02 \x01(\tR\x03jwt\"8\n" +
 	"\x1cAPITokenServiceRevokeRequest\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\"\x1f\n" +
-	"\x1dAPITokenServiceRevokeResponse\"\xd0\x03\n" +
+	"\x1dAPITokenServiceRevokeResponse\"\xe3\x03\n" +
 	"\x1aAPITokenServiceListRequest\x12+\n" +
 	"\x0finclude_revoked\x18\x01 \x01(\bB\x02\x18\x01R\x0eincludeRevoked\x12<\n" +
 	"\aproject\x18\x04 \x01(\v2\".controlplane.v1.IdentityReferenceR\aproject\x12G\n" +
 	"\x05scope\x18\x02 \x01(\x0e21.controlplane.v1.APITokenServiceListRequest.ScopeR\x05scope\x12]\n" +
-	"\rstatus_filter\x18\x05 \x01(\x0e28.controlplane.v1.APITokenServiceListRequest.StatusFilterR\fstatusFilter\"C\n" +
+	"\rstatus_filter\x18\x05 \x01(\x0e28.controlplane.v1.APITokenServiceListRequest.StatusFilterR\fstatusFilter\"V\n" +
 	"\x05Scope\x12\x15\n" +
 	"\x11SCOPE_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rSCOPE_PROJECT\x10\x01\x12\x10\n" +
-	"\fSCOPE_GLOBAL\x10\x02\"Z\n" +
+	"\fSCOPE_GLOBAL\x10\x02\x12\x11\n" +
+	"\rSCOPE_PRODUCT\x10\x03\"Z\n" +
 	"\fStatusFilter\x12\x18\n" +
 	"\x14STATUS_FILTER_ACTIVE\x10\x00\x12\x19\n" +
 	"\x15STATUS_FILTER_REVOKED\x10\x01\x12\x15\n" +

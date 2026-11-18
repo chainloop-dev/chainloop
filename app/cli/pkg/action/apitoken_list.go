@@ -61,6 +61,8 @@ func mapScope(scope string) pb.APITokenServiceListRequest_Scope {
 		return pb.APITokenServiceListRequest_SCOPE_PROJECT
 	case "global":
 		return pb.APITokenServiceListRequest_SCOPE_GLOBAL
+	case "product":
+		return pb.APITokenServiceListRequest_SCOPE_PRODUCT
 	default:
 		return pb.APITokenServiceListRequest_SCOPE_UNSPECIFIED
 	}

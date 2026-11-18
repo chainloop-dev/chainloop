@@ -65,6 +65,8 @@ message APITokenServiceListRequest {
     SCOPE_UNSPECIFIED = 0;
     SCOPE_PROJECT = 1;
     SCOPE_GLOBAL = 2;
+    // Tokens confined to the projects of a product.
+    SCOPE_PRODUCT = 3;
   }
 
   // filter by the scope of the token

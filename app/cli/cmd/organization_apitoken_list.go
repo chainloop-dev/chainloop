@@ -36,6 +36,7 @@ func newAPITokenListCmd() *cobra.Command {
 	var availableScopes = []string{
 		"project",
 		"global",
+		"product",
 	}
 
 	var availableStatusFilters = []string{
