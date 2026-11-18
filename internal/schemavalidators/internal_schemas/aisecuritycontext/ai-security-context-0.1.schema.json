@@ -434,6 +434,15 @@
           "minimum": 0,
           "description": "Total number of commits reachable from the scanned revision (git rev-list --count of the target SHA). The denominator a consumer needs to render scan progress as \"N of M commits\" or a percentage. OPTIONAL: omitted when unknown — a shallow clone (whose count would be truncated) or an artifact produced before this field existed. The managed flow mirror-clones full history, so it is populated there. A snapshot of repository size, not a funnel counter, so it is not part of the reconciles invariant."
         },
+        "scan_start_date": {
+          "type": "string",
+          "description": "The scan-start-date floor the run used: the oldest commit date the backfill mined to, as an RFC 3339 timestamp or a date. OPTIONAL: omitted when the scan has no floor (the full history) or when the artifact predates this field. It makes the floor attested, so a reader knows the oldest history the scan reached rather than inferring it from the window."
+        },
+        "in_range_commits_total": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many commits reachable from the scanned revision are on or after scan_start_date — the denominator for coverage WITHIN the start date, as distinct from repo_commits_total (the whole repository). The difference between the two is the history the start date excludes, so a consumer can show both the in-range coverage and how much an earlier start date would add. OPTIONAL: omitted when there is no floor (it would equal repo_commits_total) or on an artifact produced before this field existed."
+        },
         "pending_survivors": {
           "type": "integer",
           "minimum": 0,

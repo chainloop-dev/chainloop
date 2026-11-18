@@ -123,6 +123,18 @@ type ScanStats struct {
 	// so it is outside the reconciles invariant. Omitted (zero) when unknown: a
 	// shallow clone, or an artifact produced before this field existed.
 	RepoCommitsTotal int `json:"repo_commits_total,omitempty"`
+	// ScanStartDate is the scan-start-date floor the run used: the oldest commit date
+	// the backfill mined to (RFC 3339 or a date). Omitted when the scan has no floor
+	// (full history) or predates this field. It makes the floor attested, so a reader
+	// knows the oldest history the scan reached rather than inferring it.
+	ScanStartDate string `json:"scan_start_date,omitempty"`
+	// InRangeCommitsTotal is how many commits reachable from the scanned revision are
+	// on or after ScanStartDate — the denominator for coverage WITHIN the start date,
+	// as distinct from RepoCommitsTotal (the whole repository). The difference between
+	// the two is the history the start date excludes, so a consumer can show both the
+	// in-range coverage and how much an earlier start date would add. Omitted when
+	// there is no floor (it equals RepoCommitsTotal) or on an older artifact.
+	InRangeCommitsTotal int `json:"in_range_commits_total,omitempty"`
 	// PendingSurvivors is how many survivors still await adjudication: neither in
 	// the frontier, nor a triage hole, nor abandoned after the retry cap. Zero
 	// alongside AdjudicationComplete is the drained queue.
