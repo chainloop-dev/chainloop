@@ -28,7 +28,7 @@ When your code goes against this spec, say so in your PR. Supersede the entry wh
 
 ## Summary
 
-The AI coding session evidence will record how often a person stepped in during the session. Each type of human touch point gets its own count: prompts, answered questions, permission approvals and rejections, plan approvals and rejections, and interrupts. The evidence will also record who started the session, and the permission modes of the agent. The starter tells a scheduled run from a session that a person started. The permission mode tells which touch points the agent could ask for. The team needs this data to compare sessions and to improve autonomous agents. A later autonomy score can use it, but this spec does not define that score.
+The AI coding session evidence will record how often a person stepped in during the session. Each type of human touch point gets its own count: prompts, answered questions, permission approvals and rejections, plan approvals and rejections, and interrupts. The evidence will also record who started the session, and the permission modes of the agent. The starter tells an interactive session that a person started from a headless or automated run. The permission mode tells which touch points the agent could ask for. The team needs this data to compare sessions and to improve autonomous agents. A later autonomy score can use it, but this spec does not define that score.
 
 ## Problem
 
@@ -113,7 +113,7 @@ When a provider can detect a touch point type, the evidence MUST hold its count,
 
 Each provider MUST record the touch point types and the permission modes that its transcript or hook events show. Claude Code MUST record all of them. Sometimes a provider cannot tell an approval by the user from an approval by a rule. Then it MUST leave out the approval count, and MUST NOT guess. The new data MUST be additive, and the schema version of the evidence MUST stay the same. The existing conversation counts MUST keep their meaning. A failure to count MUST give a warning, MUST leave out the affected counts, and MUST NOT stop evidence creation or block the Git push.
 
-- Done when: old evidence and new evidence both pass schema validation. The compatibility matrix in the Trace README has one row for each touch point type, one row for the permission modes, and one row for the starter. Each row has a cell for each provider. Each cell that is not **Yes** has a "Why not Yes" line. The matrix changes in the same PR as the provider code. Its cells are the expected result for each provider, and the PR of the milestone for that provider sets them.
+- Done when: old evidence and new evidence both pass schema validation. The compatibility matrix in the Trace README gets new rows. Each touch point type, the permission modes, and the starter get one row each. Each row has a cell for each provider. Each cell that is not **Yes** has a "Why not Yes" line. The matrix changes in the same PR as the provider code. Its cells are the expected result for each provider, and the PR of the milestone for that provider sets them.
 
 ## Constraints
 
@@ -140,7 +140,7 @@ The existing session object also gets a `started_by` field, next to the session 
 
 The CLI makes this section at push time, in the same step that parses the transcript for the other session data. The provider of each agent counts the touch points, because each agent records them differently. A provider that cannot detect a type leaves out its field (R-007).
 
-**Claude Code.** The transcript records the permission mode on each user record, and the hook events carry it too. The transcript shows the prompts, the answers to the question tool, the result of each plan tool call, and the interrupt markers. A rejected permission request gives a tool result that says the user rejected the tool use. The transcript does not show whether the agent asked before an approved action, because an allow rule gives the same record. The Trace hooks will also listen to the event that Claude Code sends when it shows a permission request. A request that the tool then completes is an approval. Requests for the plan tool and the question tool are not permission requests (R-008). For the starter, the transcript records how the agent ran: an interactive terminal, or a headless or SDK run. A message from another agent session carries an origin that is not a person. The first user record of the session gives the starter (R-010).
+**Claude Code.** The transcript records the permission mode on each user record, and the hook events carry it too. The transcript shows the prompts, the answers to the question tool, the result of each plan tool call, and the interrupt markers. A rejected permission request gives a tool result that says the user rejected the tool use. The transcript does not show whether the agent asked before an approved action, because an allow rule gives the same record. The Trace hooks will also listen to the event that Claude Code sends when it shows a permission request. A request with a tool result that is not a rejection is an approval, also when the tool then failed or the user interrupted it. Requests for the plan tool and the question tool are not permission requests (R-008). For the starter, the transcript records how the agent ran: an interactive terminal, or a headless or SDK run. A message from another agent session carries an origin that is not a person. The first user record of the session gives the starter (R-010).
 
 **Other providers.** Each provider records the types that its transcript or hook events show, for example the approval policy of Codex. It leaves out the other types (R-007). The compatibility matrix in the Trace README records the result for each provider and type (R-009).
 
@@ -153,7 +153,7 @@ flowchart LR
     T --> P[Provider parser at push time]
     S --> P
     P -->|permission modes and touch point counts| E[Session evidence: human interaction section]
-    E --> V[Schema validation in the control plane]
+    E --> V[Schema validation in the CLI]
 ```
 
 ## Decision Record

@@ -49,7 +49,7 @@ The components stay the same. The change adds one hook path for Claude Code and 
 | Users and other parts of the product | The session evidence gets a new section. The existing conversation counts do not change. The platform can ignore the section until a later change reads it. |
 | Data and migrations | None. The evidence is a material, not a table. |
 | Configuration and deployment | `trace init` installs one more Claude Code hook. A repository that ran `trace init` before gets it on the next `trace init`. Until then, its evidence has no permission counts. |
-| Compatibility | The section is additive and the schema version stays the same. An old control plane rejects evidence with the new section, because the root of the schema allows no unknown fields. The control plane validates the evidence, so it must ship before or with the CLI. |
+| Compatibility | The section is additive and the schema version stays the same. Only the CLI runs the schema validation, with the schema in its own binary. The control plane does not validate the evidence, so a new CLI works with an old control plane, and no release order applies. |
 | Rollback | Revert the CLI. Evidence that is already stored keeps the section, and the schema still accepts it. |
 
 ## Milestones
@@ -73,8 +73,8 @@ Add the section to the evidence data with the fields of the spec Proposal table.
 
 | File | Change |
 |------|--------|
-| `pkg/attestation/crafter/materials/aicodingsession/aicodingsession.go` | Add `StartedBy string` to `Session` (empty when not recorded). Add `HumanInteraction` with `PermissionModes []string` and a `TouchPoints` struct of `*int` fields. Add `HumanInteraction *HumanInteraction` to `Data`. |
-| `pkg/attestation/crafter/materials/aicodingsession/aicodingsession_test.go` | Add a case: a zero count stays in the JSON output, and a nil count stays out. |
+| `pkg/attestation/crafter/materials/aicodingsession/aicodingsession.go` | Add `StartedBy string` to `Session`, with the `started_by,omitempty` JSON tag, so an unknown starter is left out. Add `HumanInteraction` with `PermissionModes []string` and a `TouchPoints` struct of `*int` fields. Add `HumanInteraction *HumanInteraction` to `Data`. |
+| `pkg/attestation/crafter/materials/aicodingsession/aicodingsession_test.go` | Add cases: a zero count stays in the JSON output, a nil count stays out, and an empty `StartedBy` gives no `started_by` key. |
 | `internal/schemavalidators/internal_schemas/aicodingsession/ai-coding-session-0.1.schema.json` | Add the optional `human_interaction` property. State in its description that the mode names are native to each agent. Add the optional `session.started_by` string, open like `session.mode`, and name its values in the description. |
 | `internal/schemavalidators/schemavalidators_test.go` | Add cases: evidence with the section and `started_by` validates, and evidence without them validates. |
 | `pkg/attestation/crafter/materials/aicodingsession/redact.go` | Add `/data/human_interaction/permission_modes/*` and `/data/session/started_by` to the protected paths. |
@@ -90,6 +90,7 @@ The parser reads each record of the main transcript and of each subagent transcr
 | Rule input | Count |
 |------------|-------|
 | User record of the main transcript that `isUserPrompt` accepts | prompts |
+| Queued prompt attachment of the main transcript that `isQueuedPrompt` accepts (a prompt sent while the agent works) | prompts |
 | User record with an injected marker (command output, task notification, compact summary, command caveat) | none |
 | `AskUserQuestion` result with an answer | questions_answered |
 | `ExitPlanMode` result, not rejected | plans_approved |
@@ -108,11 +109,12 @@ The parser reads each record of the main transcript and of each subagent transcr
 <details>
 <summary><strong>03 / 06 · Claude Code sessions record who started them (R-010, R-001)</strong></summary>
 
-The parser reads the first user record of the main transcript. A record with an origin that is not a person gives `agent`. Else, the run type field gives `automation` for a headless or SDK run, and `person` for an interactive terminal. The origin wins over the run type, so a headless run that an agent started gives `agent`. When the parser cannot tell, it leaves out the value. The first prompt counts in the prompt count only for `person` (R-001).
+The parser reads the first user record of the main transcript. A record whose origin names another agent session gives `agent`. An origin that the parser does not know leaves out the value. Else, the run type field gives `automation` for a headless or SDK run, and `person` for an interactive terminal. The origin wins over the run type, so a headless run that an agent started gives `agent`. When the parser cannot tell, it leaves out the value. The first prompt counts in the prompt count only for `person` (R-001).
 
 | First user record | `session.started_by` | First prompt counted |
 |-------------------|----------------------|----------------------|
 | Origin is another agent session, headless or not | `agent` | no |
+| Origin that the parser does not know | left out | no |
 | Headless or SDK run, no agent origin | `automation` | no |
 | Interactive terminal | `person` | yes |
 | Cannot tell | left out | no |
@@ -145,15 +147,16 @@ The parser reads the first user record of the main transcript. A record with an 
 <details>
 <summary><strong>05 / 06 · Claude Code sessions record permission approvals and rejections (R-003, R-007, R-009)</strong></summary>
 
-At push, the assembly reads the permission requests of the session and passes them to the parser in `ParseOpts`. For each request, the parser finds the tool result of the same call. A rejection marker gives a rejection. A completed result gives an approval. No result gives neither. A session with no requests is normal, for example in an autonomous mode. So the assembly also tells the parser whether the repository has the permission request hook installed. With the hook and no requests, both counts are zero. Without the hook, the parser leaves out both counts and adds a warning (R-007).
+At push, the assembly reads the permission requests of the session and passes them to the parser in `ParseOpts`. For each request, the parser finds the tool result of the same call. A rejection marker gives a rejection. Any other result gives an approval, also a failed or interrupted run. No result gives neither. A request with no tool call ID cannot be matched safely, so it leaves out both counts and adds a warning (R-009). A session with no requests is normal, for example in an autonomous mode. So the session-start hook records in the session record whether the permission request hook was installed at that time. With the hook and no requests, both counts are zero. Without the hook, the parser leaves out both counts and adds a warning (R-007).
 
 | File | Change |
 |------|--------|
 | `app/cli/internal/trace/provider.go` | Add `PermissionRequests` and `PermissionHookInstalled` to `ParseOpts`. |
 | `app/cli/internal/trace/claude/hooks.go` | Add a function that tells if the permission request hook is installed, next to `HooksInstalled`. |
-| `app/cli/pkg/action/trace_hook_handler.go` | In `buildSessionEvidence`, read the requests from the state, call that function, and set both results in `ParseOpts`. |
+| `app/cli/internal/trace/state/session.go`, `app/cli/pkg/action/trace_agent_hook.go` | At session start, call that function and store the result in the session record. |
+| `app/cli/pkg/action/trace_hook_handler.go` | In `buildSessionEvidence`, read the requests and the stored result, and set both in `ParseOpts`. |
 | `app/cli/internal/trace/claude/interaction.go` | Match each request to its tool result and count approvals and rejections. |
-| `app/cli/internal/trace/claude/interaction_test.go` | Add cases: approved, rejected with feedback text, Esc at a permission dialog, unanswered, no requests with the hook, no hook. |
+| `app/cli/internal/trace/claude/interaction_test.go` | Add cases for approvals: approved, and approved then failed. Add cases for rejections: with feedback text, and Esc at a dialog. Also add: unanswered, no tool call ID, no requests with the hook, and no hook. |
 
 </details>
 
@@ -172,7 +175,7 @@ Verify: `go test ./pkg/attestation/crafter/materials/aicodingsession/... ./inter
 
 ## Open Questions
 
-- [ ] **Does the Claude Code permission request hook carry the tool call ID?** Proposed: find out in step 04. Without an ID, match each request to the next result of the same tool.
+- [ ] **Does the Claude Code permission request hook carry the tool call ID?** Proposed: find out in step 04. Without an ID, step 05 leaves out the approval and rejection counts and adds a warning. It does not match by tool name, because two calls of one tool can overlap.
 
 ## Skipped and risks
 
@@ -187,6 +190,5 @@ Not checked: some Claude Code field and marker names. No fixture in the reposito
 
 | Risk | Mitigation |
 |------|------------|
-| An old control plane rejects evidence with the new section. | Ship the control plane schema change before or with the CLI release (see Compatibility). |
 | A repository with old hooks has no permission request records. | The parser leaves out the approval and rejection counts and adds a warning (M1 step 05). |
 | The permission request hook writes output that Claude Code reads as a decision. | The handler writes nothing to stdout. A test in step 04 checks it. |
