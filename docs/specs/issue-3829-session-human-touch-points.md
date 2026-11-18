@@ -28,25 +28,34 @@ When your code goes against this spec, say so in your PR. Supersede the entry wh
 
 ## Summary
 
-The AI coding session evidence will record how often a person stepped in during the session. Each type of human touch point gets its own count: prompts, answered questions, permission approvals and rejections, plan approvals and rejections, and interrupts. The evidence will also record the permission modes of the agent, because the permission mode tells which touch points the agent could ask for. The team needs this data to compare sessions and to improve autonomous agents. A later autonomy score can use it, but this spec does not define that score.
+The AI coding session evidence will record how often a person stepped in during the session. Each type of human touch point gets its own count: prompts, answered questions, permission approvals and rejections, plan approvals and rejections, and interrupts. The evidence will also record who started the session, and the permission modes of the agent. The starter tells a scheduled run from a session that a person started. The permission mode tells which touch points the agent could ask for. The team needs this data to compare sessions and to improve autonomous agents. A later autonomy score can use it, but this spec does not define that score.
 
 ## Problem
 
 - The session evidence does not record how often a person had to step in. We cannot tell an autonomous session from a session that a person guided step by step.
 - The existing user message count does not measure human effort. For Claude Code it counts every record in the user role, which includes tool results and messages that the agent injects.
 - The evidence does not record the permission mode of the agent. A session with no permission approvals can be an autonomous mode or a session with no risky actions. A reader cannot tell which.
+- The evidence does not record who started the session. The start prompt of a scheduled headless run looks like a prompt that a person typed.
 - The existing session mode (a coding session or a single `trace run`) is a different concept. It does not tell how the agent asked for permission.
 
 ## Goals and Non-Goals
 
 - Goal: a reviewer can see how often a person stepped in during a session, for each type of touch point.
+- Goal: when the provider records the starter and the counts, a reader can sort sessions into these groups:
+  - Started by another agent or an automated run, with no human touch point.
+  - Started by a person, with no human touch point after the first prompt.
+  - Started by a person, with human touch points after the first prompt.
+  - Started by another agent or an automated run, with human touch points later.
 - In scope: the permission modes (R-006). They could be a separate spec, but the ticket names them, and a reader needs them to explain a count of zero.
 - In scope: the counts of rejected permissions and plans (R-003, R-004) and of interrupts (R-005). The ticket names only approvals. A rejection and an interrupt are also times when a person stepped in, so they serve the same problem.
+- In scope: who started the session (R-010). The ticket does not name it. But without it, the prompt count is wrong for a scheduled run, because its start prompt looks like a typed prompt.
 - In scope: all providers (milestone 2). The team compares sessions across agents, and needs the same data for each agent.
 - Non-goal: an autonomy score, or a change to the AI score. A later change can calculate one from this data.
 - Non-goal: a common scale of permission modes across agents (for example ask, plan, autonomous). The score needs it, so the score work defines it. Follow-up: the autonomy score ticket.
 - Non-goal: a view of the touch points in the platform UI. Follow-up: a platform ticket.
 - Non-goal: the time that the agent waited for a person.
+- Non-goal: a headless run that a person started by hand. The CLI cannot tell it from a run that a scheduler or a script started, so it records `automation` (R-010).
+- Non-goal: whether the session completed its task. A session that a person stopped with no touch point looks the same as a session that completed.
 
 ## Requirements
 
@@ -58,9 +67,15 @@ Each touch point MUST count in one count only. For example, the approval of a pl
 
 ### R-001: User prompts
 
-The session evidence MUST count the messages that a person sent to the agent, typed or pasted. A slash command that a person typed counts. Tool results, messages that the agent, a hook, or the CLI injects, and messages that another agent session sends MUST NOT count.
+The session evidence MUST count the messages that a person sent to the agent, typed or pasted. A slash command that a person typed counts. The first prompt counts only when a person started the session (R-010). Tool results, messages that the agent, a hook, or the CLI injects, and messages that another agent session sends MUST NOT count.
 
-- Done when: a session with three typed prompts, one of which holds a pasted link, records three prompts. The tool results and injected messages of the same session do not change the count.
+- Done when: a session with three typed prompts, one of which holds a pasted link, records three prompts. The tool results and injected messages of the same session do not change the count. A scheduled headless run with one start prompt records zero prompts.
+
+### R-010: Who started the session
+
+The session evidence MUST record who started the session: a person, another agent session, or an automated run. An automated run is a run with no interactive user, for example a headless run that a scheduler or a script starts. Each headless run counts as an automated run. One exception: a run that another agent session started records `agent`, also when it is headless, because the sender of the first message wins. When the provider cannot tell, the evidence MUST leave out the value (R-007).
+
+- Done when: four sessions record their starters. An interactive session of a person records `person`. A session that another agent session started records `agent`, and so does a headless run that an agent started. A scheduled headless run records `automation`.
 
 ### R-002: Answered questions
 
@@ -98,7 +113,7 @@ When a provider can detect a touch point type, the evidence MUST hold its count,
 
 Each provider MUST record the touch point types and the permission modes that its transcript or hook events show. Claude Code MUST record all of them. Sometimes a provider cannot tell an approval by the user from an approval by a rule. Then it MUST leave out the approval count, and MUST NOT guess. The new data MUST be additive, and the schema version of the evidence MUST stay the same. The existing conversation counts MUST keep their meaning. A failure to count MUST give a warning, MUST leave out the affected counts, and MUST NOT stop evidence creation or block the Git push.
 
-- Done when: old evidence and new evidence both pass schema validation. The compatibility matrix in the Trace README has one row for each touch point type and one row for the permission modes. Each row has a cell for each provider. Each cell that is not **Yes** has a "Why not Yes" line. The matrix changes in the same PR as the provider code. Its cells are the expected result for each provider, and the PR of the milestone for that provider sets them.
+- Done when: old evidence and new evidence both pass schema validation. The compatibility matrix in the Trace README has one row for each touch point type, one row for the permission modes, and one row for the starter. Each row has a cell for each provider. Each cell that is not **Yes** has a "Why not Yes" line. The matrix changes in the same PR as the provider code. Its cells are the expected result for each provider, and the PR of the milestone for that provider sets them.
 
 ## Constraints
 
@@ -121,9 +136,11 @@ The user works with the agent as before. Nothing changes in the agent. When the 
 | `touch_points.plans_rejected` | Plans that the user rejected (R-004) |
 | `touch_points.interrupts` | Interrupts of the agent by the user (R-005) |
 
+The existing session object also gets a `started_by` field, next to the session mode, with the values `person`, `agent`, or `automation` (R-010). It describes the session, not a human action, so it is not part of the human interaction section.
+
 The CLI makes this section at push time, in the same step that parses the transcript for the other session data. The provider of each agent counts the touch points, because each agent records them differently. A provider that cannot detect a type leaves out its field (R-007).
 
-**Claude Code.** The transcript records the permission mode on each user record, and the hook events carry it too. The transcript shows the prompts, the answers to the question tool, the result of each plan tool call, and the interrupt markers. A rejected permission request gives a tool result that says the user rejected the tool use. The transcript does not show whether the agent asked before an approved action, because an allow rule gives the same record. The Trace hooks will also listen to the event that Claude Code sends when it shows a permission request. A request that the tool then completes is an approval. Requests for the plan tool and the question tool are not permission requests (R-008).
+**Claude Code.** The transcript records the permission mode on each user record, and the hook events carry it too. The transcript shows the prompts, the answers to the question tool, the result of each plan tool call, and the interrupt markers. A rejected permission request gives a tool result that says the user rejected the tool use. The transcript does not show whether the agent asked before an approved action, because an allow rule gives the same record. The Trace hooks will also listen to the event that Claude Code sends when it shows a permission request. A request that the tool then completes is an approval. Requests for the plan tool and the question tool are not permission requests (R-008). For the starter, the transcript records how the agent ran: an interactive terminal, or a headless or SDK run. A message from another agent session carries an origin that is not a person. The first user record of the session gives the starter (R-010).
 
 **Other providers.** Each provider records the types that its transcript or hook events show, for example the approval policy of Codex. It leaves out the other types (R-007). The compatibility matrix in the Trace README records the result for each provider and type (R-009).
 

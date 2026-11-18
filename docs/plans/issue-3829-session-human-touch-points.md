@@ -56,7 +56,7 @@ The components stay the same. The change adds one hook path for Claude Code and 
 
 | # | Milestone | Requirements | Depends on |
 |---|-----------|--------------|------------|
-| M1 | Evidence section and Claude Code | R-001 to R-009 | none |
+| M1 | Evidence section and Claude Code | R-001 to R-010 | none |
 
 ### M1: Evidence section and Claude Code
 
@@ -67,23 +67,23 @@ The session evidence gets the human interaction section, and its schema accepts 
 **Steps**, in build order. Open a step to see what changes and the files it touches.
 
 <details>
-<summary><strong>01 / 05 · The session evidence can hold the human interaction section (R-007, R-009)</strong></summary>
+<summary><strong>01 / 06 · The session evidence can hold the human interaction section (R-007, R-009)</strong></summary>
 
 Add the section to the evidence data with the fields of the spec Proposal table. Each count is a pointer, and the list of permission modes is a nil slice when not recorded. So a zero stays in the JSON and a missing count stays out (R-007). The JSON schema gets the new optional property, with the same open string rule as `session.mode` for the mode names. The secret redaction keeps the mode names, as it keeps `session.mode`.
 
 | File | Change |
 |------|--------|
-| `pkg/attestation/crafter/materials/aicodingsession/aicodingsession.go` | Add `HumanInteraction` with `PermissionModes []string` and a `TouchPoints` struct of `*int` fields. Add `HumanInteraction *HumanInteraction` to `Data`. |
+| `pkg/attestation/crafter/materials/aicodingsession/aicodingsession.go` | Add `StartedBy string` to `Session` (empty when not recorded). Add `HumanInteraction` with `PermissionModes []string` and a `TouchPoints` struct of `*int` fields. Add `HumanInteraction *HumanInteraction` to `Data`. |
 | `pkg/attestation/crafter/materials/aicodingsession/aicodingsession_test.go` | Add a case: a zero count stays in the JSON output, and a nil count stays out. |
-| `internal/schemavalidators/internal_schemas/aicodingsession/ai-coding-session-0.1.schema.json` | Add the optional `human_interaction` property. State in its description that the mode names are native to each agent. |
-| `internal/schemavalidators/schemavalidators_test.go` | Add cases: evidence with the section validates, and evidence without it validates. |
-| `pkg/attestation/crafter/materials/aicodingsession/redact.go` | Add `/data/human_interaction/permission_modes/*` to the protected paths. |
-| `pkg/attestation/crafter/materials/aicodingsession/redact_test.go` | Add a case: a mode name that looks like a secret stays. |
+| `internal/schemavalidators/internal_schemas/aicodingsession/ai-coding-session-0.1.schema.json` | Add the optional `human_interaction` property. State in its description that the mode names are native to each agent. Add the optional `session.started_by` string, open like `session.mode`, and name its values in the description. |
+| `internal/schemavalidators/schemavalidators_test.go` | Add cases: evidence with the section and `started_by` validates, and evidence without them validates. |
+| `pkg/attestation/crafter/materials/aicodingsession/redact.go` | Add `/data/human_interaction/permission_modes/*` and `/data/session/started_by` to the protected paths. |
+| `pkg/attestation/crafter/materials/aicodingsession/redact_test.go` | Add cases: a mode name and a starter value that look like secrets stay. |
 
 </details>
 
 <details>
-<summary><strong>02 / 05 · Claude Code sessions record prompts, questions, plans, interrupts, and permission modes (R-001, R-002, R-004, R-005, R-006, R-008)</strong></summary>
+<summary><strong>02 / 06 · Claude Code sessions record prompts, questions, plans, interrupts, and permission modes (R-001, R-002, R-004, R-005, R-006, R-008)</strong></summary>
 
 The parser reads each record of the main transcript and of each subagent transcript. Prompts come from the main transcript only, because the first message of a subagent comes from the parent agent. A prompt is a record that the existing `isUserPrompt` function accepts, with no interrupt marker and no injected marker. A question is an `AskUserQuestion` tool result with an answer. A plan is an `ExitPlanMode` tool result: approved when it is not a rejection. An interrupt is the interrupt marker text. The interrupt marker that follows a rejection at a plan or permission dialog is not an interrupt (R-008). The permission modes come from the `permissionMode` field of the user records, in the order of first use. A record that the parser cannot read gives a warning, and the parser leaves out the counts that it affects (R-009).
 
@@ -106,7 +106,28 @@ The parser reads each record of the main transcript and of each subagent transcr
 </details>
 
 <details>
-<summary><strong>03 / 05 · Claude Code records each permission request that it shows (R-003)</strong></summary>
+<summary><strong>03 / 06 · Claude Code sessions record who started them (R-010, R-001)</strong></summary>
+
+The parser reads the first user record of the main transcript. A record with an origin that is not a person gives `agent`. Else, the run type field gives `automation` for a headless or SDK run, and `person` for an interactive terminal. The origin wins over the run type, so a headless run that an agent started gives `agent`. When the parser cannot tell, it leaves out the value. The first prompt counts in the prompt count only for `person` (R-001).
+
+| First user record | `session.started_by` | First prompt counted |
+|-------------------|----------------------|----------------------|
+| Origin is another agent session, headless or not | `agent` | no |
+| Headless or SDK run, no agent origin | `automation` | no |
+| Interactive terminal | `person` | yes |
+| Cannot tell | left out | no |
+
+| File | Change |
+|------|--------|
+| `app/cli/internal/trace/claude/interaction.go` | Find the starter, and skip the first prompt when the starter is not a person. |
+| `app/cli/internal/trace/claude/parse.go` | Set `Session.StartedBy`. |
+| `app/cli/internal/trace/claude/testdata/interaction-headless.jsonl`, `app/cli/internal/trace/claude/testdata/interaction-agent-started.jsonl` | New fixtures from a real headless run and a real session that another agent session started. |
+| `app/cli/internal/trace/claude/interaction_test.go` | Table tests for each row of the starter table. |
+
+</details>
+
+<details>
+<summary><strong>04 / 06 · Claude Code records each permission request that it shows (R-003)</strong></summary>
 
 `trace init` installs a `PermissionRequest` hook. The handler appends the tool name and the tool call ID of the request to a state file of the session. It writes nothing to stdout, so the hook makes no permission decision. The handler never fails the agent. It skips the question and plan tools (R-008).
 
@@ -122,7 +143,7 @@ The parser reads each record of the main transcript and of each subagent transcr
 </details>
 
 <details>
-<summary><strong>04 / 05 · Claude Code sessions record permission approvals and rejections (R-003, R-007, R-009)</strong></summary>
+<summary><strong>05 / 06 · Claude Code sessions record permission approvals and rejections (R-003, R-007, R-009)</strong></summary>
 
 At push, the assembly reads the permission requests of the session and passes them to the parser in `ParseOpts`. For each request, the parser finds the tool result of the same call. A rejection marker gives a rejection. A completed result gives an approval. No result gives neither. A session with no requests is normal, for example in an autonomous mode. So the assembly also tells the parser whether the repository has the permission request hook installed. With the hook and no requests, both counts are zero. Without the hook, the parser leaves out both counts and adds a warning (R-007).
 
@@ -137,9 +158,9 @@ At push, the assembly reads the permission requests of the session and passes th
 </details>
 
 <details>
-<summary><strong>05 / 05 · The README matrix shows which providers record the touch points (R-009)</strong></summary>
+<summary><strong>06 / 06 · The README matrix shows which providers record the touch points (R-009)</strong></summary>
 
-Add one row for each touch point type and one for the permission modes to the Session collection table. Set the Claude Code cells to **Yes**. Set the other cells to **No**, with the "Why not Yes" line "Not implemented yet (spec issue-3829, milestone 2)". The e2e suite reports these rows as "no check" (TRC-026). That result is correct, because the rows have no check.
+Add one row for each touch point type, one for the permission modes, and one for the starter to the Session collection table. Set the Claude Code cells to **Yes**. Set the other cells to **No**, with the "Why not Yes" line "Not implemented yet (spec issue-3829, milestone 2)". The e2e suite reports these rows as "no check" (TRC-026). That result is correct, because the rows have no check.
 
 | File | Change |
 |------|--------|
@@ -151,7 +172,7 @@ Verify: `go test ./pkg/attestation/crafter/materials/aicodingsession/... ./inter
 
 ## Open Questions
 
-- [ ] **Does the Claude Code permission request hook carry the tool call ID?** Proposed: find out in step 03. Without an ID, match each request to the next result of the same tool.
+- [ ] **Does the Claude Code permission request hook carry the tool call ID?** Proposed: find out in step 04. Without an ID, match each request to the next result of the same tool.
 
 ## Skipped and risks
 
@@ -162,10 +183,10 @@ Verify: `go test ./pkg/attestation/crafter/materials/aicodingsession/... ./inter
 | A view in the platform UI | A Non-Goal of the spec. | platform ticket |
 | Milestone 2 of the spec: Codex, Copilot, Cursor, OpenCode, and Pi | The owner limited this plan to Claude Code. | One plan for each provider, written when the team starts it |
 
-Not checked: some Claude Code field and marker names. No fixture in the repository holds `permissionMode`, the question and plan tool results, the rejection and interrupt markers, or the permission request hook payload. Steps 02 and 03 start with a real interactive session for that reason.
+Not checked: some Claude Code field and marker names. No fixture in the repository holds them. They are `permissionMode`, the question and plan tool results, the rejection and interrupt markers, and the permission request hook payload. They also include the run type field and the origin of a message from another agent session. Steps 02, 03, and 04 start with real sessions for that reason: one interactive, one headless, and one that another agent session starts.
 
 | Risk | Mitigation |
 |------|------------|
 | An old control plane rejects evidence with the new section. | Ship the control plane schema change before or with the CLI release (see Compatibility). |
-| A repository with old hooks has no permission request records. | The parser leaves out the approval and rejection counts and adds a warning (M1 step 04). |
-| The permission request hook writes output that Claude Code reads as a decision. | The handler writes nothing to stdout. A test in step 03 checks it. |
+| A repository with old hooks has no permission request records. | The parser leaves out the approval and rejection counts and adds a warning (M1 step 05). |
+| The permission request hook writes output that Claude Code reads as a decision. | The handler writes nothing to stdout. A test in step 04 checks it. |
