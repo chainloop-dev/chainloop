@@ -42,9 +42,9 @@ The AI coding session evidence will record how often a person stepped in during 
 - Goal: a reviewer can see how often a person stepped in during a session, for each type of touch point.
 - In scope: the permission modes (R-006). They could be a separate spec, but the ticket names them, and a reader needs them to explain a count of zero.
 - In scope: the counts of rejected permissions and plans (R-003, R-004) and of interrupts (R-005). The ticket names only approvals. A rejection and an interrupt are also times when a person stepped in, so they serve the same problem.
+- In scope: all providers (milestone 2). The team compares sessions across agents, and needs the same data for each agent.
 - Non-goal: an autonomy score, or a change to the AI score. A later change can calculate one from this data.
 - Non-goal: a common scale of permission modes across agents (for example ask, plan, autonomous). The score needs it, so the score work defines it. Follow-up: the autonomy score ticket.
-- Non-goal: full support for the providers other than Claude Code. They can record the touch points that their transcripts show, and leave out the others. Follow-up: one ticket for each provider.
 - Non-goal: a view of the touch points in the platform UI. Follow-up: a platform ticket.
 - Non-goal: the time that the agent waited for a person.
 
@@ -94,11 +94,11 @@ The session evidence MUST record each permission mode that the agent used in the
 
 When a provider can detect a touch point type, the evidence MUST hold its count, also when the count is zero. When a provider cannot detect a type, the evidence MUST leave out that count. The same rule applies to the permission modes.
 
-### R-009: Claude Code support, compatibility, and failure safety
+### R-009: Provider support, compatibility, and failure safety
 
-Claude Code MUST record all the counts and the permission modes. The new data MUST be additive, and the schema version of the evidence MUST stay the same. The existing conversation counts MUST keep their meaning. A failure to count MUST give a warning, MUST leave out the affected counts, and MUST NOT stop evidence creation or block the Git push.
+Each provider MUST record the touch point types and the permission modes that its transcript or hook events show. Claude Code MUST record all of them. Sometimes a provider cannot tell an approval by the user from an approval by a rule. Then it MUST leave out the approval count, and MUST NOT guess. The new data MUST be additive, and the schema version of the evidence MUST stay the same. The existing conversation counts MUST keep their meaning. A failure to count MUST give a warning, MUST leave out the affected counts, and MUST NOT stop evidence creation or block the Git push.
 
-- Done when: old evidence and new evidence both pass schema validation. The compatibility matrix in the Trace README has one row for each touch point type and one row for the permission modes. Each row has a cell for each provider. Each cell that is not **Yes** has a "Why not Yes" line. The matrix changes in the same PR as the provider code.
+- Done when: old evidence and new evidence both pass schema validation. The compatibility matrix in the Trace README has one row for each touch point type and one row for the permission modes. Each row has a cell for each provider. Each cell that is not **Yes** has a "Why not Yes" line. The matrix changes in the same PR as the provider code. Its cells are the expected result for each provider, and the PR of the milestone for that provider sets them.
 
 ## Constraints
 
@@ -125,7 +125,7 @@ The CLI makes this section at push time, in the same step that parses the transc
 
 **Claude Code.** The transcript records the permission mode on each user record, and the hook events carry it too. The transcript shows the prompts, the answers to the question tool, the result of each plan tool call, and the interrupt markers. A rejected permission request gives a tool result that says the user rejected the tool use. The transcript does not show whether the agent asked before an approved action, because an allow rule gives the same record. The Trace hooks will also listen to the event that Claude Code sends when it shows a permission request. A request that the tool then completes is an approval. Requests for the plan tool and the question tool are not permission requests (R-008).
 
-**Other providers.** Each provider can record the types that its transcript or hook events show, for example the approval policy of Codex. The compatibility matrix in the Trace README records the result for each provider and type (R-009).
+**Other providers.** Each provider records the types that its transcript or hook events show, for example the approval policy of Codex. It leaves out the other types (R-007). The compatibility matrix in the Trace README records the result for each provider and type (R-009).
 
 ```mermaid
 flowchart LR
@@ -181,6 +181,11 @@ D-003 (each permission mode, in the order of first use) is now part of R-006. D-
 ## Open Questions
 
 None.
+
+## Milestones
+
+1. **Evidence section and Claude Code.** The evidence and its schema get the new section. Claude Code records all the counts and the permission modes. The README matrix gets the new rows.
+2. **One milestone for each other provider:** Codex, Copilot, Cursor, OpenCode, and Pi. Each one records the types that its agent shows, and updates its cells in the README matrix. These milestones can ship in any order after milestone 1.
 
 ## Risks
 
