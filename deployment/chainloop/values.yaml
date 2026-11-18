@@ -33,7 +33,7 @@ global:
 ##
 development: false
 
-## @param useLegacyGRPCEndpoints Give the clients the deprecated gRPC-only control plane and CAS endpoints (`ingressAPI`, `serviceAPI`) instead of the shared endpoints (`ingress`, `service`). This applies to the control plane connection to the CAS and to the CLI configuration in the release notes. Set it to false to use the shared endpoints. A later release changes the default to false. The chart creates the deprecated endpoints in both modes
+## @param useLegacyGRPCEndpoints Give the clients the deprecated gRPC-only control plane and CAS endpoints (`ingressAPI`, `serviceAPI`) instead of the shared endpoints (`ingress`, `service`). This applies to the control plane connection to the CAS and to the CLI configuration in the install notes (NOTES.txt). Set it to false to use the shared endpoints. A later release changes the default to false. The chart keeps the deprecated Services in both modes
 ##
 useLegacyGRPCEndpoints: true
 

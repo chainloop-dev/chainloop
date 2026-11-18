@@ -39,7 +39,7 @@ The chart also creates two deprecated gRPC-only endpoints. By default (`useLegac
 | `api.cp.chainloop.example` | Control plane, gRPC only | `controlplane.ingressAPI`, `controlplane.serviceAPI` | Deprecated |
 | `api.cas.chainloop.example` | Artifact CAS, gRPC only | `cas.ingressAPI`, `cas.serviceAPI` | Deprecated |
 
-The chart creates these two endpoints in both modes, so existing CLI installations continue to work. To move the clients to the shared endpoints, see [Migrate to the shared control plane and CAS endpoints](#migrate-to-the-shared-control-plane-and-cas-endpoints).
+The chart always creates the deprecated gRPC-only Services (`serviceAPI`), in both modes. It creates the deprecated Ingresses only when `controlplane.ingressAPI.enabled` and `cas.ingressAPI.enabled` are `true`, also in both modes. Existing CLI installations that use them continue to work. To move the clients to the shared endpoints, see [Migrate to the shared control plane and CAS endpoints](#migrate-to-the-shared-control-plane-and-cas-endpoints).
 
 ## TL;DR
 
@@ -229,14 +229,14 @@ Earlier versions of Chainloop exposed the control plane API and the CAS API on s
 
 Chainloop now uses one shared endpoint for each service, for example `cp.<domain>` and `cas.<domain>`. Each shared endpoint serves HTTP and native gRPC. See [Exposed endpoints](#exposed-endpoints).
 
-To keep compatibility with existing deployments, the top-level value `useLegacyGRPCEndpoints` selects the endpoints that the clients use. The clients are the control plane connection to the CAS, and the `chainloop config save` command in the release notes:
+To keep compatibility with existing deployments, the top-level value `useLegacyGRPCEndpoints` selects the endpoints that the clients use. The clients are the control plane connection to the CAS, and the `chainloop config save` command in the install notes (NOTES.txt):
 
 - `true` (default for now): the clients use the deprecated gRPC-only endpoints (`ingressAPI`, `serviceAPI`). The behavior of your deployment does not change.
 - `false`: the clients use the shared endpoints (`ingress`, `service`).
 
 A future chart release changes the default to `false`. A later release removes the deprecated gRPC-only endpoints.
 
-The chart continues to create the deprecated endpoints with both values. CLIs that you did not reconfigure continue to work.
+The chart continues to create the deprecated endpoints with both values: the Services always, and the Ingresses when `ingressAPI.enabled` is `true`. CLIs that you did not reconfigure continue to work.
 
 You have two options when you upgrade an existing deployment.
 
@@ -244,7 +244,9 @@ You have two options when you upgrade an existing deployment.
 
 We recommend that you migrate before the default changes. Do these steps:
 
-1. Enable the shared endpoints. If you use an Ingress, set `controlplane.ingress` and `cas.ingress` with their hostnames and TLS settings. `cas.ingress` is disabled by default. See [Enable a custom domain with TLS](#enable-a-custom-domain-with-tls).
+1. Enable the shared endpoints:
+   - If you use an Ingress, set `controlplane.ingress` and `cas.ingress` with their hostnames, `tls: true` and a certificate source. `cas.ingress` is disabled by default. See [Enable a custom domain with TLS](#enable-a-custom-domain-with-tls).
+   - If clients connect through a Service of type `NodePort` or `LoadBalancer`, copy these settings (`type`, node ports, load balancer settings) from `controlplane.serviceAPI` and `cas.serviceAPI` to `controlplane.service` and `cas.service`. The shared Services are of type `ClusterIP` by default.
 2. Make sure that HTTP/2 works on the full path from the client to the pod for `cp.<domain>` and `cas.<domain>`. This includes all load balancers. If one hop changes the connection to HTTP/1.1, native gRPC clients such as the CLI fail.
 3. If your values file sets custom annotations in `controlplane.ingressAPI.annotations` or `cas.ingressAPI.annotations`, move them to `controlplane.ingress.annotations` and `cas.ingress.annotations`.
 4. Set `useLegacyGRPCEndpoints: false` at the top level of your values file. Then upgrade the release:
@@ -258,6 +260,8 @@ We recommend that you migrate before the default changes. Do these steps:
    ```bash
    chainloop config save --control-plane cp.<domain>:443 --artifact-cas cas.<domain>:443
    ```
+
+   If the shared Ingresses do not use TLS, use port 80 and the `--insecure` flag. The install notes (NOTES.txt) show the command for your values.
 
 #### Option 2: Enable the compatibility mode
 
@@ -617,7 +621,7 @@ Google Cloud has a [managed Prometheus offering](https://cloud.google.com/stackd
 
 ### Configure Chainloop CLI to point to your instance
 
-Once you have your instance of Chainloop deployed, you need to configure the [CLI](https://github.com/chainloop-dev/chainloop/releases) to point to both the CAS and the Control plane gRPC APIs like this. The release notes of the chart show this command with the endpoints that `useLegacyGRPCEndpoints` selects. See [Migrate to the shared control plane and CAS endpoints](#migrate-to-the-shared-control-plane-and-cas-endpoints).
+Once you have your instance of Chainloop deployed, you need to configure the [CLI](https://github.com/chainloop-dev/chainloop/releases) to point to both the CAS and the Control plane gRPC APIs like this. The install notes of the chart (NOTES.txt) show this command with the endpoints that `useLegacyGRPCEndpoints` selects. See [Migrate to the shared control plane and CAS endpoints](#migrate-to-the-shared-control-plane-and-cas-endpoints).
 
 ```bash
 chainloop config save \
@@ -650,13 +654,13 @@ Once done, you can access with [two predefined users](https://github.com/chainlo
 
 ### Global parameters
 
-| Name                                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                   | Value   |
-| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `global.imageRegistry`                                | Global Docker image registry                                                                                                                                                                                                                                                                                                                                                                                                  | `""`    |
-| `global.imagePullSecrets`                             | Global Docker registry secret names as an array                                                                                                                                                                                                                                                                                                                                                                               | `[]`    |
-| `global.compatibility.openshift.adaptSecurityContext` | Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)                                                           | `auto`  |
-| `development`                                         | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases                                                                                                                                                                                                                                                        | `false` |
-| `useLegacyGRPCEndpoints`                              | Give the clients the deprecated gRPC-only control plane and CAS endpoints (`ingressAPI`, `serviceAPI`) instead of the shared endpoints (`ingress`, `service`). This applies to the control plane connection to the CAS and to the CLI configuration in the release notes. Set it to false to use the shared endpoints. A later release changes the default to false. The chart creates the deprecated endpoints in both modes | `true`  |
+| Name                                                  | Description                                                                                                                                                                                                                                                                                                                                                                                                                            | Value   |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `global.imageRegistry`                                | Global Docker image registry                                                                                                                                                                                                                                                                                                                                                                                                           | `""`    |
+| `global.imagePullSecrets`                             | Global Docker registry secret names as an array                                                                                                                                                                                                                                                                                                                                                                                        | `[]`    |
+| `global.compatibility.openshift.adaptSecurityContext` | Adapt the securityContext sections of the deployment to make them compatible with Openshift restricted-v2 SCC: remove runAsUser, runAsGroup and fsGroup and let the platform use their allowed default IDs. Possible values: auto (apply if the detected running cluster is Openshift), force (perform the adaptation always), disabled (do not perform adaptation)                                                                    | `auto`  |
+| `development`                                         | Deploys Chainloop pre-configured FOR DEVELOPMENT ONLY. It includes a Vault instance in development mode and pre-configured authentication certificates and passphrases                                                                                                                                                                                                                                                                 | `false` |
+| `useLegacyGRPCEndpoints`                              | Give the clients the deprecated gRPC-only control plane and CAS endpoints (`ingressAPI`, `serviceAPI`) instead of the shared endpoints (`ingress`, `service`). This applies to the control plane connection to the CAS and to the CLI configuration in the install notes (NOTES.txt). Set it to false to use the shared endpoints. A later release changes the default to false. The chart keeps the deprecated Services in both modes | `true`  |
 
 ### Common parameters
 
