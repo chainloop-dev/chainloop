@@ -85,7 +85,7 @@ Add the section to the evidence data with the fields of the spec Proposal table.
 <details>
 <summary><strong>02 / 06 · Claude Code sessions record prompts, questions, plans, interrupts, and permission modes (R-001, R-002, R-004, R-005, R-006, R-008)</strong></summary>
 
-The parser reads each record of the main transcript and of each subagent transcript. Prompts come from the main transcript only, because the first message of a subagent comes from the parent agent. A prompt is a record that the existing `isUserPrompt` function accepts, with no interrupt marker and no injected marker. A question is an `AskUserQuestion` tool result with an answer. A plan is an `ExitPlanMode` tool result: approved when it is not a rejection. An interrupt is the interrupt marker text. The interrupt marker that follows a rejection at a plan or permission dialog is not an interrupt (R-008). The permission modes come from the `permissionMode` field of the user records, in the order of first use. A record that the parser cannot read gives a warning, and the parser leaves out the counts that it affects (R-009).
+The parser already reads each transcript once: `scanJSONL` decodes each record into `jsonlRecord` and calls back `parseJSONL` for the main transcript and `parseSubagentUsage` for each subagent transcript. The counter adds no second read and no second loop. It is an accumulator that these two callbacks feed with each record, and `jsonlRecord` gets the fields that it reads. Prompts come from the main transcript only, because the first message of a subagent comes from the parent agent. A prompt is a record that the existing `isUserPrompt` function accepts, with no interrupt marker and no injected marker. A question is an `AskUserQuestion` tool result with an answer. A plan is an `ExitPlanMode` tool result: approved when it is not a rejection. An interrupt is the interrupt marker text. The interrupt marker that follows a rejection at a plan or permission dialog is not an interrupt (R-008). The permission modes come from the `permissionMode` field of the user records, in the order of first use. `scanJSONL` drops a line that it cannot decode before the callback runs. So it will also report how many lines it dropped. When it dropped a line, the parser leaves out the touch point counts and adds a warning (R-009).
 
 | Rule input | Count |
 |------------|-------|
@@ -99,8 +99,9 @@ The parser reads each record of the main transcript and of each subagent transcr
 
 | File | Change |
 |------|--------|
-| `app/cli/internal/trace/claude/interaction.go` | New: count the touch points and the permission modes of one transcript stream. Reuse the raw-entry helpers of `pastedimages.go`. |
-| `app/cli/internal/trace/claude/parse.go` | Run the counter on the main stream and on each subagent stream, add the results, and set `HumanInteraction`. |
+| `app/cli/internal/trace/claude/types.go` | Add to `jsonlRecord` the fields that the counter reads: `isMeta`, `toolUseResult`, `sourceToolUseID`, `permissionMode`, and the attachment fields. Add `tool_use_id` and `is_error` to the content block. |
+| `app/cli/internal/trace/claude/interaction.go` | New: an accumulator with one method for each record. Use the rule of `isUserPrompt` and `isQueuedPrompt`, on the typed record. |
+| `app/cli/internal/trace/claude/parse.go` | Feed the accumulator from the existing `scanJSONL` callbacks of `parseJSONL` and `parseSubagentUsage`, and set `HumanInteraction`. Make `scanJSONL` report the number of lines that it dropped. |
 | `app/cli/internal/trace/claude/testdata/interaction-session.jsonl` | New fixture, cut from a real interactive session, with each touch point type and a mode change. |
 | `app/cli/internal/trace/claude/interaction_test.go` | Table tests for each row of the rule table and for the mode order. Also: the subagent sum has no subagent prompts, an Esc at a plan dialog, and a record that cannot be read. |
 
@@ -121,7 +122,8 @@ The parser reads the first user record of the main transcript. A record whose or
 
 | File | Change |
 |------|--------|
-| `app/cli/internal/trace/claude/interaction.go` | Find the starter, and skip the first prompt when the starter is not a person. |
+| `app/cli/internal/trace/claude/types.go` | Add the run type field and the origin field to `jsonlRecord`. |
+| `app/cli/internal/trace/claude/interaction.go` | Find the starter at the first user record, in the same pass, and skip the first prompt when the starter is not a person. |
 | `app/cli/internal/trace/claude/parse.go` | Set `Session.StartedBy`. |
 | `app/cli/internal/trace/claude/testdata/interaction-headless.jsonl`, `app/cli/internal/trace/claude/testdata/interaction-agent-started.jsonl` | New fixtures from a real headless run and a real session that another agent session started. |
 | `app/cli/internal/trace/claude/interaction_test.go` | Table tests for each row of the starter table. |
@@ -155,7 +157,7 @@ At push, the assembly reads the permission requests of the session and passes th
 | `app/cli/internal/trace/claude/hooks.go` | Add a function that tells if the permission request hook is installed, next to `HooksInstalled`. |
 | `app/cli/internal/trace/state/session.go`, `app/cli/pkg/action/trace_agent_hook.go` | At session start, call that function and store the result in the session record. |
 | `app/cli/pkg/action/trace_hook_handler.go` | In `buildSessionEvidence`, read the requests and the stored result, and set both in `ParseOpts`. |
-| `app/cli/internal/trace/claude/interaction.go` | Match each request to its tool result and count approvals and rejections. |
+| `app/cli/internal/trace/claude/interaction.go` | Keep the tool results by call ID during the existing pass. After the pass, match each request to its result and count approvals and rejections. |
 | `app/cli/internal/trace/claude/interaction_test.go` | Add cases for approvals: approved, and approved then failed. Add cases for rejections: with feedback text, and Esc at a dialog. Also add: unanswered, no tool call ID, no requests with the hook, and no hook. |
 
 </details>
