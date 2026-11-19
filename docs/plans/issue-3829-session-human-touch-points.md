@@ -67,9 +67,9 @@ The session evidence gets the human interaction section, and its schema accepts 
 **Steps**, in build order. Open a step to see what changes and the files it touches.
 
 <details>
-<summary><strong>01 / 06 · The session evidence can hold the human interaction section (R-007, R-009)</strong></summary>
+<summary><strong>01 / 06 · The session evidence can hold the human interaction section (R-009, R-010)</strong></summary>
 
-Add the section to the evidence data with the fields of the spec Proposal table. Each count is a pointer, and the list of permission modes is a nil slice when not recorded. So a zero stays in the JSON and a missing count stays out (R-007). The JSON schema gets the new optional property, with the same open string rule as `session.mode` for the mode names. The secret redaction keeps the mode names, as it keeps `session.mode`.
+Add the section to the evidence data with the fields of the spec Proposal table. Each count is a pointer, and the list of permission modes is a nil slice when not recorded. So a zero stays in the JSON and a missing count stays out (R-009). The JSON schema gets the new optional property, with the same open string rule as `session.mode` for the mode names. The secret redaction keeps the mode names, as it keeps `session.mode`.
 
 | File | Change |
 |------|--------|
@@ -83,9 +83,9 @@ Add the section to the evidence data with the fields of the spec Proposal table.
 </details>
 
 <details>
-<summary><strong>02 / 06 · Claude Code sessions record prompts, questions, plans, interrupts, and permission modes (R-001, R-002, R-004, R-005, R-006, R-008)</strong></summary>
+<summary><strong>02 / 06 · Claude Code sessions record prompts, questions, plans, interrupts, and permission modes (R-001, R-002, R-004, R-006, R-007, R-008)</strong></summary>
 
-The parser already reads each transcript once: `scanJSONL` decodes each record into `jsonlRecord` and calls back `parseJSONL` for the main transcript and `parseSubagentUsage` for each subagent transcript. The counter adds no second read and no second loop. It is an accumulator that these two callbacks feed with each record, and `jsonlRecord` gets the fields that it reads. Prompts come from the main transcript only, because the first message of a subagent comes from the parent agent. A prompt is a record that the existing `isUserPrompt` function accepts, with no interrupt marker and no injected marker. A question is an `AskUserQuestion` tool result with an answer. A plan is an `ExitPlanMode` tool result: approved when it is not a rejection. An interrupt is the interrupt marker text. The interrupt marker that follows a rejection at a plan or permission dialog is not an interrupt (R-008). The permission modes come from the `permissionMode` field of the user records, in the order of first use. `scanJSONL` drops a line that it cannot decode before the callback runs. So it will also report how many lines it dropped. When it dropped a line, the parser leaves out the touch point counts and adds a warning (R-009).
+The parser already reads each transcript once: `scanJSONL` decodes each record into `jsonlRecord` and calls back `parseJSONL` for the main transcript and `parseSubagentUsage` for each subagent transcript. The counter adds no second read and no second loop. It is an accumulator that these two callbacks feed with each record, and `jsonlRecord` gets the fields that it reads. Prompts come from the main transcript only, because the first message of a subagent comes from the parent agent. A prompt is a record that the existing `isUserPrompt` function accepts, with no interrupt marker and no injected marker. A question is an `AskUserQuestion` tool result with an answer. A plan is an `ExitPlanMode` tool result: approved when it is not a rejection. An interrupt is the interrupt marker text. The interrupt marker that follows a rejection at a plan or permission dialog is not an interrupt (R-001). The permission modes come from the `permissionMode` field of the user records, in the order of first use. `scanJSONL` drops a line that it cannot decode before the callback runs. So it will also report how many lines it dropped. When it dropped a line, the parser leaves out the touch point counts and adds a warning (R-010).
 
 | Rule input | Count |
 |------------|-------|
@@ -108,9 +108,9 @@ The parser already reads each transcript once: `scanJSONL` decodes each record i
 </details>
 
 <details>
-<summary><strong>03 / 06 · Claude Code sessions record who started them (R-010, R-001)</strong></summary>
+<summary><strong>03 / 06 · Claude Code sessions record who started them (R-002, R-003)</strong></summary>
 
-The parser reads the first user record of the main transcript. A record whose origin names another agent session gives `agent`. An origin that the parser does not know leaves out the value. Else, the run type field gives `automation` for a headless or SDK run, and `person` for an interactive terminal. The origin wins over the run type, so a headless run that an agent started gives `agent`. When the parser cannot tell, it leaves out the value. The first prompt counts in the prompt count only for `person` (R-001).
+The parser reads the first user record of the main transcript. A record whose origin names another agent session gives `agent`. An origin that the parser does not know leaves out the value. Else, the run type field gives `automation` for a headless or SDK run, and `person` for an interactive terminal. The origin wins over the run type, so a headless run that an agent started gives `agent`. When the parser cannot tell, it leaves out the value. The first prompt counts in the prompt count only for `person` (R-002).
 
 | First user record | `session.started_by` | First prompt counted |
 |-------------------|----------------------|----------------------|
@@ -131,9 +131,9 @@ The parser reads the first user record of the main transcript. A record whose or
 </details>
 
 <details>
-<summary><strong>04 / 06 · Claude Code records each permission request that it shows (R-003)</strong></summary>
+<summary><strong>04 / 06 · Claude Code records each permission request that it shows (R-005)</strong></summary>
 
-`trace init` installs a `PermissionRequest` hook. The handler appends the tool name and the tool call ID of the request to a state file of the session. It writes nothing to stdout, so the hook makes no permission decision. The handler never fails the agent. It skips the question and plan tools (R-008).
+`trace init` installs a `PermissionRequest` hook. The handler appends the tool name and the tool call ID of the request to a state file of the session. It writes nothing to stdout, so the hook makes no permission decision. The handler never fails the agent. It skips the question and plan tools (R-001).
 
 | File | Change |
 |------|--------|
@@ -147,9 +147,9 @@ The parser reads the first user record of the main transcript. A record whose or
 </details>
 
 <details>
-<summary><strong>05 / 06 · Claude Code sessions record permission approvals and rejections (R-003, R-007, R-009)</strong></summary>
+<summary><strong>05 / 06 · Claude Code sessions record permission approvals and rejections (R-005, R-009, R-010)</strong></summary>
 
-At push, the assembly reads the permission requests of the session and passes them to the parser in `ParseOpts`. For each request, the parser finds the tool result of the same call. A rejection marker gives a rejection. Any other result gives an approval, also a failed or interrupted run. No result gives neither. A request with no tool call ID cannot be matched safely, so it leaves out both counts and adds a warning (R-009). A session with no requests is normal, for example in an autonomous mode. So the session-start hook records in the session record whether the permission request hook was installed at that time. With the hook and no requests, both counts are zero. Without the hook, the parser leaves out both counts and adds a warning (R-007).
+At push, the assembly reads the permission requests of the session and passes them to the parser in `ParseOpts`. For each request, the parser finds the tool result of the same call. A rejection marker gives a rejection. Any other result gives an approval, also a failed or interrupted run. No result gives neither. A request with no tool call ID cannot be matched safely, so it leaves out both counts and adds a warning (R-010). A session with no requests is normal, for example in an autonomous mode. So the session-start hook records in the session record whether the permission request hook was installed at that time. With the hook and no requests, both counts are zero. Without the hook, the parser leaves out both counts and adds a warning (R-009).
 
 | File | Change |
 |------|--------|
@@ -163,7 +163,7 @@ At push, the assembly reads the permission requests of the session and passes th
 </details>
 
 <details>
-<summary><strong>06 / 06 · The README matrix shows which providers record the touch points (R-009)</strong></summary>
+<summary><strong>06 / 06 · The README matrix shows which providers record the touch points (R-010)</strong></summary>
 
 Add one row for each touch point type, one for the permission modes, and one for the starter to the Session collection table. Set the Claude Code cells to **Yes**. Set the other cells to **No**, with the "Why not Yes" line "Not implemented yet (spec issue-3829, milestone 2)". The e2e suite reports these rows as "no check" (TRC-026). That result is correct, because the rows have no check.
 

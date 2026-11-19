@@ -46,70 +46,70 @@ The AI coding session evidence will record how often a person stepped in during 
   - Started by a person, with no human touch point after the first prompt.
   - Started by a person, with human touch points after the first prompt.
   - Started by another agent or an automated run, with human touch points later.
-- In scope: the permission modes (R-006). They could be a separate spec, but the ticket names them, and a reader needs them to explain a count of zero.
-- In scope: the counts of rejected permissions and plans (R-003, R-004) and of interrupts (R-005). The ticket names only approvals. A rejection and an interrupt are also times when a person stepped in, so they serve the same problem.
-- In scope: who started the session (R-010). The ticket does not name it. But without it, the prompt count is wrong for a scheduled run, because its start prompt looks like a typed prompt.
+- In scope: the permission modes (R-008). They could be a separate spec, but the ticket names them, and a reader needs them to explain a count of zero.
+- In scope: the counts of rejected permissions and plans (R-005, R-006) and of interrupts (R-007). The ticket names only approvals. A rejection and an interrupt are also times when a person stepped in, so they serve the same problem.
+- In scope: who started the session (R-003). The ticket does not name it. But without it, the prompt count is wrong for a scheduled run, because its start prompt looks like a typed prompt.
 - In scope: all providers (milestone 2). The team compares sessions across agents, and needs the same data for each agent.
 - Non-goal: an autonomy score, or a change to the AI score. A later change can calculate one from this data.
 - Non-goal: a common scale of permission modes across agents (for example ask, plan, autonomous). The score needs it, so the score work defines it. Follow-up: the autonomy score ticket.
 - Non-goal: a view of the touch points in the platform UI. Follow-up: a platform ticket.
 - Non-goal: the time that the agent waited for a person.
-- Non-goal: a headless run that a person started by hand. The CLI cannot tell it from a run that a scheduler or a script started, so it records `automation` (R-010).
+- Non-goal: a headless run that a person started by hand. The CLI cannot tell it from a run that a scheduler or a script started, so it records `automation` (R-003).
 - Non-goal: whether the session completed its task. A session that a person stopped with no touch point looks the same as a session that completed.
 
 ## Requirements
 
-### R-008: One count for each touch point, subagents included
+### R-001: One count for each touch point, subagents included
 
 Each touch point MUST count in one count only. For example, the approval of a plan is not also a permission approval, and the answer to a question is not also a prompt. The touch points of a subagent MUST count in the totals of the session, because the user acted in that session.
 
 - Done when: the user presses Esc at a permission or plan dialog, and the evidence records one rejection and no interrupt.
 
-### R-001: User prompts
+### R-002: User prompts
 
-The session evidence MUST count the messages that a person sent to the agent, typed or pasted. A slash command that a person typed counts. The first prompt counts only when a person started the session (R-010). Tool results, messages that the agent, a hook, or the CLI injects, and messages that another agent session sends MUST NOT count.
+The session evidence MUST count the messages that a person sent to the agent, typed or pasted. A slash command that a person typed counts. The first prompt counts only when a person started the session (R-003). Tool results, messages that the agent, a hook, or the CLI injects, and messages that another agent session sends MUST NOT count.
 
 - Done when: a session with three typed prompts, one of which holds a pasted link, records three prompts. The tool results and injected messages of the same session do not change the count. A scheduled headless run with one start prompt records zero prompts.
 
-### R-010: Who started the session
+### R-003: Who started the session
 
-The session evidence MUST record who started the session: a person, another agent session, or an automated run. An automated run is a run with no interactive user, for example a headless run that a scheduler or a script starts. Each headless run counts as an automated run. One exception: a run that another agent session started records `agent`, also when it is headless, because the sender of the first message wins. When the provider cannot tell, the evidence MUST leave out the value (R-007).
+The session evidence MUST record who started the session: a person, another agent session, or an automated run. An automated run is a run with no interactive user, for example a headless run that a scheduler or a script starts. Each headless run counts as an automated run. One exception: a run that another agent session started records `agent`, also when it is headless, because the sender of the first message wins. When the provider cannot tell, the evidence MUST leave out the value (R-009).
 
 - Done when: four sessions record their starters. An interactive session of a person records `person`. A session that another agent session started records `agent`, and so does a headless run that an agent started. A scheduled headless run records `automation`.
 
-### R-002: Answered questions
+### R-004: Answered questions
 
 The session evidence MUST count the questions that the agent asked through its question tool and that the user answered. A question with more than one part counts once. A question that the user closed with no answer does not count, because the ticket names answered questions. A message that the user then sends counts as a prompt.
 
-### R-003: Permission approvals and rejections
+### R-005: Permission approvals and rejections
 
 The session evidence MUST count, in two counts, the permission requests that the user approved and the ones that the user rejected. Only requests that the agent showed to the user count. An action that the permission mode or an allow rule approved without a request MUST NOT count. An "always allow" answer counts as one approval.
 
 - Done when: a request that the user did not answer before the session ended counts in neither count. Text that the user typed with a rejection is part of the rejection, not a prompt.
 
-### R-004: Plan approvals and rejections
+### R-006: Plan approvals and rejections
 
 The session evidence MUST count, in two counts, the plans that the user approved and the ones that the user rejected.
 
 - Done when: text that the user typed with a plan rejection is part of the rejection, not a prompt.
 
-### R-005: Interrupts
+### R-007: Interrupts
 
 The session evidence MUST count the times that the user interrupted the agent while it worked. An interrupt MUST NOT also count as a prompt.
 
 - Done when: a message that the user sends after an interrupt counts as a prompt.
 
-### R-006: Permission modes
+### R-008: Permission modes
 
 The session evidence MUST record each permission mode that the agent used in the session, once each, in the order of first use. The start mode alone hides a later change to an autonomous mode, and the order shows both. Each value MUST be the name that the agent itself uses for the permission mode.
 
 - Done when: a Claude Code session starts in the default mode and then changes to the auto mode. The evidence records both permission modes, default first.
 
-### R-007: Not recorded is different from zero
+### R-009: Not recorded is different from zero
 
 When a provider can detect a touch point type, the evidence MUST hold its count, also when the count is zero. When a provider cannot detect a type, the evidence MUST leave out that count. The same rule applies to the permission modes.
 
-### R-009: Provider support, compatibility, and failure safety
+### R-010: Provider support, compatibility, and failure safety
 
 Each provider MUST record the touch point types and the permission modes that its transcript or hook events show. Claude Code MUST record all of them. Sometimes a provider cannot tell an approval by the user from an approval by a rule. Then it MUST leave out the approval count, and MUST NOT guess. The new data MUST be additive, and the schema version of the evidence MUST stay the same. The existing conversation counts MUST keep their meaning. A failure to count MUST give a warning, MUST leave out the affected counts, and MUST NOT stop evidence creation or block the Git push.
 
@@ -127,22 +127,22 @@ The user works with the agent as before. Nothing changes in the agent. When the 
 
 | Field | Meaning |
 |-------|---------|
-| `permission_modes` | The permission modes that the agent used, in the order of first use (R-006) |
-| `touch_points.prompts` | Messages that a person sent (R-001) |
-| `touch_points.questions_answered` | Questions of the agent that the user answered (R-002) |
-| `touch_points.permissions_approved` | Permission requests that the user approved (R-003) |
-| `touch_points.permissions_rejected` | Permission requests that the user rejected (R-003) |
-| `touch_points.plans_approved` | Plans that the user approved (R-004) |
-| `touch_points.plans_rejected` | Plans that the user rejected (R-004) |
-| `touch_points.interrupts` | Interrupts of the agent by the user (R-005) |
+| `permission_modes` | The permission modes that the agent used, in the order of first use (R-008) |
+| `touch_points.prompts` | Messages that a person sent (R-002) |
+| `touch_points.questions_answered` | Questions of the agent that the user answered (R-004) |
+| `touch_points.permissions_approved` | Permission requests that the user approved (R-005) |
+| `touch_points.permissions_rejected` | Permission requests that the user rejected (R-005) |
+| `touch_points.plans_approved` | Plans that the user approved (R-006) |
+| `touch_points.plans_rejected` | Plans that the user rejected (R-006) |
+| `touch_points.interrupts` | Interrupts of the agent by the user (R-007) |
 
-The existing session object also gets a `started_by` field, next to the session mode, with the values `person`, `agent`, or `automation` (R-010). It describes the session, not a human action, so it is not part of the human interaction section.
+The existing session object also gets a `started_by` field, next to the session mode, with the values `person`, `agent`, or `automation` (R-003). It describes the session, not a human action, so it is not part of the human interaction section.
 
-The CLI makes this section at push time, in the same step that parses the transcript for the other session data. The provider of each agent counts the touch points, because each agent records them differently. A provider that cannot detect a type leaves out its field (R-007).
+The CLI makes this section at push time, in the same step that parses the transcript for the other session data. The provider of each agent counts the touch points, because each agent records them differently. A provider that cannot detect a type leaves out its field (R-009).
 
-**Claude Code.** The transcript records the permission mode on each user record, and the hook events carry it too. The transcript shows the prompts, the answers to the question tool, the result of each plan tool call, and the interrupt markers. A rejected permission request gives a tool result that says the user rejected the tool use. The transcript does not show whether the agent asked before an approved action, because an allow rule gives the same record. The Trace hooks will also listen to the event that Claude Code sends when it shows a permission request. A request with a tool result that is not a rejection is an approval, also when the tool then failed or the user interrupted it. Requests for the plan tool and the question tool are not permission requests (R-008). For the starter, the transcript records how the agent ran: an interactive terminal, or a headless or SDK run. A message from another agent session carries an origin that is not a person. The first user record of the session gives the starter (R-010).
+**Claude Code.** The transcript records the permission mode on each user record, and the hook events carry it too. The transcript shows the prompts, the answers to the question tool, the result of each plan tool call, and the interrupt markers. A rejected permission request gives a tool result that says the user rejected the tool use. The transcript does not show whether the agent asked before an approved action, because an allow rule gives the same record. The Trace hooks will also listen to the event that Claude Code sends when it shows a permission request. A request with a tool result that is not a rejection is an approval, also when the tool then failed or the user interrupted it. Requests for the plan tool and the question tool are not permission requests (R-001). For the starter, the transcript records how the agent ran: an interactive terminal, or a headless or SDK run. A message from another agent session carries an origin that is not a person. The first user record of the session gives the starter (R-003).
 
-**Other providers.** Each provider records the types that its transcript or hook events show, for example the approval policy of Codex. It leaves out the other types (R-007). The compatibility matrix in the Trace README records the result for each provider and type (R-009).
+**Other providers.** Each provider records the types that its transcript or hook events show, for example the approval policy of Codex. It leaves out the other types (R-009). The compatibility matrix in the Trace README records the result for each provider and type (R-010).
 
 ```mermaid
 flowchart LR
@@ -178,7 +178,7 @@ The evidence stores the permission mode name of the agent, for example `acceptEd
   - Both values: more scope, and the common scale is not defined yet.
 - Source: drafting
 
-### D-004: Permission requests come from a hook event, not only from the transcript
+### D-003: Permission requests come from a hook event, not only from the transcript
 
 For Claude Code, the CLI finds a permission request from the hook event that the agent sends when it shows the request. It does not guess from the transcript. Follows TRC-009: the CLI makes this data from the transcript and the hook events, and the agent does not report it.
 
@@ -186,13 +186,6 @@ For Claude Code, the CLI finds a permission request from the hook event that the
 - Alternatives considered:
   - Count each completed tool call that the permission mode does not approve: needs all the allow rules that applied at that time. A wrong guess counts actions that nobody approved.
   - Ask the agent to report its touch points: the agent does not see the permission dialog. Also, the count must not depend on the model.
-- Source: drafting
-
-### D-006: Drops D-003 and D-005
-
-D-003 (each permission mode, in the order of first use) is now part of R-006. D-005 (a dismissed question is not an answered question) is now part of R-002.
-
-- Why: both entries only restated their requirement.
 - Source: drafting
 
 ## Open Questions
