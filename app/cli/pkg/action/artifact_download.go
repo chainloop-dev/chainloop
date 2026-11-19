@@ -24,6 +24,8 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
@@ -74,9 +76,13 @@ func (a *ArtifactDownload) Run(downloadPath, outputFile, digest string) error {
 	}
 
 	// Determine output destination
-	outputPath := path.Join(downloadPath, info.Filename)
-	if outputFile != "" && outputFile != "-" {
-		outputPath = outputFile
+	// An explicit output file (or "-" for stdout) replaces the server-supplied filename
+	outputPath := outputFile
+	if outputFile == "" {
+		outputPath, err = downloadOutputPath(downloadPath, info.Filename)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Open output file
@@ -154,4 +160,18 @@ func renderOperationStatus(ctx context.Context, progressChan casclient.ProgressS
 			tracker.SetValue(status.ProcessedBytes)
 		}
 	}
+}
+
+// downloadOutputPath returns the path inside downloadDir to write an artifact to.
+// The filename comes from the CAS object metadata, which the uploader controls,
+// so only its base name is used. Both / and \ count as separators, so a name
+// such as "../../x" or `..\x` cannot write outside downloadDir.
+func downloadOutputPath(downloadDir, filename string) (string, error) {
+	name := path.Base(strings.ReplaceAll(filename, `\`, "/"))
+	switch name {
+	case "", ".", "..", "/":
+		return "", fmt.Errorf("the artifact has no valid filename (%q), set an output file with --output", filename)
+	}
+
+	return filepath.Join(downloadDir, name), nil
 }
