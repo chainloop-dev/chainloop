@@ -2112,7 +2112,7 @@ Options
 ```
 -h, --help[=true|false]   help for list
 -p, --project string      filter by project name
--s, --scope string        filter by scope, available scopes: [project global]
+-s, --scope string        filter by scope, available scopes: [project global product]
 --status string       filter by token status, available values: [active revoked all]
 ```
 

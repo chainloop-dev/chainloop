@@ -77,6 +77,12 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 			wantScope: authz.ResourceTypeProject,
 		},
 		{
+			name:      "an organization token asking for product tokens is still forced",
+			caller:    &entities.APIToken{ID: uuid.NewString(), Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID},
+			requested: pb.APITokenServiceListRequest_SCOPE_PRODUCT,
+			wantScope: authz.ResourceTypeProject,
+		},
+		{
 			// Not organization-wide either, and confined to nothing: narrowed to no project.
 			name:         "a token recording no scope is narrowed to no project",
 			caller:       &entities.APIToken{ID: uuid.NewString()},
@@ -109,6 +115,11 @@ func TestAPITokenServiceListForcesProjectScopeForOrgTokens(t *testing.T) {
 			name:      "a user keeps the scope it asks for",
 			requested: pb.APITokenServiceListRequest_SCOPE_GLOBAL,
 			wantScope: authz.ResourceTypeOrganization,
+		},
+		{
+			name:      "a user asking for product tokens gets them",
+			requested: pb.APITokenServiceListRequest_SCOPE_PRODUCT,
+			wantScope: authz.ResourceTypeProduct,
 		},
 		{
 			name:      "a user asking for no scope gets none",
@@ -254,6 +265,7 @@ func TestMapTokenScope(t *testing.T) {
 		{in: pb.APITokenServiceListRequest_SCOPE_UNSPECIFIED, want: ""},
 		{in: pb.APITokenServiceListRequest_SCOPE_PROJECT, want: authz.ResourceTypeProject},
 		{in: pb.APITokenServiceListRequest_SCOPE_GLOBAL, want: authz.ResourceTypeOrganization},
+		{in: pb.APITokenServiceListRequest_SCOPE_PRODUCT, want: authz.ResourceTypeProduct},
 	}
 
 	for _, tc := range testCases {

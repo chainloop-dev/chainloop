@@ -42,7 +42,8 @@
           "enum": [
             "SCOPE_UNSPECIFIED",
             "SCOPE_PROJECT",
-            "SCOPE_GLOBAL"
+            "SCOPE_GLOBAL",
+            "SCOPE_PRODUCT"
           ],
           "title": "Scope",
           "type": "string"

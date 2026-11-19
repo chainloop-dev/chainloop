@@ -53,6 +53,8 @@ export enum APITokenServiceListRequest_Scope {
   SCOPE_UNSPECIFIED = 0,
   SCOPE_PROJECT = 1,
   SCOPE_GLOBAL = 2,
+  /** SCOPE_PRODUCT - Tokens confined to the projects of a product. */
+  SCOPE_PRODUCT = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -67,6 +69,9 @@ export function aPITokenServiceListRequest_ScopeFromJSON(object: any): APITokenS
     case 2:
     case "SCOPE_GLOBAL":
       return APITokenServiceListRequest_Scope.SCOPE_GLOBAL;
+    case 3:
+    case "SCOPE_PRODUCT":
+      return APITokenServiceListRequest_Scope.SCOPE_PRODUCT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -82,6 +87,8 @@ export function aPITokenServiceListRequest_ScopeToJSON(object: APITokenServiceLi
       return "SCOPE_PROJECT";
     case APITokenServiceListRequest_Scope.SCOPE_GLOBAL:
       return "SCOPE_GLOBAL";
+    case APITokenServiceListRequest_Scope.SCOPE_PRODUCT:
+      return "SCOPE_PRODUCT";
     case APITokenServiceListRequest_Scope.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
