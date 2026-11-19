@@ -238,6 +238,10 @@ chainloop attestation add --kind <material-kind> --value <material-value>
 Add a material to the attestation without specifying neither kind nor name enables automatic detection
 chainloop attestation add --value <material-value>
 
+Replace a material that was already added to the attestation with the same name.
+Without --replace, adding a material with a name that already exists fails.
+chainloop attestation add --name <material-name> --value <material-value> --replace
+
 Add a material by also providing a URL pointing to the material. It will be downloaded to a temporary folder first
 chainloop attestation add --value https://example.com/sbom.json
 
@@ -274,6 +278,7 @@ Options
 --registry-password string             registry password, ($CHAINLOOP_REGISTRY_PASSWORD)
 --registry-server string               OCI repository server, ($CHAINLOOP_REGISTRY_SERVER)
 --registry-username string             registry username, ($CHAINLOOP_REGISTRY_USERNAME)
+--replace[=true|false]                 replace a material with the same name that is already in the attestation, instead of failing
 --skip-secret-redaction[=true|false]   store evidence exactly as captured, without redacting detected secrets first (CHAINLOOP_AI_CODING_SESSION). Recorded in the attestation so policies can reject it
 --value string                         value to be recorded
 ```

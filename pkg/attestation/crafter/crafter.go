@@ -651,6 +651,21 @@ type addOpts struct {
 	// source archive as an EVIDENCE material cross-linked with the exploded
 	// materials, within the same atomic add.
 	recordSourceArchive bool
+	// replace allows overwriting a material that already exists in the
+	// attestation with the same name. Without it, such an add fails.
+	replace bool
+}
+
+// ErrMaterialAlreadyExists is returned when a material is added with a name
+// that is already present in the attestation and WithReplace is not set.
+var ErrMaterialAlreadyExists = errors.New("material already exists in the attestation")
+
+// WithReplace sets whether the add can overwrite a material that already
+// exists in the attestation with the same name.
+func WithReplace(replace bool) AddOpt {
+	return func(o *addOpts) {
+		o.replace = replace
+	}
 }
 
 // WithSourceArchiveEvidence makes an archive explode also record the source
@@ -717,12 +732,7 @@ func (c *Crafter) AddMaterialFromContract(ctx context.Context, attestationID, ke
 		return nil, fmt.Errorf("material with id %q not found in the schema", key)
 	}
 
-	// 2 - Check that it has not been set yet and warn of override
-	if _, found := c.CraftingState.Attestation.Materials[key]; found {
-		c.Logger.Info().Str("key", key).Str("value", value).Msg("material already set, overriding it")
-	}
-
-	// 3 - Craft resulting material
+	// 2 - Craft resulting material. addMaterial rejects it if it has already been set.
 	return c.addMaterial(ctx, m, attestationID, value, casBackend, runtimeAnnotations, opts...)
 }
 
@@ -757,7 +767,7 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 			return nil, err
 		}
 
-		if v1.IsAttestationStateErrorConflict(err) {
+		if v1.IsAttestationStateErrorConflict(err) || errors.Is(err, ErrMaterialAlreadyExists) {
 			return nil, err
 		}
 
@@ -776,10 +786,21 @@ func (c *Crafter) AddMaterialContactFreeWithAutoDetectedKind(ctx context.Context
 // stageMaterial crafts a material into the in-memory crafting state WITHOUT
 // persisting it. Callers must call stateManager.Write to commit. Splitting the
 // write out lets the archive explode path craft many entries and commit once.
+// It fails with ErrMaterialAlreadyExists if a material with the same name is
+// already in the attestation, unless WithReplace is set.
 func (c *Crafter) stageMaterial(ctx context.Context, m *schemaapi.CraftingSchema_Material, value string, casBackend *casclient.CASBackend, runtimeAnnotations map[string]string, opts ...AddOpt) (*api.Attestation_Material, error) {
 	addOptions := &addOpts{}
 	for _, opt := range opts {
 		opt(addOptions)
+	}
+
+	// Check before crafting so that nothing is uploaded for a rejected material.
+	if _, found := c.CraftingState.GetAttestation().GetMaterials()[m.Name]; found {
+		if !addOptions.replace {
+			return nil, fmt.Errorf("%w: %q", ErrMaterialAlreadyExists, m.Name)
+		}
+
+		c.Logger.Info().Str("name", m.Name).Msg("material already set, replacing it")
 	}
 
 	// 3- Craft resulting material

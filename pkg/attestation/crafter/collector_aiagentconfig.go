@@ -109,7 +109,7 @@ func (c *AIAgentConfigCollector) uploadAgentConfig(
 	}
 	defer os.Remove(tmpPath)
 
-	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG.String(), materialName, tmpPath, casBackend, nil); err != nil {
+	if _, err := cr.AddMaterialContractFree(ctx, attestationID, schemaapi.CraftingSchema_Material_CHAINLOOP_AI_AGENT_CONFIG.String(), materialName, tmpPath, casBackend, nil, WithReplace(true)); err != nil {
 		return fmt.Errorf("adding AI agent config material for %s: %w", agentName, err)
 	}
 

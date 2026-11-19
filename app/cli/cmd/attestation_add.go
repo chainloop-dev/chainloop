@@ -47,6 +47,7 @@ func newAttestationAddCmd() *cobra.Command {
 	var appendFlag bool
 	var maxExtractEntries int
 	var maxExtractSize string
+	var replace bool
 
 	// OCI registry credentials can be passed as flags or environment variables
 	var registryServer, registryUsername, registryPassword string
@@ -72,6 +73,10 @@ func newAttestationAddCmd() *cobra.Command {
 
   # Add a material to the attestation without specifying neither kind nor name enables automatic detection
   chainloop attestation add --value <material-value>
+
+  # Replace a material that was already added to the attestation with the same name.
+  # Without --replace, adding a material with a name that already exists fails.
+  chainloop attestation add --name <material-name> --value <material-value> --replace
 
   # Add a material by also providing a URL pointing to the material. It will be downloaded to a temporary folder first
   chainloop attestation add --value https://example.com/sbom.json
@@ -115,6 +120,7 @@ func newAttestationAddCmd() *cobra.Command {
 					SkipSecretRedaction: skipSecretRedaction,
 					MaxExtractEntries:   maxExtractEntries,
 					MaxExtractSize:      int64(maxExtractSizeBytes),
+					Replace:             replace,
 				},
 			)
 			if err != nil {
@@ -195,6 +201,7 @@ func newAttestationAddCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "name of the material as shown in the contract")
+	cmd.Flags().BoolVar(&replace, "replace", false, "replace a material with the same name that is already in the attestation, instead of failing")
 	cmd.Flags().StringVar(&value, "value", "", "value to be recorded")
 	err := cmd.MarkFlagRequired("value")
 	cobra.CheckErr(err)
