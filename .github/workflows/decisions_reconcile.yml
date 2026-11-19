@@ -2,7 +2,7 @@
 # Reconcile of the Current Decisions pages (docs/decisions/)
 # =============================================================================
 # Runs the `eng-adr reconcile` skill of chainloop-dev/brain with Claude Code.
-# Runs on weekdays, and on a manual start. When the pages change, it opens or updates one draft PR.
+# Runs on weekdays, and on a manual start. When the pages change, it opens or updates one PR, ready for review.
 #
 # The skill runs in its scheduled mode: it asks no questions, writes only the
 # changes that need no person, and lists the open questions in the PR body.
@@ -342,5 +342,5 @@ jobs:
           labels: |
             automated
             skip-ai-session
-          draft: true
+          draft: false
           delete-branch: true
