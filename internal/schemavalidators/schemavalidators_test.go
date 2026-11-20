@@ -621,6 +621,22 @@ func TestValidateSecurityContextTriageFields(t *testing.T) {
 		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
 	})
 
+	t.Run("a context carrying the scan start date and in-range total validates", func(t *testing.T) {
+		payload, scan := load(t)
+		// PFM-8172: the attested floor the backfill mined to, and the in-range
+		// denominator for coverage within that floor (distinct from repo_commits_total).
+		scan["repo_commits_total"] = 8000
+		scan["scan_start_date"] = "2026-05-01T00:00:00Z"
+		scan["in_range_commits_total"] = 1200
+		require.NoError(t, schemavalidators.ValidateSecurityContext(payload, ""))
+	})
+
+	t.Run("a negative in_range_commits_total is rejected", func(t *testing.T) {
+		payload, scan := load(t)
+		scan["in_range_commits_total"] = -1
+		require.ErrorContains(t, schemavalidators.ValidateSecurityContext(payload, ""), "minimum")
+	})
+
 	t.Run("a survivor missing its required commit_sha is rejected", func(t *testing.T) {
 		payload, _ := load(t)
 		payload["survivors"] = []any{map[string]any{"subject": "no sha"}}
