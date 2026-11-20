@@ -254,21 +254,14 @@ func TestClient_CommitInfo(t *testing.T) {
 	headSHA, headMessage, err := NewExecClient().CommitHeadInfo(cwd)
 	require.NoError(t, err)
 
-	clients := []struct {
-		name   string
-		client Client
-	}{
-		{name: "exec", client: NewExecClient()},
-		{name: "go-git", client: NewGoGitClient()},
-	}
-	for _, tc := range clients {
-		t.Run(tc.name, func(t *testing.T) {
-			message, committedAt, err := tc.client.CommitInfo(cwd, headSHA)
+	for name, client := range testClients() {
+		t.Run(name, func(t *testing.T) {
+			message, committedAt, err := client.CommitInfo(cwd, headSHA)
 			require.NoError(t, err)
 			assert.Equal(t, headMessage, message)
 			assert.False(t, committedAt.IsZero())
 
-			_, _, err = tc.client.CommitInfo(cwd, "deadbeef00000000000000000000000000000000")
+			_, _, err = client.CommitInfo(cwd, "deadbeef00000000000000000000000000000000")
 			assert.Error(t, err)
 		})
 	}
