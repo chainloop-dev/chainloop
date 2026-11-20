@@ -558,7 +558,11 @@ func recordRebasedCommits(client tracegit.Client, store *state.Store, repoRoot s
 		recorded[rec.SHA] = struct{}{}
 	}
 
-	for _, sha := range branchSHAs {
+	// Walk the branch oldest first. A rebase replays its commits in the same
+	// second, so each new record gets a timestamp after the previous one: the
+	// timestamp is what orders the commits of a session.
+	var prev time.Time
+	for _, sha := range slices.Backward(branchSHAs) {
 		if _, ok := recorded[sha]; ok {
 			continue
 		}
@@ -584,13 +588,19 @@ func recordRebasedCommits(client tracegit.Client, store *state.Store, repoRoot s
 			continue
 		}
 
+		// The committer date keeps the commits before a commit made after
+		// the pull, which the time of this push would not.
+		ts := committedAt.UTC().Truncate(time.Second)
+		if !ts.After(prev) {
+			ts = prev.Add(time.Second)
+		}
+		prev = ts
+
 		rec := &state.CommitRecord{
 			SHA:        sha,
 			Message:    message,
 			SessionIDs: sessionIDs,
-			// The committer date keeps the branch order of the commits, which
-			// the time of this push would lose.
-			Timestamp: committedAt.UTC().Format(time.RFC3339),
+			Timestamp:  ts.Format(time.RFC3339),
 		}
 		if err := store.SaveCommitRecord(rec); err != nil {
 			log.Debug().Err(err).Str("sha", sha).Msg("could not save rebased commit record")
@@ -853,7 +863,7 @@ func sessionCommitGroups(aiCommits []*state.CommitRecord, sessionRecords map[str
 			delete(groups, sid)
 			continue
 		}
-		sort.Slice(commits, func(i, j int) bool {
+		sort.SliceStable(commits, func(i, j int) bool {
 			return commits[i].Timestamp < commits[j].Timestamp
 		})
 	}

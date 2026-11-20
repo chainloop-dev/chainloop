@@ -342,7 +342,7 @@ func (c *ExecClient) IsMergeCommit(repoRoot, sha string) (bool, error) {
 // `git rev-list HEAD ^<base>` (newest first). When no default remote branch
 // is detected, returns every commit reachable from HEAD.
 func (c *ExecClient) BranchCommitSHAs(repoRoot string) ([]string, error) {
-	args := []string{"rev-list", "HEAD"}
+	args := []string{"rev-list", "--topo-order", "HEAD"}
 	if base := detectBaseBranch(repoRoot); base != "" {
 		args = append(args, "^"+base)
 	}

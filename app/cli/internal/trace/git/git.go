@@ -139,7 +139,8 @@ type Client interface {
 	IsMergeCommit(repoRoot, sha string) (bool, error)
 	// BranchCommitSHAs returns the SHAs reachable from HEAD that are not
 	// reachable from the default remote branch (HEAD ^merge-base). The merge
-	// base itself is excluded. Order is unspecified.
+	// base itself is excluded. HEAD comes first, and on a linear branch each
+	// commit comes before its parents.
 	BranchCommitSHAs(repoRoot string) ([]string, error)
 	// LocalReachableSHAs returns the union of SHAs reachable from every
 	// local branch tip (refs/heads/*). Used by the post-push GC to identify

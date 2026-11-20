@@ -156,6 +156,16 @@ func TestRecordRebasedCommits(t *testing.T) {
 		})
 	}
 
+	t.Run("timestamps follow the branch order", func(t *testing.T) {
+		// The rebase replays all commits in the same second, so equal
+		// committer dates must not make the order ambiguous.
+		a := got[b.shaBySubject["ai a"]].Timestamp
+		bb := got[b.shaBySubject["ai b"]].Timestamp
+		mixed := got[b.shaBySubject["mixed sessions"]].Timestamp
+		assert.Less(t, a, bb)
+		assert.Less(t, bb, mixed)
+	})
+
 	t.Run("keeps the existing records", func(t *testing.T) {
 		for _, sha := range b.oldSHAs {
 			assert.Contains(t, got, sha)
