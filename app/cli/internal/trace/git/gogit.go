@@ -199,6 +199,21 @@ func (c *GoGitClient) CommitHeadInfo(repoRoot string) (sha, message string, err 
 	return head.Hash().String(), strings.TrimSpace(commit.Message), nil
 }
 
+// CommitInfo returns the message and the committer date of the commit at sha.
+func (c *GoGitClient) CommitInfo(repoRoot, sha string) (string, time.Time, error) {
+	repo, err := openRepo(repoRoot)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("open repo: %w", err)
+	}
+
+	commit, err := repo.CommitObject(plumbing.NewHash(sha))
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("get commit %s: %w", sha, err)
+	}
+
+	return strings.TrimSpace(commit.Message), commit.Committer.When, nil
+}
+
 func (c *GoGitClient) HeadAuthorTime(repoRoot string) (time.Time, error) {
 	repo, err := openRepo(repoRoot)
 	if err != nil {

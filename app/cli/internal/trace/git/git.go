@@ -113,6 +113,9 @@ type Client interface {
 	CommitHeadInfo(repoRoot string) (sha, message string, err error)
 	// HeadAuthorTime returns the author date of HEAD.
 	HeadAuthorTime(repoRoot string) (time.Time, error)
+	// CommitInfo returns the message and the committer date of the commit
+	// identified by sha.
+	CommitInfo(repoRoot, sha string) (message string, committedAt time.Time, err error)
 	// GeneratedMatcher returns a predicate that reports whether a repo-relative
 	// path is marked linguist-generated=true in the repository's .gitattributes.
 	// Implementations must return a no-op matcher (always false) when attributes

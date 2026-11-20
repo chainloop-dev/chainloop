@@ -278,6 +278,22 @@ func (c *ExecClient) CommitHeadInfo(repoRoot string) (sha, message string, err e
 	return sha, strings.TrimSpace(message), nil
 }
 
+// CommitInfo returns the message and the committer date of the commit at sha.
+func (c *ExecClient) CommitInfo(repoRoot, sha string) (string, time.Time, error) {
+	out := gitOutput(repoRoot, "log", "-1", "--format=%ct%n%B", sha, "--")
+	if out == "" {
+		return "", time.Time{}, fmt.Errorf("git log %s: no output", sha)
+	}
+
+	ts, message, _ := strings.Cut(out, "\n")
+	secs, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("git log %s committer date %q: %w", sha, ts, err)
+	}
+
+	return strings.TrimSpace(message), time.Unix(secs, 0), nil
+}
+
 // HeadAuthorTime returns the author date of HEAD.
 func (c *ExecClient) HeadAuthorTime(repoRoot string) (time.Time, error) {
 	out := gitOutput(repoRoot, "log", "-1", "--format=%at", "HEAD")

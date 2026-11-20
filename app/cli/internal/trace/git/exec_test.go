@@ -246,3 +246,30 @@ func TestMapGitStatus(t *testing.T) {
 	assert.Equal(t, "modified", mapGitStatus("M"))
 	assert.Equal(t, "modified", mapGitStatus(""))
 }
+
+func TestClient_CommitInfo(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+
+	headSHA, headMessage, err := NewExecClient().CommitHeadInfo(cwd)
+	require.NoError(t, err)
+
+	clients := []struct {
+		name   string
+		client Client
+	}{
+		{name: "exec", client: NewExecClient()},
+		{name: "go-git", client: NewGoGitClient()},
+	}
+	for _, tc := range clients {
+		t.Run(tc.name, func(t *testing.T) {
+			message, committedAt, err := tc.client.CommitInfo(cwd, headSHA)
+			require.NoError(t, err)
+			assert.Equal(t, headMessage, message)
+			assert.False(t, committedAt.IsZero())
+
+			_, _, err = tc.client.CommitInfo(cwd, "deadbeef00000000000000000000000000000000")
+			assert.Error(t, err)
+		})
+	}
+}

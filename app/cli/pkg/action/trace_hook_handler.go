@@ -528,6 +528,82 @@ func filterCurrentBranchCommits(client tracegit.Client, repoRoot string, records
 	return filtered
 }
 
+// recordRebasedCommits creates a commit record for each commit of the current
+// branch that carries a Chainloop-Trace-Sessions trailer but has no record. A
+// rebase that ran outside this clone (for example the GitHub "Update branch"
+// button, or a rebase in another clone) gives the commits new SHAs without
+// running post-commit, so no record exists for them. Without this step the
+// orphan filter drops the old records and the push sends none of the rebased
+// commits.
+//
+// Only sessions with a local session record are taken from the trailer: the
+// trailer is text that the commit author controls. Merge commits are skipped,
+// as post-commit does. An existing record is never changed. It returns records
+// with the new records appended. When the branch commits cannot be listed, it
+// returns records unchanged.
+func recordRebasedCommits(client tracegit.Client, store *state.Store, repoRoot string, records []*state.CommitRecord, sessionRecords map[string]*state.SessionRecord, log zerolog.Logger) []*state.CommitRecord {
+	if len(sessionRecords) == 0 {
+		return records
+	}
+
+	branchSHAs, err := client.BranchCommitSHAs(repoRoot)
+	if err != nil {
+		log.Debug().Err(err).Msg("could not enumerate branch commits, skipping rebased commit recovery")
+
+		return records
+	}
+
+	recorded := make(map[string]struct{}, len(records))
+	for _, rec := range records {
+		recorded[rec.SHA] = struct{}{}
+	}
+
+	for _, sha := range branchSHAs {
+		if _, ok := recorded[sha]; ok {
+			continue
+		}
+
+		message, committedAt, err := client.CommitInfo(repoRoot, sha)
+		if err != nil {
+			log.Debug().Err(err).Str("sha", sha).Msg("could not read commit, skipping rebased commit recovery")
+			continue
+		}
+
+		var sessionIDs []string
+		for _, sid := range state.ParseSessionIDsFromTrailer(message) {
+			if _, known := sessionRecords[sid]; known {
+				sessionIDs = append(sessionIDs, sid)
+			}
+		}
+		if len(sessionIDs) == 0 {
+			continue
+		}
+
+		isMerge, err := client.IsMergeCommit(repoRoot, sha)
+		if err != nil || isMerge {
+			continue
+		}
+
+		rec := &state.CommitRecord{
+			SHA:        sha,
+			Message:    message,
+			SessionIDs: sessionIDs,
+			// The committer date keeps the branch order of the commits, which
+			// the time of this push would lose.
+			Timestamp: committedAt.UTC().Format(time.RFC3339),
+		}
+		if err := store.SaveCommitRecord(rec); err != nil {
+			log.Debug().Err(err).Str("sha", sha).Msg("could not save rebased commit record")
+			continue
+		}
+
+		log.Debug().Str("sha", sha).Strs("session_ids", sessionIDs).Msg("recorded rebased commit from its trailer")
+		records = append(records, rec)
+	}
+
+	return records
+}
+
 // RunTracePushOpts configures RunTracePush behaviour.
 type RunTracePushOpts struct {
 	// AllowEmpty makes the push attest every recorded session even when
@@ -812,6 +888,16 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 
 	gitClient := tracegit.NewGitClient()
 
+	sessionRecords, err := store.LoadAllSessionRecords()
+	if err != nil {
+		log.Debug().Err(err).Msg("could not load session records")
+	}
+
+	// A rebase that ran without the hooks (for example the GitHub "Update
+	// branch" button) left branch commits with a trailer but no record.
+	// Record them again before the orphan filter drops their old records.
+	allCommits = recordRebasedCommits(gitClient, store, repoRoot, allCommits, sessionRecords, log)
+
 	// Drop orphan records (SHAs no longer in the branch — typically left over
 	// by a rebase) and any record that turns out to belong to a merge commit.
 	allCommits = filterCurrentBranchCommits(gitClient, repoRoot, allCommits, log)
@@ -858,11 +944,6 @@ func gatherPushSessions(ctx context.Context, store *state.Store, repoRoot, sessi
 		markScanned(store, scanned, log)
 
 		return nil, aiCommits, nil
-	}
-
-	sessionRecords, err := store.LoadAllSessionRecords()
-	if err != nil {
-		log.Debug().Err(err).Msg("could not load session records")
 	}
 
 	sessionCommits := sessionCommitGroups(aiCommits, sessionRecords, allowEmpty)
