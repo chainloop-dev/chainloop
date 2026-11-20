@@ -546,7 +546,10 @@ func recordRebasedCommits(client tracegit.Client, store *state.Store, repoRoot s
 		return records
 	}
 
-	branchSHAs, err := client.BranchCommitSHAs(repoRoot)
+	// One read of the commits that carry a trailer: an unrecorded commit
+	// without one is never recorded, and the branch can hold the whole
+	// history when no base branch is found.
+	candidates, err := client.BranchCommits(repoRoot, state.TrailerKey+":")
 	if err != nil {
 		log.Debug().Err(err).Msg("could not enumerate branch commits, skipping rebased commit recovery")
 
@@ -562,19 +565,14 @@ func recordRebasedCommits(client tracegit.Client, store *state.Store, repoRoot s
 	// second, so each new record gets a timestamp after the previous one: the
 	// timestamp is what orders the commits of a session.
 	var prev time.Time
-	for _, sha := range slices.Backward(branchSHAs) {
-		if _, ok := recorded[sha]; ok {
-			continue
-		}
-
-		message, committedAt, err := client.CommitInfo(repoRoot, sha)
-		if err != nil {
-			log.Debug().Err(err).Str("sha", sha).Msg("could not read commit, skipping rebased commit recovery")
+	for _, commit := range slices.Backward(candidates) {
+		sha := commit.SHA
+		if _, ok := recorded[sha]; ok || commit.Parents > 1 {
 			continue
 		}
 
 		var sessionIDs []string
-		for _, sid := range state.ParseSessionIDsFromTrailer(message) {
+		for _, sid := range state.ParseSessionIDsFromTrailer(commit.Message) {
 			if _, known := sessionRecords[sid]; known {
 				sessionIDs = append(sessionIDs, sid)
 			}
@@ -583,14 +581,9 @@ func recordRebasedCommits(client tracegit.Client, store *state.Store, repoRoot s
 			continue
 		}
 
-		isMerge, err := client.IsMergeCommit(repoRoot, sha)
-		if err != nil || isMerge {
-			continue
-		}
-
 		// The committer date keeps the commits before a commit made after
 		// the pull, which the time of this push would not.
-		ts := committedAt.UTC().Truncate(time.Second)
+		ts := commit.CommittedAt.UTC().Truncate(time.Second)
 		if !ts.After(prev) {
 			ts = prev.Add(time.Second)
 		}
@@ -598,7 +591,7 @@ func recordRebasedCommits(client tracegit.Client, store *state.Store, repoRoot s
 
 		rec := &state.CommitRecord{
 			SHA:        sha,
-			Message:    message,
+			Message:    commit.Message,
 			SessionIDs: sessionIDs,
 			Timestamp:  ts.Format(time.RFC3339),
 		}

@@ -77,6 +77,15 @@ type BlameLine struct {
 
 // Client abstracts git operations so the implementation can be swapped
 // (e.g. from exec-based to go-git).
+// BranchCommit is a commit of the current branch.
+type BranchCommit struct {
+	SHA         string
+	Message     string
+	CommittedAt time.Time
+	// Parents is the number of parents. A merge commit has more than one.
+	Parents int
+}
+
 type Client interface {
 	// Context collects repository metadata: remote URL, branch, commits since base.
 	Context(repoRoot string) (*aicodingsession.GitContext, error)
@@ -113,9 +122,6 @@ type Client interface {
 	CommitHeadInfo(repoRoot string) (sha, message string, err error)
 	// HeadAuthorTime returns the author date of HEAD.
 	HeadAuthorTime(repoRoot string) (time.Time, error)
-	// CommitInfo returns the message and the committer date of the commit
-	// identified by sha.
-	CommitInfo(repoRoot, sha string) (message string, committedAt time.Time, err error)
 	// GeneratedMatcher returns a predicate that reports whether a repo-relative
 	// path is marked linguist-generated=true in the repository's .gitattributes.
 	// Implementations must return a no-op matcher (always false) when attributes
@@ -142,6 +148,10 @@ type Client interface {
 	// base itself is excluded. HEAD comes first, and on a linear branch each
 	// commit comes before its parents.
 	BranchCommitSHAs(repoRoot string) ([]string, error)
+	// BranchCommits returns the commits of BranchCommitSHAs, in the same
+	// order, whose message contains grep. An empty grep returns every commit.
+	// It reads all of them in one pass.
+	BranchCommits(repoRoot, grep string) ([]BranchCommit, error)
 	// LocalReachableSHAs returns the union of SHAs reachable from every
 	// local branch tip (refs/heads/*). Used by the post-push GC to identify
 	// CommitRecords that are still alive on at least one branch — anything

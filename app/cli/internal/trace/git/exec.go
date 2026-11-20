@@ -278,22 +278,6 @@ func (c *ExecClient) CommitHeadInfo(repoRoot string) (sha, message string, err e
 	return sha, strings.TrimSpace(message), nil
 }
 
-// CommitInfo returns the message and the committer date of the commit at sha.
-func (c *ExecClient) CommitInfo(repoRoot, sha string) (string, time.Time, error) {
-	out := gitOutput(repoRoot, "log", "-1", "--format=%ct%n%B", sha, "--")
-	if out == "" {
-		return "", time.Time{}, fmt.Errorf("git log %s: no output", sha)
-	}
-
-	ts, message, _ := strings.Cut(out, "\n")
-	secs, err := strconv.ParseInt(ts, 10, 64)
-	if err != nil {
-		return "", time.Time{}, fmt.Errorf("git log %s committer date %q: %w", sha, ts, err)
-	}
-
-	return strings.TrimSpace(message), time.Unix(secs, 0), nil
-}
-
 // HeadAuthorTime returns the author date of HEAD.
 func (c *ExecClient) HeadAuthorTime(repoRoot string) (time.Time, error) {
 	out := gitOutput(repoRoot, "log", "-1", "--format=%at", "HEAD")
@@ -353,6 +337,59 @@ func (c *ExecClient) BranchCommitSHAs(repoRoot string) ([]string, error) {
 	}
 
 	return strings.Split(out, "\n"), nil
+}
+
+// Separators of the BranchCommits output. A commit message cannot hold them in
+// practice.
+const (
+	fieldSep  = "\x1f"
+	recordSep = "\x1e"
+)
+
+// BranchCommits returns the branch commits whose message contains grep, with
+// one git log call.
+func (c *ExecClient) BranchCommits(repoRoot, grep string) ([]BranchCommit, error) {
+	args := []string{"log", "--topo-order", "--format=%H" + fieldSep + "%ct" + fieldSep + "%P" + fieldSep + "%B" + recordSep}
+	if grep != "" {
+		args = append(args, "--fixed-strings", "--grep="+grep)
+	}
+	args = append(args, "HEAD")
+	if base := detectBaseBranch(repoRoot); base != "" {
+		args = append(args, "^"+base)
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoRoot
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git log: %w", err)
+	}
+
+	var commits []BranchCommit
+	for record := range strings.SplitSeq(string(out), recordSep) {
+		record = strings.TrimLeft(record, "\n")
+		if record == "" {
+			continue
+		}
+
+		fields := strings.SplitN(record, fieldSep, 4)
+		if len(fields) != 4 {
+			return nil, fmt.Errorf("git log: unexpected record %q", record)
+		}
+		secs, err := strconv.ParseInt(fields[1], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("git log %s committer date %q: %w", fields[0], fields[1], err)
+		}
+
+		commits = append(commits, BranchCommit{
+			SHA:         fields[0],
+			Message:     strings.TrimSpace(fields[3]),
+			CommittedAt: time.Unix(secs, 0),
+			Parents:     len(strings.Fields(fields[2])),
+		})
+	}
+
+	return commits, nil
 }
 
 // detectBaseBranch tries to find the default remote branch (main, master, etc.)
