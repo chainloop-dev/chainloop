@@ -412,22 +412,38 @@ func (c *GoGitClient) IsMergeCommit(repoRoot, sha string) (bool, error) {
 }
 
 // BranchCommitSHAs returns the SHAs reachable from HEAD that are not reachable
-// from the default remote branch. The merge base is excluded. Order is
-// unspecified.
+// from the default remote branch. The merge base is excluded. HEAD comes
+// first, and on a linear branch each commit comes before its parents.
 func (c *GoGitClient) BranchCommitSHAs(repoRoot string) ([]string, error) {
+	var shas []string
+	err := walkBranch(repoRoot, func(commit *object.Commit) error {
+		shas = append(shas, commit.Hash.String())
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return shas, nil
+}
+
+// walkBranch calls fn for each commit reachable from HEAD and not from the
+// merge base with the default remote branch, HEAD first.
+func walkBranch(repoRoot string, fn func(*object.Commit) error) error {
 	repo, err := openRepo(repoRoot)
 	if err != nil {
-		return nil, fmt.Errorf("open repo: %w", err)
+		return fmt.Errorf("open repo: %w", err)
 	}
 
 	head, err := repo.Head()
 	if err != nil {
-		return nil, fmt.Errorf("get HEAD: %w", err)
+		return fmt.Errorf("get HEAD: %w", err)
 	}
 
 	headCommit, err := repo.CommitObject(head.Hash())
 	if err != nil {
-		return nil, fmt.Errorf("resolve HEAD commit: %w", err)
+		return fmt.Errorf("resolve HEAD commit: %w", err)
 	}
 
 	// Pre-seed the iterator's seen-set with the merge base(s). The preorder
@@ -444,17 +460,31 @@ func (c *GoGitClient) BranchCommitSHAs(repoRoot string) ([]string, error) {
 		}
 	}
 
-	var shas []string
-	iter := object.NewCommitPreorderIter(headCommit, seen, nil)
-	if err := iter.ForEach(func(c *object.Commit) error {
-		shas = append(shas, c.Hash.String())
-
-		return nil
-	}); err != nil {
-		return nil, fmt.Errorf("walk commits: %w", err)
+	if err := object.NewCommitPreorderIter(headCommit, seen, nil).ForEach(fn); err != nil {
+		return fmt.Errorf("walk commits: %w", err)
 	}
 
-	return shas, nil
+	return nil
+}
+
+// BranchCommits returns the branch commits whose message contains grep.
+func (c *GoGitClient) BranchCommits(repoRoot, grep string) ([]BranchCommit, error) {
+	var commits []BranchCommit
+	err := walkBranch(repoRoot, func(commit *object.Commit) error {
+		if grep != "" && !strings.Contains(commit.Message, grep) {
+			return nil
+		}
+		commits = append(commits, BranchCommit{
+			SHA:         commit.Hash.String(),
+			Message:     strings.TrimSpace(commit.Message),
+			CommittedAt: commit.Committer.When,
+			Parents:     commit.NumParents(),
+		})
+
+		return nil
+	})
+
+	return commits, err
 }
 
 // LocalReachableSHAs walks every local branch tip (refs/heads/*) and returns

@@ -312,6 +312,9 @@ func (f *fakeBranchClient) Blame(string, string, string) ([]tracegit.BlameLine, 
 
 func (f *fakeBranchClient) CommitHeadInfo(string) (string, string, error) { return "", "", nil }
 func (f *fakeBranchClient) HeadAuthorTime(string) (time.Time, error)      { return time.Time{}, nil }
+func (f *fakeBranchClient) BranchCommits(string, string) ([]tracegit.BranchCommit, error) {
+	return nil, nil
+}
 func (f *fakeBranchClient) GeneratedMatcher(string) func(string) bool {
 	return func(string) bool { return false }
 }

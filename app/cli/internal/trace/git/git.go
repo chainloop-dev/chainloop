@@ -77,6 +77,15 @@ type BlameLine struct {
 
 // Client abstracts git operations so the implementation can be swapped
 // (e.g. from exec-based to go-git).
+// BranchCommit is a commit of the current branch.
+type BranchCommit struct {
+	SHA         string
+	Message     string
+	CommittedAt time.Time
+	// Parents is the number of parents. A merge commit has more than one.
+	Parents int
+}
+
 type Client interface {
 	// Context collects repository metadata: remote URL, branch, commits since base.
 	Context(repoRoot string) (*aicodingsession.GitContext, error)
@@ -136,8 +145,13 @@ type Client interface {
 	IsMergeCommit(repoRoot, sha string) (bool, error)
 	// BranchCommitSHAs returns the SHAs reachable from HEAD that are not
 	// reachable from the default remote branch (HEAD ^merge-base). The merge
-	// base itself is excluded. Order is unspecified.
+	// base itself is excluded. HEAD comes first, and on a linear branch each
+	// commit comes before its parents.
 	BranchCommitSHAs(repoRoot string) ([]string, error)
+	// BranchCommits returns the commits of BranchCommitSHAs, in the same
+	// order, whose message contains grep. An empty grep returns every commit.
+	// It reads all of them in one pass.
+	BranchCommits(repoRoot, grep string) ([]BranchCommit, error)
 	// LocalReachableSHAs returns the union of SHAs reachable from every
 	// local branch tip (refs/heads/*). Used by the post-push GC to identify
 	// CommitRecords that are still alive on at least one branch — anything

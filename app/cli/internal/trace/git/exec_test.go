@@ -18,6 +18,7 @@ package git
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -245,4 +246,58 @@ func TestMapGitStatus(t *testing.T) {
 	assert.Equal(t, "renamed", mapGitStatus("R100"))
 	assert.Equal(t, "modified", mapGitStatus("M"))
 	assert.Equal(t, "modified", mapGitStatus(""))
+}
+
+func TestClient_BranchCommits(t *testing.T) {
+	r := setupBranchedRepo(t)
+
+	testCases := []struct {
+		name        string
+		grep        string
+		wantSHAs    []string
+		wantParents map[string]int
+	}{
+		{
+			name:        "empty grep returns every branch commit",
+			wantSHAs:    []string{r.mergeSHA, r.featureB, r.featureA, r.sideSHA},
+			wantParents: map[string]int{r.mergeSHA: 2, r.featureA: 1},
+		},
+		{
+			name:     "grep keeps the matching messages",
+			grep:     "feature",
+			wantSHAs: []string{r.featureB, r.featureA},
+		},
+		{
+			name: "grep with no match returns nothing",
+			grep: "Chainloop-Trace-Sessions:",
+		},
+	}
+	for name, client := range testClients() {
+		for _, tc := range testCases {
+			t.Run(name+"/"+tc.name, func(t *testing.T) {
+				commits, err := client.BranchCommits(r.dir, tc.grep)
+				require.NoError(t, err)
+
+				shas := make([]string, 0, len(commits))
+				byMessage := make(map[string]BranchCommit, len(commits))
+				for _, c := range commits {
+					shas = append(shas, c.SHA)
+					byMessage[c.Message] = c
+					assert.False(t, c.CommittedAt.IsZero())
+					if want, ok := tc.wantParents[c.SHA]; ok {
+						assert.Equal(t, want, c.Parents)
+					}
+				}
+				assert.ElementsMatch(t, tc.wantSHAs, shas)
+				if len(tc.wantSHAs) == 0 {
+					return
+				}
+
+				// HEAD first, and a commit before its parent.
+				assert.Equal(t, tc.wantSHAs[0], shas[0])
+				assert.Less(t, slices.Index(shas, r.featureB), slices.Index(shas, r.featureA))
+				assert.Equal(t, r.featureA, byMessage["feature a"].SHA)
+			})
+		}
+	}
 }

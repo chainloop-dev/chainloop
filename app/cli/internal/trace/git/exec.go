@@ -326,7 +326,7 @@ func (c *ExecClient) IsMergeCommit(repoRoot, sha string) (bool, error) {
 // `git rev-list HEAD ^<base>` (newest first). When no default remote branch
 // is detected, returns every commit reachable from HEAD.
 func (c *ExecClient) BranchCommitSHAs(repoRoot string) ([]string, error) {
-	args := []string{"rev-list", "HEAD"}
+	args := []string{"rev-list", "--topo-order", "HEAD"}
 	if base := detectBaseBranch(repoRoot); base != "" {
 		args = append(args, "^"+base)
 	}
@@ -337,6 +337,59 @@ func (c *ExecClient) BranchCommitSHAs(repoRoot string) ([]string, error) {
 	}
 
 	return strings.Split(out, "\n"), nil
+}
+
+// Separators of the BranchCommits output. A commit message cannot hold them in
+// practice.
+const (
+	fieldSep  = "\x1f"
+	recordSep = "\x1e"
+)
+
+// BranchCommits returns the branch commits whose message contains grep, with
+// one git log call.
+func (c *ExecClient) BranchCommits(repoRoot, grep string) ([]BranchCommit, error) {
+	args := []string{"log", "--topo-order", "--format=%H" + fieldSep + "%ct" + fieldSep + "%P" + fieldSep + "%B" + recordSep}
+	if grep != "" {
+		args = append(args, "--fixed-strings", "--grep="+grep)
+	}
+	args = append(args, "HEAD")
+	if base := detectBaseBranch(repoRoot); base != "" {
+		args = append(args, "^"+base)
+	}
+
+	cmd := exec.Command("git", args...)
+	cmd.Dir = repoRoot
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git log: %w", err)
+	}
+
+	var commits []BranchCommit
+	for record := range strings.SplitSeq(string(out), recordSep) {
+		record = strings.TrimLeft(record, "\n")
+		if record == "" {
+			continue
+		}
+
+		fields := strings.SplitN(record, fieldSep, 4)
+		if len(fields) != 4 {
+			return nil, fmt.Errorf("git log: unexpected record %q", record)
+		}
+		secs, err := strconv.ParseInt(fields[1], 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("git log %s committer date %q: %w", fields[0], fields[1], err)
+		}
+
+		commits = append(commits, BranchCommit{
+			SHA:         fields[0],
+			Message:     strings.TrimSpace(fields[3]),
+			CommittedAt: time.Unix(secs, 0),
+			Parents:     len(strings.Fields(fields[2])),
+		})
+	}
+
+	return commits, nil
 }
 
 // detectBaseBranch tries to find the default remote branch (main, master, etc.)
