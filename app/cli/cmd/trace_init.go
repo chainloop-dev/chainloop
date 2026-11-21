@@ -103,6 +103,20 @@ cannot use them with --local. You can use --require-trace with --local.`,
 				return err
 			}
 
+			// The harness hooks are written relative to the repository root,
+			// so a root that is the user's home directory would rewrite the
+			// agent's user-level configuration (for example
+			// ~/.claude/settings.json) and the hooks would load in every
+			// session of that agent, in any project. Refuse before asking
+			// anything or writing anything.
+			userLevel, err := trace.IsUserLevelRoot(repoRoot)
+			if err != nil {
+				return fmt.Errorf("check repository root: %w", err)
+			}
+			if userLevel {
+				return fmt.Errorf("refusing to initialize tracing in %q: that is a user-level directory, so the agent hooks would load in every session; run `chainloop trace init` inside a project repository instead", repoRoot)
+			}
+
 			// Local mode contacts no control plane, so the control-plane
 			// identity and workflow flags are contradictions rather than extra
 			// configuration. --require-trace is orthogonal and allowed.

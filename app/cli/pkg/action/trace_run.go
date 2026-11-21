@@ -104,6 +104,19 @@ func TraceRun(ctx context.Context, log zerolog.Logger, opts TraceRunOpts) error 
 		return fmt.Errorf("no trace providers selected")
 	}
 
+	// The agent hooks are written relative to the repository root, so a root
+	// that is the user's home directory would rewrite the agent's user-level
+	// configuration (for example ~/.claude/settings.json) and the hooks would
+	// load in every session of that agent, in any project. Refuse before
+	// anything is installed, snapshotted, or run.
+	userLevel, err := trace.IsUserLevelRoot(opts.RepoRoot)
+	if err != nil {
+		return fmt.Errorf("check repository root: %w", err)
+	}
+	if userLevel {
+		return fmt.Errorf("refusing to trace in %q: that is a user-level directory, so the agent hooks would load in every session; run `chainloop trace run` inside a project repository instead", opts.RepoRoot)
+	}
+
 	// Local mode reaches no control plane, so it skips the credential check and
 	// the up-front workflow creation: the session is recorded and written to
 	// disk either way.
