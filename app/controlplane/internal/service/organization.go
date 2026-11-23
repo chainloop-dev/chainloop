@@ -135,18 +135,23 @@ func (s *OrganizationService) Update(ctx context.Context, req *pb.OrganizationSe
 }
 
 // pbEnvVarRedactionToBiz converts the API setting. nil means "not set"; TYPE_UNSPECIFIED means no redaction.
+// An unknown type becomes an invalid mode, so the use case rejects it and does not clear the stored setting.
 // The use case validates the setting and keeps the names only for the custom mode.
 func pbEnvVarRedactionToBiz(r *pb.EnvVarRedaction) *biz.EnvVarRedaction {
 	if r == nil {
 		return nil
 	}
 
-	mode := envredaction.ModeNone
+	var mode envredaction.Mode
 	switch r.GetType() {
+	case pb.EnvVarRedaction_TYPE_UNSPECIFIED:
+		mode = envredaction.ModeNone
 	case pb.EnvVarRedaction_TYPE_KNOWN_IDENTITY:
 		mode = envredaction.ModeKnownIdentity
 	case pb.EnvVarRedaction_TYPE_CUSTOM:
 		mode = envredaction.ModeCustom
+	default:
+		mode = envredaction.Mode(r.GetType().String())
 	}
 
 	return &biz.EnvVarRedaction{Mode: mode, EnvVars: r.GetEnvVars()}

@@ -66,3 +66,12 @@ func TestEnvVarRedactionConversion(t *testing.T) {
 		})
 	}
 }
+
+// An unknown type must not become ModeNone, which clears the stored setting.
+func TestEnvVarRedactionUnknownTypeIsRejected(t *testing.T) {
+	got := pbEnvVarRedactionToBiz(&pb.EnvVarRedaction{Type: pb.EnvVarRedaction_Type(99)})
+	assert.NotEqual(t, envredaction.ModeNone, got.Mode)
+
+	_, err := got.Names()
+	assert.Error(t, err)
+}

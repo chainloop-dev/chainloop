@@ -51,6 +51,7 @@ func TestNames(t *testing.T) {
 		{name: "custom does not add known identity", mode: ModeCustom, custom: []string{fooVar}, want: []string{fooVar}},
 		{name: "custom requires a variable", mode: ModeCustom, wantErr: true},
 		{name: "custom rejects empty names", mode: ModeCustom, custom: []string{fooVar, " "}, wantErr: true},
+		{name: "custom rejects names with surrounding whitespace", mode: ModeCustom, custom: []string{" " + fooVar}, wantErr: true},
 	}
 
 	for _, tc := range testCases {

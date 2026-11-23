@@ -58,6 +58,10 @@ func Names(mode Mode, custom []string) ([]string, error) {
 			if strings.TrimSpace(name) == "" {
 				return nil, errors.New("custom env var redaction contains an empty variable name")
 			}
+			// an exact name with surrounding whitespace never matches a variable, so its value stays clear
+			if strings.TrimSpace(name) != name {
+				return nil, fmt.Errorf("custom env var redaction name %q has leading or trailing whitespace", name)
+			}
 		}
 		return custom, nil
 	default:
