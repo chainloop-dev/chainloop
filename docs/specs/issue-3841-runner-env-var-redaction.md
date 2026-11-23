@@ -58,7 +58,7 @@ When a redacted variable has a value, the attestation MUST keep the variable nam
 - Done when: in an Azure Pipelines run with known identity, the attestation has `BUILD_REQUESTEDFOR: [REDACTED]`, and `attestation init` does not fail.
 
 ### R-003: Push enforcement
-The control plane MUST reject a pushed attestation when a variable that the setting redacts has a non-empty value other than `[REDACTED]`. The check MUST use the setting of the organization at push time. The control plane MUST run the check before it stores the attestation, also in a CAS backend. The error MUST name the variables. It MUST tell the user to update the CLI, or to run the attestation again if the setting changed during the run.
+The control plane MUST reject a pushed attestation when a variable that the setting redacts has a non-empty value other than `[REDACTED]`. The check MUST use the setting of the organization at push time. The control plane MUST run the check before it stores the attestation. With a CAS backend, it runs the check before the upload with the setting at that time, and again when it saves the attestation. The error MUST name the variables. It MUST tell the user to update the CLI, or to run the attestation again if the setting changed during the run.
 - Done when: a CLI without redaction support pushes an attestation that has `GITHUB_ACTOR` with a real value, in an organization with known identity. The push fails.
 
 ### R-004: Known identity list
@@ -131,5 +131,5 @@ No open questions.
 | Risk | Mitigation |
 |------|------------|
 | An organization turns on redaction, and pipelines with an older CLI fail at push. | The error names the variables and tells the user to update the CLI. The release notes give the minimum CLI version. |
-| An admin changes the setting while an attestation is in progress. The push uses the new setting, which the CLI did not apply. | The push fails with the error from R-003, and a new run of the pipeline uses the new setting. Changes to the setting are rare. |
+| An admin changes the setting while an attestation is in progress. The push uses the new setting, which the CLI did not apply. If the change occurs between the check before the CAS upload and the save, the unredacted bundle stays in the CAS backend. | The push fails with the error from R-003, and a new run of the pipeline uses the new setting. Changes to the setting are rare, and the time between the two checks is short. We accept the bundle in the CAS backend: no workflow run links to it. |
 | A personal value is in a variable that is not on the known identity list. | The custom mode covers it. A runner integration can mark more variables in a later release. |
