@@ -22,6 +22,7 @@ import (
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz/testhelpers"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/envredaction"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	"github.com/google/uuid"
@@ -268,6 +269,84 @@ func (s *workflowRunContractIntegrationTestSuite) TestValidateAttestationContrac
 		require.Error(s.T(), err)
 		s.True(biz.IsNotFound(err), "expected a not-found error, got %T: %v", err, err)
 	})
+}
+
+// The CLI redacts env vars before it signs, so an older or modified CLI can push
+// the real values. The control plane checks the org setting at push time.
+// full.json carries the env vars {"owner": "john-c@chainloop.dev", "project": "chatgpt"}.
+func (s *workflowRunContractIntegrationTestSuite) TestSaveAttestationEnforcesEnvVarRedaction() {
+	// env var name in full.json
+	const projectEnvVar = "project"
+
+	testCases := []struct {
+		name        string
+		redaction   *biz.EnvVarRedaction
+		attestation string
+		wantErr     string
+	}{
+		{name: "no redaction accepts clear values", attestation: attestationFull},
+		{
+			name:        "known identity with no identity vars in the attestation is accepted",
+			redaction:   &biz.EnvVarRedaction{Mode: envredaction.ModeKnownIdentity},
+			attestation: attestationFull,
+		},
+		{
+			name:        "custom redaction of a variable that is absent is accepted",
+			redaction:   &biz.EnvVarRedaction{Mode: envredaction.ModeCustom, EnvVars: []string{"GITHUB_ACTOR"}},
+			attestation: attestationFull,
+		},
+		{
+			name:        "attestation without env vars is accepted",
+			redaction:   &biz.EnvVarRedaction{Mode: envredaction.ModeCustom, EnvVars: []string{"owner"}},
+			attestation: attestationEmpty,
+		},
+		{
+			name:        "custom redaction of a clear value is rejected",
+			redaction:   &biz.EnvVarRedaction{Mode: envredaction.ModeCustom, EnvVars: []string{projectEnvVar, "owner"}},
+			attestation: attestationFull,
+			wantErr:     "environment variables owner, project must have the value [REDACTED]",
+		},
+	}
+
+	for i, tc := range testCases {
+		s.Run(tc.name, func() {
+			ctx := context.Background()
+			s.setOrgEnvVarRedaction(ctx, tc.redaction)
+			run := s.newRunWithContract(fmt.Sprintf("redaction-%d", i), "  materials: []")
+			bundleBytes := testhelpers.BundleBytesFromEnvelope(s.T(), tc.attestation)
+
+			preflightErr := s.WorkflowRun.ValidateAttestationContract(ctx, run.ID.String(), bundleBytes)
+			digest, err := s.WorkflowRun.SaveAttestation(ctx, run.ID.String(), bundleBytes)
+
+			if tc.wantErr == "" {
+				require.NoError(s.T(), preflightErr)
+				require.NoError(s.T(), err)
+				require.NotNil(s.T(), digest)
+				return
+			}
+
+			for _, e := range []error{preflightErr, err} {
+				require.Error(s.T(), e)
+				s.True(biz.IsErrValidation(e), "expected a validation error, got %T: %v", e, e)
+				s.ErrorContains(e, tc.wantErr)
+			}
+
+			stored, err := s.WorkflowRun.GetByIDInOrg(ctx, s.org.ID, run.ID.String())
+			require.NoError(s.T(), err)
+			s.Empty(stored.Attestation.Digest, "a rejected attestation must not record a digest on the run")
+		})
+	}
+}
+
+func (s *workflowRunContractIntegrationTestSuite) setOrgEnvVarRedaction(ctx context.Context, r *biz.EnvVarRedaction) {
+	s.T().Helper()
+	orgUUID, err := uuid.Parse(s.org.ID)
+	require.NoError(s.T(), err)
+	if r == nil {
+		r = &biz.EnvVarRedaction{Mode: envredaction.ModeNone}
+	}
+	_, err = s.Repos.OrganizationRepo.Update(ctx, orgUUID, &biz.OrganizationUpdateOpts{EnvVarRedaction: r})
+	require.NoError(s.T(), err)
 }
 
 func TestWorkflowRunContractEnforcement(t *testing.T) {

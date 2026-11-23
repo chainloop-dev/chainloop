@@ -111,6 +111,9 @@ message OrganizationServiceUpdateRequest {
 
   // Opt out of storing the environment variables automatically discovered by the CI runner in the attestation
   optional bool skip_runner_env_vars = 10;
+
+  // Redaction of environment variable values in new attestations. Not set means no change.
+  EnvVarRedaction env_var_redaction = 11;
 }
 
 message OrganizationServiceUpdateResponse {

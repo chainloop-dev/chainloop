@@ -163,13 +163,13 @@ func (r *TektonPipeline) ListEnvVars() []*EnvVarDefinition {
 	// values come from K8s API discovery, not from actual container env vars.
 	// This follows the Dagger runner pattern of promoting encapsulated platform vars.
 	return []*EnvVarDefinition{
-		{"HOSTNAME", true},                  // optional (best-effort from env)
-		{"TEKTON_TASKRUN_NAME", false},      // required (always in any TaskRun)
-		{"TEKTON_TASK_NAME", true},          // optional (absent with inline taskSpec)
-		{"TEKTON_NAMESPACE", false},         // required (always in any TaskRun)
-		{"TEKTON_PIPELINE_NAME", true},      // optional (only Pipeline TaskRuns)
-		{"TEKTON_PIPELINERUN_NAME", true},   // optional (only Pipeline TaskRuns)
-		{"TEKTON_PIPELINE_TASK_NAME", true}, // optional (only Pipeline TaskRuns)
+		{Name: "HOSTNAME", Optional: true},                  // optional (best-effort from env)
+		{Name: "TEKTON_TASKRUN_NAME"},                       // required (always in any TaskRun)
+		{Name: "TEKTON_TASK_NAME", Optional: true},          // optional (absent with inline taskSpec)
+		{Name: "TEKTON_NAMESPACE"},                          // required (always in any TaskRun)
+		{Name: "TEKTON_PIPELINE_NAME", Optional: true},      // optional (only Pipeline TaskRuns)
+		{Name: "TEKTON_PIPELINERUN_NAME", Optional: true},   // optional (only Pipeline TaskRuns)
+		{Name: "TEKTON_PIPELINE_TASK_NAME", Optional: true}, // optional (only Pipeline TaskRuns)
 	}
 }
 

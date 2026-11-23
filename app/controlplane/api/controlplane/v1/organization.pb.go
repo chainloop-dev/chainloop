@@ -456,8 +456,10 @@ type OrganizationServiceUpdateRequest struct {
 	BlockAttestationsOnReleasedVersions *bool `protobuf:"varint,9,opt,name=block_attestations_on_released_versions,json=blockAttestationsOnReleasedVersions,proto3,oneof" json:"block_attestations_on_released_versions,omitempty"`
 	// Opt out of storing the environment variables automatically discovered by the CI runner in the attestation
 	SkipRunnerEnvVars *bool `protobuf:"varint,10,opt,name=skip_runner_env_vars,json=skipRunnerEnvVars,proto3,oneof" json:"skip_runner_env_vars,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Redaction of environment variable values in new attestations. Not set means no change.
+	EnvVarRedaction *EnvVarRedaction `protobuf:"bytes,11,opt,name=env_var_redaction,json=envVarRedaction,proto3" json:"env_var_redaction,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *OrganizationServiceUpdateRequest) Reset() {
@@ -558,6 +560,13 @@ func (x *OrganizationServiceUpdateRequest) GetSkipRunnerEnvVars() bool {
 		return *x.SkipRunnerEnvVars
 	}
 	return false
+}
+
+func (x *OrganizationServiceUpdateRequest) GetEnvVarRedaction() *EnvVarRedaction {
+	if x != nil {
+		return x.EnvVarRedaction
+	}
+	return nil
 }
 
 type OrganizationServiceUpdateResponse struct {
@@ -718,7 +727,7 @@ const file_controlplane_v1_organization_proto_rawDesc = "" +
 	" OrganizationServiceCreateRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\"U\n" +
 	"!OrganizationServiceCreateResponse\x120\n" +
-	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"\xbf\a\n" +
+	"\x06result\x18\x01 \x01(\v2\x18.controlplane.v1.OrgItemR\x06result\"\x8d\b\n" +
 	" OrganizationServiceUpdateRequest\x12\x1b\n" +
 	"\x04name\x18\x01 \x01(\tB\a\xbaH\x04r\x02\x10\x01R\x04name\x12>\n" +
 	"\x19block_on_policy_violation\x18\x02 \x01(\bH\x00R\x16blockOnPolicyViolation\x88\x01\x01\x12<\n" +
@@ -730,7 +739,8 @@ const file_controlplane_v1_organization_proto_rawDesc = "" +
 	"\x19enable_ai_agent_collector\x18\b \x01(\bH\x04R\x16enableAiAgentCollector\x88\x01\x01\x12Y\n" +
 	"'block_attestations_on_released_versions\x18\t \x01(\bH\x05R#blockAttestationsOnReleasedVersions\x88\x01\x01\x124\n" +
 	"\x14skip_runner_env_vars\x18\n" +
-	" \x01(\bH\x06R\x11skipRunnerEnvVars\x88\x01\x01B\x1c\n" +
+	" \x01(\bH\x06R\x11skipRunnerEnvVars\x88\x01\x01\x12L\n" +
+	"\x11env_var_redaction\x18\v \x01(\v2 .controlplane.v1.EnvVarRedactionR\x0fenvVarRedactionB\x1c\n" +
 	"\x1a_block_on_policy_violationB%\n" +
 	"#_prevent_implicit_workflow_creationB+\n" +
 	")_restrict_contract_creation_to_org_adminsB\x1e\n" +
@@ -782,6 +792,7 @@ var file_controlplane_v1_organization_proto_goTypes = []any{
 	(*OrgMembershipItem)(nil),                           // 14: controlplane.v1.OrgMembershipItem
 	(*OffsetPaginationResponse)(nil),                    // 15: controlplane.v1.OffsetPaginationResponse
 	(*OrgItem)(nil),                                     // 16: controlplane.v1.OrgItem
+	(*EnvVarRedaction)(nil),                             // 17: controlplane.v1.EnvVarRedaction
 }
 var file_controlplane_v1_organization_proto_depIdxs = []int32{
 	12, // 0: controlplane.v1.OrganizationServiceListMembershipsRequest.role:type_name -> controlplane.v1.MembershipRole
@@ -791,24 +802,25 @@ var file_controlplane_v1_organization_proto_depIdxs = []int32{
 	12, // 4: controlplane.v1.OrganizationServiceUpdateMembershipRequest.role:type_name -> controlplane.v1.MembershipRole
 	14, // 5: controlplane.v1.OrganizationServiceUpdateMembershipResponse.result:type_name -> controlplane.v1.OrgMembershipItem
 	16, // 6: controlplane.v1.OrganizationServiceCreateResponse.result:type_name -> controlplane.v1.OrgItem
-	16, // 7: controlplane.v1.OrganizationServiceUpdateResponse.result:type_name -> controlplane.v1.OrgItem
-	6,  // 8: controlplane.v1.OrganizationService.Create:input_type -> controlplane.v1.OrganizationServiceCreateRequest
-	8,  // 9: controlplane.v1.OrganizationService.Update:input_type -> controlplane.v1.OrganizationServiceUpdateRequest
-	10, // 10: controlplane.v1.OrganizationService.Delete:input_type -> controlplane.v1.OrganizationServiceDeleteRequest
-	0,  // 11: controlplane.v1.OrganizationService.ListMemberships:input_type -> controlplane.v1.OrganizationServiceListMembershipsRequest
-	2,  // 12: controlplane.v1.OrganizationService.DeleteMembership:input_type -> controlplane.v1.OrganizationServiceDeleteMembershipRequest
-	4,  // 13: controlplane.v1.OrganizationService.UpdateMembership:input_type -> controlplane.v1.OrganizationServiceUpdateMembershipRequest
-	7,  // 14: controlplane.v1.OrganizationService.Create:output_type -> controlplane.v1.OrganizationServiceCreateResponse
-	9,  // 15: controlplane.v1.OrganizationService.Update:output_type -> controlplane.v1.OrganizationServiceUpdateResponse
-	11, // 16: controlplane.v1.OrganizationService.Delete:output_type -> controlplane.v1.OrganizationServiceDeleteResponse
-	1,  // 17: controlplane.v1.OrganizationService.ListMemberships:output_type -> controlplane.v1.OrganizationServiceListMembershipsResponse
-	3,  // 18: controlplane.v1.OrganizationService.DeleteMembership:output_type -> controlplane.v1.OrganizationServiceDeleteMembershipResponse
-	5,  // 19: controlplane.v1.OrganizationService.UpdateMembership:output_type -> controlplane.v1.OrganizationServiceUpdateMembershipResponse
-	14, // [14:20] is the sub-list for method output_type
-	8,  // [8:14] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	8,  // [8:8] is the sub-list for extension extendee
-	0,  // [0:8] is the sub-list for field type_name
+	17, // 7: controlplane.v1.OrganizationServiceUpdateRequest.env_var_redaction:type_name -> controlplane.v1.EnvVarRedaction
+	16, // 8: controlplane.v1.OrganizationServiceUpdateResponse.result:type_name -> controlplane.v1.OrgItem
+	6,  // 9: controlplane.v1.OrganizationService.Create:input_type -> controlplane.v1.OrganizationServiceCreateRequest
+	8,  // 10: controlplane.v1.OrganizationService.Update:input_type -> controlplane.v1.OrganizationServiceUpdateRequest
+	10, // 11: controlplane.v1.OrganizationService.Delete:input_type -> controlplane.v1.OrganizationServiceDeleteRequest
+	0,  // 12: controlplane.v1.OrganizationService.ListMemberships:input_type -> controlplane.v1.OrganizationServiceListMembershipsRequest
+	2,  // 13: controlplane.v1.OrganizationService.DeleteMembership:input_type -> controlplane.v1.OrganizationServiceDeleteMembershipRequest
+	4,  // 14: controlplane.v1.OrganizationService.UpdateMembership:input_type -> controlplane.v1.OrganizationServiceUpdateMembershipRequest
+	7,  // 15: controlplane.v1.OrganizationService.Create:output_type -> controlplane.v1.OrganizationServiceCreateResponse
+	9,  // 16: controlplane.v1.OrganizationService.Update:output_type -> controlplane.v1.OrganizationServiceUpdateResponse
+	11, // 17: controlplane.v1.OrganizationService.Delete:output_type -> controlplane.v1.OrganizationServiceDeleteResponse
+	1,  // 18: controlplane.v1.OrganizationService.ListMemberships:output_type -> controlplane.v1.OrganizationServiceListMembershipsResponse
+	3,  // 19: controlplane.v1.OrganizationService.DeleteMembership:output_type -> controlplane.v1.OrganizationServiceDeleteMembershipResponse
+	5,  // 20: controlplane.v1.OrganizationService.UpdateMembership:output_type -> controlplane.v1.OrganizationServiceUpdateMembershipResponse
+	15, // [15:21] is the sub-list for method output_type
+	9,  // [9:15] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_controlplane_v1_organization_proto_init() }

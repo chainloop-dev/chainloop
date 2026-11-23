@@ -36,6 +36,7 @@ import (
 	api "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/envredaction"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/chainloop-dev/chainloop/pkg/policies"
 	"github.com/go-git/go-git/v6"
@@ -227,6 +228,8 @@ type InitOpts struct {
 	PoliciesAllowedHostnames []string
 	// opt out of storing the environment variables automatically discovered by the CI runner
 	SkipRunnerEnvVars bool
+	// names of the env vars to redact, resolved by the control plane from the org setting
+	RedactedEnvVars []string
 	// CAS backend information
 	CASBackend *api.Attestation_CASBackend
 	// UIDashboardURL is the base URL to build the attestation view link
@@ -530,6 +533,7 @@ func initialCraftingState(cwd string, opts *InitOpts) (*api.CraftingState, error
 			Auth:                     opts.Auth,
 			PoliciesAllowedHostnames: opts.PoliciesAllowedHostnames,
 			SkipRunnerEnvVars:        opts.SkipRunnerEnvVars,
+			RedactedEnvVars:          opts.RedactedEnvVars,
 			CasBackend:               opts.CASBackend,
 		},
 		DryRun:         opts.DryRun,
@@ -615,6 +619,11 @@ func (c *Crafter) ResolveEnvVars(ctx context.Context, attestationID string) erro
 			return fmt.Errorf("required env variables not present %q", want)
 		}
 	}
+
+	// The org can redact the values of some variables. It applies to both the runner
+	// and the contract variables, so a contract cannot bring back a redacted value.
+	// The control plane resolves the names, so they match the ones it checks at push.
+	envredaction.Apply(outputEnvVars, c.CraftingState.GetAttestation().GetRedactedEnvVars())
 
 	// Resolve runner information
 	c.resolveRunnerInfo()

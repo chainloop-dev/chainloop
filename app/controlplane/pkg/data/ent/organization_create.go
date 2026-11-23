@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
@@ -182,6 +183,12 @@ func (_c *OrganizationCreate) SetNillableSkipRunnerEnvVars(v *bool) *Organizatio
 	if v != nil {
 		_c.SetSkipRunnerEnvVars(*v)
 	}
+	return _c
+}
+
+// SetEnvVarRedaction sets the "env_var_redaction" field.
+func (_c *OrganizationCreate) SetEnvVarRedaction(v *biz.EnvVarRedaction) *OrganizationCreate {
+	_c.mutation.SetEnvVarRedaction(v)
 	return _c
 }
 
@@ -541,6 +548,10 @@ func (_c *OrganizationCreate) createSpec() (*Organization, *sqlgraph.CreateSpec)
 		_spec.SetField(organization.FieldSkipRunnerEnvVars, field.TypeBool, value)
 		_node.SkipRunnerEnvVars = value
 	}
+	if value, ok := _c.mutation.EnvVarRedaction(); ok {
+		_spec.SetField(organization.FieldEnvVarRedaction, field.TypeJSON, value)
+		_node.EnvVarRedaction = value
+	}
 	if value, ok := _c.mutation.Suspended(); ok {
 		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)
 		_node.Suspended = value
@@ -897,6 +908,24 @@ func (u *OrganizationUpsert) UpdateSkipRunnerEnvVars() *OrganizationUpsert {
 	return u
 }
 
+// SetEnvVarRedaction sets the "env_var_redaction" field.
+func (u *OrganizationUpsert) SetEnvVarRedaction(v *biz.EnvVarRedaction) *OrganizationUpsert {
+	u.Set(organization.FieldEnvVarRedaction, v)
+	return u
+}
+
+// UpdateEnvVarRedaction sets the "env_var_redaction" field to the value that was provided on create.
+func (u *OrganizationUpsert) UpdateEnvVarRedaction() *OrganizationUpsert {
+	u.SetExcluded(organization.FieldEnvVarRedaction)
+	return u
+}
+
+// ClearEnvVarRedaction clears the value of the "env_var_redaction" field.
+func (u *OrganizationUpsert) ClearEnvVarRedaction() *OrganizationUpsert {
+	u.SetNull(organization.FieldEnvVarRedaction)
+	return u
+}
+
 // SetSuspended sets the "suspended" field.
 func (u *OrganizationUpsert) SetSuspended(v bool) *OrganizationUpsert {
 	u.Set(organization.FieldSuspended, v)
@@ -1139,6 +1168,27 @@ func (u *OrganizationUpsertOne) SetSkipRunnerEnvVars(v bool) *OrganizationUpsert
 func (u *OrganizationUpsertOne) UpdateSkipRunnerEnvVars() *OrganizationUpsertOne {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateSkipRunnerEnvVars()
+	})
+}
+
+// SetEnvVarRedaction sets the "env_var_redaction" field.
+func (u *OrganizationUpsertOne) SetEnvVarRedaction(v *biz.EnvVarRedaction) *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetEnvVarRedaction(v)
+	})
+}
+
+// UpdateEnvVarRedaction sets the "env_var_redaction" field to the value that was provided on create.
+func (u *OrganizationUpsertOne) UpdateEnvVarRedaction() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateEnvVarRedaction()
+	})
+}
+
+// ClearEnvVarRedaction clears the value of the "env_var_redaction" field.
+func (u *OrganizationUpsertOne) ClearEnvVarRedaction() *OrganizationUpsertOne {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearEnvVarRedaction()
 	})
 }
 
@@ -1553,6 +1603,27 @@ func (u *OrganizationUpsertBulk) SetSkipRunnerEnvVars(v bool) *OrganizationUpser
 func (u *OrganizationUpsertBulk) UpdateSkipRunnerEnvVars() *OrganizationUpsertBulk {
 	return u.Update(func(s *OrganizationUpsert) {
 		s.UpdateSkipRunnerEnvVars()
+	})
+}
+
+// SetEnvVarRedaction sets the "env_var_redaction" field.
+func (u *OrganizationUpsertBulk) SetEnvVarRedaction(v *biz.EnvVarRedaction) *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.SetEnvVarRedaction(v)
+	})
+}
+
+// UpdateEnvVarRedaction sets the "env_var_redaction" field to the value that was provided on create.
+func (u *OrganizationUpsertBulk) UpdateEnvVarRedaction() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.UpdateEnvVarRedaction()
+	})
+}
+
+// ClearEnvVarRedaction clears the value of the "env_var_redaction" field.
+func (u *OrganizationUpsertBulk) ClearEnvVarRedaction() *OrganizationUpsertBulk {
+	return u.Update(func(s *OrganizationUpsert) {
+		s.ClearEnvVarRedaction()
 	})
 }
 

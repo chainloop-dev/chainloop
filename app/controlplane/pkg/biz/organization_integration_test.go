@@ -30,6 +30,7 @@ import (
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	"github.com/chainloop-dev/chainloop/pkg/attestation/envredaction"
 	"github.com/chainloop-dev/chainloop/pkg/credentials"
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 
@@ -182,6 +183,77 @@ func (s *OrgIntegrationTestSuite) TestUpdate() {
 		})
 		s.NoError(err)
 		s.False(got.SkipRunnerEnvVars)
+	})
+
+	s.Run("env var redaction update", func() {
+		testCases := []struct {
+			name    string
+			in      *biz.EnvVarRedaction
+			want    *biz.EnvVarRedaction
+			wantErr bool
+		}{
+			{
+				name: "known identity",
+				in:   &biz.EnvVarRedaction{Mode: envredaction.ModeKnownIdentity},
+				want: &biz.EnvVarRedaction{Mode: envredaction.ModeKnownIdentity},
+			},
+			{
+				name: "custom list",
+				in:   &biz.EnvVarRedaction{Mode: envredaction.ModeCustom, EnvVars: []string{"BUILD_REQUESTEDFOR", "MY_OWNER"}},
+				want: &biz.EnvVarRedaction{Mode: envredaction.ModeCustom, EnvVars: []string{"BUILD_REQUESTEDFOR", "MY_OWNER"}},
+			},
+			{
+				name:    "custom without variables is rejected",
+				in:      &biz.EnvVarRedaction{Mode: envredaction.ModeCustom},
+				wantErr: true,
+			},
+			{
+				name:    "unknown mode is rejected",
+				in:      &biz.EnvVarRedaction{Mode: "foo"},
+				wantErr: true,
+			},
+			{
+				name: "known identity drops a custom list",
+				in:   &biz.EnvVarRedaction{Mode: envredaction.ModeKnownIdentity, EnvVars: []string{"OTHER_VAR"}},
+				want: &biz.EnvVarRedaction{Mode: envredaction.ModeKnownIdentity},
+			},
+			{
+				name: "none clears the setting",
+				in:   &biz.EnvVarRedaction{Mode: envredaction.ModeNone},
+				want: nil,
+			},
+		}
+
+		for _, tc := range testCases {
+			s.Run(tc.name, func() {
+				got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, &biz.OrganizationUpdateOpts{
+					EnvVarRedaction: tc.in,
+				})
+				if tc.wantErr {
+					s.Error(err)
+					s.True(biz.IsErrValidation(err), "want validation error, got %v", err)
+					return
+				}
+				s.NoError(err)
+				s.Equal(tc.want, got.EnvVarRedaction)
+
+				// it is persisted
+				stored, err := s.Organization.FindByName(ctx, s.org.Name)
+				s.NoError(err)
+				s.Equal(tc.want, stored.EnvVarRedaction)
+			})
+		}
+
+		s.Run("not passing a value doesn't change it", func() {
+			_, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, &biz.OrganizationUpdateOpts{
+				EnvVarRedaction: &biz.EnvVarRedaction{Mode: envredaction.ModeKnownIdentity},
+			})
+			s.NoError(err)
+
+			got, err := s.Organization.Update(ctx, s.user.ID, s.org.Name, &biz.OrganizationUpdateOpts{SkipRunnerEnvVars: toPtrBool(false)})
+			s.NoError(err)
+			s.Equal(&biz.EnvVarRedaction{Mode: envredaction.ModeKnownIdentity}, got.EnvVarRedaction)
+		})
 	})
 
 	s.Run("but not passing a value doesn't clear the hostnames value", func() {

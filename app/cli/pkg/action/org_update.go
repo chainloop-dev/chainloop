@@ -44,6 +44,8 @@ type NewOrgUpdateOpts struct {
 	BlockAttestationsOnReleasedVersions *bool
 	// SkipRunnerEnvVars opts out of storing the environment variables automatically discovered by the CI runner in the attestation
 	SkipRunnerEnvVars *bool
+	// EnvVarRedaction sets the redaction of env var values in new attestations. nil means no change
+	EnvVarRedaction *pb.EnvVarRedaction
 }
 
 func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdateOpts) (*OrgItem, error) {
@@ -57,6 +59,7 @@ func (action *OrgUpdate) Run(ctx context.Context, name string, opts *NewOrgUpdat
 		EnableAiAgentCollector:              opts.EnableAIAgentCollector,
 		BlockAttestationsOnReleasedVersions: opts.BlockAttestationsOnReleasedVersions,
 		SkipRunnerEnvVars:                   opts.SkipRunnerEnvVars,
+		EnvVarRedaction:                     opts.EnvVarRedaction,
 	}
 
 	if opts.PoliciesAllowedHostnames != nil {

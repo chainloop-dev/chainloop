@@ -2774,10 +2774,12 @@ Options
 --block[=true|false]                                     set the default policy violation blocking strategy
 --block-attestations-on-released-versions[=true|false]   reject new attestations pushed to project versions that are already released
 --enable-ai-agent-collector[=true|false]                 enable automatic AI agent config collection during attestation init
+--env-var-redaction string                               replace the values of environment variables with [REDACTED] in new attestations, one of: none, known-identity (variables that identify a person: BUILD_REQUESTEDFOR, BUILD_REQUESTEDFOREMAIL, GITHUB_ACTOR, GITLAB_USER_EMAIL, GITLAB_USER_LOGIN, HOME, USER), custom (the variables in --redacted-env-var)
 -h, --help[=true|false]                                      help for update
 --name string                                            organization name
 --policies-allowed-hostnames strings                     set the allowed hostnames for the policy engine
 --prevent-implicit-workflow-creation[=true|false]        prevent workflows and projects from being created implicitly during attestation init
+--redacted-env-var stringArray                           exact name of an environment variable to redact, can be set multiple times. Requires --env-var-redaction custom
 --restrict-contract-creation[=true|false]                restrict contract creation (org-level and project-level) to only organization admins (owner/admin roles)
 --skip-runner-env-vars[=true|false]                      opt out of storing the environment variables automatically discovered by the CI runner in the attestation
 ```

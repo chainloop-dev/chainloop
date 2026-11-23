@@ -194,8 +194,12 @@ func TestValidateAttestationContractEnforcesKeylessVerification(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := repoM.NewWorkflowRunRepo(t)
-			uc, err := biz.NewWorkflowRunUseCase(&biz.WorkflowRunUseCaseOpts{WfrRepo: repo, SigningUC: tc.signing})
+			orgRepo := repoM.NewOrganizationRepo(t)
+			uc, err := biz.NewWorkflowRunUseCase(&biz.WorkflowRunUseCaseOpts{WfrRepo: repo, OrgRepo: orgRepo, SigningUC: tc.signing})
 			require.NoError(t, err)
+
+			// an attestation that passes the signature check loads the run organization
+			orgRepo.On("FindByID", mock.Anything, orgID).Return(&biz.Organization{ID: orgID.String()}, nil).Maybe()
 
 			runID := uuid.New()
 			// the run has no contract revision, so an attestation that passes

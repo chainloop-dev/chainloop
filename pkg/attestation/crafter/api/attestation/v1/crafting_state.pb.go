@@ -189,8 +189,12 @@ type Attestation struct {
 	// skip storing the environment variables automatically discovered by the CI runner.
 	// The contract's env_allow_list is not affected by this flag.
 	SkipRunnerEnvVars bool `protobuf:"varint,20,opt,name=skip_runner_env_vars,json=skipRunnerEnvVars,proto3" json:"skip_runner_env_vars,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// exact names of the environment variables whose values are replaced with "[REDACTED]",
+	// as resolved by the control plane from the organization setting.
+	// It applies to the runner env vars and to the contract's env_allow_list.
+	RedactedEnvVars []string `protobuf:"bytes,21,rep,name=redacted_env_vars,json=redactedEnvVars,proto3" json:"redacted_env_vars,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *Attestation) Reset() {
@@ -347,6 +351,13 @@ func (x *Attestation) GetSkipRunnerEnvVars() bool {
 		return x.SkipRunnerEnvVars
 	}
 	return false
+}
+
+func (x *Attestation) GetRedactedEnvVars() []string {
+	if x != nil {
+		return x.RedactedEnvVars
+	}
+	return nil
 }
 
 // The runner environment in which the attestation was crafted
@@ -2842,7 +2853,7 @@ var File_attestation_v1_crafting_state_proto protoreflect.FileDescriptor
 
 const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\n" +
-	"#attestation/v1/crafting_state.proto\x12\x0eattestation.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xbd\x1c\n" +
+	"#attestation/v1/crafting_state.proto\x12\x0eattestation.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a)workflowcontract/v1/crafting_schema.proto\"\xe9\x1c\n" +
 	"\vAttestation\x12I\n" +
 	"\x0einitialized_at\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampB\x06\xbaH\x03\xc8\x01\x01R\rinitializedAt\x12;\n" +
 	"\vfinished_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
@@ -2866,7 +2877,8 @@ const file_attestation_v1_crafting_state_proto_rawDesc = "" +
 	"\x1apolicies_allowed_hostnames\x18\x12 \x03(\tR\x18policiesAllowedHostnames\x12G\n" +
 	"\vcas_backend\x18\x13 \x01(\v2&.attestation.v1.Attestation.CASBackendR\n" +
 	"casBackend\x12/\n" +
-	"\x14skip_runner_env_vars\x18\x14 \x01(\bR\x11skipRunnerEnvVars\x1ab\n" +
+	"\x14skip_runner_env_vars\x18\x14 \x01(\bR\x11skipRunnerEnvVars\x12*\n" +
+	"\x11redacted_env_vars\x18\x15 \x03(\tR\x0fredactedEnvVars\x1ab\n" +
 	"\x0eMaterialsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12:\n" +
 	"\x05value\x18\x02 \x01(\v2$.attestation.v1.Attestation.MaterialR\x05value:\x028\x01\x1a>\n" +

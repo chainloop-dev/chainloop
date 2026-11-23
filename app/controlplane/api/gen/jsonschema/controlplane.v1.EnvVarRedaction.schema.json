@@ -1,0 +1,44 @@
+{
+  "$id": "controlplane.v1.EnvVarRedaction.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "EnvVarRedaction configures which environment variable values are replaced with \"[REDACTED]\"\n in new attestations. It applies to runner-discovered variables and to the contract's env allow list.",
+  "patternProperties": {
+    "^(envVars)$": {
+      "description": "Exact variable names. Required when type is TYPE_CUSTOM.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "properties": {
+    "env_vars": {
+      "description": "Exact variable names. Required when type is TYPE_CUSTOM.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "type": {
+      "anyOf": [
+        {
+          "enum": [
+            "TYPE_UNSPECIFIED",
+            "TYPE_KNOWN_IDENTITY",
+            "TYPE_CUSTOM"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      ]
+    }
+  },
+  "title": "Env Var Redaction",
+  "type": "object"
+}

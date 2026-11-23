@@ -53,6 +53,12 @@ export interface Attestation {
    * The contract's env_allow_list is not affected by this flag.
    */
   skipRunnerEnvVars: boolean;
+  /**
+   * exact names of the environment variables whose values are replaced with "[REDACTED]",
+   * as resolved by the control plane from the organization setting.
+   * It applies to the runner env vars and to the contract's env_allow_list.
+   */
+  redactedEnvVars: string[];
 }
 
 export interface Attestation_MaterialsEntry {
@@ -663,6 +669,7 @@ function createBaseAttestation(): Attestation {
     policiesAllowedHostnames: [],
     casBackend: undefined,
     skipRunnerEnvVars: false,
+    redactedEnvVars: [],
   };
 }
 
@@ -721,6 +728,9 @@ export const Attestation = {
     }
     if (message.skipRunnerEnvVars === true) {
       writer.uint32(160).bool(message.skipRunnerEnvVars);
+    }
+    for (const v of message.redactedEnvVars) {
+      writer.uint32(170).string(v!);
     }
     return writer;
   },
@@ -867,6 +877,13 @@ export const Attestation = {
 
           message.skipRunnerEnvVars = reader.bool();
           continue;
+        case 21:
+          if (tag !== 170) {
+            break;
+          }
+
+          message.redactedEnvVars.push(reader.string());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -919,6 +936,7 @@ export const Attestation = {
         : [],
       casBackend: isSet(object.casBackend) ? Attestation_CASBackend.fromJSON(object.casBackend) : undefined,
       skipRunnerEnvVars: isSet(object.skipRunnerEnvVars) ? Boolean(object.skipRunnerEnvVars) : false,
+      redactedEnvVars: Array.isArray(object?.redactedEnvVars) ? object.redactedEnvVars.map((e: any) => String(e)) : [],
     };
   },
 
@@ -971,6 +989,11 @@ export const Attestation = {
     message.casBackend !== undefined &&
       (obj.casBackend = message.casBackend ? Attestation_CASBackend.toJSON(message.casBackend) : undefined);
     message.skipRunnerEnvVars !== undefined && (obj.skipRunnerEnvVars = message.skipRunnerEnvVars);
+    if (message.redactedEnvVars) {
+      obj.redactedEnvVars = message.redactedEnvVars.map((e) => e);
+    } else {
+      obj.redactedEnvVars = [];
+    }
     return obj;
   },
 
@@ -1029,6 +1052,7 @@ export const Attestation = {
       ? Attestation_CASBackend.fromPartial(object.casBackend)
       : undefined;
     message.skipRunnerEnvVars = object.skipRunnerEnvVars ?? false;
+    message.redactedEnvVars = object.redactedEnvVars?.map((e) => e) || [];
     return message;
   },
 };

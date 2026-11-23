@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/apitoken"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/casbackend"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/group"
@@ -214,6 +215,18 @@ func (_u *OrganizationUpdate) SetNillableSkipRunnerEnvVars(v *bool) *Organizatio
 	if v != nil {
 		_u.SetSkipRunnerEnvVars(*v)
 	}
+	return _u
+}
+
+// SetEnvVarRedaction sets the "env_var_redaction" field.
+func (_u *OrganizationUpdate) SetEnvVarRedaction(v *biz.EnvVarRedaction) *OrganizationUpdate {
+	_u.mutation.SetEnvVarRedaction(v)
+	return _u
+}
+
+// ClearEnvVarRedaction clears the value of the "env_var_redaction" field.
+func (_u *OrganizationUpdate) ClearEnvVarRedaction() *OrganizationUpdate {
+	_u.mutation.ClearEnvVarRedaction()
 	return _u
 }
 
@@ -651,6 +664,12 @@ func (_u *OrganizationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.SkipRunnerEnvVars(); ok {
 		_spec.SetField(organization.FieldSkipRunnerEnvVars, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.EnvVarRedaction(); ok {
+		_spec.SetField(organization.FieldEnvVarRedaction, field.TypeJSON, value)
+	}
+	if _u.mutation.EnvVarRedactionCleared() {
+		_spec.ClearField(organization.FieldEnvVarRedaction, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Suspended(); ok {
 		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)
@@ -1259,6 +1278,18 @@ func (_u *OrganizationUpdateOne) SetNillableSkipRunnerEnvVars(v *bool) *Organiza
 	return _u
 }
 
+// SetEnvVarRedaction sets the "env_var_redaction" field.
+func (_u *OrganizationUpdateOne) SetEnvVarRedaction(v *biz.EnvVarRedaction) *OrganizationUpdateOne {
+	_u.mutation.SetEnvVarRedaction(v)
+	return _u
+}
+
+// ClearEnvVarRedaction clears the value of the "env_var_redaction" field.
+func (_u *OrganizationUpdateOne) ClearEnvVarRedaction() *OrganizationUpdateOne {
+	_u.mutation.ClearEnvVarRedaction()
+	return _u
+}
+
 // SetSuspended sets the "suspended" field.
 func (_u *OrganizationUpdateOne) SetSuspended(v bool) *OrganizationUpdateOne {
 	_u.mutation.SetSuspended(v)
@@ -1723,6 +1754,12 @@ func (_u *OrganizationUpdateOne) sqlSave(ctx context.Context) (_node *Organizati
 	}
 	if value, ok := _u.mutation.SkipRunnerEnvVars(); ok {
 		_spec.SetField(organization.FieldSkipRunnerEnvVars, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.EnvVarRedaction(); ok {
+		_spec.SetField(organization.FieldEnvVarRedaction, field.TypeJSON, value)
+	}
+	if _u.mutation.EnvVarRedactionCleared() {
+		_spec.ClearField(organization.FieldEnvVarRedaction, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Suspended(); ok {
 		_spec.SetField(organization.FieldSuspended, field.TypeBool, value)

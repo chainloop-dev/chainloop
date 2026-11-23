@@ -23,6 +23,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/google/uuid"
 )
 
@@ -65,6 +66,9 @@ func (Organization) Fields() []ent.Field {
 		// skip_runner_env_vars opts out of storing the environment variables automatically
 		// discovered by the CI runner in the attestation. The contract's env_allow_list is not affected.
 		field.Bool("skip_runner_env_vars").Default(false),
+		// env_var_redaction replaces the values of selected env vars with a placeholder in new attestations.
+		// Empty means no redaction.
+		field.JSON("env_var_redaction", &biz.EnvVarRedaction{}).Optional(),
 		// Suspended orgs are blocked from all operations.
 		field.Bool("suspended").Default(false),
 	}

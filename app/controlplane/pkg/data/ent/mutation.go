@@ -10113,6 +10113,7 @@ type OrganizationMutation struct {
 	enable_ai_agent_collector                *bool
 	block_attestations_on_released_versions  *bool
 	skip_runner_env_vars                     *bool
+	env_var_redaction                        **biz.EnvVarRedaction
 	suspended                                *bool
 	clearedFields                            map[string]struct{}
 	memberships                              map[uuid.UUID]struct{}
@@ -10759,6 +10760,55 @@ func (m *OrganizationMutation) ResetSkipRunnerEnvVars() {
 	m.skip_runner_env_vars = nil
 }
 
+// SetEnvVarRedaction sets the "env_var_redaction" field.
+func (m *OrganizationMutation) SetEnvVarRedaction(bvr *biz.EnvVarRedaction) {
+	m.env_var_redaction = &bvr
+}
+
+// EnvVarRedaction returns the value of the "env_var_redaction" field in the mutation.
+func (m *OrganizationMutation) EnvVarRedaction() (r *biz.EnvVarRedaction, exists bool) {
+	v := m.env_var_redaction
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnvVarRedaction returns the old "env_var_redaction" field's value of the Organization entity.
+// If the Organization object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OrganizationMutation) OldEnvVarRedaction(ctx context.Context) (v *biz.EnvVarRedaction, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnvVarRedaction is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnvVarRedaction requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnvVarRedaction: %w", err)
+	}
+	return oldValue.EnvVarRedaction, nil
+}
+
+// ClearEnvVarRedaction clears the value of the "env_var_redaction" field.
+func (m *OrganizationMutation) ClearEnvVarRedaction() {
+	m.env_var_redaction = nil
+	m.clearedFields[organization.FieldEnvVarRedaction] = struct{}{}
+}
+
+// EnvVarRedactionCleared returns if the "env_var_redaction" field was cleared in this mutation.
+func (m *OrganizationMutation) EnvVarRedactionCleared() bool {
+	_, ok := m.clearedFields[organization.FieldEnvVarRedaction]
+	return ok
+}
+
+// ResetEnvVarRedaction resets all changes to the "env_var_redaction" field.
+func (m *OrganizationMutation) ResetEnvVarRedaction() {
+	m.env_var_redaction = nil
+	delete(m.clearedFields, organization.FieldEnvVarRedaction)
+}
+
 // SetSuspended sets the "suspended" field.
 func (m *OrganizationMutation) SetSuspended(b bool) {
 	m.suspended = &b
@@ -11315,7 +11365,7 @@ func (m *OrganizationMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *OrganizationMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.name != nil {
 		fields = append(fields, organization.FieldName)
 	}
@@ -11352,6 +11402,9 @@ func (m *OrganizationMutation) Fields() []string {
 	if m.skip_runner_env_vars != nil {
 		fields = append(fields, organization.FieldSkipRunnerEnvVars)
 	}
+	if m.env_var_redaction != nil {
+		fields = append(fields, organization.FieldEnvVarRedaction)
+	}
 	if m.suspended != nil {
 		fields = append(fields, organization.FieldSuspended)
 	}
@@ -11387,6 +11440,8 @@ func (m *OrganizationMutation) Field(name string) (ent.Value, bool) {
 		return m.BlockAttestationsOnReleasedVersions()
 	case organization.FieldSkipRunnerEnvVars:
 		return m.SkipRunnerEnvVars()
+	case organization.FieldEnvVarRedaction:
+		return m.EnvVarRedaction()
 	case organization.FieldSuspended:
 		return m.Suspended()
 	}
@@ -11422,6 +11477,8 @@ func (m *OrganizationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldBlockAttestationsOnReleasedVersions(ctx)
 	case organization.FieldSkipRunnerEnvVars:
 		return m.OldSkipRunnerEnvVars(ctx)
+	case organization.FieldEnvVarRedaction:
+		return m.OldEnvVarRedaction(ctx)
 	case organization.FieldSuspended:
 		return m.OldSuspended(ctx)
 	}
@@ -11517,6 +11574,13 @@ func (m *OrganizationMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSkipRunnerEnvVars(v)
 		return nil
+	case organization.FieldEnvVarRedaction:
+		v, ok := value.(*biz.EnvVarRedaction)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnvVarRedaction(v)
+		return nil
 	case organization.FieldSuspended:
 		v, ok := value.(bool)
 		if !ok {
@@ -11578,6 +11642,9 @@ func (m *OrganizationMutation) ClearedFields() []string {
 	if m.FieldCleared(organization.FieldAPITokenInactivityThresholdDays) {
 		fields = append(fields, organization.FieldAPITokenInactivityThresholdDays)
 	}
+	if m.FieldCleared(organization.FieldEnvVarRedaction) {
+		fields = append(fields, organization.FieldEnvVarRedaction)
+	}
 	return fields
 }
 
@@ -11600,6 +11667,9 @@ func (m *OrganizationMutation) ClearField(name string) error {
 		return nil
 	case organization.FieldAPITokenInactivityThresholdDays:
 		m.ClearAPITokenInactivityThresholdDays()
+		return nil
+	case organization.FieldEnvVarRedaction:
+		m.ClearEnvVarRedaction()
 		return nil
 	}
 	return fmt.Errorf("unknown Organization nullable field %s", name)
@@ -11644,6 +11714,9 @@ func (m *OrganizationMutation) ResetField(name string) error {
 		return nil
 	case organization.FieldSkipRunnerEnvVars:
 		m.ResetSkipRunnerEnvVars()
+		return nil
+	case organization.FieldEnvVarRedaction:
+		m.ResetEnvVarRedaction()
 		return nil
 	case organization.FieldSuspended:
 		m.ResetSuspended()

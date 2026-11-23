@@ -497,6 +497,7 @@ var (
 		{Name: "enable_ai_agent_collector", Type: field.TypeBool, Default: false},
 		{Name: "block_attestations_on_released_versions", Type: field.TypeBool, Default: false},
 		{Name: "skip_runner_env_vars", Type: field.TypeBool, Default: false},
+		{Name: "env_var_redaction", Type: field.TypeJSON, Nullable: true},
 		{Name: "suspended", Type: field.TypeBool, Default: false},
 	}
 	// OrganizationsTable holds the schema information for the "organizations" table.

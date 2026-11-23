@@ -64,6 +64,13 @@ func contextTableOutput(config *action.ConfigContextItem) error {
 			orgInfo += "\nBlock attestations on released versions: enabled"
 		}
 
+		if r := m.Org.EnvVarRedaction; r != nil {
+			orgInfo += fmt.Sprintf("\nEnv var redaction: %s", r.Mode)
+			if len(r.EnvVars) > 0 {
+				orgInfo += fmt.Sprintf(" (%s)", strings.Join(r.EnvVars, ", "))
+			}
+		}
+
 		gt.AppendRow(table.Row{"Organization", orgInfo})
 	}
 

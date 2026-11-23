@@ -156,3 +156,21 @@ func TestVerifyCommitWithPlatformLogsUnavailableReason(t *testing.T) {
 		})
 	}
 }
+
+// KnownIdentityEnvVars keeps its own list of runners, because the runners package
+// cannot import this one. A runner added here but not there would leave its
+// identity variables out of the known identity redaction mode.
+func TestKnownIdentityEnvVarsCoversEveryRunner(t *testing.T) {
+	known := runners.KnownIdentityEnvVars()
+	logger := zerolog.Nop()
+
+	for runnerType, factory := range RunnerFactories {
+		t.Run(runnerType.String(), func(t *testing.T) {
+			for _, def := range factory("", &logger).ListEnvVars() {
+				if def.Identity {
+					assert.Contains(t, known, def.Name)
+				}
+			}
+		})
+	}
+}

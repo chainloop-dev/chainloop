@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
 	"github.com/google/uuid"
 )
@@ -43,6 +44,8 @@ type Organization struct {
 	BlockAttestationsOnReleasedVersions bool `json:"block_attestations_on_released_versions,omitempty"`
 	// SkipRunnerEnvVars holds the value of the "skip_runner_env_vars" field.
 	SkipRunnerEnvVars bool `json:"skip_runner_env_vars,omitempty"`
+	// EnvVarRedaction holds the value of the "env_var_redaction" field.
+	EnvVarRedaction *biz.EnvVarRedaction `json:"env_var_redaction,omitempty"`
 	// Suspended holds the value of the "suspended" field.
 	Suspended bool `json:"suspended,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -162,7 +165,7 @@ func (*Organization) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case organization.FieldPoliciesAllowedHostnames:
+		case organization.FieldPoliciesAllowedHostnames, organization.FieldEnvVarRedaction:
 			values[i] = new([]byte)
 		case organization.FieldBlockOnPolicyViolation, organization.FieldPreventImplicitWorkflowCreation, organization.FieldRestrictContractCreationToOrgAdmins, organization.FieldEnableAiAgentCollector, organization.FieldBlockAttestationsOnReleasedVersions, organization.FieldSkipRunnerEnvVars, organization.FieldSuspended:
 			values[i] = new(sql.NullBool)
@@ -269,6 +272,14 @@ func (_m *Organization) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field skip_runner_env_vars", values[i])
 			} else if value.Valid {
 				_m.SkipRunnerEnvVars = value.Bool
+			}
+		case organization.FieldEnvVarRedaction:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field env_var_redaction", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.EnvVarRedaction); err != nil {
+					return fmt.Errorf("unmarshal field env_var_redaction: %w", err)
+				}
 			}
 		case organization.FieldSuspended:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -394,6 +405,9 @@ func (_m *Organization) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("skip_runner_env_vars=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SkipRunnerEnvVars))
+	builder.WriteString(", ")
+	builder.WriteString("env_var_redaction=")
+	builder.WriteString(fmt.Sprintf("%v", _m.EnvVarRedaction))
 	builder.WriteString(", ")
 	builder.WriteString("suspended=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Suspended))

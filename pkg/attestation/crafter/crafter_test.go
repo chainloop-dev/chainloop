@@ -42,6 +42,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/materials"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/statemanager/filesystem"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/envredaction"
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	mUploader "github.com/chainloop-dev/chainloop/pkg/casclient/mocks"
 
@@ -474,6 +475,8 @@ func (s *crafterSuite) TestResolveEnvVars() {
 
 		// opt out of storing the auto-discovered runner env vars
 		skipRunnerEnvVars bool
+		// names of the env vars to redact, resolved by the control plane
+		redactedEnvVars []string
 
 		expectedError   string
 		expectedEnvVars map[string]string
@@ -556,6 +559,46 @@ func (s *crafterSuite) TestResolveEnvVars() {
 				"CUSTOM_VAR_1": "custom_value_1",
 				"CUSTOM_VAR_2": "custom_value_2",
 			},
+		}, {
+			name:            "known identity redaction keeps the key and hides the value",
+			inGithubEnv:     true,
+			redactedEnvVars: runners.KnownIdentityEnvVars(),
+			envVars: map[string]string{
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+			},
+			expectedEnvVars: withGitHubEnv(map[string]string{
+				"GITHUB_ACTOR": envredaction.RedactedValue,
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+			}),
+		}, {
+			name:            "redaction applies to runner vars and the contract allow-list",
+			inGithubEnv:     true,
+			redactedEnvVars: []string{runnerNameVar, "CUSTOM_VAR_1"},
+			envVars: map[string]string{
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+			},
+			// only the names from the control plane are redacted, GITHUB_ACTOR stays
+			expectedEnvVars: withGitHubEnv(map[string]string{
+				runnerNameVar:  envredaction.RedactedValue,
+				"CUSTOM_VAR_1": envredaction.RedactedValue,
+				"CUSTOM_VAR_2": "custom_value_2",
+			}),
+		}, {
+			name:              "redaction also applies when runner env vars are skipped",
+			inGithubEnv:       true,
+			skipRunnerEnvVars: true,
+			redactedEnvVars:   []string{"CUSTOM_VAR_2"},
+			envVars: map[string]string{
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": "custom_value_2",
+			},
+			expectedEnvVars: map[string]string{
+				"CUSTOM_VAR_1": "custom_value_1",
+				"CUSTOM_VAR_2": envredaction.RedactedValue,
+			},
 		},
 	}
 
@@ -564,12 +607,17 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			var runner crafter.SupportedRunner = runners.NewGeneric()
 			contract := "testdata/contracts/with_env_vars.yaml"
 			if tc.inGithubEnv {
+				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
+				gh := runners.NewGithubAction(s.T().Context(), &testLogger)
+				// clear the optional vars that a real GitHub Actions run sets, for example on pull requests
+				for _, v := range gh.ListEnvVars() {
+					s.T().Setenv(v.Name, "")
+				}
 				s.T().Setenv("CI", "true")
 				for k, v := range gitHubTestingEnvVars {
 					s.T().Setenv(k, v)
 				}
-				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
-				runner = runners.NewGithubAction(s.T().Context(), &testLogger)
+				runner = gh
 			} else if tc.inJenkinsEnv {
 				contract = "testdata/contracts/jenkins_with_env_vars.yaml"
 				s.T().Setenv("JOB_NAME", "some-job")
@@ -589,6 +637,7 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			require.NoError(s.T(), err)
 
 			c.CraftingState.Attestation.SkipRunnerEnvVars = tc.skipRunnerEnvVars
+			c.CraftingState.Attestation.RedactedEnvVars = tc.redactedEnvVars
 
 			err = c.ResolveEnvVars(context.Background(), "")
 
@@ -605,6 +654,8 @@ func (s *crafterSuite) TestResolveEnvVars() {
 	}
 }
 
+const runnerNameVar = "RUNNER_NAME"
+
 var gitHubTestingEnvVars = map[string]string{
 	"GITHUB_REPOSITORY":       "chainloop/chainloop",
 	"GITHUB_RUN_ID":           "123",
@@ -612,8 +663,15 @@ var gitHubTestingEnvVars = map[string]string{
 	"GITHUB_REF":              "refs/heads/main",
 	"GITHUB_REPOSITORY_OWNER": "chainloop",
 	"GITHUB_SHA":              "1234567890",
-	"RUNNER_NAME":             "chainloop-runner",
+	runnerNameVar:             "chainloop-runner",
 	"RUNNER_OS":               "linux",
+}
+
+// withGitHubEnv returns the GitHub testing env vars with the overrides applied on top.
+func withGitHubEnv(overrides map[string]string) map[string]string {
+	out := maps.Clone(gitHubTestingEnvVars)
+	maps.Copy(out, overrides)
+	return out
 }
 
 func (s *crafterSuite) TestAlreadyInitialized() {

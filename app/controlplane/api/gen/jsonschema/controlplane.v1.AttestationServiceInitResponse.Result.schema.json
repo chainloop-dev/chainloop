@@ -18,6 +18,13 @@
       },
       "type": "array"
     },
+    "^(redactedEnvVars)$": {
+      "description": "Names of the environment variables whose values the CLI replaces with \"[REDACTED]\".\n The control plane resolves them from the org setting and enforces the same list at push.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "^(signingOptions)$": {
       "$ref": "controlplane.v1.AttestationServiceInitResponse.SigningOptions.schema.json",
       "description": "Signing options"
@@ -49,6 +56,13 @@
     },
     "policies_allowed_hostnames": {
       "description": "array of hostnames that are allowed to be used in the policies",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "redacted_env_vars": {
+      "description": "Names of the environment variables whose values the CLI replaces with \"[REDACTED]\".\n The control plane resolves them from the org setting and enforces the same list at push.",
       "items": {
         "type": "string"
       },
