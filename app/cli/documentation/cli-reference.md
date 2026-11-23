@@ -93,10 +93,11 @@ chainloop artifact download [flags]
 Options
 
 ```
--d, --digest string       digest of the file to download
--h, --help[=true|false]   help for download
---output file         The file to write a single asset to (use "-" to write to standard output
---path string         download path, default to current directory
+--artifact-cas-token string   CAS download credential for --digest, used instead of the API token and the control plane. NOTE: Prefer the env variable CHAINLOOP_ARTIFACT_CAS_TOKEN
+-d, --digest string               digest of the file to download
+-h, --help[=true|false]           help for download
+--output file                 The file to write a single asset to (use "-" to write to standard output
+--path string                 download path, default to current directory
 ```
 
 Options inherited from parent commands

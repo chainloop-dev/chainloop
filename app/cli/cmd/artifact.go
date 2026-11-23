@@ -36,15 +36,13 @@ func newArtifactCmd() *cobra.Command {
 	return cmd
 }
 
-func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceGetRequest_Role, digest string) (*grpc.ClientConn, error) {
-	// Retrieve temporary credentials for the operation
-	client := pb.NewCASCredentialsServiceClient(cpConn)
-	resp, err := client.Get(context.Background(), &pb.CASCredentialsServiceGetRequest{
-		Role:   role,
-		Digest: digest,
-		// an upload or a download is for a single digest, so the token can only access that digest
-		ScopeToDigest: digest != "",
-	})
+// wrappedArtifactConn connects to the CAS API with casToken or, when casToken is empty,
+// with a temporary credential from the control plane
+func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceGetRequest_Role, digest, casToken string) (*grpc.ClientConn, error) {
+	var err error
+	if casToken == "" {
+		casToken, err = casCredentialFromControlPlane(cpConn, role, digest)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -70,5 +68,21 @@ func wrappedArtifactConn(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceG
 		}
 	}
 
-	return grpcconn.New(viper.GetString(confOptions.CASAPI.viperKey), resp.Result.Token, opts...)
+	return grpcconn.New(viper.GetString(confOptions.CASAPI.viperKey), casToken, opts...)
+}
+
+// casCredentialFromControlPlane retrieves temporary credentials for the operation
+func casCredentialFromControlPlane(cpConn *grpc.ClientConn, role pb.CASCredentialsServiceGetRequest_Role, digest string) (string, error) {
+	client := pb.NewCASCredentialsServiceClient(cpConn)
+	resp, err := client.Get(context.Background(), &pb.CASCredentialsServiceGetRequest{
+		Role:   role,
+		Digest: digest,
+		// an upload or a download is for a single digest, so the token can only access that digest
+		ScopeToDigest: digest != "",
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return resp.Result.Token, nil
 }

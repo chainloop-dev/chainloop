@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,10 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
+	"os"
+	"slices"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
@@ -24,39 +28,56 @@ import (
 	"google.golang.org/grpc"
 )
 
+//nolint:gosec
+const artifactCASTokenEnvVarName = "CHAINLOOP_ARTIFACT_CAS_TOKEN"
+
 func newArtifactDownloadCmd() *cobra.Command {
-	var digest, downloadPath, outputFile string
+	var digest, downloadPath, outputFile, casTokenFlag string
 	var artifactCASConn *grpc.ClientConn
+	var actionOpts *action.ActionsOpts
 
 	cmd := &cobra.Command{
 		Use:   "download",
 		Short: "download an artifact",
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			var err error
-
+		// Root does not build the control plane connection for this command: PreRunE builds it
+		// only when no CAS credential is set. Telemetry reports the command in both cases.
+		Annotations: map[string]string{skipActionOptsInit: trueString, reportTelemetryAnyway: trueString},
+		PreRunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateFlags(downloadPath, outputFile); err != nil {
 				return err
 			}
 
-			// Retrieve temporary credentials for uploading
-			artifactCASConn, err = wrappedArtifactConn(ActionOpts.CPConnection,
-				pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER, digest)
+			casToken, err := artifactCASToken(casTokenFlag)
 			if err != nil {
 				return err
 			}
 
-			return nil
+			// A CAS credential replaces the API token and the control plane
+			var cpConn *grpc.ClientConn
+			if casToken == "" {
+				if err := ensureActionOpts(cmd); err != nil {
+					return err
+				}
+				actionOpts, cpConn = ActionOpts, ActionOpts.CPConnection
+			} else {
+				logger.Debug().Msg("using the given CAS credential, the control plane is not contacted")
+				actionOpts = newActionOpts(logger, nil, "")
+			}
+
+			artifactCASConn, err = wrappedArtifactConn(cpConn,
+				pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER, digest, casToken)
+			return err
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			opts := &action.ArtifactDownloadOpts{
-				ActionsOpts:      ActionOpts,
+				ActionsOpts:      actionOpts,
 				ArtifactsCASConn: artifactCASConn,
 				Stdout:           cmd.OutOrStdout(),
 			}
 
 			return action.NewArtifactDownload(opts).Run(downloadPath, outputFile, digest)
 		},
-		PostRunE: func(cmd *cobra.Command, args []string) error {
+		PostRunE: func(_ *cobra.Command, _ []string) error {
 			if artifactCASConn != nil {
 				return artifactCASConn.Close()
 			}
@@ -70,8 +91,29 @@ func newArtifactDownloadCmd() *cobra.Command {
 	cobra.CheckErr(err)
 	cmd.Flags().StringVar(&downloadPath, "path", "", "download path, default to current directory")
 	cmd.Flags().StringVar(&outputFile, "output", "", "The `file` to write a single asset to (use \"-\" to write to standard output")
+	cmd.Flags().StringVar(&casTokenFlag, "artifact-cas-token", "", fmt.Sprintf("CAS download credential for --digest, used instead of the API token and the control plane. NOTE: Prefer the env variable %s", artifactCASTokenEnvVarName))
 
 	return cmd
+}
+
+// artifactCASToken returns the CAS credential from the flag or, when the flag is empty,
+// from the environment. The CAS verifies the credential; this only rejects a non-JWT value.
+func artifactCASToken(flagValue string) (string, error) {
+	token := flagValue
+	if token == "" {
+		token = os.Getenv(artifactCASTokenEnvVarName)
+	}
+
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return "", nil
+	}
+
+	if parts := strings.Split(token, "."); len(parts) != 3 || slices.Contains(parts, "") {
+		return "", errors.New("the CAS credential is not a JWT")
+	}
+
+	return token, nil
 }
 
 // validateFlags checks if the flags are valid

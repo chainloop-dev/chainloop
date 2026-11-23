@@ -31,6 +31,8 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/casclient"
 	"github.com/jedib0t/go-pretty/v6/progress"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	crv1 "github.com/google/go-containerregistry/pkg/v1"
 )
@@ -61,6 +63,10 @@ func (a *ArtifactDownload) Run(downloadPath, outputFile, digest string) error {
 	ctx := context.Background()
 	info, err := client.Describe(ctx, h.String())
 	if err != nil {
+		if code := status.Code(err); code == codes.Unauthenticated || code == codes.PermissionDenied {
+			return fmt.Errorf("the CAS did not accept the credential for artifact %s: %w", h, err)
+		}
+
 		return fmt.Errorf("artifact with digest %s not found", h)
 	}
 
