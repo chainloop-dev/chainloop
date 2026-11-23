@@ -666,6 +666,41 @@ func (s *testSuite) TestValidInlineMaterial() {
 	s.Len(res[0].Violations, 0)
 }
 
+// TestMetadataOnlyPolicyOnBinaryArtifact covers a policy with no kind, which
+// reads only chainloop_metadata (like upstream-check), on an ARTIFACT that holds
+// binary content. The material must evaluate, not fail with a parse error.
+func (s *testSuite) TestMetadataOnlyPolicyOnBinaryArtifact() {
+	zipPath := filepath.Join(s.T().TempDir(), "dist.zip")
+	// A ZIP starts with "PK", which is not JSON.
+	s.Require().NoError(os.WriteFile(zipPath, []byte("PK\x03\x04binary"), 0o600))
+
+	policies := &v12.Policies{
+		Materials: []*v12.PolicyAttachment{
+			{
+				Policy: &v12.PolicyAttachment_Ref{Ref: "file://testdata/metadata_only.yaml"},
+				// A policy with no kind applies only through a name selector.
+				Selector: &v12.PolicyAttachment_MaterialSelector{Name: "artifact"},
+			},
+		},
+	}
+	material := &v1.Attestation_Material{
+		Id: "artifact",
+		M: &v1.Attestation_Material_Artifact_{Artifact: &v1.Attestation_Material_Artifact{
+			Name: "dist.zip", Digest: "sha256:deadbeef",
+		}},
+		MaterialType: v12.CraftingSchema_Material_ARTIFACT,
+	}
+
+	verifier := NewPolicyVerifier(policies, nil, &s.logger)
+
+	res, err := verifier.VerifyMaterial(context.TODO(), material, zipPath, nil)
+	s.Require().NoError(err)
+	s.Require().Len(res, 1)
+	s.Equal("metadata-only", res[0].Name)
+	s.False(res[0].Skipped)
+	s.Empty(res[0].Violations)
+}
+
 func (s *testSuite) TestInvalidInlineMaterial() {
 	schema := &v12.CraftingSchema{
 		Materials: []*v12.CraftingSchema_Material{
