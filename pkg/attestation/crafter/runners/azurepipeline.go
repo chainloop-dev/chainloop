@@ -24,10 +24,11 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
 )
 
-// Azure Pipelines predefined variables that point to the organization or collection.
+// Azure Pipelines predefined variables used to build the run link.
 const (
 	azureCollectionURIEnv = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"
 	azureServerURIEnv     = "SYSTEM_TEAMFOUNDATIONSERVERURI"
+	azureTeamProjectEnv   = "SYSTEM_TEAMPROJECT"
 )
 
 type AzurePipeline struct {
@@ -81,7 +82,7 @@ func (r *AzurePipeline) RunURI() string {
 		baseURI = os.Getenv(azureServerURIEnv)
 	}
 
-	project := os.Getenv("SYSTEM_TEAMPROJECT")
+	project := os.Getenv(azureTeamProjectEnv)
 	buildID := os.Getenv("BUILD_BUILDID")
 	if baseURI == "" || project == "" || buildID == "" {
 		return ""
@@ -100,7 +101,8 @@ func (r *AzurePipeline) RunURI() string {
 		query.Set("j", jobID)
 	}
 
-	uri = uri.JoinPath(project, "_build", "results")
+	// JoinPath expects escaped elements and drops the path if one does not unescape.
+	uri = uri.JoinPath(url.PathEscape(project), "_build", "results")
 	uri.RawQuery = query.Encode()
 
 	return uri.String()

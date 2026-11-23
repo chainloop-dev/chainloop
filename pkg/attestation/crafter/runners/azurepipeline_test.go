@@ -147,9 +147,16 @@ func (s *azurePipelineSuite) TestRunURI() {
 		{
 			name: "project name with spaces is escaped",
 			env: map[string]string{
-				"SYSTEM_TEAMPROJECT": "My Project",
+				azureTeamProjectEnv: "My Project",
 			},
 			want: "https://dev.azure.com/chainloop-test/My%20Project/_build/results?buildId=6&j=" + jobID + "&view=logs",
+		},
+		{
+			name: "project name with percent sign is escaped",
+			env: map[string]string{
+				azureTeamProjectEnv: "100% done",
+			},
+			want: "https://dev.azure.com/chainloop-test/100%25%20done/_build/results?buildId=6&j=" + jobID + "&view=logs",
 		},
 		{
 			name: "no job id links to the run page",
@@ -176,7 +183,7 @@ func (s *azurePipelineSuite) TestRunURI() {
 		{
 			name: "missing project",
 			env: map[string]string{
-				"SYSTEM_TEAMPROJECT": "",
+				azureTeamProjectEnv: "",
 			},
 			want: "",
 		},
@@ -225,7 +232,7 @@ func (s *azurePipelineSuite) SetupTest() {
 	t.Setenv("AGENT_VERSION", "3.220.5")
 	t.Setenv("SYSTEM_COLLECTIONID", "e2dadf5b-9a6d-0000-0000-89ad0786f16e")
 	t.Setenv("SYSTEM_TEAMPROJECTID", "e0730109-da00-0000-0000-80abab2033a2")
-	t.Setenv("SYSTEM_TEAMPROJECT", "chainloop-tests")
+	t.Setenv(azureTeamProjectEnv, "chainloop-tests")
 	t.Setenv(azureServerURIEnv, "https://dev.azure.com/chainloop-test/")
 	t.Setenv(azureCollectionURIEnv, "https://dev.azure.com/chainloop-test/")
 	t.Setenv("SYSTEM_DEFINITIONNAME", "chainloop-tests")
