@@ -67,7 +67,7 @@ When the content of an `ARTIFACT` material is not JSON, for example a ZIP file, 
 - Why: a policy with no kind applies to `ARTIFACT`, and it can read only `chainloop_metadata` (for example `upstream-check`). The CLI cannot know which policies read the content.
 - Rejected: a failure for each non-JSON `ARTIFACT` (a policy that reads only metadata then stops `att add`, also with `gate: false`). A list of material kinds in `upstream-check` (then no `ARTIFACT` can use it).
 - Deciders: migmartri
-- Source: recorded directly, 2026-11-23
+- Source: recorded directly, 2026-11-23, [#3843](https://github.com/chainloop-dev/chainloop/pull/3843)
 - Code: verified: `GetEvaluableContent` in `pkg/attestation/crafter/api/attestation/v1/crafting_state.go`. The CLI decodes the first JSON value, as before, so a file of JSON lines keeps its first value. Only a failed decode gives the empty object.
 
 Not shown: 6 smaller decisions of [issue-3063-attestation-repo-config](../specs/issue-3063-attestation-repo-config.md).
