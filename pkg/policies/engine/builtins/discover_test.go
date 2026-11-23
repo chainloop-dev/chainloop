@@ -239,7 +239,7 @@ func TestDiscoverErrors(t *testing.T) {
 
 			raw, err := json.Marshal(got)
 			require.NoError(t, err)
-			assert.JSONEq(t, `{"digest": "sha256:deadbeef", "truncated": false}`, string(raw))
+			assert.JSONEq(t, `{"digest": "sha256:deadbeef", "references": [], "truncated": false}`, string(raw))
 		})
 	}
 }
@@ -247,16 +247,26 @@ func TestDiscoverErrors(t *testing.T) {
 // TestDiscoverBuiltinInRego evaluates a policy that calls the builtin with strict builtin errors,
 // as the policy engine does, so a builtin error fails the evaluation
 func TestDiscoverBuiltinInRego(t *testing.T) {
-	const query = `count([ref | some ref in chainloop.discover("sha256:deadbeef", "").references])`
+	const (
+		iterQuery  = `count([ref | some ref in chainloop.discover("sha256:deadbeef", "").references])`
+		countQuery = `count(chainloop.discover("sha256:deadbeef", "").references)`
+		emptyQuery = `count(chainloop.discover("sha256:deadbeef", "").references) == 0`
+	)
+	notFound := status.Error(codes.NotFound, "not found")
 	testCases := []struct {
 		name    string
+		query   string
 		client  *fakeReferrerClient
-		want    int
+		want    any
 		wantErr bool
 	}{
-		{name: "references", client: &fakeReferrerClient{total: 3}, want: 3},
-		{name: "digest not found", client: &fakeReferrerClient{failAt: 1, failErr: status.Error(codes.NotFound, "not found")}, want: 0},
-		{name: "control plane unavailable", client: &fakeReferrerClient{failAt: 1, failErr: status.Error(codes.Unavailable, "down")}, wantErr: true},
+		{name: "references", query: iterQuery, client: &fakeReferrerClient{total: 3}, want: json.Number("3")},
+		{name: "references counted directly", query: countQuery, client: &fakeReferrerClient{total: 3}, want: json.Number("3")},
+		{name: "digest not found", query: iterQuery, client: &fakeReferrerClient{failAt: 1, failErr: notFound}, want: json.Number("0")},
+		// references is an empty array, not absent, so counting it does not make the rule undefined
+		{name: "digest not found counted directly", query: emptyQuery, client: &fakeReferrerClient{failAt: 1, failErr: notFound}, want: true},
+		{name: "node with no references counted directly", query: emptyQuery, client: &fakeReferrerClient{total: 0}, want: true},
+		{name: "control plane unavailable", query: iterQuery, client: &fakeReferrerClient{failAt: 1, failErr: status.Error(codes.Unavailable, "down")}, wantErr: true},
 	}
 
 	for _, tc := range testCases {
@@ -271,7 +281,7 @@ func TestDiscoverBuiltinInRego(t *testing.T) {
 				},
 			)
 
-			rs, err := rego.New(rego.Query(query), discover, rego.StrictBuiltinErrors(true)).Eval(context.Background())
+			rs, err := rego.New(rego.Query(tc.query), discover, rego.StrictBuiltinErrors(true)).Eval(context.Background())
 			if tc.wantErr {
 				require.Error(t, err)
 				return
@@ -279,7 +289,7 @@ func TestDiscoverBuiltinInRego(t *testing.T) {
 
 			require.NoError(t, err)
 			require.Len(t, rs, 1)
-			assert.EqualValues(t, json.Number(strconv.Itoa(tc.want)), rs[0].Expressions[0].Value)
+			assert.Equal(t, tc.want, rs[0].Expressions[0].Value)
 		})
 	}
 }
@@ -290,21 +300,47 @@ func TestDiscoverNoConnection(t *testing.T) {
 	assert.Nil(t, got)
 }
 
+// TestDiscoverResultJSONShape checks the JSON that the WASM builtin returns and that Rego sees
 func TestDiscoverResultJSONShape(t *testing.T) {
-	res := &DiscoverResult{
-		ReferrerItem: &v1.ReferrerItem{
-			Digest:     "sha256:deadbeef",
-			Kind:       testKind,
-			References: []*v1.ReferrerItem{{Digest: "sha256:1", Kind: "ATTESTATION"}},
+	testCases := []struct {
+		name string
+		res  *DiscoverResult
+		want string
+	}{
+		{
+			name: "references",
+			res: &DiscoverResult{ReferrerItem: &v1.ReferrerItem{
+				Digest:     "sha256:deadbeef",
+				Kind:       testKind,
+				References: []*v1.ReferrerItem{{Digest: "sha256:1", Kind: "ATTESTATION"}},
+			}},
+			want: `{
+				"digest": "sha256:deadbeef",
+				"kind": "CONTAINER_IMAGE",
+				"references": [{"digest": "sha256:1", "kind": "ATTESTATION"}],
+				"truncated": false
+			}`,
+		},
+		{
+			name: "no references is an empty array",
+			res:  &DiscoverResult{ReferrerItem: &v1.ReferrerItem{Digest: "sha256:deadbeef", Kind: testKind}},
+			want: `{"digest": "sha256:deadbeef", "kind": "CONTAINER_IMAGE", "references": [], "truncated": false}`,
+		},
+		{
+			name: "no referrer item",
+			res:  &DiscoverResult{Truncated: true},
+			want: `{"references": [], "truncated": true}`,
 		},
 	}
 
-	raw, err := json.Marshal(res)
-	require.NoError(t, err)
-	assert.JSONEq(t, `{
-		"digest": "sha256:deadbeef",
-		"kind": "CONTAINER_IMAGE",
-		"references": [{"digest": "sha256:1", "kind": "ATTESTATION"}],
-		"truncated": false
-	}`, string(raw))
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			raw, err := json.Marshal(tc.res)
+			require.NoError(t, err)
+			assert.JSONEq(t, tc.want, string(raw))
+
+			// Rego converts the result through the same JSON
+			assert.JSONEq(t, tc.want, ast.NewTerm(ast.MustInterfaceToValue(tc.res)).String())
+		})
+	}
 }

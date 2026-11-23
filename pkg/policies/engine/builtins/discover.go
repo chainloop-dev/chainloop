@@ -17,6 +17,7 @@ package builtins
 
 import (
 	"context"
+	"encoding/json"
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"google.golang.org/grpc"
@@ -38,6 +39,23 @@ type DiscoverResult struct {
 	// Truncated is true when the read stopped before the last page of references: either the
 	// page cap was reached, or the control plane repeated its next cursor (it ignores the cursor)
 	Truncated bool `json:"truncated"`
+}
+
+// MarshalJSON always writes references as an array, an empty one when there are no references.
+// The proto field omits an empty list, and then a policy that counts the references gets an
+// undefined value instead of 0. Rego converts the result through this JSON too.
+func (r DiscoverResult) MarshalJSON() ([]byte, error) {
+	refs := r.GetReferences()
+	if refs == nil {
+		refs = []*v1.ReferrerItem{}
+	}
+
+	// the shallower references field hides the one of the embedded item
+	return json.Marshal(struct {
+		*v1.ReferrerItem
+		References []*v1.ReferrerItem `json:"references"`
+		Truncated  bool               `json:"truncated"`
+	}{r.ReferrerItem, refs, r.Truncated})
 }
 
 // DiscoverService wraps the gRPC discover functionality to be shared across engines
