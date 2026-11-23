@@ -75,7 +75,7 @@ The env var definition gets an `Identity` flag next to `Optional`. The definitio
 
 | File | Change |
 |------|--------|
-| `pkg/attestation/crafter/runners/runners.go` | Add `Identity` and `KnownIdentityEnvVars`. |
+| `pkg/attestation/crafter/runners/runners.go` | Add the `Identity` field to `EnvVarDefinition`, next to `Optional`. Add `KnownIdentityEnvVars`, which returns the names that any runner marks with `Identity`. |
 | `pkg/attestation/crafter/runners/*.go` | Keyed definitions, and the identity flags. |
 | `pkg/attestation/crafter/runners/*_test.go` | Expected definitions with the flags. |
 | `pkg/attestation/crafter/runners/identity_test.go` | Add `TestKnownIdentityEnvVars` and `TestIdentityFlagsPerRunner`: the union, and the flags of each runner. |
