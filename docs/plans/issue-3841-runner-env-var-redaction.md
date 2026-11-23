@@ -71,14 +71,14 @@ An admin sets the mode, the CLI replaces the values, and the control plane rejec
 <details>
 <summary><strong>01 / 07 · Each runner says which of its variables identify a person (R-004)</strong></summary>
 
-The env var definition gets an `Identity` flag next to `Optional`. The definitions change to keyed fields, because a third field breaks the positional literals. `KnownIdentityEnvVars() []string` returns the union of the flags of all runners. The flags are on `GITHUB_ACTOR`, `GITLAB_USER_EMAIL`, `GITLAB_USER_LOGIN` (GitLab and Dagger), `BUILD_REQUESTEDFOR`, `BUILD_REQUESTEDFOREMAIL`, and TeamCity `USER` and `HOME`.
+The env var definition gets an `Identity` flag next to `Optional`. The definitions change to keyed fields, because a third field breaks the positional literals. `KnownIdentityEnvVars() []string` returns the union of the flags of all runners. The flags are on `GITHUB_ACTOR`, `GITLAB_USER_EMAIL` and `GITLAB_USER_LOGIN` (GitLab), `GITLAB_USER_LOGIN` (Dagger), `BUILD_REQUESTEDFOR`, `BUILD_REQUESTEDFOREMAIL`, and TeamCity `USER` and `HOME`.
 
 | File | Change |
 |------|--------|
 | `pkg/attestation/crafter/runners/runners.go` | Add the `Identity` field to `EnvVarDefinition`, next to `Optional`. Add `KnownIdentityEnvVars`, which returns the names that any runner marks with `Identity`. |
 | `pkg/attestation/crafter/runners/*.go` | Keyed definitions, and the identity flags. |
 | `pkg/attestation/crafter/runners/*_test.go` | Expected definitions with the flags. |
-| `pkg/attestation/crafter/runners/identity_test.go` | Add `TestKnownIdentityEnvVars` and `TestIdentityFlagsPerRunner`: the sorted union, and the flags of each runner. |
+| `pkg/attestation/crafter/runners/identity_test.go` | Add `TestKnownIdentityEnvVars`: the sorted union. The test of each runner checks its flags. |
 | `pkg/attestation/crafter/runner_test.go` | Add `TestKnownIdentityEnvVarsCoversEveryRunner`: each runner of the runner factories has its identity variables in the union. |
 | `.golangci.yml` | Turn off goconst for test files and the runners package, where env var names are data. |
 
@@ -114,17 +114,16 @@ The API gets an `EnvVarRedaction` message (type and names) on the organization u
 </details>
 
 <details>
-<summary><strong>04 / 07 · The init response gives the setting with the resolved names (R-001, R-004)</strong></summary>
+<summary><strong>04 / 07 · The init response gives the resolved names (R-001, R-004)</strong></summary>
 
-The `attestation init` response carries the setting with the names that the control plane enforces at push, also for known identity (spec D-003). The CLI copies only these names into the local attestation state.
+The `attestation init` response gives the names that the control plane enforces at push, also for known identity (spec D-003). The CLI copies only these names into the local attestation state.
 
 | File | Change |
 |------|--------|
-| `app/controlplane/api/controlplane/v1/workflow_run.proto` | Add the field to the init response. |
+| `app/controlplane/api/controlplane/v1/workflow_run.proto` | Add the list of names to the init response. |
 | `pkg/attestation/crafter/api/attestation/v1/crafting_state.proto` | Add the names to redact to the attestation state. |
-| `app/controlplane/internal/service/attestation.go`, `organization.go` | Fill the field with `envVarRedactionForInit`. |
+| `app/controlplane/internal/service/attestation.go` | Fill the list with the names of the org setting. |
 | `app/cli/pkg/action/attestation_init.go` | Copy the names into the crafter options. |
-| `app/controlplane/internal/service/envvarredaction_test.go` | Add `TestEnvVarRedactionForInit`. |
 
 </details>
 
@@ -164,6 +163,7 @@ The push check runs after the contract check, in the save and in the check that 
 |------|--------|
 | `app/controlplane/pkg/biz/workflowrun.go` | Add `validatePredicate`, which runs the contract and redaction checks, and call it in `SaveAttestation` and `ValidateAttestationContract`. Load the organization one time for each call. |
 | `app/controlplane/pkg/biz/workflowrun_contract_integration_test.go` | Add `TestSaveAttestationEnforcesEnvVarRedaction`: the pre-CAS check and the save both reject a clear value, accept the other cases, and store nothing on a rejection. |
+| `app/controlplane/pkg/biz/workflowrun_verification_test.go` | Give the keyless verification test an organization repository mock, because the pre-CAS check now loads the organization. |
 
 </details>
 
