@@ -225,11 +225,16 @@ func (m *Attestation_Material) GetEvaluableContent(value string, content []byte)
 	var decodedMaterial any
 	if err = decoder.Decode(&decodedMaterial); err != nil {
 		// A generic ARTIFACT holds arbitrary bytes (a ZIP, a binary, plain text),
-		// and a policy with no kind applies to it. Such a policy can read only
-		// chainloop_metadata (for example upstream-check), and the CLI cannot
-		// tell which policies read the content. So content that is not JSON
-		// evaluates as an empty object instead of failing the material. Typed
-		// materials keep failing: their content must match their format.
+		// and a policy with no kind applies to it. Some of those policies read
+		// only chainloop_metadata (for example upstream-check), and the CLI
+		// cannot tell which ones read the content. So content that is not JSON
+		// evaluates as an empty object instead of failing the material.
+		//
+		// Trade-off (ATT-005): a policy that does read the content sees an empty
+		// object. One with a valid_input rule reports skipped; one without can
+		// pass with no message. That includes a damaged JSON file, which used to
+		// fail the material. Typed materials keep failing: their content must
+		// match their format.
 		if m.MaterialType != v1.CraftingSchema_Material_ARTIFACT {
 			return nil, fmt.Errorf("failed to parse input: %w", err)
 		}

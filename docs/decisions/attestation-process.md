@@ -63,8 +63,8 @@ The organization from the file has the same effect as `--org` for the run. It is
 - Code: verified: `app/cli/cmd/attestation.go`, `app/cli/internal/token/token.go`, `app/cli/cmd/root.go`.
 
 ### ATT-005: A non-JSON ARTIFACT evaluates as an empty object
-When the content of an `ARTIFACT` material is not JSON, for example a ZIP file, the policies get an empty object plus `chainloop_metadata`. The material does not fail. A JSON `ARTIFACT` keeps its content. A typed material with content that does not match its format still fails with `failed to parse input`.
-- Why: a policy with no kind applies to `ARTIFACT`, and it can read only `chainloop_metadata` (for example `upstream-check`). The CLI cannot know which policies read the content.
+When the content of an `ARTIFACT` material is not JSON, for example a ZIP file, the policies get an empty object plus `chainloop_metadata`. The material does not fail. A JSON `ARTIFACT` keeps its content. A typed material with content that does not match its format still fails with `failed to parse input`. A policy that reads the content of such an `ARTIFACT` sees an empty object. A policy with a `valid_input` rule reports it as skipped. A policy without one can pass with no message. This also applies to a damaged JSON file.
+- Why: a policy with no kind applies to `ARTIFACT`, and some of these policies read only `chainloop_metadata` (for example `upstream-check`). The CLI cannot know which policies read the content. Before this change, a policy that read the content of a non-JSON `ARTIFACT` could not run, because `att add` failed.
 - Rejected: a failure for each non-JSON `ARTIFACT` (a policy that reads only metadata then stops `att add`, also with `gate: false`). A list of material kinds in `upstream-check` (then no `ARTIFACT` can use it).
 - Deciders: migmartri
 - Source: recorded directly, 2026-11-23, [#3843](https://github.com/chainloop-dev/chainloop/pull/3843)
