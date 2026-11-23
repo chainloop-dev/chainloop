@@ -652,6 +652,16 @@ func IsSystemNEQ(v bool) predicate.APIToken {
 	return predicate.APIToken(sql.FieldNEQ(FieldIsSystem, v))
 }
 
+// AllowedDigestsIsNil applies the IsNil predicate on the "allowed_digests" field.
+func AllowedDigestsIsNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldIsNull(FieldAllowedDigests))
+}
+
+// AllowedDigestsNotNil applies the NotNil predicate on the "allowed_digests" field.
+func AllowedDigestsNotNil() predicate.APIToken {
+	return predicate.APIToken(sql.FieldNotNull(FieldAllowedDigests))
+}
+
 // HasOrganization applies the HasEdge predicate on the "organization" edge.
 func HasOrganization() predicate.APIToken {
 	return predicate.APIToken(func(s *sql.Selector) {

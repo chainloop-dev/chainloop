@@ -45,6 +45,8 @@ const (
 	FieldPolicies = "policies"
 	// FieldIsSystem holds the string denoting the is_system field in the database.
 	FieldIsSystem = "is_system"
+	// FieldAllowedDigests holds the string denoting the allowed_digests field in the database.
+	FieldAllowedDigests = "allowed_digests"
 	// EdgeOrganization holds the string denoting the organization edge name in mutations.
 	EdgeOrganization = "organization"
 	// EdgeProject holds the string denoting the project edge name in mutations.
@@ -93,6 +95,7 @@ var Columns = []string{
 	FieldProjectIds,
 	FieldPolicies,
 	FieldIsSystem,
+	FieldAllowedDigests,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

@@ -315,6 +315,8 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 		rowScope      *authz.ResourceType
 		rowScopeID    *uuid.UUID
 		rowProjectIDs []uuid.UUID
+		// the only artifacts the row allows, if any
+		rowAllowedDigests []string
 		// claims are the signed claims other than aud and jti.
 		claims jwt.MapClaims
 	}{
@@ -338,6 +340,14 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			rowScope: biz.ToPtr(authz.ResourceTypeInstance),
 			claims:   jwt.MapClaims{claimOrgID: "", claimScope: string(authz.ResourceTypeInstance)},
 		},
+		{
+			name:              "an organization token restricted to artifacts",
+			rowOrg:            orgID,
+			rowScope:          biz.ToPtr(authz.ResourceTypeOrganization),
+			rowScopeID:        &orgID,
+			rowAllowedDigests: []string{"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			claims:            jwt.MapClaims{claimOrgID: orgID.String(), claimScope: string(authz.ResourceTypeOrganization), claimScopeID: orgID.String()},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -345,6 +355,7 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			token := &biz.APIToken{
 				ID: uuid.New(), Name: "ci", OrganizationID: tc.rowOrg,
 				Scope: tc.rowScope, ScopeID: tc.rowScopeID, ProjectIDs: tc.rowProjectIDs,
+				AllowedDigests: tc.rowAllowedDigests,
 			}
 
 			apiTokenRepo := mocks.NewAPITokenRepo(t)
@@ -374,6 +385,7 @@ func TestWithCurrentAPITokenAndOrgMiddlewareCarriesScope(t *testing.T) {
 			assert.Equal(t, tc.rowScope, got.Scope)
 			assert.Equal(t, tc.rowScopeID, got.ScopeID)
 			assert.Equal(t, tc.rowProjectIDs, got.ProjectIDs)
+			assert.Equal(t, tc.rowAllowedDigests, got.AllowedDigests)
 		})
 	}
 }

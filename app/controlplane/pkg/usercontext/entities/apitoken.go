@@ -44,6 +44,9 @@ type APIToken struct {
 	ProjectIDs []uuid.UUID
 	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
 	IsSystem bool
+	// AllowedDigests are the only artifacts the token can download from the CAS, loaded from the
+	// row. Nil means no restriction.
+	AllowedDigests []string
 }
 
 // IsProductScoped reports whether the token is confined to a product: it reaches the projects in

@@ -32,6 +32,7 @@ import (
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 
 	"github.com/go-kratos/kratos/v2/log"
+	cr_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/uuid"
 )
 
@@ -57,6 +58,11 @@ var orgLevelTokenPolicies = []*authz.Policy{
 	authz.PolicyRegisteredIntegrationAdd,
 	authz.PolicyRegisteredIntegrationList,
 	authz.PolicyRegisteredIntegrationRead,
+}
+
+// isArtifactUploadPolicy reports whether a policy allows an artifact upload to the CAS.
+func isArtifactUploadPolicy(p *authz.Policy) bool {
+	return p != nil && p.Resource == authz.PolicyArtifactUpload.Resource && p.Action == authz.PolicyArtifactUpload.Action
 }
 
 // IsOrgLevelTokenPolicy reports whether a policy is one only an organization-wide token holds.
@@ -129,6 +135,9 @@ type APIToken struct {
 	Policies []*authz.Policy
 	// IsSystem marks tokens minted by internal code paths; these are hidden from the public API.
 	IsSystem bool
+	// AllowedDigests are the only artifacts the token can download from the CAS. Nil means no
+	// restriction.
+	AllowedDigests []string
 }
 
 // scopeView is the token's scope as the request context carries it, so that a token read here and
@@ -248,6 +257,8 @@ type APITokenCreateOpts struct {
 	ProjectIDs []uuid.UUID
 	Policies   []*authz.Policy
 	IsSystem   bool
+	// AllowedDigests restricts the token to these artifacts. Nil means no restriction.
+	AllowedDigests []string
 }
 
 type APITokenRepo interface {
@@ -307,6 +318,8 @@ type apiTokenOptions struct {
 	projectIDs []uuid.UUID
 	policies   []*authz.Policy
 	isSystem   bool
+	// allowedDigests is nil when the option is not used, and never nil when it is
+	allowedDigests []string
 }
 
 type APITokenCreateOpt func(*apiTokenOptions)
@@ -355,6 +368,39 @@ func APITokenWithProjectIDs(ids []uuid.UUID) APITokenCreateOpt {
 	return func(o *apiTokenOptions) {
 		o.projectIDs = CanonicalProjectIDs(ids)
 	}
+}
+
+// APITokenWithAllowedDigests restricts the token to download only these artifacts from the CAS.
+// Create refuses an empty list, a digest that is not a sha256 digest, and a token whose policies
+// allow an upload.
+func APITokenWithAllowedDigests(digests ...string) APITokenCreateOpt {
+	return func(o *apiTokenOptions) {
+		o.allowedDigests = append(make([]string, 0, len(digests)), digests...)
+	}
+}
+
+// canonicalAllowedDigests checks that every digest is a sha256 digest, and returns them
+// deduplicated and sorted.
+func canonicalAllowedDigests(digests []string) ([]string, error) {
+	if len(digests) == 0 {
+		return nil, NewErrValidationStr("a token restricted to artifacts needs at least one digest")
+	}
+
+	for _, d := range digests {
+		h, err := cr_v1.NewHash(d)
+		if err != nil {
+			return nil, NewErrValidation(fmt.Errorf("invalid digest format: %w", err))
+		}
+
+		if h.Algorithm != "sha256" {
+			return nil, NewErrValidationStr(fmt.Sprintf("invalid digest %q: only sha256 digests are supported", d))
+		}
+	}
+
+	out := slices.Clone(digests)
+	slices.Sort(out)
+
+	return slices.Compact(out), nil
 }
 
 // CanonicalProjectIDs returns ids deduplicated and sorted, never nil, so that equal sets are
@@ -497,6 +543,14 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		return nil, err
 	}
 
+	var allowedDigests []string
+	if options.allowedDigests != nil {
+		var err error
+		if allowedDigests, err = canonicalAllowedDigests(options.allowedDigests); err != nil {
+			return nil, err
+		}
+	}
+
 	// Explicit policies are stored as given, whatever the scope. Only a token created without
 	// them gets the defaults, plus the organization-level policies when it is organization-wide.
 	policies := options.policies
@@ -528,6 +582,12 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		policies = slices.Concat(policies, orgLevelTokenPolicies)
 	}
 
+	// A token restricted to artifacts only downloads them. The defaults allow an upload, so such
+	// a token needs explicit policies.
+	if allowedDigests != nil && slices.ContainsFunc(policies, isArtifactUploadPolicy) {
+		return nil, NewErrValidationStr("a token restricted to artifacts cannot carry the artifact upload policy")
+	}
+
 	// NOTE: the expiration time is stored just for reference, it's also encoded in the JWT
 	// We store it since Chainloop will not have access to the JWT to check the expiration once created
 	token, err := uc.apiTokenRepo.Create(ctx, &APITokenCreateOpts{
@@ -542,6 +602,7 @@ func (uc *APITokenUseCase) Create(ctx context.Context, name string, description 
 		ProjectIDs:     options.projectIDs,
 		Policies:       policies,
 		IsSystem:       options.isSystem,
+		AllowedDigests: allowedDigests,
 	})
 	if err != nil {
 		if IsErrAlreadyExists(err) {

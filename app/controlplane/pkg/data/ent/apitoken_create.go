@@ -200,6 +200,12 @@ func (_c *APITokenCreate) SetNillableIsSystem(v *bool) *APITokenCreate {
 	return _c
 }
 
+// SetAllowedDigests sets the "allowed_digests" field.
+func (_c *APITokenCreate) SetAllowedDigests(v []string) *APITokenCreate {
+	_c.mutation.SetAllowedDigests(v)
+	return _c
+}
+
 // SetID sets the "id" field.
 func (_c *APITokenCreate) SetID(v uuid.UUID) *APITokenCreate {
 	_c.mutation.SetID(v)
@@ -373,6 +379,10 @@ func (_c *APITokenCreate) createSpec() (*APIToken, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.IsSystem(); ok {
 		_spec.SetField(apitoken.FieldIsSystem, field.TypeBool, value)
 		_node.IsSystem = value
+	}
+	if value, ok := _c.mutation.AllowedDigests(); ok {
+		_spec.SetField(apitoken.FieldAllowedDigests, field.TypeJSON, value)
+		_node.AllowedDigests = value
 	}
 	if nodes := _c.mutation.OrganizationIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -675,6 +685,24 @@ func (u *APITokenUpsert) ClearPolicies() *APITokenUpsert {
 	return u
 }
 
+// SetAllowedDigests sets the "allowed_digests" field.
+func (u *APITokenUpsert) SetAllowedDigests(v []string) *APITokenUpsert {
+	u.Set(apitoken.FieldAllowedDigests, v)
+	return u
+}
+
+// UpdateAllowedDigests sets the "allowed_digests" field to the value that was provided on create.
+func (u *APITokenUpsert) UpdateAllowedDigests() *APITokenUpsert {
+	u.SetExcluded(apitoken.FieldAllowedDigests)
+	return u
+}
+
+// ClearAllowedDigests clears the value of the "allowed_digests" field.
+func (u *APITokenUpsert) ClearAllowedDigests() *APITokenUpsert {
+	u.SetNull(apitoken.FieldAllowedDigests)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -960,6 +988,27 @@ func (u *APITokenUpsertOne) UpdatePolicies() *APITokenUpsertOne {
 func (u *APITokenUpsertOne) ClearPolicies() *APITokenUpsertOne {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearPolicies()
+	})
+}
+
+// SetAllowedDigests sets the "allowed_digests" field.
+func (u *APITokenUpsertOne) SetAllowedDigests(v []string) *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetAllowedDigests(v)
+	})
+}
+
+// UpdateAllowedDigests sets the "allowed_digests" field to the value that was provided on create.
+func (u *APITokenUpsertOne) UpdateAllowedDigests() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateAllowedDigests()
+	})
+}
+
+// ClearAllowedDigests clears the value of the "allowed_digests" field.
+func (u *APITokenUpsertOne) ClearAllowedDigests() *APITokenUpsertOne {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearAllowedDigests()
 	})
 }
 
@@ -1415,6 +1464,27 @@ func (u *APITokenUpsertBulk) UpdatePolicies() *APITokenUpsertBulk {
 func (u *APITokenUpsertBulk) ClearPolicies() *APITokenUpsertBulk {
 	return u.Update(func(s *APITokenUpsert) {
 		s.ClearPolicies()
+	})
+}
+
+// SetAllowedDigests sets the "allowed_digests" field.
+func (u *APITokenUpsertBulk) SetAllowedDigests(v []string) *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.SetAllowedDigests(v)
+	})
+}
+
+// UpdateAllowedDigests sets the "allowed_digests" field to the value that was provided on create.
+func (u *APITokenUpsertBulk) UpdateAllowedDigests() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.UpdateAllowedDigests()
+	})
+}
+
+// ClearAllowedDigests clears the value of the "allowed_digests" field.
+func (u *APITokenUpsertBulk) ClearAllowedDigests() *APITokenUpsertBulk {
+	return u.Update(func(s *APITokenUpsert) {
+		s.ClearAllowedDigests()
 	})
 }
 

@@ -77,32 +77,34 @@ const (
 // APITokenMutation represents an operation that mutates the APIToken nodes in the graph.
 type APITokenMutation struct {
 	config
-	op                  Op
-	typ                 string
-	id                  *uuid.UUID
-	name                *string
-	description         *string
-	created_at          *time.Time
-	expires_at          *time.Time
-	revoked_at          *time.Time
-	last_used_at        *time.Time
-	scope               *authz.ResourceType
-	scope_id            *uuid.UUID
-	project_ids         *[]uuid.UUID
-	appendproject_ids   []uuid.UUID
-	policies            *[]*authz.Policy
-	appendpolicies      []*authz.Policy
-	is_system           *bool
-	clearedFields       map[string]struct{}
-	organization        *uuid.UUID
-	clearedorganization bool
-	project             *uuid.UUID
-	clearedproject      bool
-	workflow            *uuid.UUID
-	clearedworkflow     bool
-	done                bool
-	oldValue            func(context.Context) (*APIToken, error)
-	predicates          []predicate.APIToken
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	name                  *string
+	description           *string
+	created_at            *time.Time
+	expires_at            *time.Time
+	revoked_at            *time.Time
+	last_used_at          *time.Time
+	scope                 *authz.ResourceType
+	scope_id              *uuid.UUID
+	project_ids           *[]uuid.UUID
+	appendproject_ids     []uuid.UUID
+	policies              *[]*authz.Policy
+	appendpolicies        []*authz.Policy
+	is_system             *bool
+	allowed_digests       *[]string
+	appendallowed_digests []string
+	clearedFields         map[string]struct{}
+	organization          *uuid.UUID
+	clearedorganization   bool
+	project               *uuid.UUID
+	clearedproject        bool
+	workflow              *uuid.UUID
+	clearedworkflow       bool
+	done                  bool
+	oldValue              func(context.Context) (*APIToken, error)
+	predicates            []predicate.APIToken
 }
 
 var _ ent.Mutation = (*APITokenMutation)(nil)
@@ -888,6 +890,71 @@ func (m *APITokenMutation) ResetIsSystem() {
 	m.is_system = nil
 }
 
+// SetAllowedDigests sets the "allowed_digests" field.
+func (m *APITokenMutation) SetAllowedDigests(s []string) {
+	m.allowed_digests = &s
+	m.appendallowed_digests = nil
+}
+
+// AllowedDigests returns the value of the "allowed_digests" field in the mutation.
+func (m *APITokenMutation) AllowedDigests() (r []string, exists bool) {
+	v := m.allowed_digests
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAllowedDigests returns the old "allowed_digests" field's value of the APIToken entity.
+// If the APIToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *APITokenMutation) OldAllowedDigests(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAllowedDigests is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAllowedDigests requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAllowedDigests: %w", err)
+	}
+	return oldValue.AllowedDigests, nil
+}
+
+// AppendAllowedDigests adds s to the "allowed_digests" field.
+func (m *APITokenMutation) AppendAllowedDigests(s []string) {
+	m.appendallowed_digests = append(m.appendallowed_digests, s...)
+}
+
+// AppendedAllowedDigests returns the list of values that were appended to the "allowed_digests" field in this mutation.
+func (m *APITokenMutation) AppendedAllowedDigests() ([]string, bool) {
+	if len(m.appendallowed_digests) == 0 {
+		return nil, false
+	}
+	return m.appendallowed_digests, true
+}
+
+// ClearAllowedDigests clears the value of the "allowed_digests" field.
+func (m *APITokenMutation) ClearAllowedDigests() {
+	m.allowed_digests = nil
+	m.appendallowed_digests = nil
+	m.clearedFields[apitoken.FieldAllowedDigests] = struct{}{}
+}
+
+// AllowedDigestsCleared returns if the "allowed_digests" field was cleared in this mutation.
+func (m *APITokenMutation) AllowedDigestsCleared() bool {
+	_, ok := m.clearedFields[apitoken.FieldAllowedDigests]
+	return ok
+}
+
+// ResetAllowedDigests resets all changes to the "allowed_digests" field.
+func (m *APITokenMutation) ResetAllowedDigests() {
+	m.allowed_digests = nil
+	m.appendallowed_digests = nil
+	delete(m.clearedFields, apitoken.FieldAllowedDigests)
+}
+
 // ClearOrganization clears the "organization" edge to the Organization entity.
 func (m *APITokenMutation) ClearOrganization() {
 	m.clearedorganization = true
@@ -1003,7 +1070,7 @@ func (m *APITokenMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *APITokenMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
 	if m.name != nil {
 		fields = append(fields, apitoken.FieldName)
 	}
@@ -1046,6 +1113,9 @@ func (m *APITokenMutation) Fields() []string {
 	if m.is_system != nil {
 		fields = append(fields, apitoken.FieldIsSystem)
 	}
+	if m.allowed_digests != nil {
+		fields = append(fields, apitoken.FieldAllowedDigests)
+	}
 	return fields
 }
 
@@ -1082,6 +1152,8 @@ func (m *APITokenMutation) Field(name string) (ent.Value, bool) {
 		return m.Policies()
 	case apitoken.FieldIsSystem:
 		return m.IsSystem()
+	case apitoken.FieldAllowedDigests:
+		return m.AllowedDigests()
 	}
 	return nil, false
 }
@@ -1119,6 +1191,8 @@ func (m *APITokenMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldPolicies(ctx)
 	case apitoken.FieldIsSystem:
 		return m.OldIsSystem(ctx)
+	case apitoken.FieldAllowedDigests:
+		return m.OldAllowedDigests(ctx)
 	}
 	return nil, fmt.Errorf("unknown APIToken field %s", name)
 }
@@ -1226,6 +1300,13 @@ func (m *APITokenMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetIsSystem(v)
 		return nil
+	case apitoken.FieldAllowedDigests:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAllowedDigests(v)
+		return nil
 	}
 	return fmt.Errorf("unknown APIToken field %s", name)
 }
@@ -1289,6 +1370,9 @@ func (m *APITokenMutation) ClearedFields() []string {
 	if m.FieldCleared(apitoken.FieldPolicies) {
 		fields = append(fields, apitoken.FieldPolicies)
 	}
+	if m.FieldCleared(apitoken.FieldAllowedDigests) {
+		fields = append(fields, apitoken.FieldAllowedDigests)
+	}
 	return fields
 }
 
@@ -1335,6 +1419,9 @@ func (m *APITokenMutation) ClearField(name string) error {
 		return nil
 	case apitoken.FieldPolicies:
 		m.ClearPolicies()
+		return nil
+	case apitoken.FieldAllowedDigests:
+		m.ClearAllowedDigests()
 		return nil
 	}
 	return fmt.Errorf("unknown APIToken nullable field %s", name)
@@ -1385,6 +1472,9 @@ func (m *APITokenMutation) ResetField(name string) error {
 		return nil
 	case apitoken.FieldIsSystem:
 		m.ResetIsSystem()
+		return nil
+	case apitoken.FieldAllowedDigests:
+		m.ResetAllowedDigests()
 		return nil
 	}
 	return fmt.Errorf("unknown APIToken field %s", name)

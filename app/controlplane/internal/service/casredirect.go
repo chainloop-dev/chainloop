@@ -89,6 +89,12 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 		return nil, err
 	}
 
+	restricted, err := restrictToAllowedDigest(currentAPIToken, req.GetDigest(), casJWT.Downloader)
+	if err != nil {
+		// The same answer as for any other artifact out of reach
+		return nil, kerrors.NotFound("not found", "artifact not found")
+	}
+
 	var mapping *biz.CASMapping
 	if currentUser != nil {
 		mapping, err = s.casMappingUC.FindCASMappingForDownloadByUser(ctx, req.Digest, currentUser.ID)
@@ -137,7 +143,7 @@ func (s *CASRedirectService) GetDownloadURL(ctx context.Context, req *pb.GetDown
 	// 2- add authentication token to the query params ?t=[token]
 	if backend.SecretName != "" {
 		ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: casJWT.Downloader, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID}
-		if req.GetScopeToDigest() {
+		if req.GetScopeToDigest() || restricted {
 			ref.Digest = req.GetDigest()
 		}
 

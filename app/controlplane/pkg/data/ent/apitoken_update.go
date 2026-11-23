@@ -251,6 +251,24 @@ func (_u *APITokenUpdate) ClearPolicies() *APITokenUpdate {
 	return _u
 }
 
+// SetAllowedDigests sets the "allowed_digests" field.
+func (_u *APITokenUpdate) SetAllowedDigests(v []string) *APITokenUpdate {
+	_u.mutation.SetAllowedDigests(v)
+	return _u
+}
+
+// AppendAllowedDigests appends value to the "allowed_digests" field.
+func (_u *APITokenUpdate) AppendAllowedDigests(v []string) *APITokenUpdate {
+	_u.mutation.AppendAllowedDigests(v)
+	return _u
+}
+
+// ClearAllowedDigests clears the value of the "allowed_digests" field.
+func (_u *APITokenUpdate) ClearAllowedDigests() *APITokenUpdate {
+	_u.mutation.ClearAllowedDigests()
+	return _u
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (_u *APITokenUpdate) SetOrganization(v *Organization) *APITokenUpdate {
 	return _u.SetOrganizationID(v.ID)
@@ -401,6 +419,17 @@ func (_u *APITokenUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.PoliciesCleared() {
 		_spec.ClearField(apitoken.FieldPolicies, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.AllowedDigests(); ok {
+		_spec.SetField(apitoken.FieldAllowedDigests, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedAllowedDigests(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apitoken.FieldAllowedDigests, value)
+		})
+	}
+	if _u.mutation.AllowedDigestsCleared() {
+		_spec.ClearField(apitoken.FieldAllowedDigests, field.TypeJSON)
 	}
 	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -727,6 +756,24 @@ func (_u *APITokenUpdateOne) ClearPolicies() *APITokenUpdateOne {
 	return _u
 }
 
+// SetAllowedDigests sets the "allowed_digests" field.
+func (_u *APITokenUpdateOne) SetAllowedDigests(v []string) *APITokenUpdateOne {
+	_u.mutation.SetAllowedDigests(v)
+	return _u
+}
+
+// AppendAllowedDigests appends value to the "allowed_digests" field.
+func (_u *APITokenUpdateOne) AppendAllowedDigests(v []string) *APITokenUpdateOne {
+	_u.mutation.AppendAllowedDigests(v)
+	return _u
+}
+
+// ClearAllowedDigests clears the value of the "allowed_digests" field.
+func (_u *APITokenUpdateOne) ClearAllowedDigests() *APITokenUpdateOne {
+	_u.mutation.ClearAllowedDigests()
+	return _u
+}
+
 // SetOrganization sets the "organization" edge to the Organization entity.
 func (_u *APITokenUpdateOne) SetOrganization(v *Organization) *APITokenUpdateOne {
 	return _u.SetOrganizationID(v.ID)
@@ -907,6 +954,17 @@ func (_u *APITokenUpdateOne) sqlSave(ctx context.Context) (_node *APIToken, err 
 	}
 	if _u.mutation.PoliciesCleared() {
 		_spec.ClearField(apitoken.FieldPolicies, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.AllowedDigests(); ok {
+		_spec.SetField(apitoken.FieldAllowedDigests, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedAllowedDigests(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, apitoken.FieldAllowedDigests, value)
+		})
+	}
+	if _u.mutation.AllowedDigestsCleared() {
+		_spec.ClearField(apitoken.FieldAllowedDigests, field.TypeJSON)
 	}
 	if _u.mutation.OrganizationCleared() {
 		edge := &sqlgraph.EdgeSpec{

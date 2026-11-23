@@ -75,6 +75,10 @@ func (r *APITokenRepo) Create(ctx context.Context, opts *biz.APITokenCreateOpts)
 		create = create.SetProjectIds(ids)
 	}
 
+	if opts.AllowedDigests != nil {
+		create = create.SetAllowedDigests(opts.AllowedDigests)
+	}
+
 	token, err := create.Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
@@ -320,6 +324,7 @@ func entAPITokenToBiz(t *ent.APIToken) *biz.APIToken {
 		Scope:          t.Scope,
 		ScopeID:        t.ScopeID,
 		ProjectIDs:     t.ProjectIds,
+		AllowedDigests: t.AllowedDigests,
 	}
 
 	// Add organization name if present

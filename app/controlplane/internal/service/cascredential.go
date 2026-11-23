@@ -17,6 +17,8 @@ package service
 
 import (
 	"context"
+	stderrors "errors"
+	"slices"
 
 	pb "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
@@ -80,6 +82,11 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	case pb.CASCredentialsServiceGetRequest_ROLE_UPLOADER:
 		role = casJWT.Uploader
 		policyToCheck = authz.PolicyArtifactUpload
+	}
+
+	restricted, err := restrictToAllowedDigest(currentAPIToken, req.GetDigest(), role)
+	if err != nil {
+		return nil, errors.Forbidden("forbidden", "not allowed to perform this operation")
 	}
 
 	// Without a digest the scoped request would silently mint an unscoped token
@@ -154,7 +161,7 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 	}
 
 	ref := &biz.CASCredsOpts{BackendType: string(backend.Provider), SecretPath: backend.SecretName, Role: role, MaxBytes: backend.Limits.MaxBytes, OrgID: backend.OrganizationID, SourceInternal: sourceInternal}
-	if req.GetScopeToDigest() {
+	if req.GetScopeToDigest() || restricted {
 		ref.Digest = req.GetDigest()
 	}
 
@@ -176,4 +183,23 @@ func (s *CASCredentialsService) Get(ctx context.Context, req *pb.CASCredentialsS
 // token store does not yet mark its tokens as system) is simply not flagged rather than rejected.
 func resolveSourceInternal(requested bool, token *entities.APIToken) bool {
 	return requested && token != nil && token.IsSystem
+}
+
+// errDigestNotAllowed refuses a CAS credential that is outside the artifacts an API token is
+// restricted to. Each RPC answers it with the error it uses for other artifacts out of reach.
+var errDigestNotAllowed = stderrors.New("the API token is not allowed to access this artifact")
+
+// restrictToAllowedDigest applies the artifact restriction of an API token to a request for a CAS
+// credential. It reports whether the token has the restriction: the credential must then be
+// scoped to the digest. Such a token only downloads, and only a digest in its list.
+func restrictToAllowedDigest(token *entities.APIToken, digest string, role casJWT.Role) (bool, error) {
+	if token == nil || len(token.AllowedDigests) == 0 {
+		return false, nil
+	}
+
+	if role != casJWT.Downloader || digest == "" || !slices.Contains(token.AllowedDigests, digest) {
+		return true, errDigestNotAllowed
+	}
+
+	return true, nil
 }

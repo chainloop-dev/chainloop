@@ -51,6 +51,8 @@ type APIToken struct {
 	Policies []*authz.Policy `json:"policies,omitempty"`
 	// IsSystem holds the value of the "is_system" field.
 	IsSystem bool `json:"is_system,omitempty"`
+	// AllowedDigests holds the value of the "allowed_digests" field.
+	AllowedDigests []string `json:"allowed_digests,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the APITokenQuery when eager-loading is set.
 	Edges        APITokenEdges `json:"edges"`
@@ -110,7 +112,7 @@ func (*APIToken) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case apitoken.FieldScopeID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case apitoken.FieldProjectIds, apitoken.FieldPolicies:
+		case apitoken.FieldProjectIds, apitoken.FieldPolicies, apitoken.FieldAllowedDigests:
 			values[i] = new([]byte)
 		case apitoken.FieldIsSystem:
 			values[i] = new(sql.NullBool)
@@ -231,6 +233,14 @@ func (_m *APIToken) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.IsSystem = value.Bool
 			}
+		case apitoken.FieldAllowedDigests:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field allowed_digests", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.AllowedDigests); err != nil {
+					return fmt.Errorf("unmarshal field allowed_digests: %w", err)
+				}
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -327,6 +337,9 @@ func (_m *APIToken) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("is_system=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IsSystem))
+	builder.WriteString(", ")
+	builder.WriteString("allowed_digests=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AllowedDigests))
 	builder.WriteByte(')')
 	return builder.String()
 }

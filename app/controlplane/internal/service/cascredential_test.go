@@ -16,9 +16,11 @@
 package service
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/usercontext/entities"
+	casJWT "github.com/chainloop-dev/chainloop/internal/robotaccount/cas"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -73,6 +75,48 @@ func TestResolveSourceInternal(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := resolveSourceInternal(tc.requested, tc.token)
 			assert.Equal(t, tc.want, got)
+		})
+	}
+}
+
+// A token restricted to artifacts only downloads, and only the digests in its list. A token
+// without the restriction, and a user, are left alone.
+func TestRestrictToAllowedDigest(t *testing.T) {
+	const (
+		allowed = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+		other   = "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	)
+
+	restricted := &entities.APIToken{AllowedDigests: []string{allowed}}
+
+	testCases := []struct {
+		name           string
+		token          *entities.APIToken
+		digest         string
+		role           casJWT.Role
+		wantRestricted bool
+		wantErr        bool
+	}{
+		{name: "a user", digest: other, role: casJWT.Uploader},
+		{name: "a token without the restriction", token: &entities.APIToken{}, digest: other, role: casJWT.Uploader},
+		{name: "a token without the restriction and no digest", token: &entities.APIToken{}, role: casJWT.Downloader},
+		{name: "an allowed digest", token: restricted, digest: allowed, role: casJWT.Downloader, wantRestricted: true},
+		{name: "another digest", token: restricted, digest: other, role: casJWT.Downloader, wantRestricted: true, wantErr: true},
+		{name: "no digest", token: restricted, role: casJWT.Downloader, wantRestricted: true, wantErr: true},
+		{name: "an upload of an allowed digest", token: restricted, digest: allowed, role: casJWT.Uploader, wantRestricted: true, wantErr: true},
+		{name: "no role", token: restricted, digest: allowed, wantRestricted: true, wantErr: true},
+		{name: "a digest that differs in case", token: restricted, digest: strings.ToUpper(allowed), role: casJWT.Downloader, wantRestricted: true, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			gotRestricted, err := restrictToAllowedDigest(tc.token, tc.digest, tc.role)
+			assert.Equal(t, tc.wantRestricted, gotRestricted)
+			if tc.wantErr {
+				assert.ErrorIs(t, err, errDigestNotAllowed)
+				return
+			}
+			assert.NoError(t, err)
 		})
 	}
 }

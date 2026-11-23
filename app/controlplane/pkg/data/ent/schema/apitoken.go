@@ -67,6 +67,9 @@ func (APIToken) Fields() []ent.Field {
 		field.JSON("policies", []*authz.Policy{}).Optional(),
 		// System tokens are minted by internal code paths and hidden from the public API.
 		field.Bool("is_system").Default(false).Immutable(),
+		// The artifact digests the token can download from the CAS. NULL means no restriction.
+		// When set, the CAS credentials it gets are always scoped to one of these digests.
+		field.JSON("allowed_digests", []string{}).Optional(),
 	}
 }
 

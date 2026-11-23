@@ -18,6 +18,7 @@ package biz_test
 import (
 	"context"
 	"fmt"
+	"slices"
 	"testing"
 	"time"
 
@@ -1393,4 +1394,48 @@ func (s *apiTokenTestSuite) TestListProjectFilterDistinguishesEmptyFromNil() {
 			s.Equal(s.p1.ID, *t.ProjectID)
 		}
 	})
+}
+
+// The allowed digests survive a round trip through the repository, from every read. A token
+// created without them stores NULL, as every row from before the column does.
+func (s *apiTokenTestSuite) TestRepoStoresTheAllowedDigests() {
+	ctx := context.Background()
+	const digest = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+	downloadOnly := biz.APITokenWithPolicies([]*authz.Policy{authz.PolicyArtifactDownload})
+
+	testCases := []struct {
+		name string
+		opts []biz.APITokenCreateOpt
+		want []string
+	}{
+		{name: "a restricted token", opts: []biz.APITokenCreateOpt{downloadOnly, biz.APITokenWithAllowedDigests(digest)}, want: []string{digest}},
+		{name: "a restricted project token", opts: []biz.APITokenCreateOpt{downloadOnly, biz.APITokenWithProject(s.p1), biz.APITokenWithAllowedDigests(digest)}, want: []string{digest}},
+		{name: "a token without the restriction", opts: []biz.APITokenCreateOpt{downloadOnly}},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			token, err := s.APIToken.Create(ctx, randomName(), nil, nil, &s.org.ID, tc.opts...)
+			s.Require().NoError(err)
+			s.Equal(tc.want, token.AllowedDigests)
+
+			byID, err := s.APIToken.FindByID(ctx, token.ID.String())
+			s.Require().NoError(err)
+			s.Equal(tc.want, byID.AllowedDigests)
+
+			inOrg, err := s.APIToken.FindByIDInOrg(ctx, s.org.ID, token.ID.String())
+			s.Require().NoError(err)
+			s.Equal(tc.want, inOrg.AllowedDigests)
+
+			listed, err := s.APIToken.List(ctx, s.org.ID)
+			s.Require().NoError(err)
+			idx := slices.IndexFunc(listed, func(t *biz.APIToken) bool { return t.ID == token.ID })
+			s.Require().NotEqual(-1, idx)
+			s.Equal(tc.want, listed[idx].AllowedDigests)
+
+			var isNull bool
+			s.Require().NoError(s.Data.SQLDB.QueryRowContext(ctx, "SELECT allowed_digests IS NULL FROM api_tokens WHERE id = $1", token.ID).Scan(&isNull))
+			s.Equal(tc.want == nil, isNull)
+		})
+	}
 }

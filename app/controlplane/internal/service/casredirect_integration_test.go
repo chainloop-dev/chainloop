@@ -22,6 +22,7 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -39,6 +40,7 @@ import (
 	creds "github.com/chainloop-dev/chainloop/pkg/credentials/mocks"
 	kerrors "github.com/go-kratos/kratos/v2/errors"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
@@ -239,6 +241,85 @@ func (s *casDownloadRBACIntegrationSuite) TestDigestScopedTokens() {
 	})
 }
 
+// A token restricted to artifacts gets download credentials for the digests in its list only, and
+// they are always scoped to the requested digest. A token without the restriction is unchanged.
+func (s *casDownloadRBACIntegrationSuite) TestTokenRestrictedToDigests() {
+	ctx := context.Background()
+	restricted, err := s.APIToken.Create(ctx, "token-restricted", nil, nil, &s.org.ID,
+		biz.APITokenWithPolicies([]*authz.Policy{authz.PolicyArtifactDownload}),
+		biz.APITokenWithAllowedDigests(digestProjectA),
+	)
+	s.Require().NoError(err)
+
+	testCases := []struct {
+		name          string
+		token         *biz.APIToken
+		digest        string
+		scopeToDigest bool
+		// wantDigest is the digest the CAS credential is scoped to, empty when it is not scoped
+		wantDigest string
+		wantErr    bool
+	}{
+		{name: "an allowed digest is scoped without asking", token: restricted, digest: digestProjectA, wantDigest: digestProjectA},
+		{name: "an allowed digest asked to be scoped", token: restricted, digest: digestProjectA, scopeToDigest: true, wantDigest: digestProjectA},
+		{name: "a digest outside the list", token: restricted, digest: digestProjectB, wantErr: true},
+		{name: "a digest outside the list asked to be scoped", token: restricted, digest: digestOrgWide, scopeToDigest: true, wantErr: true},
+		{name: "no digest", token: restricted, wantErr: true},
+		{name: "a token without the restriction is not scoped", token: s.orgToken, digest: digestProjectB},
+	}
+
+	for _, tc := range testCases {
+		s.Run("GetDownloadURL: "+tc.name, func() {
+			resp, err := s.redirectSvc.GetDownloadURL(s.ctxForToken(tc.token), &pb.GetDownloadURLRequest{Digest: tc.digest, ScopeToDigest: tc.scopeToDigest})
+			if tc.wantErr {
+				s.True(kerrors.IsNotFound(err), "expected not found, got %v", err)
+				return
+			}
+			s.Require().NoError(err)
+
+			u, err := url.Parse(resp.GetResult().GetUrl())
+			s.Require().NoError(err)
+			s.Equal(tc.wantDigest, s.casClaims(u.Query().Get("t")).Digest)
+		})
+
+		s.Run("CASCredentialsService.Get: "+tc.name, func() {
+			resp, err := s.credentialsSvc.Get(s.ctxForToken(tc.token), &pb.CASCredentialsServiceGetRequest{
+				Digest:        tc.digest,
+				Role:          pb.CASCredentialsServiceGetRequest_ROLE_DOWNLOADER,
+				ScopeToDigest: tc.scopeToDigest,
+			})
+			if tc.wantErr {
+				s.True(kerrors.IsForbidden(err), "expected forbidden, got %v", err)
+				return
+			}
+			s.Require().NoError(err)
+			s.Equal(tc.wantDigest, s.casClaims(resp.GetResult().GetToken()).Digest)
+		})
+	}
+
+	// Create refuses this row. Written straight to the repository, it shows that the upload
+	// refusal does not depend on the policies.
+	orgID := uuid.MustParse(s.org.ID)
+	canUpload, err := s.Repos.APITokenRepo.Create(ctx, &biz.APITokenCreateOpts{
+		Name: "token-restricted-upload", OrganizationID: &orgID,
+		Scope: biz.ToPtr(authz.ResourceTypeOrganization), ScopeID: &orgID,
+		Policies:       []*authz.Policy{authz.PolicyArtifactDownload, authz.PolicyArtifactUpload},
+		AllowedDigests: []string{digestProjectA},
+	})
+	s.Require().NoError(err)
+
+	for _, scopeToDigest := range []bool{false, true} {
+		s.Run(fmt.Sprintf("CASCredentialsService.Get: no upload of an allowed digest, scope_to_digest=%t", scopeToDigest), func() {
+			_, err := s.credentialsSvc.Get(s.ctxForToken(canUpload), &pb.CASCredentialsServiceGetRequest{
+				Digest:        digestProjectA,
+				Role:          pb.CASCredentialsServiceGetRequest_ROLE_UPLOADER,
+				ScopeToDigest: scopeToDigest,
+			})
+			s.True(kerrors.IsForbidden(err), "expected forbidden, got %v", err)
+		})
+	}
+}
+
 // casClaims decodes the claims of a CAS token without verifying its signature
 func (s *casDownloadRBACIntegrationSuite) casClaims(token string) *casJWT.Claims {
 	claims := &casJWT.Claims{}
@@ -259,6 +340,8 @@ func (s *casDownloadRBACIntegrationSuite) ctxForToken(token *biz.APIToken) conte
 		Scope:      token.Scope,
 		ScopeID:    token.ScopeID,
 		ProjectIDs: token.ProjectIDs,
+		// The middleware loads the restriction from the row
+		AllowedDigests: token.AllowedDigests,
 	})
 
 	return usercontext.WithAuthzSubject(ctx, (&authz.SubjectAPIToken{ID: token.ID.String()}).String())

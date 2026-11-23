@@ -23,6 +23,7 @@ var (
 		{Name: "project_ids", Type: field.TypeJSON, Nullable: true},
 		{Name: "policies", Type: field.TypeJSON, Nullable: true},
 		{Name: "is_system", Type: field.TypeBool, Default: false},
+		{Name: "allowed_digests", Type: field.TypeJSON, Nullable: true},
 		{Name: "project_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "workflow_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "organization_id", Type: field.TypeUUID, Nullable: true},
@@ -35,19 +36,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "api_tokens_projects_project",
-				Columns:    []*schema.Column{APITokensColumns[12]},
+				Columns:    []*schema.Column{APITokensColumns[13]},
 				RefColumns: []*schema.Column{ProjectsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_tokens_workflows_workflow",
-				Columns:    []*schema.Column{APITokensColumns[13]},
+				Columns:    []*schema.Column{APITokensColumns[14]},
 				RefColumns: []*schema.Column{WorkflowsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "api_tokens_organizations_api_tokens",
-				Columns:    []*schema.Column{APITokensColumns[14]},
+				Columns:    []*schema.Column{APITokensColumns[15]},
 				RefColumns: []*schema.Column{OrganizationsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -56,7 +57,7 @@ var (
 			{
 				Name:    "apitoken_name_organization_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[14]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[15]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NULL AND (scope IS NULL OR scope <> 'product')",
 				},
@@ -72,7 +73,7 @@ var (
 			{
 				Name:    "apitoken_name_project_id",
 				Unique:  true,
-				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[12]},
+				Columns: []*schema.Column{APITokensColumns[1], APITokensColumns[13]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "revoked_at IS NULL AND project_id IS NOT NULL",
 				},

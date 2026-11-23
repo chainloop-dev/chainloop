@@ -213,22 +213,23 @@ func setCurrentOrgAndAPIToken(ctx context.Context, apiTokenUC *biz.APITokenUseCa
 	}
 
 	// Every value here comes from the row. VerifyClaims checked the scope, project and workflow
-	// against the signed claims. The policies, the project list and the system flag come only from
-	// the row.
+	// against the signed claims. The policies, the project list, the allowed digests and the
+	// system flag come only from the row.
 	ctx = entities.WithCurrentAPIToken(ctx, &entities.APIToken{
-		ID:           token.ID.String(),
-		Name:         token.Name,
-		CreatedAt:    token.CreatedAt,
-		Token:        token.JWT,
-		ProjectID:    token.ProjectID,
-		ProjectName:  token.ProjectName,
-		WorkflowID:   token.WorkflowID,
-		WorkflowName: token.WorkflowName,
-		Scope:        token.Scope,
-		ScopeID:      token.ScopeID,
-		ProjectIDs:   token.ProjectIDs,
-		Policies:     token.Policies,
-		IsSystem:     token.IsSystem,
+		ID:             token.ID.String(),
+		Name:           token.Name,
+		CreatedAt:      token.CreatedAt,
+		Token:          token.JWT,
+		ProjectID:      token.ProjectID,
+		ProjectName:    token.ProjectName,
+		WorkflowID:     token.WorkflowID,
+		WorkflowName:   token.WorkflowName,
+		Scope:          token.Scope,
+		ScopeID:        token.ScopeID,
+		ProjectIDs:     token.ProjectIDs,
+		Policies:       token.Policies,
+		IsSystem:       token.IsSystem,
+		AllowedDigests: token.AllowedDigests,
 	})
 
 	// Set the authorization subject that will be used to check the policies
