@@ -26,10 +26,14 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"github.com/open-policy-agent/opa/v1/ast"
+	"github.com/open-policy-agent/opa/v1/rego"
 	"github.com/open-policy-agent/opa/v1/topdown"
+	"github.com/open-policy-agent/opa/v1/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // testKind is the kind of the referrer that the tests discover
@@ -41,6 +45,8 @@ type fakeReferrerClient struct {
 	v1.ReferrerServiceClient
 	total  int
 	failAt int // fail the request with this page number (1-based), 0 means never
+	// failErr is the error of the failed request, a generic error when nil
+	failErr error
 	// noPagination acts as a control plane without pagination: it ignores the
 	// pagination request and returns all the references with no pagination response
 	noPagination bool
@@ -52,6 +58,9 @@ type fakeReferrerClient struct {
 func (f *fakeReferrerClient) DiscoverPrivate(_ context.Context, req *v1.ReferrerServiceDiscoverPrivateRequest, _ ...grpc.CallOption) (*v1.ReferrerServiceDiscoverPrivateResponse, error) {
 	f.requests = append(f.requests, req)
 	if f.failAt == len(f.requests) {
+		if f.failErr != nil {
+			return nil, f.failErr
+		}
 		return nil, errors.New("boom")
 	}
 
@@ -189,6 +198,90 @@ func refsJSON(n int) string {
 		refs[i] = fmt.Sprintf(`{"digest": "sha256:%d", "kind": "ATTESTATION"}`, i)
 	}
 	return strings.Join(refs, ",")
+}
+
+func TestDiscoverErrors(t *testing.T) {
+	notFound := status.Error(codes.NotFound, "artifact or piece of evidence with digest sha256:deadbeef not found")
+	testCases := []struct {
+		name    string
+		failAt  int
+		failErr error
+		wantErr bool
+	}{
+		// the digest has no node in the graph yet: no references, not an error
+		{name: "not found", failAt: 1, failErr: notFound},
+		{name: "unavailable", failAt: 1, failErr: status.Error(codes.Unavailable, "down"), wantErr: true},
+		{name: "permission denied", failAt: 1, failErr: status.Error(codes.PermissionDenied, "denied"), wantErr: true},
+		{name: "unauthenticated", failAt: 1, failErr: status.Error(codes.Unauthenticated, "no token"), wantErr: true},
+		{name: "internal", failAt: 1, failErr: status.Error(codes.Internal, "boom"), wantErr: true},
+		{name: "not a gRPC status", failAt: 1, failErr: errors.New("boom"), wantErr: true},
+		// the node existed for the first page, so a later NotFound is not "no node yet"
+		{name: "not found on a later page", failAt: 2, failErr: notFound, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			svc := &DiscoverService{client: &fakeReferrerClient{total: 2 * discoverPageSize, failAt: tc.failAt, failErr: tc.failErr}}
+
+			got, err := svc.Discover(context.Background(), "sha256:deadbeef", "")
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.Equal(t, status.Code(tc.failErr), status.Code(err))
+				assert.Nil(t, got)
+				return
+			}
+
+			require.NoError(t, err)
+			// an empty result, not nil: nil means no connection to the control plane
+			require.NotNil(t, got)
+			assert.Empty(t, got.GetReferences())
+			assert.False(t, got.Truncated)
+
+			raw, err := json.Marshal(got)
+			require.NoError(t, err)
+			assert.JSONEq(t, `{"digest": "sha256:deadbeef", "truncated": false}`, string(raw))
+		})
+	}
+}
+
+// TestDiscoverBuiltinInRego evaluates a policy that calls the builtin with strict builtin errors,
+// as the policy engine does, so a builtin error fails the evaluation
+func TestDiscoverBuiltinInRego(t *testing.T) {
+	const query = `count([ref | some ref in chainloop.discover("sha256:deadbeef", "").references])`
+	testCases := []struct {
+		name    string
+		client  *fakeReferrerClient
+		want    int
+		wantErr bool
+	}{
+		{name: "references", client: &fakeReferrerClient{total: 3}, want: 3},
+		{name: "digest not found", client: &fakeReferrerClient{failAt: 1, failErr: status.Error(codes.NotFound, "not found")}, want: 0},
+		{name: "control plane unavailable", client: &fakeReferrerClient{failAt: 1, failErr: status.Error(codes.Unavailable, "down")}, wantErr: true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			impl := getDiscoverRegoImpl(&DiscoverService{client: tc.client})
+			discover := rego.Function2(
+				&rego.Function{Name: discoverBuiltinName, Decl: types.NewFunction(types.Args(types.S, types.S), types.A), Nondeterministic: true},
+				func(bctx rego.BuiltinContext, digest, kind *ast.Term) (*ast.Term, error) {
+					var out *ast.Term
+					err := impl(bctx, []*ast.Term{digest, kind}, func(term *ast.Term) error { out = term; return nil })
+					return out, err
+				},
+			)
+
+			rs, err := rego.New(rego.Query(query), discover, rego.StrictBuiltinErrors(true)).Eval(context.Background())
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Len(t, rs, 1)
+			assert.EqualValues(t, json.Number(strconv.Itoa(tc.want)), rs[0].Expressions[0].Value)
+		})
+	}
 }
 
 func TestDiscoverNoConnection(t *testing.T) {

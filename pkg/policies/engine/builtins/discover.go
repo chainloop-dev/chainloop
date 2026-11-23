@@ -20,6 +20,8 @@ import (
 
 	v1 "github.com/chainloop-dev/chainloop/app/controlplane/api/controlplane/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -60,6 +62,9 @@ func NewDiscoverService(conn *grpc.ClientConn) *DiscoverService {
 // returns all the references in one response with no next cursor, so the read
 // ends after the first page. A next cursor that does not advance also ends the
 // read, so the same page is never merged twice, and marks the result as truncated.
+//
+// A digest with no node in the graph gives a result with no references. A NotFound on
+// a later page is still an error, because the node existed for the first page.
 func (s *DiscoverService) Discover(ctx context.Context, digest, kind string) (*DiscoverResult, error) {
 	if s.client == nil {
 		return nil, nil
@@ -75,6 +80,14 @@ func (s *DiscoverService) Discover(ctx context.Context, digest, kind string) (*D
 
 	resp, err := readPage("")
 	if err != nil {
+		// NotFound means that no node of the graph has this digest yet, for example a material
+		// that no workflow run has attested. Return an empty result with no references, so a
+		// policy can report it, instead of failing the whole evaluation. A nil result keeps
+		// meaning "no connection to the control plane".
+		if status.Code(err) == codes.NotFound {
+			return &DiscoverResult{ReferrerItem: &v1.ReferrerItem{Digest: digest, Kind: kind}}, nil
+		}
+
 		return nil, err
 	}
 
