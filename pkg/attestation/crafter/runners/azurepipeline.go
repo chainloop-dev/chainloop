@@ -17,12 +17,18 @@ package runners
 
 import (
 	"context"
-	neturl "net/url"
+	"net/url"
 	"os"
-	"path"
 
 	schemaapi "github.com/chainloop-dev/chainloop/app/controlplane/api/workflowcontract/v1"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners/commitverification"
+)
+
+// Azure Pipelines predefined variables used to build the run link.
+const (
+	azureCollectionURIEnv = "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"
+	azureServerURIEnv     = "SYSTEM_TEAMFOUNDATIONSERVERURI"
+	azureTeamProjectEnv   = "SYSTEM_TEAMPROJECT"
 )
 
 type AzurePipeline struct {
@@ -64,23 +70,39 @@ func (r *AzurePipeline) ListEnvVars() []*EnvVarDefinition {
 	}
 }
 
-func (r *AzurePipeline) RunURI() (url string) {
-	teamFoundationServerURI := os.Getenv("SYSTEM_TEAMFOUNDATIONSERVERURI")
-	definitionName := os.Getenv("SYSTEM_TEAMPROJECT")
-	buildID := os.Getenv("BUILD_BUILDID")
-	jobID := os.Getenv("SYSTEM_JOBID")
+// RunURI returns a browser link to the pipeline run, in the form
+// {collectionURI}{project}/_build/results?buildId={buildID}. It returns an
+// empty string if the required variables are missing.
+func (r *AzurePipeline) RunURI() string {
+	// The collection URI includes the collection segment on Azure DevOps Server
+	// (https://host/tfs/DefaultCollection/), which the server URI does not have.
+	// On Azure DevOps Services both point to https://dev.azure.com/{org}/.
+	baseURI := os.Getenv(azureCollectionURIEnv)
+	if baseURI == "" {
+		baseURI = os.Getenv(azureServerURIEnv)
+	}
 
-	uri, err := neturl.Parse(teamFoundationServerURI)
-	if err != nil {
+	project := os.Getenv(azureTeamProjectEnv)
+	buildID := os.Getenv("BUILD_BUILDID")
+	if baseURI == "" || project == "" || buildID == "" {
 		return ""
 	}
 
-	query := neturl.Values{}
-	query.Set("buildId", buildID)
-	query.Set("view", "logs")
-	query.Set("j", jobID)
+	uri, err := url.Parse(baseURI)
+	if err != nil || uri.Scheme == "" || uri.Host == "" {
+		return ""
+	}
 
-	uri.Path = path.Join(uri.Path, definitionName, "_build/results")
+	query := url.Values{}
+	query.Set("buildId", buildID)
+	// Link to the logs of this job when its ID is known.
+	if jobID := os.Getenv("SYSTEM_JOBID"); jobID != "" {
+		query.Set("view", "logs")
+		query.Set("j", jobID)
+	}
+
+	// JoinPath expects escaped elements and drops the path if one does not unescape.
+	uri = uri.JoinPath(url.PathEscape(project), "_build", "results")
 	uri.RawQuery = query.Encode()
 
 	return uri.String()

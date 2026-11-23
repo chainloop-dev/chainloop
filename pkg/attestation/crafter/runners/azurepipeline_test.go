@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -109,7 +109,102 @@ func (s *azurePipelineSuite) TestResolveEnvVars() {
 }
 
 func (s *azurePipelineSuite) TestRunURI() {
-	s.Equal("https://dev.azure.com/chainloop-test/chainloop-tests/_build/results?buildId=6&j=12f1170f-0000-0000-20dd-22fc7dff55f9&view=logs", s.runner.RunURI())
+	const jobID = "12f1170f-0000-0000-20dd-22fc7dff55f9"
+
+	testCases := []struct {
+		name string
+		env  map[string]string
+		want string
+	}{
+		{
+			name: "azure devops services",
+			env:  map[string]string{},
+			want: "https://dev.azure.com/chainloop-test/chainloop-tests/_build/results?buildId=6&j=" + jobID + "&view=logs",
+		},
+		{
+			name: "azure devops server uses the collection uri, not the server uri",
+			env: map[string]string{
+				azureServerURIEnv:     "https://tfs.example.com/tfs/",
+				azureCollectionURIEnv: "https://tfs.example.com/tfs/DefaultCollection/",
+			},
+			want: "https://tfs.example.com/tfs/DefaultCollection/chainloop-tests/_build/results?buildId=6&j=" + jobID + "&view=logs",
+		},
+		{
+			name: "falls back to the server uri when the collection uri is missing",
+			env: map[string]string{
+				azureServerURIEnv:     "https://dev.azure.com/fallback-org/",
+				azureCollectionURIEnv: "",
+			},
+			want: "https://dev.azure.com/fallback-org/chainloop-tests/_build/results?buildId=6&j=" + jobID + "&view=logs",
+		},
+		{
+			name: "collection uri without trailing slash",
+			env: map[string]string{
+				azureCollectionURIEnv: "https://tfs.example.com/tfs/DefaultCollection",
+			},
+			want: "https://tfs.example.com/tfs/DefaultCollection/chainloop-tests/_build/results?buildId=6&j=" + jobID + "&view=logs",
+		},
+		{
+			name: "project name with spaces is escaped",
+			env: map[string]string{
+				azureTeamProjectEnv: "My Project",
+			},
+			want: "https://dev.azure.com/chainloop-test/My%20Project/_build/results?buildId=6&j=" + jobID + "&view=logs",
+		},
+		{
+			name: "project name with percent sign is escaped",
+			env: map[string]string{
+				azureTeamProjectEnv: "100% done",
+			},
+			want: "https://dev.azure.com/chainloop-test/100%25%20done/_build/results?buildId=6&j=" + jobID + "&view=logs",
+		},
+		{
+			name: "no job id links to the run page",
+			env: map[string]string{
+				"SYSTEM_JOBID": "",
+			},
+			want: "https://dev.azure.com/chainloop-test/chainloop-tests/_build/results?buildId=6",
+		},
+		{
+			name: "missing base uri",
+			env: map[string]string{
+				azureServerURIEnv:     "",
+				azureCollectionURIEnv: "",
+			},
+			want: "",
+		},
+		{
+			name: "relative base uri",
+			env: map[string]string{
+				azureCollectionURIEnv: "not-a-url",
+			},
+			want: "",
+		},
+		{
+			name: "missing project",
+			env: map[string]string{
+				azureTeamProjectEnv: "",
+			},
+			want: "",
+		},
+		{
+			name: "missing build id",
+			env: map[string]string{
+				"BUILD_BUILDID": "",
+			},
+			want: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			for k, v := range tc.env {
+				s.T().Setenv(k, v)
+			}
+
+			s.Equal(tc.want, s.runner.RunURI())
+		})
+	}
 }
 
 func (s *azurePipelineSuite) TestRunnerName() {
@@ -137,8 +232,9 @@ func (s *azurePipelineSuite) SetupTest() {
 	t.Setenv("AGENT_VERSION", "3.220.5")
 	t.Setenv("SYSTEM_COLLECTIONID", "e2dadf5b-9a6d-0000-0000-89ad0786f16e")
 	t.Setenv("SYSTEM_TEAMPROJECTID", "e0730109-da00-0000-0000-80abab2033a2")
-	t.Setenv("SYSTEM_TEAMPROJECT", "chainloop-tests")
-	t.Setenv("SYSTEM_TEAMFOUNDATIONSERVERURI", "https://dev.azure.com/chainloop-test/")
+	t.Setenv(azureTeamProjectEnv, "chainloop-tests")
+	t.Setenv(azureServerURIEnv, "https://dev.azure.com/chainloop-test/")
+	t.Setenv(azureCollectionURIEnv, "https://dev.azure.com/chainloop-test/")
 	t.Setenv("SYSTEM_DEFINITIONNAME", "chainloop-tests")
 	t.Setenv("SYSTEM_STAGEID", "96ac2280-0000-0000-99de-dd2da759617d")
 	t.Setenv("BUILD_REQUESTEDFORID", "4962d626-0000-0000-ae45-95ea268aa3e8")
