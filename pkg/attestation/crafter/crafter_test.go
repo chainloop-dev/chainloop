@@ -607,12 +607,17 @@ func (s *crafterSuite) TestResolveEnvVars() {
 			var runner crafter.SupportedRunner = runners.NewGeneric()
 			contract := "testdata/contracts/with_env_vars.yaml"
 			if tc.inGithubEnv {
+				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
+				gh := runners.NewGithubAction(s.T().Context(), &testLogger)
+				// clear the optional vars that a real GitHub Actions run sets, for example on pull requests
+				for _, v := range gh.ListEnvVars() {
+					s.T().Setenv(v.Name, "")
+				}
 				s.T().Setenv("CI", "true")
 				for k, v := range gitHubTestingEnvVars {
 					s.T().Setenv(k, v)
 				}
-				testLogger := zerolog.New(zerolog.Nop()).Level(zerolog.Disabled)
-				runner = runners.NewGithubAction(s.T().Context(), &testLogger)
+				runner = gh
 			} else if tc.inJenkinsEnv {
 				contract = "testdata/contracts/jenkins_with_env_vars.yaml"
 				s.T().Setenv("JOB_NAME", "some-job")
