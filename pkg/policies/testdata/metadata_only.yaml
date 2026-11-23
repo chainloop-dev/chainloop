@@ -1,0 +1,22 @@
+apiVersion: chainloop.dev/v1
+kind: Policy
+metadata:
+  name: metadata-only
+  description: Policy with no kind that reads only chainloop_metadata, like upstream-check
+spec:
+  policies:
+    - embedded: |
+        package main
+
+        import rego.v1
+
+        result := {
+          "skipped": false,
+          "violations": violations,
+          "skip_reason": "",
+        }
+
+        violations contains msg if {
+          input.chainloop_metadata.digest.sha256 != "deadbeef"
+          msg := "unexpected digest"
+        }

@@ -687,6 +687,115 @@ func TestGetEvaluableContentSuppliedForArtifactlessKind(t *testing.T) {
 		"supplied content must be evaluated whatever the material kind")
 }
 
+// TestGetEvaluableContentNonJSONArtifact pins that a generic ARTIFACT holds
+// arbitrary bytes (a ZIP, a binary, plain text). Its content cannot fail policy
+// evaluation: a non-JSON ARTIFACT is evaluated as an empty object plus
+// chainloop_metadata, so metadata-only policies such as upstream-check still run.
+// A JSON ARTIFACT keeps passing through, and a typed material with invalid
+// content still fails.
+func TestGetEvaluableContentNonJSONArtifact(t *testing.T) {
+	zipPath := filepath.Join(t.TempDir(), "dist.zip")
+	var zipBuf bytes.Buffer
+	zw := zip.NewWriter(&zipBuf)
+	f, err := zw.Create("app.jar")
+	require.NoError(t, err)
+	_, err = f.Write([]byte("binary"))
+	require.NoError(t, err)
+	require.NoError(t, zw.Close())
+	require.NoError(t, os.WriteFile(zipPath, zipBuf.Bytes(), 0o600))
+
+	material := func(kind schemaapi.CraftingSchema_Material_MaterialType, inline []byte) *Attestation_Material {
+		return &Attestation_Material{
+			MaterialType: kind,
+			M: &Attestation_Material_Artifact_{
+				Artifact: &Attestation_Material_Artifact{
+					Name: "dist.zip", Digest: "sha256:deadbeef", Content: inline,
+				},
+			},
+			InlineCas: inline != nil,
+		}
+	}
+
+	cases := []struct {
+		name     string
+		material *Attestation_Material
+		path     string
+		// wantContentKeys are the top-level keys of the evaluable content
+		// besides chainloop_metadata, which every case must have.
+		wantContentKeys []string
+		wantErr         string
+	}{
+		{
+			name:            "binary artifact read from disk",
+			material:        material(schemaapi.CraftingSchema_Material_ARTIFACT, nil),
+			path:            zipPath,
+			wantContentKeys: nil,
+		},
+		{
+			name:            "binary artifact stored inline",
+			material:        material(schemaapi.CraftingSchema_Material_ARTIFACT, zipBuf.Bytes()),
+			wantContentKeys: nil,
+		},
+		{
+			name:            "plain text artifact",
+			material:        material(schemaapi.CraftingSchema_Material_ARTIFACT, []byte("Plain text, not JSON")),
+			wantContentKeys: nil,
+		},
+		{
+			// Unchanged: the first JSON value is evaluated, as before, so a
+			// content-reading policy does not lose input it reads today.
+			name:            "artifact with JSON lines keeps its first value",
+			material:        material(schemaapi.CraftingSchema_Material_ARTIFACT, []byte("{\"a\":1}\n{\"b\":2}\n")),
+			wantContentKeys: []string{"a"},
+		},
+		{
+			name:            "json object artifact passes through",
+			material:        material(schemaapi.CraftingSchema_Material_ARTIFACT, []byte(`{"kept":"yes"}`)),
+			wantContentKeys: []string{"kept"},
+		},
+		{
+			name:            "json array artifact passes through as elements",
+			material:        material(schemaapi.CraftingSchema_Material_ARTIFACT, []byte(`[1,2]`)),
+			wantContentKeys: []string{"elements"},
+		},
+		{
+			name:     "typed material with non-json content still fails",
+			material: material(schemaapi.CraftingSchema_Material_SARIF, zipBuf.Bytes()),
+			wantErr:  "failed to parse input",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			content, err := tc.material.GetEvaluableContent(tc.path, nil)
+			if tc.wantErr != "" {
+				require.ErrorContains(t, err, tc.wantErr)
+				return
+			}
+			require.NoError(t, err)
+
+			var decoded map[string]json.RawMessage
+			require.NoError(t, json.Unmarshal(content, &decoded))
+
+			rawMetadata, ok := decoded["chainloop_metadata"]
+			require.True(t, ok, "chainloop_metadata must always be present")
+			delete(decoded, "chainloop_metadata")
+
+			keys := make([]string, 0, len(decoded))
+			for k := range decoded {
+				keys = append(keys, k)
+			}
+			assert.ElementsMatch(t, tc.wantContentKeys, keys)
+
+			var metadata struct {
+				Name string `json:"name"`
+			}
+			require.NoError(t, json.Unmarshal(rawMetadata, &metadata))
+			assert.Equal(t, "dist.zip", metadata.Name)
+		})
+	}
+}
+
 // TestGetEvaluableContentInjectsMetadata pins that supplying the content does
 // not bypass the projection the policy engine relies on: the chainloop_metadata
 // descriptor is still injected, so a policy can read the redaction annotations

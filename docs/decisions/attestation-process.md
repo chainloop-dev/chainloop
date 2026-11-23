@@ -22,7 +22,7 @@ Structure. The index (README.md) has the parts Areas (the area map), Relationshi
 
 > Written by `eng-adr`. To change a decision, write a spec or run `eng-adr new`. Do not edit this page by hand.
 
-**Purpose:** The attestation lifecycle of the CLI (`init`, `add`, `status`, `push`, `reset`, `verify`), and how it selects its organization and project. **Owner:** migmartri. **Does not own:** AI coding session evidence (Chainloop Trace), and login and tokens (Authentication). **Specs:** [issue-3063-attestation-repo-config](../specs/issue-3063-attestation-repo-config.md). **Last refresh:** 2026-11-01, commit 4e150ca7.
+**Purpose:** The attestation lifecycle of the CLI (`init`, `add`, `status`, `push`, `reset`, `verify`), and how it selects its organization and project. **Owner:** migmartri. **Does not own:** AI coding session evidence (Chainloop Trace), and login and tokens (Authentication). **Specs:** [issue-3063-attestation-repo-config](../specs/issue-3063-attestation-repo-config.md). **Last refresh:** 2026-11-23, commit 81dd68bb.
 
 ## Language
 
@@ -61,6 +61,14 @@ The organization from the file has the same effect as `--org` for the run. It is
 - Deciders: migmartri, javirln
 - Source: [issue-3063-attestation-repo-config D-010](../specs/issue-3063-attestation-repo-config.md)
 - Code: verified: `app/cli/cmd/attestation.go`, `app/cli/internal/token/token.go`, `app/cli/cmd/root.go`.
+
+### ATT-005: A non-JSON ARTIFACT evaluates as an empty object
+When the content of an `ARTIFACT` material is not JSON, for example a ZIP file, the policies get an empty object plus `chainloop_metadata`. The material does not fail. A JSON `ARTIFACT` keeps its content. A typed material with content that does not match its format still fails with `failed to parse input`.
+- Why: a policy with no kind applies to `ARTIFACT`, and it can read only `chainloop_metadata` (for example `upstream-check`). The CLI cannot know which policies read the content.
+- Rejected: a failure for each non-JSON `ARTIFACT` (a policy that reads only metadata then stops `att add`, also with `gate: false`). A list of material kinds in `upstream-check` (then no `ARTIFACT` can use it).
+- Deciders: migmartri
+- Source: recorded directly, 2026-11-23
+- Code: verified: `GetEvaluableContent` in `pkg/attestation/crafter/api/attestation/v1/crafting_state.go`. The CLI decodes the first JSON value, as before, so a file of JSON lines keeps its first value. Only a failed decode gives the empty object.
 
 Not shown: 6 smaller decisions of [issue-3063-attestation-repo-config](../specs/issue-3063-attestation-repo-config.md).
 
