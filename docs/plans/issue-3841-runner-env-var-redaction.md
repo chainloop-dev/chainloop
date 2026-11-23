@@ -78,7 +78,8 @@ The env var definition gets an `Identity` flag next to `Optional`. The definitio
 | `pkg/attestation/crafter/runners/runners.go` | Add the `Identity` field to `EnvVarDefinition`, next to `Optional`. Add `KnownIdentityEnvVars`, which returns the names that any runner marks with `Identity`. |
 | `pkg/attestation/crafter/runners/*.go` | Keyed definitions, and the identity flags. |
 | `pkg/attestation/crafter/runners/*_test.go` | Expected definitions with the flags. |
-| `pkg/attestation/crafter/runners/identity_test.go` | Add `TestKnownIdentityEnvVars` and `TestIdentityFlagsPerRunner`: the union, and the flags of each runner. |
+| `pkg/attestation/crafter/runners/identity_test.go` | Add `TestKnownIdentityEnvVars` and `TestIdentityFlagsPerRunner`: the sorted union, and the flags of each runner. |
+| `pkg/attestation/crafter/runner_test.go` | Add `TestKnownIdentityEnvVarsCoversEveryRunner`: each runner of the runner factories has its identity variables in the union. |
 | `.golangci.yml` | Turn off goconst for test files and the runners package, where env var names are data. |
 
 </details>
@@ -115,14 +116,14 @@ The API gets an `EnvVarRedaction` message (type and names) on the organization u
 <details>
 <summary><strong>04 / 07 · The init response gives the setting with the resolved names (R-001, R-004)</strong></summary>
 
-The `attestation init` response carries the setting. For known identity it also carries the names that the control plane enforces at push (spec D-003). The CLI copies the setting into the local attestation state.
+The `attestation init` response carries the setting with the names that the control plane enforces at push, also for known identity (spec D-003). The CLI copies only these names into the local attestation state.
 
 | File | Change |
 |------|--------|
 | `app/controlplane/api/controlplane/v1/workflow_run.proto` | Add the field to the init response. |
-| `pkg/attestation/crafter/api/attestation/v1/crafting_state.proto` | Add the setting to the attestation state. |
+| `pkg/attestation/crafter/api/attestation/v1/crafting_state.proto` | Add the names to redact to the attestation state. |
 | `app/controlplane/internal/service/attestation.go`, `organization.go` | Fill the field with `envVarRedactionForInit`. |
-| `app/cli/pkg/action/attestation_init.go`, `env_var_redaction.go` | Copy the setting into the crafter options. |
+| `app/cli/pkg/action/attestation_init.go` | Copy the names into the crafter options. |
 | `app/controlplane/internal/service/envvarredaction_test.go` | Add `TestEnvVarRedactionForInit`. |
 
 </details>
@@ -130,12 +131,12 @@ The `attestation init` response carries the setting. For known identity it also 
 <details>
 <summary><strong>05 / 07 · The CLI stores `[REDACTED]` for the runner and contract variables (R-002, R-005, R-006)</strong></summary>
 
-After the crafter resolves the runner variables and the env allow list of the contract, it applies the redaction to the result. This happens before it writes the state, so the real value never reaches the state. Known identity uses the names from the state. Custom checks its list. The redaction also applies when the organization skips the runner variables.
+After the crafter resolves the runner variables and the env allow list of the contract, it applies the redaction to the result. This happens before it writes the state, so the real value never reaches the state. The crafter uses the names from the state, so it has no logic for each mode. The redaction also applies when the organization skips the runner variables.
 
 | File | Change |
 |------|--------|
 | `pkg/attestation/crafter/crafter.go` | Add the option, and apply the redaction in `ResolveEnvVars`. |
-| `pkg/attestation/crafter/crafter_test.go` | Add `TestResolveEnvVars` cases: known identity, the list from the control plane, custom on the allow list, skip plus redaction, and an invalid custom list. |
+| `pkg/attestation/crafter/crafter_test.go` | Add `TestResolveEnvVars` cases: the known identity list, names on the runner variables and the allow list, and skip plus redaction. |
 
 </details>
 
@@ -161,8 +162,8 @@ The push check runs after the contract check, in the save and in the check that 
 
 | File | Change |
 |------|--------|
-| `app/controlplane/pkg/biz/workflowrun.go` | Add `validateEnvVarRedaction`, and call it in `SaveAttestation` and `ValidateAttestationContract`. |
-| `app/controlplane/pkg/biz/workflowrun_contract_integration_test.go` | Add `TestSaveAttestationEnforcesEnvVarRedaction`: accepted and rejected pushes, and nothing stored on a rejection. |
+| `app/controlplane/pkg/biz/workflowrun.go` | Add `validatePredicate`, which runs the contract and redaction checks, and call it in `SaveAttestation` and `ValidateAttestationContract`. Load the organization one time for each call. |
+| `app/controlplane/pkg/biz/workflowrun_contract_integration_test.go` | Add `TestSaveAttestationEnforcesEnvVarRedaction`: the pre-CAS check and the save both reject a clear value, accept the other cases, and store nothing on a rejection. |
 
 </details>
 

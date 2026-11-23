@@ -58,7 +58,7 @@ When a redacted variable has a value, the attestation MUST keep the variable nam
 - Done when: in an Azure Pipelines run with known identity, the attestation has `BUILD_REQUESTEDFOR: [REDACTED]`, and `attestation init` does not fail.
 
 ### R-003: Push enforcement
-The control plane MUST reject a pushed attestation when a variable that the setting redacts has a non-empty value other than `[REDACTED]`. The check MUST use the setting of the organization at push time. The error MUST name the variables. It MUST tell the user to update the CLI, or to run the attestation again if the setting changed during the run.
+The control plane MUST reject a pushed attestation when a variable that the setting redacts has a non-empty value other than `[REDACTED]`. The check MUST use the setting of the organization at push time. The control plane MUST run the check before it stores the attestation, also in a CAS backend. The error MUST name the variables. It MUST tell the user to update the CLI, or to run the attestation again if the setting changed during the run.
 - Done when: a CLI without redaction support pushes an attestation that has `GITHUB_ACTOR` with a real value, in an organization with known identity. The push fails.
 
 ### R-004: Known identity list
@@ -80,7 +80,7 @@ The redaction MUST apply to the variables that the runner finds and to the varia
 
 An organization admin sets the mode with `chainloop org update --env-var-redaction none|known-identity|custom`. The repeatable `--redacted-env-var NAME` flag gives the custom list.
 
-The CLI gets the setting from the control plane in the response of `attestation init`, as for the existing runner variable setting. The CLI keeps the setting in the local attestation state. When the CLI resolves the variables of the runner and of the contract, it replaces each redacted value with `[REDACTED]`. It does this before it writes the state. Thus the real value does not go to the state, the signed attestation, or the control plane.
+The CLI gets the setting from the control plane in the response of `attestation init`, as for the existing runner variable setting. The CLI keeps the names to redact in the local attestation state. When the CLI resolves the variables of the runner and of the contract, it replaces each redacted value with `[REDACTED]`. It does this before it writes the state. Thus the real value does not go to the state, the signed attestation, or the control plane.
 
 For the known identity mode, the `attestation init` response also gives the resolved list of names, and the CLI applies that list (D-003). At push, the control plane runs the redaction check next to the existing contract check.
 
@@ -101,7 +101,7 @@ sequenceDiagram
 ## Decision Record
 
 ### D-001: Identity marks live in each runner integration, and the list is their union
-Each runner integration marks which of its variables identify a person. The known identity list is the union of the marks of all runners, and it applies to each attestation.
+Each runner integration marks which of its variables identify a person. The known identity list is the union of the marks of all runners, and it applies to each attestation. TeamCity marks `USER` and `HOME`. Thus the known identity mode also redacts them in attestations from other runners. An example is a contract that adds them to its env allow list.
 - Why: the person who adds or changes a runner integration sees the marks next to the variables. The union does not depend on the runner type that the attestation reports. Thus a client cannot skip the push check with a different runner type.
 - Alternatives considered:
   - One central list, apart from the runner integrations: it gets out of date when a runner integration changes.
