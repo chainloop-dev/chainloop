@@ -128,6 +128,7 @@ func bizOrgToPb(m *biz.Organization) *pb.OrgItem {
 		EnableAiAgentCollector:              m.EnableAIAgentCollector,
 		BlockAttestationsOnReleasedVersions: m.BlockAttestationsOnReleasedVersions,
 		SkipRunnerEnvVars:                   m.SkipRunnerEnvVars,
+		EnvVarRedaction:                     bizEnvVarRedactionToPb(m.EnvVarRedaction),
 	}
 
 	if m.APITokenInactivityThresholdDays != nil {

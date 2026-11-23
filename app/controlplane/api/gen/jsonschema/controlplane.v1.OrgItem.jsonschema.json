@@ -38,6 +38,10 @@
       "description": "Whether AI agent config collection is automatically enabled during attestation init",
       "type": "boolean"
     },
+    "^(env_var_redaction)$": {
+      "$ref": "controlplane.v1.EnvVarRedaction.jsonschema.json",
+      "description": "Redaction of the values of environment variables stored in new attestations"
+    },
     "^(policy_allowed_hostnames)$": {
       "items": {
         "type": "string"
@@ -95,6 +99,10 @@
     "enableAiAgentCollector": {
       "description": "Whether AI agent config collection is automatically enabled during attestation init",
       "type": "boolean"
+    },
+    "envVarRedaction": {
+      "$ref": "controlplane.v1.EnvVarRedaction.jsonschema.json",
+      "description": "Redaction of the values of environment variables stored in new attestations"
     },
     "id": {
       "type": "string"

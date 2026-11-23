@@ -25,6 +25,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/auditor/events"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/authz"
 	config "github.com/chainloop-dev/chainloop/app/controlplane/pkg/conf/controlplane/config/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/envredaction"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/chainloop-dev/chainloop/pkg/servicelogger"
 	"github.com/go-kratos/kratos/v2/log"
@@ -54,8 +55,42 @@ type Organization struct {
 	BlockAttestationsOnReleasedVersions bool
 	// SkipRunnerEnvVars opts out of storing the environment variables automatically discovered by the CI runner in the attestation
 	SkipRunnerEnvVars bool
+	// EnvVarRedaction replaces the values of selected env vars with a placeholder in new attestations. nil = no redaction
+	EnvVarRedaction *EnvVarRedaction
 	// Suspended indicates whether the organization is suspended
 	Suspended bool
+}
+
+// EnvVarRedaction is the org-level setting that redacts environment variable values in attestations.
+type EnvVarRedaction struct {
+	Mode envredaction.Mode `json:"mode"`
+	// EnvVars holds the exact variable names, only for envredaction.ModeCustom
+	EnvVars []string `json:"env_vars,omitempty"`
+}
+
+// Names returns the variable names that the setting redacts. A nil setting redacts nothing.
+func (r *EnvVarRedaction) Names() ([]string, error) {
+	if r == nil {
+		return nil, nil
+	}
+	return envredaction.Names(r.Mode, r.EnvVars)
+}
+
+// normalize validates the setting and returns the value to store. Only the custom mode keeps
+// the variable list, and an empty mode becomes ModeNone, which the repository clears.
+func (r *EnvVarRedaction) normalize() (*EnvVarRedaction, error) {
+	if _, err := r.Names(); err != nil {
+		return nil, NewErrValidation(err)
+	}
+
+	switch r.Mode {
+	case envredaction.ModeKnownIdentity:
+		return &EnvVarRedaction{Mode: r.Mode}, nil
+	case envredaction.ModeCustom:
+		return &EnvVarRedaction{Mode: r.Mode, EnvVars: r.EnvVars}, nil
+	default:
+		return &EnvVarRedaction{Mode: envredaction.ModeNone}, nil
+	}
 }
 
 // OrganizationUpdateOpts holds optional fields for updating an organization.
@@ -70,6 +105,8 @@ type OrganizationUpdateOpts struct {
 	EnableAIAgentCollector              *bool
 	BlockAttestationsOnReleasedVersions *bool
 	SkipRunnerEnvVars                   *bool
+	// EnvVarRedaction nil means no change. A value with envredaction.ModeNone clears the setting.
+	EnvVarRedaction *EnvVarRedaction
 }
 
 type OrganizationRepo interface {
@@ -230,6 +267,17 @@ func (uc *OrganizationUseCase) Update(ctx context.Context, userID, orgName strin
 
 	if opts == nil {
 		opts = &OrganizationUpdateOpts{}
+	}
+
+	if opts.EnvVarRedaction != nil {
+		normalized, err := opts.EnvVarRedaction.normalize()
+		if err != nil {
+			return nil, err
+		}
+		// Copy so the caller's opts are not changed
+		o := *opts
+		o.EnvVarRedaction = normalized
+		opts = &o
 	}
 
 	userUUID, err := uuid.Parse(userID)

@@ -1,5 +1,5 @@
 //
-// Copyright 2024 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -78,13 +78,13 @@ func (s *jenkinsJobSuite) TestCheckEnv() {
 
 func (s *jenkinsJobSuite) TestListEnvVars() {
 	s.Equal([]*EnvVarDefinition{
-		{"JOB_NAME", false},
-		{"BUILD_URL", false},
-		{"GIT_BRANCH", true},
-		{"GIT_COMMIT", true},
-		{"AGENT_WORKDIR", true},
-		{"WORKSPACE", false},
-		{"NODE_NAME", false},
+		{Name: "JOB_NAME"},
+		{Name: "BUILD_URL"},
+		{Name: "GIT_BRANCH", Optional: true},
+		{Name: "GIT_COMMIT", Optional: true},
+		{Name: "AGENT_WORKDIR", Optional: true},
+		{Name: "WORKSPACE"},
+		{Name: "NODE_NAME"},
 	}, s.runner.ListEnvVars())
 }
 

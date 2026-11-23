@@ -4,6 +4,7 @@ import { BrowserHeaders } from "browser-headers";
 import _m0 from "protobufjs/minimal";
 import { OffsetPaginationRequest, OffsetPaginationResponse } from "./pagination";
 import {
+  EnvVarRedaction,
   MembershipRole,
   membershipRoleFromJSON,
   membershipRoleToJSON,
@@ -97,7 +98,11 @@ export interface OrganizationServiceUpdateRequest {
     | boolean
     | undefined;
   /** Opt out of storing the environment variables automatically discovered by the CI runner in the attestation */
-  skipRunnerEnvVars?: boolean | undefined;
+  skipRunnerEnvVars?:
+    | boolean
+    | undefined;
+  /** Redaction of environment variable values in new attestations. Not set means no change. */
+  envVarRedaction?: EnvVarRedaction;
 }
 
 export interface OrganizationServiceUpdateResponse {
@@ -691,6 +696,7 @@ function createBaseOrganizationServiceUpdateRequest(): OrganizationServiceUpdate
     enableAiAgentCollector: undefined,
     blockAttestationsOnReleasedVersions: undefined,
     skipRunnerEnvVars: undefined,
+    envVarRedaction: undefined,
   };
 }
 
@@ -725,6 +731,9 @@ export const OrganizationServiceUpdateRequest = {
     }
     if (message.skipRunnerEnvVars !== undefined) {
       writer.uint32(80).bool(message.skipRunnerEnvVars);
+    }
+    if (message.envVarRedaction !== undefined) {
+      EnvVarRedaction.encode(message.envVarRedaction, writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -806,6 +815,13 @@ export const OrganizationServiceUpdateRequest = {
 
           message.skipRunnerEnvVars = reader.bool();
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.envVarRedaction = EnvVarRedaction.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -839,6 +855,7 @@ export const OrganizationServiceUpdateRequest = {
         ? Boolean(object.blockAttestationsOnReleasedVersions)
         : undefined,
       skipRunnerEnvVars: isSet(object.skipRunnerEnvVars) ? Boolean(object.skipRunnerEnvVars) : undefined,
+      envVarRedaction: isSet(object.envVarRedaction) ? EnvVarRedaction.fromJSON(object.envVarRedaction) : undefined,
     };
   },
 
@@ -863,6 +880,8 @@ export const OrganizationServiceUpdateRequest = {
     message.blockAttestationsOnReleasedVersions !== undefined &&
       (obj.blockAttestationsOnReleasedVersions = message.blockAttestationsOnReleasedVersions);
     message.skipRunnerEnvVars !== undefined && (obj.skipRunnerEnvVars = message.skipRunnerEnvVars);
+    message.envVarRedaction !== undefined &&
+      (obj.envVarRedaction = message.envVarRedaction ? EnvVarRedaction.toJSON(message.envVarRedaction) : undefined);
     return obj;
   },
 
@@ -886,6 +905,9 @@ export const OrganizationServiceUpdateRequest = {
     message.enableAiAgentCollector = object.enableAiAgentCollector ?? undefined;
     message.blockAttestationsOnReleasedVersions = object.blockAttestationsOnReleasedVersions ?? undefined;
     message.skipRunnerEnvVars = object.skipRunnerEnvVars ?? undefined;
+    message.envVarRedaction = (object.envVarRedaction !== undefined && object.envVarRedaction !== null)
+      ? EnvVarRedaction.fromPartial(object.envVarRedaction)
+      : undefined;
     return message;
   },
 };

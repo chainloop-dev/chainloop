@@ -58,15 +58,15 @@ func (r *AzurePipeline) CheckEnv() bool {
 
 func (r *AzurePipeline) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{
-		{"BUILD_REQUESTEDFOREMAIL", true},
-		{"BUILD_REQUESTEDFOR", false},
-		{"BUILD_REPOSITORY_URI", true},
-		{"BUILD_REPOSITORY_NAME", true},
-		{"BUILD_BUILDID", false},
-		{"BUILD_BUILDNUMBER", false},
-		{"BUILD_BUILDURI", false},
-		{"BUILD_REASON", true},
-		{"TF_BUILD", true},
+		{Name: "BUILD_REQUESTEDFOREMAIL", Optional: true, Identity: true},
+		{Name: "BUILD_REQUESTEDFOR", Identity: true},
+		{Name: "BUILD_REPOSITORY_URI", Optional: true},
+		{Name: "BUILD_REPOSITORY_NAME", Optional: true},
+		{Name: "BUILD_BUILDID"},
+		{Name: "BUILD_BUILDNUMBER"},
+		{Name: "BUILD_BUILDURI"},
+		{Name: "BUILD_REASON", Optional: true},
+		{Name: "TF_BUILD", Optional: true},
 	}
 }
 

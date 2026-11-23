@@ -1,5 +1,5 @@
 //
-// Copyright 2025 The Chainloop Authors.
+// Copyright 2025-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -70,14 +70,14 @@ func (s *teamCityPipelineSuite) TestCheckEnv() {
 
 func (s *teamCityPipelineSuite) TestListEnvVars() {
 	s.Equal([]*EnvVarDefinition{
-		{"BUILD_URL", false},
-		{"TEAMCITY_PROJECT_NAME", false},
-		{"TEAMCITY_VERSION", true},
-		{"BUILD_NUMBER", true},
-		{"USER", true},
-		{"TEAMCITY_GIT_VERSION", true},
-		{"BUILD_VCS_NUMBER", true},
-		{"HOME", true},
+		{Name: "BUILD_URL"},
+		{Name: "TEAMCITY_PROJECT_NAME"},
+		{Name: "TEAMCITY_VERSION", Optional: true},
+		{Name: "BUILD_NUMBER", Optional: true},
+		{Name: "USER", Optional: true, Identity: true},
+		{Name: "TEAMCITY_GIT_VERSION", Optional: true},
+		{Name: "BUILD_VCS_NUMBER", Optional: true},
+		{Name: "HOME", Optional: true, Identity: true},
 	}, s.runner.ListEnvVars())
 }
 

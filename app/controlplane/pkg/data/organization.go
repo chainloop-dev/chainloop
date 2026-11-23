@@ -23,6 +23,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/biz"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent"
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/data/ent/organization"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/envredaction"
 	"github.com/chainloop-dev/chainloop/pkg/otelx"
 	"github.com/go-kratos/kratos/v2/log"
 	"github.com/google/uuid"
@@ -111,6 +112,14 @@ func (r *OrganizationRepo) Update(ctx context.Context, id uuid.UUID, updateOpts 
 		query.SetPoliciesAllowedHostnames(updateOpts.PoliciesAllowedHostnames)
 	}
 
+	if r := updateOpts.EnvVarRedaction; r != nil {
+		if r.Mode == envredaction.ModeNone {
+			query.ClearEnvVarRedaction()
+		} else {
+			query.SetEnvVarRedaction(r)
+		}
+	}
+
 	if updateOpts.APITokenInactivityThresholdDays != nil {
 		if *updateOpts.APITokenInactivityThresholdDays == 0 {
 			query.ClearAPITokenInactivityThresholdDays()
@@ -186,6 +195,7 @@ func entOrgToBizOrg(eu *ent.Organization) *biz.Organization {
 		EnableAIAgentCollector:              eu.EnableAiAgentCollector,
 		BlockAttestationsOnReleasedVersions: eu.BlockAttestationsOnReleasedVersions,
 		SkipRunnerEnvVars:                   eu.SkipRunnerEnvVars,
+		EnvVarRedaction:                     eu.EnvVarRedaction,
 		Suspended:                           eu.Suspended,
 	}
 }

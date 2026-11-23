@@ -65,6 +65,10 @@ linters:
     rules:
       - path: _test\.go
         text: Potential hardcoded credentials
+      # Env var names in runner definitions are data, not magic strings
+      - path: pkg/attestation/crafter/runners/
+        linters:
+          - goconst
       - linters:
           - staticcheck
         text: 'SA1019.*crafting_schema\.proto'

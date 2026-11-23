@@ -1,5 +1,5 @@
 //
-// Copyright 2024-2025 The Chainloop Authors.
+// Copyright 2024-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -93,18 +93,18 @@ func (s *githubActionSuite) TestCheckEnv() {
 
 func (s *githubActionSuite) TestListEnvVars() {
 	s.Equal([]*EnvVarDefinition{
-		{"GITHUB_ACTOR", false},
-		{"GITHUB_REF", false},
-		{"GITHUB_REPOSITORY", false},
-		{"GITHUB_REPOSITORY_OWNER", false},
-		{"GITHUB_RUN_ID", false},
-		{"GITHUB_SHA", false},
-		{"RUNNER_NAME", false},
-		{"RUNNER_OS", false},
-		{"GITHUB_EVENT_NAME", true},
-		{"GITHUB_HEAD_REF", true},
-		{"GITHUB_BASE_REF", true},
-		{"GITHUB_EVENT_PATH", true},
+		{Name: "GITHUB_ACTOR", Identity: true},
+		{Name: "GITHUB_REF"},
+		{Name: "GITHUB_REPOSITORY"},
+		{Name: "GITHUB_REPOSITORY_OWNER"},
+		{Name: "GITHUB_RUN_ID"},
+		{Name: "GITHUB_SHA"},
+		{Name: "RUNNER_NAME"},
+		{Name: "RUNNER_OS"},
+		{Name: "GITHUB_EVENT_NAME", Optional: true},
+		{Name: "GITHUB_HEAD_REF", Optional: true},
+		{Name: "GITHUB_BASE_REF", Optional: true},
+		{Name: "GITHUB_EVENT_PATH", Optional: true},
 	}, s.runner.ListEnvVars())
 }
 

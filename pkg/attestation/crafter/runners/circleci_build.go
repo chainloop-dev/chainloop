@@ -50,15 +50,15 @@ func (r *CircleCIBuild) CheckEnv() bool {
 func (r *CircleCIBuild) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{
 		// Some info about the job
-		{"CIRCLE_BUILD_URL", false},
-		{"CIRCLE_JOB", false},
+		{Name: "CIRCLE_BUILD_URL"},
+		{Name: "CIRCLE_JOB"},
 
 		// Some info about the commit
-		{"CIRCLE_BRANCH", false},
+		{Name: "CIRCLE_BRANCH"},
 
 		// Some info about the agent
-		{"CIRCLE_NODE_TOTAL", false},
-		{"CIRCLE_NODE_INDEX", false},
+		{Name: "CIRCLE_NODE_TOTAL"},
+		{Name: "CIRCLE_NODE_INDEX"},
 	}
 }
 

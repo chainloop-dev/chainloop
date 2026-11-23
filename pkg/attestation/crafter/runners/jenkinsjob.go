@@ -51,21 +51,21 @@ func (r *JenkinsJob) CheckEnv() bool {
 func (r *JenkinsJob) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{
 		// Some info about the job
-		{"JOB_NAME", false},
-		{"BUILD_URL", false},
+		{Name: "JOB_NAME"},
+		{Name: "BUILD_URL"},
 
 		// Some info about the commit (Jenkins Git Plugin)
 		// NOTE: These variables are marked as optional because their presence
 		//       depends the jenkins' configuration (e.g., multibranch pipelines).
-		{"GIT_BRANCH", true},
-		{"GIT_COMMIT", true},
+		{Name: "GIT_BRANCH", Optional: true},
+		{Name: "GIT_COMMIT", Optional: true},
 
 		// Some info about the agent
 		// We've found this one to be optional
-		{"AGENT_WORKDIR", true},
+		{Name: "AGENT_WORKDIR", Optional: true},
 		// Workspace is required as long as the jobs run inside a `node` block
-		{"WORKSPACE", false},
-		{"NODE_NAME", false},
+		{Name: "WORKSPACE"},
+		{Name: "NODE_NAME"},
 	}
 }
 

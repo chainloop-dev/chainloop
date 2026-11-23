@@ -18,8 +18,11 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/chainloop-dev/chainloop/app/cli/pkg/action"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/crafter/runners"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/envredaction"
 	"github.com/spf13/cobra"
 )
 
@@ -34,6 +37,8 @@ func newOrganizationUpdateCmd() *cobra.Command {
 		enableAIAgentCollector              bool
 		blockAttestationsOnReleasedVersions bool
 		skipRunnerEnvVars                   bool
+		envVarRedaction                     string
+		redactedEnvVars                     []string
 	)
 
 	cmd := &cobra.Command{
@@ -69,6 +74,14 @@ func newOrganizationUpdateCmd() *cobra.Command {
 				opts.SkipRunnerEnvVars = &skipRunnerEnvVars
 			}
 
+			if cmd.Flags().Changed("env-var-redaction") || cmd.Flags().Changed("redacted-env-var") {
+				redaction, err := action.NewEnvVarRedactionPb(envVarRedaction, redactedEnvVars)
+				if err != nil {
+					return err
+				}
+				opts.EnvVarRedaction = redaction
+			}
+
 			if cmd.Flags().Changed("api-token-max-days-inactive") {
 				days, err := strconv.Atoi(apiTokenMaxDaysInactive)
 				if err != nil {
@@ -102,5 +115,10 @@ func newOrganizationUpdateCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&enableAIAgentCollector, "enable-ai-agent-collector", false, "enable automatic AI agent config collection during attestation init")
 	cmd.Flags().BoolVar(&blockAttestationsOnReleasedVersions, "block-attestations-on-released-versions", false, "reject new attestations pushed to project versions that are already released")
 	cmd.Flags().BoolVar(&skipRunnerEnvVars, "skip-runner-env-vars", false, "opt out of storing the environment variables automatically discovered by the CI runner in the attestation")
+	cmd.Flags().StringVar(&envVarRedaction, "env-var-redaction", "", fmt.Sprintf(
+		"replace the values of environment variables with %s in new attestations, one of: %s, %s (variables that identify a person: %s), %s (the variables in --redacted-env-var)",
+		envredaction.RedactedValue, envredaction.ModeNone, envredaction.ModeKnownIdentity,
+		strings.Join(runners.KnownIdentityEnvVars(), ", "), envredaction.ModeCustom))
+	cmd.Flags().StringArrayVar(&redactedEnvVars, "redacted-env-var", nil, "exact name of an environment variable to redact, can be set multiple times. Requires --env-var-redaction custom")
 	return cmd
 }

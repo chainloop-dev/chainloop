@@ -431,6 +431,16 @@ func SkipRunnerEnvVarsNEQ(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldNEQ(FieldSkipRunnerEnvVars, v))
 }
 
+// EnvVarRedactionIsNil applies the IsNil predicate on the "env_var_redaction" field.
+func EnvVarRedactionIsNil() predicate.Organization {
+	return predicate.Organization(sql.FieldIsNull(FieldEnvVarRedaction))
+}
+
+// EnvVarRedactionNotNil applies the NotNil predicate on the "env_var_redaction" field.
+func EnvVarRedactionNotNil() predicate.Organization {
+	return predicate.Organization(sql.FieldNotNull(FieldEnvVarRedaction))
+}
+
 // SuspendedEQ applies the EQ predicate on the "suspended" field.
 func SuspendedEQ(v bool) predicate.Organization {
 	return predicate.Organization(sql.FieldEQ(FieldSuspended, v))

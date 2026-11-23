@@ -232,6 +232,11 @@ func (s *AttestationService) Init(ctx context.Context, req *cpAPI.AttestationSer
 		SkipRunnerEnvVars:        org.SkipRunnerEnvVars,
 	}
 
+	resp.RedactedEnvVars, err = org.EnvVarRedaction.Names()
+	if err != nil {
+		return nil, handleUseCaseErr(ctx, err, s.log)
+	}
+
 	resp.SigningOptions = &cpAPI.AttestationServiceInitResponse_SigningOptions{}
 	tsa := s.signingUseCase.GetCurrentTSA()
 	if tsa != nil {
@@ -338,9 +343,9 @@ func (s *AttestationService) storeAttestation(ctx context.Context, bundle []byte
 		}
 
 		// On this path the bundle reaches CAS before SaveAttestation gets to
-		// validate it, so the contract is checked up front. Otherwise an
-		// attestation rejected for violating its contract would still have left
-		// a blob behind in the CAS backend.
+		// validate it, so the contract and the env var redaction are checked up
+		// front. Otherwise a rejected attestation would still have left a blob
+		// behind in the CAS backend.
 		if err = s.wrUseCase.ValidateAttestationContract(ctx, workflowRunID, bundle); err != nil {
 			return nil, handleUseCaseErr(ctx, err, s.log)
 		}

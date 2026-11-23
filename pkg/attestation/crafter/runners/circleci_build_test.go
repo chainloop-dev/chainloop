@@ -1,5 +1,5 @@
 //
-// Copyright 2023 The Chainloop Authors.
+// Copyright 2023-2026 The Chainloop Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,11 +89,11 @@ func (s *circleCIBuildSuite) TestCheckEnv() {
 
 func (s *circleCIBuildSuite) TestListEnvVars() {
 	s.Equal([]*EnvVarDefinition{
-		{"CIRCLE_BUILD_URL", false},
-		{"CIRCLE_JOB", false},
-		{"CIRCLE_BRANCH", false},
-		{"CIRCLE_NODE_TOTAL", false},
-		{"CIRCLE_NODE_INDEX", false},
+		{Name: "CIRCLE_BUILD_URL"},
+		{Name: "CIRCLE_JOB"},
+		{Name: "CIRCLE_BRANCH"},
+		{Name: "CIRCLE_NODE_TOTAL"},
+		{Name: "CIRCLE_NODE_INDEX"},
 	}, s.runner.ListEnvVars())
 }
 

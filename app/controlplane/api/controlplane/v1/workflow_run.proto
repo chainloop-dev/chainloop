@@ -154,6 +154,9 @@ message AttestationServiceInitResponse {
     bool enable_ai_agent_collector = 8;
     // Whether to skip storing the environment variables automatically discovered by the CI runner in the attestation
     bool skip_runner_env_vars = 9;
+    // Names of the environment variables whose values the CLI replaces with "[REDACTED]".
+    // The control plane resolves them from the org setting and enforces the same list at push.
+    repeated string redacted_env_vars = 10;
   }
 
   message SigningOptions {

@@ -39,6 +39,8 @@ const (
 	FieldBlockAttestationsOnReleasedVersions = "block_attestations_on_released_versions"
 	// FieldSkipRunnerEnvVars holds the string denoting the skip_runner_env_vars field in the database.
 	FieldSkipRunnerEnvVars = "skip_runner_env_vars"
+	// FieldEnvVarRedaction holds the string denoting the env_var_redaction field in the database.
+	FieldEnvVarRedaction = "env_var_redaction"
 	// FieldSuspended holds the string denoting the suspended field in the database.
 	FieldSuspended = "suspended"
 	// EdgeMemberships holds the string denoting the memberships edge name in mutations.
@@ -141,6 +143,7 @@ var Columns = []string{
 	FieldEnableAiAgentCollector,
 	FieldBlockAttestationsOnReleasedVersions,
 	FieldSkipRunnerEnvVars,
+	FieldEnvVarRedaction,
 	FieldSuspended,
 }
 

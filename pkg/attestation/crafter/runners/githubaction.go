@@ -93,19 +93,19 @@ func (r *GitHubAction) CheckEnv() bool {
 
 func (r *GitHubAction) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{
-		{"GITHUB_ACTOR", false},
-		{"GITHUB_REF", false},
-		{"GITHUB_REPOSITORY", false},
-		{"GITHUB_REPOSITORY_OWNER", false},
-		{"GITHUB_RUN_ID", false},
-		{"GITHUB_SHA", false},
-		{"RUNNER_NAME", false},
-		{"RUNNER_OS", false},
+		{Name: "GITHUB_ACTOR", Identity: true},
+		{Name: "GITHUB_REF"},
+		{Name: "GITHUB_REPOSITORY"},
+		{Name: "GITHUB_REPOSITORY_OWNER"},
+		{Name: "GITHUB_RUN_ID"},
+		{Name: "GITHUB_SHA"},
+		{Name: "RUNNER_NAME"},
+		{Name: "RUNNER_OS"},
 		// PR-specific variables (optional - only present in PR contexts)
-		{"GITHUB_EVENT_NAME", true},
-		{"GITHUB_HEAD_REF", true},
-		{"GITHUB_BASE_REF", true},
-		{"GITHUB_EVENT_PATH", true},
+		{Name: "GITHUB_EVENT_NAME", Optional: true},
+		{Name: "GITHUB_HEAD_REF", Optional: true},
+		{Name: "GITHUB_BASE_REF", Optional: true},
+		{Name: "GITHUB_EVENT_PATH", Optional: true},
 	}
 }
 

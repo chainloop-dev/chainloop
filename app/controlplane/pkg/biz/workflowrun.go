@@ -29,6 +29,7 @@ import (
 	"github.com/chainloop-dev/chainloop/app/controlplane/pkg/pagination"
 	"github.com/chainloop-dev/chainloop/pkg/attestation"
 	attestationapi "github.com/chainloop-dev/chainloop/pkg/attestation/crafter/api/attestation/v1"
+	"github.com/chainloop-dev/chainloop/pkg/attestation/envredaction"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/renderer/chainloop"
 	"github.com/chainloop-dev/chainloop/pkg/attestation/verifier"
 	"github.com/chainloop-dev/chainloop/pkg/cache/attestationbundle"
@@ -422,24 +423,63 @@ func WithSkipBundlePersistence() SaveAttestationOption {
 	}
 }
 
-// orgBlocksReleasedVersions reports whether the run's organization rejects new
-// attestations targeting already-released (immutable) project versions. The
-// actual prerelease check happens transactionally at persistence time (see the
-// repo SaveAttestation* methods) so it is atomic with the write and can't be
-// bypassed by a concurrent release.
-func (uc *WorkflowRunUseCase) orgBlocksReleasedVersions(ctx context.Context, run *WorkflowRun) (bool, error) {
+// runOrg returns the organization that owns the run, or nil when the run has no workflow loaded.
+func (uc *WorkflowRunUseCase) runOrg(ctx context.Context, run *WorkflowRun) (*Organization, error) {
 	if run.Workflow == nil {
-		return false, nil
+		return nil, nil
 	}
 
 	org, err := uc.orgRepo.FindByID(ctx, run.Workflow.OrgID)
 	if err != nil {
-		return false, fmt.Errorf("finding organization: %w", err)
+		return nil, fmt.Errorf("finding organization: %w", err)
 	} else if org == nil {
-		return false, NewErrNotFound("organization")
+		return nil, NewErrNotFound("organization")
 	}
 
-	return org.BlockAttestationsOnReleasedVersions, nil
+	return org, nil
+}
+
+// validatePredicate runs the checks on the content of a pushed attestation that
+// do not depend on how it is stored. Both SaveAttestation and the pre-CAS
+// ValidateAttestationContract call it, so they reach the same verdict.
+// org is the organization of the run, nil when the run has no workflow loaded.
+// It returns the contract schema it validated against.
+func (uc *WorkflowRunUseCase) validatePredicate(ctx context.Context, run *WorkflowRun, org *Organization, predicate chainloop.NormalizablePredicate) (*schemaapi.CraftingSchema, error) {
+	schema, err := uc.validateAgainstContract(ctx, run, predicate)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := validateEnvVarRedaction(org, predicate); err != nil {
+		return nil, err
+	}
+
+	return schema, nil
+}
+
+// validateEnvVarRedaction rejects an attestation that stores a clear value for an
+// env var that the organization redacts.
+//
+// The CLI applies the redaction before it signs the attestation, so an older or
+// modified client can push the real value. The check uses the organization
+// setting at push time.
+func validateEnvVarRedaction(org *Organization, predicate chainloop.NormalizablePredicate) error {
+	if org == nil {
+		return nil
+	}
+
+	names, err := org.EnvVarRedaction.Names()
+	if err != nil {
+		return fmt.Errorf("resolving env var redaction: %w", err)
+	}
+
+	if violations := envredaction.Violations(predicate.GetEnvVars(), names); len(violations) > 0 {
+		return NewErrValidation(fmt.Errorf(
+			"environment variables %s must have the value %s because of the organization env var redaction setting. Update the Chainloop CLI, or run the attestation again if the setting changed during the run",
+			strings.Join(violations, ", "), envredaction.RedactedValue))
+	}
+
+	return nil
 }
 
 // ValidateAttestationContract checks a bundle's signature and the contract
@@ -479,7 +519,12 @@ func (uc *WorkflowRunUseCase) ValidateAttestationContract(ctx context.Context, r
 		return fmt.Errorf("extracting predicate: %w", err)
 	}
 
-	_, err = uc.validateAgainstContract(ctx, run, predicate)
+	org, err := uc.runOrg(ctx, run)
+	if err != nil {
+		return err
+	}
+
+	_, err = uc.validatePredicate(ctx, run, org, predicate)
 	return err
 }
 
@@ -550,10 +595,16 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		return nil, NewErrNotFound("workflow run")
 	}
 
-	blockReleasedVersions, err := uc.orgBlocksReleasedVersions(ctx, run)
+	org, err := uc.runOrg(ctx, run)
 	if err != nil {
 		return nil, err
 	}
+
+	// Whether the org rejects new attestations targeting already-released
+	// (immutable) project versions. The actual prerelease check happens
+	// transactionally at persistence time (see the repo SaveAttestation* methods)
+	// so it is atomic with the write and can't be bypassed by a concurrent release.
+	blockReleasedVersions := org != nil && org.BlockAttestationsOnReleasedVersions
 
 	// calculate the content digest
 	// Todo: this should be calculated in the use case
@@ -591,7 +642,7 @@ func (uc *WorkflowRunUseCase) SaveAttestation(ctx context.Context, id string, bu
 		}
 	}
 
-	contractSchema, err := uc.validateAgainstContract(ctx, run, predicate)
+	contractSchema, err := uc.validatePredicate(ctx, run, org, predicate)
 	if err != nil {
 		return nil, err
 	}

@@ -974,6 +974,8 @@ export interface OrgItem {
   blockAttestationsOnReleasedVersions: boolean;
   /** Whether the environment variables automatically discovered by the CI runner are skipped from the attestation */
   skipRunnerEnvVars: boolean;
+  /** Redaction of the values of environment variables stored in new attestations */
+  envVarRedaction?: EnvVarRedaction;
 }
 
 export enum OrgItem_PolicyViolationBlockingStrategy {
@@ -1010,6 +1012,58 @@ export function orgItem_PolicyViolationBlockingStrategyToJSON(object: OrgItem_Po
     case OrgItem_PolicyViolationBlockingStrategy.POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY:
       return "POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY";
     case OrgItem_PolicyViolationBlockingStrategy.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+/**
+ * EnvVarRedaction configures which environment variable values are replaced with "[REDACTED]"
+ * in new attestations. It applies to runner-discovered variables and to the contract's env allow list.
+ */
+export interface EnvVarRedaction {
+  type: EnvVarRedaction_Type;
+  /** Exact variable names. Required when type is TYPE_CUSTOM. */
+  envVars: string[];
+}
+
+export enum EnvVarRedaction_Type {
+  /** TYPE_UNSPECIFIED - no redaction */
+  TYPE_UNSPECIFIED = 0,
+  /** TYPE_KNOWN_IDENTITY - redact the variables that Chainloop runner integrations mark as identifying a person */
+  TYPE_KNOWN_IDENTITY = 1,
+  /** TYPE_CUSTOM - redact only the variables listed in env_vars */
+  TYPE_CUSTOM = 2,
+  UNRECOGNIZED = -1,
+}
+
+export function envVarRedaction_TypeFromJSON(object: any): EnvVarRedaction_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return EnvVarRedaction_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "TYPE_KNOWN_IDENTITY":
+      return EnvVarRedaction_Type.TYPE_KNOWN_IDENTITY;
+    case 2:
+    case "TYPE_CUSTOM":
+      return EnvVarRedaction_Type.TYPE_CUSTOM;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return EnvVarRedaction_Type.UNRECOGNIZED;
+  }
+}
+
+export function envVarRedaction_TypeToJSON(object: EnvVarRedaction_Type): string {
+  switch (object) {
+    case EnvVarRedaction_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case EnvVarRedaction_Type.TYPE_KNOWN_IDENTITY:
+      return "TYPE_KNOWN_IDENTITY";
+    case EnvVarRedaction_Type.TYPE_CUSTOM:
+      return "TYPE_CUSTOM";
+    case EnvVarRedaction_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
@@ -4629,6 +4683,7 @@ function createBaseOrgItem(): OrgItem {
     enableAiAgentCollector: false,
     blockAttestationsOnReleasedVersions: false,
     skipRunnerEnvVars: false,
+    envVarRedaction: undefined,
   };
 }
 
@@ -4669,6 +4724,9 @@ export const OrgItem = {
     }
     if (message.skipRunnerEnvVars === true) {
       writer.uint32(96).bool(message.skipRunnerEnvVars);
+    }
+    if (message.envVarRedaction !== undefined) {
+      EnvVarRedaction.encode(message.envVarRedaction, writer.uint32(106).fork()).ldelim();
     }
     return writer;
   },
@@ -4764,6 +4822,13 @@ export const OrgItem = {
 
           message.skipRunnerEnvVars = reader.bool();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.envVarRedaction = EnvVarRedaction.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4799,6 +4864,7 @@ export const OrgItem = {
         ? Boolean(object.blockAttestationsOnReleasedVersions)
         : false,
       skipRunnerEnvVars: isSet(object.skipRunnerEnvVars) ? Boolean(object.skipRunnerEnvVars) : false,
+      envVarRedaction: isSet(object.envVarRedaction) ? EnvVarRedaction.fromJSON(object.envVarRedaction) : undefined,
     };
   },
 
@@ -4827,6 +4893,8 @@ export const OrgItem = {
     message.blockAttestationsOnReleasedVersions !== undefined &&
       (obj.blockAttestationsOnReleasedVersions = message.blockAttestationsOnReleasedVersions);
     message.skipRunnerEnvVars !== undefined && (obj.skipRunnerEnvVars = message.skipRunnerEnvVars);
+    message.envVarRedaction !== undefined &&
+      (obj.envVarRedaction = message.envVarRedaction ? EnvVarRedaction.toJSON(message.envVarRedaction) : undefined);
     return obj;
   },
 
@@ -4848,6 +4916,84 @@ export const OrgItem = {
     message.enableAiAgentCollector = object.enableAiAgentCollector ?? false;
     message.blockAttestationsOnReleasedVersions = object.blockAttestationsOnReleasedVersions ?? false;
     message.skipRunnerEnvVars = object.skipRunnerEnvVars ?? false;
+    message.envVarRedaction = (object.envVarRedaction !== undefined && object.envVarRedaction !== null)
+      ? EnvVarRedaction.fromPartial(object.envVarRedaction)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseEnvVarRedaction(): EnvVarRedaction {
+  return { type: 0, envVars: [] };
+}
+
+export const EnvVarRedaction = {
+  encode(message: EnvVarRedaction, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
+    }
+    for (const v of message.envVars) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): EnvVarRedaction {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnvVarRedaction();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.type = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.envVars.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnvVarRedaction {
+    return {
+      type: isSet(object.type) ? envVarRedaction_TypeFromJSON(object.type) : 0,
+      envVars: Array.isArray(object?.envVars) ? object.envVars.map((e: any) => String(e)) : [],
+    };
+  },
+
+  toJSON(message: EnvVarRedaction): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = envVarRedaction_TypeToJSON(message.type));
+    if (message.envVars) {
+      obj.envVars = message.envVars.map((e) => e);
+    } else {
+      obj.envVars = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EnvVarRedaction>, I>>(base?: I): EnvVarRedaction {
+    return EnvVarRedaction.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<EnvVarRedaction>, I>>(object: I): EnvVarRedaction {
+    const message = createBaseEnvVarRedaction();
+    message.type = object.type ?? 0;
+    message.envVars = object.envVars?.map((e) => e) || [];
     return message;
   },
 };

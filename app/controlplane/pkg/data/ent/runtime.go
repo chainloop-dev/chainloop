@@ -241,7 +241,7 @@ func init() {
 	// organization.DefaultSkipRunnerEnvVars holds the default value on creation for the skip_runner_env_vars field.
 	organization.DefaultSkipRunnerEnvVars = organizationDescSkipRunnerEnvVars.Default.(bool)
 	// organizationDescSuspended is the schema descriptor for suspended field.
-	organizationDescSuspended := organizationFields[13].Descriptor()
+	organizationDescSuspended := organizationFields[14].Descriptor()
 	// organization.DefaultSuspended holds the default value on creation for the suspended field.
 	organization.DefaultSuspended = organizationDescSuspended.Default.(bool)
 	// organizationDescID is the schema descriptor for id field.

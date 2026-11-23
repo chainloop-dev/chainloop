@@ -54,24 +54,24 @@ func (r *DaggerPipeline) CheckEnv() bool {
 func (r *DaggerPipeline) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{
 		// Version of the Chainloop Client
-		{"CHAINLOOP_DAGGER_CLIENT", false},
+		{Name: "CHAINLOOP_DAGGER_CLIENT"},
 		// Github Actions PR-specific variables (optional - only present in PR contexts)
-		{"GITHUB_EVENT_NAME", true},
-		{"GITHUB_HEAD_REF", true},
-		{"GITHUB_BASE_REF", true},
-		{"GITHUB_EVENT_PATH", true},
+		{Name: "GITHUB_EVENT_NAME", Optional: true},
+		{Name: "GITHUB_HEAD_REF", Optional: true},
+		{Name: "GITHUB_BASE_REF", Optional: true},
+		{Name: "GITHUB_EVENT_PATH", Optional: true},
 		// Gitlab CI MR-specific variables (optional - only present in MR contexts)
-		{"CI_PIPELINE_SOURCE", true},
-		{"CI_MERGE_REQUEST_IID", true},
-		{"CI_MERGE_REQUEST_TITLE", true},
-		{"CI_MERGE_REQUEST_DESCRIPTION", true},
-		{"CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", true},
-		{"CI_MERGE_REQUEST_TARGET_BRANCH_NAME", true},
-		{"CI_MERGE_REQUEST_PROJECT_URL", true},
-		{"CI_MERGE_REQUEST_PROJECT_PATH", true},
-		{"CI_SERVER_URL", true},
-		{"CI_PROJECT_PATH", true},
-		{"GITLAB_USER_LOGIN", true},
+		{Name: "CI_PIPELINE_SOURCE", Optional: true},
+		{Name: "CI_MERGE_REQUEST_IID", Optional: true},
+		{Name: "CI_MERGE_REQUEST_TITLE", Optional: true},
+		{Name: "CI_MERGE_REQUEST_DESCRIPTION", Optional: true},
+		{Name: "CI_MERGE_REQUEST_SOURCE_BRANCH_NAME", Optional: true},
+		{Name: "CI_MERGE_REQUEST_TARGET_BRANCH_NAME", Optional: true},
+		{Name: "CI_MERGE_REQUEST_PROJECT_URL", Optional: true},
+		{Name: "CI_MERGE_REQUEST_PROJECT_PATH", Optional: true},
+		{Name: "CI_SERVER_URL", Optional: true},
+		{Name: "CI_PROJECT_PATH", Optional: true},
+		{Name: "GITLAB_USER_LOGIN", Optional: true, Identity: true},
 	}
 }
 

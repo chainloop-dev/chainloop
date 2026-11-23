@@ -428,12 +428,30 @@ message OrgItem {
   bool block_attestations_on_released_versions = 11;
   // Whether the environment variables automatically discovered by the CI runner are skipped from the attestation
   bool skip_runner_env_vars = 12;
+  // Redaction of the values of environment variables stored in new attestations
+  EnvVarRedaction env_var_redaction = 13;
 
   enum PolicyViolationBlockingStrategy {
     POLICY_VIOLATION_BLOCKING_STRATEGY_UNSPECIFIED = 0;
     POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK = 1;
     POLICY_VIOLATION_BLOCKING_STRATEGY_ADVISORY = 2;
   }
+}
+
+// EnvVarRedaction configures which environment variable values are replaced with "[REDACTED]"
+// in new attestations. It applies to runner-discovered variables and to the contract's env allow list.
+message EnvVarRedaction {
+  enum Type {
+    // no redaction
+    TYPE_UNSPECIFIED = 0;
+    // redact the variables that Chainloop runner integrations mark as identifying a person
+    TYPE_KNOWN_IDENTITY = 1;
+    // redact only the variables listed in env_vars
+    TYPE_CUSTOM = 2;
+  }
+  Type type = 1;
+  // Exact variable names. Required when type is TYPE_CUSTOM.
+  repeated string env_vars = 2;
 }
 
 message CASBackendItem {

@@ -45,6 +45,13 @@
       },
       "type": "array"
     },
+    "^(redactedEnvVars)$": {
+      "description": "exact names of the environment variables whose values are replaced with \"[REDACTED]\",\n as resolved by the control plane from the organization setting.\n It applies to the runner env vars and to the contract's env_allow_list.",
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
     "^(runnerEnvironment)$": {
       "$ref": "attestation.v1.RunnerEnvironment.schema.json",
       "description": "Runner environment in which the attestation was crafted"
@@ -154,6 +161,13 @@
       "description": "Policies that materials in this attestation were validated against",
       "items": {
         "$ref": "attestation.v1.PolicyEvaluation.schema.json"
+      },
+      "type": "array"
+    },
+    "redacted_env_vars": {
+      "description": "exact names of the environment variables whose values are replaced with \"[REDACTED]\",\n as resolved by the control plane from the organization setting.\n It applies to the runner env vars and to the contract's env_allow_list.",
+      "items": {
+        "type": "string"
       },
       "type": "array"
     },

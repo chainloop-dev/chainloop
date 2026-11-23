@@ -29,16 +29,17 @@ type MembershipList struct {
 }
 
 type OrgItem struct {
-	ID                                  string     `json:"id"`
-	Name                                string     `json:"name"`
-	CreatedAt                           *time.Time `json:"createdAt"`
-	PolicyViolationBlockingStrategy     string     `json:"policyViolationBlockingStrategy"`
-	PolicyAllowedHostnames              []string   `json:"policyAllowedHostnames,omitempty"`
-	PreventImplicitWorkflowCreation     bool       `json:"preventImplicitWorkflowCreation"`
-	APITokenMaxDaysInactive             *string    `json:"apiTokenMaxDaysInactive,omitempty"`
-	EnableAIAgentCollector              bool       `json:"enableAiAgentCollector"`
-	BlockAttestationsOnReleasedVersions bool       `json:"blockAttestationsOnReleasedVersions"`
-	SkipRunnerEnvVars                   bool       `json:"skipRunnerEnvVars"`
+	ID                                  string               `json:"id"`
+	Name                                string               `json:"name"`
+	CreatedAt                           *time.Time           `json:"createdAt"`
+	PolicyViolationBlockingStrategy     string               `json:"policyViolationBlockingStrategy"`
+	PolicyAllowedHostnames              []string             `json:"policyAllowedHostnames,omitempty"`
+	PreventImplicitWorkflowCreation     bool                 `json:"preventImplicitWorkflowCreation"`
+	APITokenMaxDaysInactive             *string              `json:"apiTokenMaxDaysInactive,omitempty"`
+	EnableAIAgentCollector              bool                 `json:"enableAiAgentCollector"`
+	BlockAttestationsOnReleasedVersions bool                 `json:"blockAttestationsOnReleasedVersions"`
+	SkipRunnerEnvVars                   bool                 `json:"skipRunnerEnvVars"`
+	EnvVarRedaction                     *EnvVarRedactionItem `json:"envVarRedaction,omitempty"`
 }
 
 type MembershipItem struct {
@@ -144,6 +145,7 @@ func pbOrgItemToAction(in *pb.OrgItem) *OrgItem {
 		EnableAIAgentCollector:              in.EnableAiAgentCollector,
 		BlockAttestationsOnReleasedVersions: in.BlockAttestationsOnReleasedVersions,
 		SkipRunnerEnvVars:                   in.SkipRunnerEnvVars,
+		EnvVarRedaction:                     pbEnvVarRedactionToAction(in.GetEnvVarRedaction()),
 	}
 
 	if in.DefaultPolicyViolationStrategy == pb.OrgItem_POLICY_VIOLATION_BLOCKING_STRATEGY_BLOCK {

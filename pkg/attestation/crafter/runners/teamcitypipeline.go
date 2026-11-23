@@ -44,14 +44,14 @@ func (r *TeamCityPipeline) CheckEnv() bool {
 
 func (r *TeamCityPipeline) ListEnvVars() []*EnvVarDefinition {
 	return []*EnvVarDefinition{
-		{"BUILD_URL", false},
-		{"TEAMCITY_PROJECT_NAME", false},
-		{"TEAMCITY_VERSION", true},
-		{"BUILD_NUMBER", true},
-		{"USER", true},
-		{"TEAMCITY_GIT_VERSION", true},
-		{"BUILD_VCS_NUMBER", true},
-		{"HOME", true},
+		{Name: "BUILD_URL"},
+		{Name: "TEAMCITY_PROJECT_NAME"},
+		{Name: "TEAMCITY_VERSION", Optional: true},
+		{Name: "BUILD_NUMBER", Optional: true},
+		{Name: "USER", Optional: true, Identity: true},
+		{Name: "TEAMCITY_GIT_VERSION", Optional: true},
+		{Name: "BUILD_VCS_NUMBER", Optional: true},
+		{Name: "HOME", Optional: true, Identity: true},
 	}
 }
 

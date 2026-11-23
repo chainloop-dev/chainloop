@@ -167,6 +167,11 @@ message Attestation {
   // The contract's env_allow_list is not affected by this flag.
   bool skip_runner_env_vars = 20;
 
+  // exact names of the environment variables whose values are replaced with "[REDACTED]",
+  // as resolved by the control plane from the organization setting.
+  // It applies to the runner env vars and to the contract's env_allow_list.
+  repeated string redacted_env_vars = 21;
+
   message Auth {
     AuthType type = 1 [(buf.validate.field).enum = {
       not_in: [0]
