@@ -74,7 +74,7 @@ jobs:
           cd ~/.local
           curl -sfL https://dl.dagger.io/dagger/install.sh -o /tmp/dagger-install.sh
           echo "${INSTALLER_SHA256}  /tmp/dagger-install.sh" | sha256sum -c -
-          DAGGER_VERSION=0.21.10 sh /tmp/dagger-install.sh
+          DAGGER_VERSION=0.19.11 sh /tmp/dagger-install.sh
 
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
