@@ -119,10 +119,13 @@ func newVaultCredentialsManager(conf *api.Credentials_Vault, prefix string, r cr
 	}
 
 	opts := &vault.NewManagerOpts{
-		AuthToken: conf.Token, Address: conf.Address,
+		AuthToken: conf.GetToken(), Address: conf.GetAddress(),
 		MountPath: conf.MountPath, Logger: l,
 		SecretPrefix: prefix,
 		Role:         r,
+	}
+	if k := conf.GetKubernetesAuth(); k != nil {
+		opts.KubernetesAuth = &vault.KubernetesAuthOpts{Role: k.GetRole(), MountPath: k.GetMountPath(), TokenPath: k.GetTokenPath()}
 	}
 
 	m, err := vault.NewManager(opts)
