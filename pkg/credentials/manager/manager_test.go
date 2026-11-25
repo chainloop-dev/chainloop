@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -97,7 +98,25 @@ func (s *testSuite) TestNewAzureManagerFromConfig() {
 	}
 }
 
+// isolateAWSEnv keeps the default credential chain off the developer's machine and the network: no ~/.aws files, no
+// profile, no IMDS (the same isolation as pkg/credentials/aws's tests).
+func isolateAWSEnv(t *testing.T) {
+	t.Helper()
+	dir := t.TempDir()
+	for _, f := range []string{"config", "credentials"} {
+		require.NoError(t, os.WriteFile(filepath.Join(dir, f), nil, 0o600))
+	}
+	t.Setenv("AWS_CONFIG_FILE", filepath.Join(dir, "config"))
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", filepath.Join(dir, "credentials"))
+	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	// Setenv first so the variable is restored afterwards; an empty value would still count as set.
+	t.Setenv("AWS_PROFILE", "")
+	require.NoError(t, os.Unsetenv("AWS_PROFILE"))
+}
+
 func (s *testSuite) TestNewFromConfig() {
+	// The ambient AWS case loads the default credential chain.
+	isolateAWSEnv(s.T())
 	testCases := []struct {
 		name    string
 		conf    *v1.Credentials
@@ -130,11 +149,63 @@ func (s *testSuite) TestNewFromConfig() {
 			wantErr: true,
 		},
 		{
+			// Forgotten keys must fail, not fall through to ambient credentials.
 			name: "[AWS] missing credentials",
 			conf: &v1.Credentials{
 				Backend: &v1.Credentials_AwsSecretManager{
 					AwsSecretManager: &v1.Credentials_AWSSecretManager{
 						Region: "us-east-1",
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "[AWS] explicit credentials auth type",
+			conf: &v1.Credentials{
+				Backend: &v1.Credentials_AwsSecretManager{
+					AwsSecretManager: &v1.Credentials_AWSSecretManager{
+						Region:   "us-east-1",
+						AuthType: v1.Credentials_AWSSecretManager_AUTH_TYPE_CREDENTIALS,
+						Creds:    &v1.Credentials_AWSSecretManager_Creds{AccessKey: "ak", SecretKey: "sk"},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "[AWS] ambient auth type",
+			conf: &v1.Credentials{
+				Backend: &v1.Credentials_AwsSecretManager{
+					AwsSecretManager: &v1.Credentials_AWSSecretManager{
+						Region:   "us-east-1",
+						AuthType: v1.Credentials_AWSSecretManager_AUTH_TYPE_AMBIENT,
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "[AWS] ambient auth type with static credentials",
+			conf: &v1.Credentials{
+				Backend: &v1.Credentials_AwsSecretManager{
+					AwsSecretManager: &v1.Credentials_AWSSecretManager{
+						Region:   "us-east-1",
+						AuthType: v1.Credentials_AWSSecretManager_AUTH_TYPE_AMBIENT,
+						Creds:    &v1.Credentials_AWSSecretManager_Creds{AccessKey: "ak", SecretKey: "sk"},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "[AWS] undefined auth type",
+			conf: &v1.Credentials{
+				Backend: &v1.Credentials_AwsSecretManager{
+					AwsSecretManager: &v1.Credentials_AWSSecretManager{
+						Region:   "us-east-1",
+						AuthType: 99,
+						Creds:    &v1.Credentials_AWSSecretManager_Creds{AccessKey: "ak", SecretKey: "sk"},
 					},
 				},
 			},

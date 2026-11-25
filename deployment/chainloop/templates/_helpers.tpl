@@ -81,11 +81,21 @@ vault:
 {{- end }}
 
 {{- else if eq .backend "awsSecretManager" }}
+{{- $authType := .awsSecretManager.authType | default "AUTH_TYPE_CREDENTIALS" }}
 awsSecretManager:
   region: {{ required "region required" .awsSecretManager.region | quote }}
+  authType: {{ $authType | quote }}
+  {{- if eq $authType "AUTH_TYPE_CREDENTIALS" }}
   creds:
     accessKey: {{ required "access key required" .awsSecretManager.accessKey | quote }}
     secretKey: {{ required "secret key required" .awsSecretManager.secretKey | quote }}
+  {{- else if eq $authType "AUTH_TYPE_AMBIENT" }}
+  {{- if or .awsSecretManager.accessKey .awsSecretManager.secretKey }}
+  {{- fail "secretsBackend.awsSecretManager: accessKey and secretKey must not be set with authType AUTH_TYPE_AMBIENT" }}
+  {{- end }}
+  {{- else }}
+  {{- fail (printf "secretsBackend.awsSecretManager.authType %q is not one of AUTH_TYPE_CREDENTIALS, AUTH_TYPE_AMBIENT" $authType) }}
+  {{- end }}
 
 {{- else if eq .backend "gcpSecretManager" }}
 gcpSecretManager:
