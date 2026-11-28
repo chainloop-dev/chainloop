@@ -79,9 +79,9 @@ jobs:
       CHAINLOOP_PROJECT: "chainloop"
       # Docker Sandboxes ships Linux packages only on tagged releases, not on
       # nightly, so this is pinned to a stable tag and bumped by hand.
-      SBX_VERSION: "v0.43.0"
+      SBX_VERSION: "v0.55.0"
       KIT_DIR: "devel/sandbox-kit/${{ matrix.kit }}"
-      KIT_REPO: "docker.io/chainloop/sbx-kit-${{ matrix.kit }}"
+      KIT_REPO: "docker.io/chainloop/${{ matrix.kit }}"
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
@@ -97,7 +97,8 @@ jobs:
             echo "::error::${KIT_DIR}/spec.yaml declares no version:"
             exit 1
           fi
-          echo "kit_version=${kit_version}" >> $GITHUB_OUTPUT
+          # The descriptor carries plain semver; tags and the project version keep the `v`.
+          echo "kit_version=v${kit_version}" >> $GITHUB_OUTPUT
 
       - name: Install Chainloop
         # Deliberately NOT `curl ... | bash`: this job holds an OIDC token that can
@@ -125,6 +126,11 @@ jobs:
           sudo apt-get install -y /tmp/sbx.deb
           sbx version
 
+      # The kit is an OCI image built by the BuildKit frontend its `# syntax=` line
+      # names, so it is built and pushed with Buildx.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
       # OIDC rather than a stored token: GitHub mints a short-lived identity token
       # per run and Docker exchanges it for a registry token that expires with the
       # job, so there is no long-lived Docker Hub credential in this repo. Access is
@@ -144,7 +150,7 @@ jobs:
       - name: Validate kit
         # Fails loudly here rather than halfway through a push if the pinned sbx
         # release does not understand something the spec declares.
-        run: sbx kit validate "./${KIT_DIR}"
+        run: docker buildx build -f "${KIT_DIR}/spec.yaml" "${KIT_DIR}" --platform linux/amd64,linux/arm64 --output type=cacheonly
 
       - name: Add Attestation (Sandbox Kit) and Push Kit
         run: |
@@ -159,19 +165,18 @@ jobs:
           # attestation fails, and the version needs creating before a re-run.
           chainloop attestation init --org chainloop --workflow ${CHAINLOOP_WORKFLOW_NAME} --project ${CHAINLOOP_PROJECT} --version ${KIT_VERSION} --existing-version
 
-          # Push the kit. --sign is keyless (Fulcio + Rekor) off the ambient
-          # GitHub OIDC token, and every push also attaches SLSA provenance.
-          sbx kit push "./${KIT_DIR}" "${KIT_REPO}:${KIT_VERSION}" --sign
+          # Push the kit with SLSA provenance and sign its digest keylessly
+          # (Fulcio + Rekor) off the ambient GitHub OIDC token. :latest moves to
+          # that digest only once it is signed.
+          docker buildx build -f "${KIT_DIR}/spec.yaml" "${KIT_DIR}" \
+            --platform linux/amd64,linux/arm64 --provenance=mode=min --push \
+            --metadata-file /tmp/kit-build.json -t "${KIT_REPO}:${KIT_VERSION}"
+          digest=$(jq -er '."containerimage.digest"' /tmp/kit-build.json)
+          sbx kit sign "${KIT_REPO}@${digest}"
+          docker buildx imagetools create -t "${KIT_REPO}:latest" "${KIT_REPO}@${digest}"
 
-          # Move the floating tag to the same release. Note this is a second push
-          # rather than a retag, so :latest gets its own manifest digest even though
-          # the content is identical - compare the kit's `version:`, not the digest,
-          # to tell which release :latest currently points at.
-          sbx kit push "./${KIT_DIR}" "${KIT_REPO}:latest" --sign
-
-          # Attest the published kit. The immutable tag, not :latest, since the
-          # attestation should keep naming this artifact after the tag moves on.
-          chainloop attestation add --name sandbox-kit --value "${KIT_REPO}:${KIT_VERSION}"
+          # Attest the published kit by the digest that was signed.
+          chainloop attestation add --name sandbox-kit --value "${KIT_REPO}@${digest}"
         env:
           KIT_VERSION: ${{ steps.kit_version.outputs.kit_version }}
           # Needed for commit signature verification: https://docs.chainloop.dev/concepts/attestations#commit-verification

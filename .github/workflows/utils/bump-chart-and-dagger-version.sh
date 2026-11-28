@@ -61,13 +61,14 @@ fi
 
 ## Update the Docker Sandboxes kit versions
 # Each kit declares the Chainloop release it belongs to, tracking semVer like
-# appVersion does. `schemaVersion:` is left alone by the ^version anchor.
+# appVersion does, as plain semver (no leading `v`).
+# `schemaVersion:` is left alone by the ^version anchor.
 # Matching nothing is an error, not a no-op: a silent skip here would leave the
 # specs at the old version and the publish workflow would never fire.
 shopt -s nullglob
 kit_specs=(devel/sandbox-kit/*/spec.yaml)
 [ "${#kit_specs[@]}" -gt 0 ] || die "no kit specs found under devel/sandbox-kit (run from the repo root)"
 for kit_spec in "${kit_specs[@]}"; do
-    sed -i "s#^version:.*#version: ${semVer}#" "${kit_spec}"
+    sed -i "s#^version:.*#version: ${semVer#v}#" "${kit_spec}"
 done
 
