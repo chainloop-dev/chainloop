@@ -1,10 +1,11 @@
-# Docker Sandboxes declarative environment — EXPERIMENTAL (sbx v0.39+).
+# Docker Sandboxes declarative environment — EXPERIMENTAL (sbx v0.55.0+).
 #
 # Launches Claude Code in a Docker Sandbox with Chainloop trace already wired
 # in, working on a private in-container clone of this repo.
 #
+#   sbx secret set chainloop                            # once: org-scoped API token
 #   sbx env plan                                        # show what it would do
-#   sbx env run --env-arg chainloopToken="$CHAINLOOP_TOKEN"
+#   sbx env run
 #   sbx env rm                                          # tear down + drop scoped creds
 #
 # This repo is ALREADY initialized for `chainloop trace` (.chainloop.yml with
@@ -14,45 +15,17 @@
 # (org=chainloop, project=chainloop) comes from .chainloop.yml, NOT from here.
 # No push => no attestation. Push from inside the sandbox before it is reclaimed.
 #
-# ── FILENAME (read this before renaming the file) ───────────────────────────
-# The name is not stable across sbx builds, and the wrong one is IGNORED
-# SILENTLY rather than reported:
-#   - docs.docker.com and v0.39.0 stable  -> `.sbxenv.yaml` (falls back to .yml)
-#   - sbx@nightly (v0.39.0-rc1-441+)      -> `sbxenv.yaml`, and the hidden name
-#     is explicitly retired: "a project still holding one now reads as having
-#     none". Verified: `sbx env plan` in a dir holding only `.sbxenv.yaml` says
-#     `ERROR: no sbxenv.yaml found at .../sbxenv.yaml`.
-# Only the non-hidden name is carried here, deliberately: this kit REQUIRES
-# nightly (see below), and nightly reads only `sbxenv.yaml` — so a `.sbxenv.yaml`
-# would serve nothing but builds that cannot run the kit anyway. If Docker ever
-# reverts the rename, add the dotted name back. Note `~/.sbxenv.yaml` (the
-# optional per-user base layer merged underneath) keeps the dotted name even on
-# nightly — but do not put anything there: it is read on every `sbx env` call,
-# and in a directory with no project file it is validated alone and fails with
-# `agent is required`, breaking unrelated commands like `sbx env rm`.
-#
-# ── BUILD REQUIREMENT ──────────────────────────────────────────────────────
-# Needs an sbx@nightly build, NOT v0.39.0 stable: the kit uses `extends: claude`,
-# and docker/sbx-releases#415 (a child `setup:` block dropping the parent's)
-# regressed in the v0.39.0 release. On a broken build the sandbox still starts,
-# but the ~/.claude/* volumes stay root:root and the transcript that
-# `chainloop trace` reads is never written — the session attests NOTHING, with
-# no error. Check with:
-#   sbx exec <name> -- stat -c '%U:%G' /home/agent/.claude/projects  # want agent:agent
+# The file must be named `sbxenv.yaml`: sbx ignores `.sbxenv.yaml` silently. Do
+# not put anything in `~/.sbxenv.yaml` either: it is read on every `sbx env`
+# call, and in a directory with no project file it fails with `agent is
+# required`, breaking unrelated commands like `sbx env rm`.
 
 schemaVersion: "1"
 name: chainloop-traced-claude
 
 args:
-  chainloopToken:
-    default: ""
-    description: >-
-      Chainloop org-scoped API token (chainloop organization api-token create).
-      Must have access to the org pinned in .chainloop.yml (chainloop).
-      Supply THIS or chainloopConfig — with neither, the kit's wrapper refuses
-      to start rather than run an untraced session.
   kitPath:
-    default: ./devel/sandbox-kit/claude
+    default: ./devel/sandbox-kit/sbx-kit-claude
     description: >-
       Path to the chainloop-trace-claude kit. Deliberately the IN-REPO copy and not
       the published artifact, so this environment always runs the kit as it exists
@@ -62,38 +35,25 @@ args:
       .github/workflows/package_sandbox_kit.yaml, tagged with the `version:` in the
       kit's own spec.yaml — pass
       --env-arg kitPath=docker.io/chainloop/sbx-kit-claude:vX.Y.Z to pin one.
-      devel/sandbox-kit/README.md says how to re-sync with the upstream PoC repo
-      (playground/chainloop-trace-docker-sandbox). Relative paths in kits: resolve against the INVOCATION
-      CWD, not this file's directory (docker/sbx-releases#493, still open;
-      reproduced on nightly rc1-441 — `workspace:` resolves against the file's
-      dir, `kits:` does not), so run `sbx env run` FROM the repo root, or pass
-      --env-arg kitPath=/abs/path from anywhere else.
 
-# The kit's own name, forked from the built-in `claude` agent via `extends:`.
-agent: chainloop-trace-claude
+# Docker's built-in agent; the Chainloop kit is a mixin on top of it.
+agent: claude
 kits:
+  # There is no mode, identity or credential argument: the kit runs persistent
+  # tracing only, reads org/project/workflow from this repo's own committed
+  # .chainloop.yml, and takes the token from the host's `chainloop` secret. It
+  # refuses to start on a repo that has not had `chainloop trace init` run.
   - source: ${{ env.args.kitPath }}
-    # The kit declares these; see its spec.yaml for the full list. There is no
-    # mode or identity argument: the kit runs persistent tracing only and reads
-    # org/project/workflow from this repo's own committed .chainloop.yml. It
-    # refuses to start on a repo that has not had `chainloop trace init` run.
-    args:
-      # CAVEAT: the environment plan prints this in CLEARTEXT — verified, and
-      # moving it off `env:` did not help; only a literal `secrets:` value is
-      # reduced to a sha256: digest. So the token is on screen at every
-      # approval. Keep it out of shell history at least:
-      #   sbx env run --env-args-file ~/.config/chainloop/sbxenv-args
-      chainloopToken: ${{ env.args.chainloopToken }}
 
   # Sign commits and tags with the SSH key forwarded from your host's agent, so
   # the agent's commits carry your signature and not just your name. A `kind:
-  # mixin` kit, so it stacks on the sandbox kit above rather than competing with
-  # it; it writes only to /etc/gitconfig (`git config --system`) and resolves the
-  # key at signing time from $SSH_AUTH_SOCK, so nothing private enters the VM.
+  # mixin` kit, so it stacks on the kits above rather than competing with them;
+  # it writes only to git's system config and resolves the key at signing time
+  # from $SSH_AUTH_SOCK, so nothing private enters the VM.
   # Prerequisite: the key must be loaded on the HOST (`ssh-add ~/.ssh/id_ed25519`);
   # with no key in the agent, signing fails and so does every commit.
   # Upstream: https://github.com/docker/sbx-kits-contrib/tree/main/git-ssh-sign
-  - source: docker.io/sbx/git-ssh-sign-kit:latest
+  - source: docker.io/sbx/git-ssh-sign:latest
 
 workspace:
   path: .
@@ -102,28 +62,9 @@ workspace:
   # attribution, which needs a readable .git and at least one commit.
   clone: false
 
-# Deliberately no additionalWorkspaces: the kit can also authenticate from a
-# mounted host config.toml instead of a token (--kit-arg chainloopConfig=...),
-# but that needs a mount whose path is per-developer, and it authenticates the
-# sandbox as YOU with a session that expires in days — a local-demo convenience,
-# not how this repo should be run. It also cannot be made conditional here: an
-# empty `path:` is rejected (`additionalWorkspaces[0]: path is required`) and
-# sbxenv has no conditionals. Use plain `sbx run` for that route; see
-# devel/sandbox-kit/README.md.
-
 # NOTE — deliberately NOT declared here:
-#   env:      nothing left to set. The Chainloop token reaches the
-#             sandbox as KIT arguments (above), not as environment variables, so
-#             the kit owns its own configuration surface. Path B still applies:
-#             the kit turns chainloopToken into CHAINLOOP_TOKEN inside the VM,
-#             because proxy-managed injection (Path A) can never work for a
-#             gRPC client — the intercepted path does not negotiate h2.
-#   secrets:  the `anthropic` key is already a global sbx service secret
-#             (`sbx secret ls`), and the kit inherits its binding + egress rules
-#             from the built-in claude agent. Declaring it again would scope a
-#             second copy to this environment.
-#   bindings: never bind a Chainloop host to a credential. Any credential
-#             targeting cp.chainloop.dev flips it from the proxy's tunnel to
-#             its intercepted path, which serves HTTP/1.1 only — and grpc-go
-#             >=1.67 then aborts with "missing selected ALPN property", so
-#             nothing is attested. The kit's NO_PROXY keeps those hosts direct.
+#   env:      nothing to set. The token is the host's `chainloop` secret, which
+#             the sbx egress proxy adds to requests; it never enters the sandbox.
+#   secrets:  the `chainloop` and `anthropic` keys are already global sbx service
+#             secrets (`sbx secret ls`). Declaring them again would scope a second
+#             copy to this environment.
